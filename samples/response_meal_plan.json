@@ -1,0 +1,72 @@
+{
+  "version": "1.0",
+  "session_id": "sess-7f3a9c21",
+  "turn_id": "turn-0002-c9d1",
+  "events": [
+    { "seq": 0, "type": "session", "session_id": "sess-7f3a9c21", "turn_id": "turn-0002-c9d1", "version": "1.0" },
+    { "seq": 1, "type": "intent", "intent": "meal_plan", "confidence": 0.94 },
+    { "seq": 2, "type": "citation", "citation": {
+        "ref": "c1", "store": "paknsave", "store_location": "Sylvia Park",
+        "product_name": "Beef Mince 1kg", "price_nzd": "11.99", "unit": "1kg",
+        "on_special": true, "valid_date": "2026-07-30",
+        "source": { "table": "Products", "pk": "paknsave#meat", "sk": "beef-mince-1kg" } } },
+    { "seq": 3, "type": "citation", "citation": {
+        "ref": "c2", "store": "paknsave", "store_location": "Sylvia Park",
+        "product_name": "Pasta Spirals 500g", "price_nzd": "1.29", "unit": "500g",
+        "on_special": false, "valid_date": "2026-07-30",
+        "source": { "table": "Products", "pk": "paknsave#pantry", "sk": "pasta-spirals-500g" } } },
+    { "seq": 4, "type": "citation", "citation": {
+        "ref": "c3", "store": "paknsave", "store_location": "Sylvia Park",
+        "product_name": "Chopped Tomatoes 400g", "price_nzd": "1.10", "unit": "400g",
+        "on_special": false, "valid_date": "2026-07-30",
+        "source": { "table": "Products", "pk": "paknsave#pantry", "sk": "chopped-tomatoes-400g" } } },
+    { "seq": 5, "type": "citation", "citation": {
+        "ref": "c4", "store": "woolworths", "store_location": "Mt Wellington",
+        "product_name": "Brown Onions 1.5kg", "price_nzd": "2.50", "unit": "1.5kg",
+        "on_special": true, "valid_date": "2026-07-30",
+        "source": { "table": "Products", "pk": "woolworths#produce", "sk": "brown-onions-1500g" } } },
+    { "seq": 6, "type": "citation", "citation": {
+        "ref": "c5", "store": "paknsave", "store_location": "Sylvia Park",
+        "product_name": "Rice 1kg", "price_nzd": "2.79", "unit": "1kg",
+        "on_special": false, "valid_date": "2026-07-30",
+        "source": { "table": "Products", "pk": "paknsave#pantry", "sk": "rice-1kg" } } },
+    { "seq": 7, "type": "citation", "citation": {
+        "ref": "c6", "store": "paknsave", "store_location": "Sylvia Park",
+        "product_name": "Mixed Frozen Vegetables 1kg", "price_nzd": "3.49", "unit": "1kg",
+        "on_special": false, "valid_date": "2026-07-30",
+        "source": { "table": "Products", "pk": "paknsave#frozen", "sk": "mixed-frozen-veg-1kg" } } },
+    { "seq": 8, "type": "notice", "message": "Prices last refreshed 30 Jul 2026, 6:00am NZST." },
+    { "seq": 9, "type": "token", "text": "Here's a 3-day plan for 3 people at $23.16 total, $6.84 under your $30 budget." },
+    { "seq": 10, "type": "meal_plan", "data": {
+        "household_size": 3, "days": 3, "budget_nzd": "30.00", "total_nzd": "23.16",
+        "within_budget": true, "repair_attempts": 1,
+        "dietary_exclusions_applied": ["seafood"],
+        "meals": [
+          { "name": "Beef Bolognese Pasta", "serves": 3, "subtotal_nzd": "9.63",
+            "ingredients": [
+              { "item": "Beef mince", "qty": "500g", "citation_ref": "c1", "line_cost_nzd": "6.00" },
+              { "item": "Pasta spirals", "qty": "500g", "citation_ref": "c2", "line_cost_nzd": "1.29" },
+              { "item": "Chopped tomatoes", "qty": "400g", "citation_ref": "c3", "line_cost_nzd": "1.10" },
+              { "item": "Brown onion", "qty": "1 large", "citation_ref": "c4", "line_cost_nzd": "1.24" } ] },
+          { "name": "Beef and Vegetable Rice Bowl", "serves": 3, "subtotal_nzd": "9.61",
+            "ingredients": [
+              { "item": "Beef mince", "qty": "500g", "citation_ref": "c1", "line_cost_nzd": "5.99" },
+              { "item": "Rice", "qty": "500g", "citation_ref": "c5", "line_cost_nzd": "1.40" },
+              { "item": "Mixed frozen vegetables", "qty": "300g", "citation_ref": "c6", "line_cost_nzd": "1.05" },
+              { "item": "Brown onion", "qty": "1 large", "citation_ref": "c4", "line_cost_nzd": "1.17" } ] },
+          { "name": "Tomato Rice with Vegetables", "serves": 3, "subtotal_nzd": "3.92",
+            "ingredients": [
+              { "item": "Rice", "qty": "500g", "citation_ref": "c5", "line_cost_nzd": "1.39" },
+              { "item": "Chopped tomatoes", "qty": "400g", "citation_ref": "c3", "line_cost_nzd": "1.10" },
+              { "item": "Mixed frozen vegetables", "qty": "400g", "citation_ref": "c6", "line_cost_nzd": "1.34" },
+              { "item": "Brown onion", "qty": "1 medium", "citation_ref": "c4", "line_cost_nzd": "0.09" } ] }
+        ],
+        "baskets": [
+          { "store": "paknsave", "store_location": "Sylvia Park",
+            "citation_refs": ["c1", "c2", "c3", "c5", "c6"], "basket_total_nzd": "20.66" },
+          { "store": "woolworths", "store_location": "Mt Wellington",
+            "citation_refs": ["c4"], "basket_total_nzd": "2.50" } ] } },
+    { "seq": 11, "type": "done", "server_time": "2026-07-30T19:44:02Z",
+      "usage": { "model_ids": ["claude-haiku", "claude-sonnet"], "input_tokens": 3120, "output_tokens": 1480, "latency_ms": 21740, "guardrail_intervened": false } }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "version": "1.0",
+  "session_id": "sess-7f3a9c21",
+  "turn_id": "turn-0001-a4b8",
+  "events": [
+    { "seq": 0, "type": "session", "session_id": "sess-7f3a9c21", "turn_id": "turn-0001-a4b8", "version": "1.0" },
+    { "seq": 1, "type": "intent", "intent": "price_check", "confidence": 0.97 },
+    { "seq": 2, "type": "citation", "citation": {
+        "ref": "c1", "store": "paknsave", "store_location": "Sylvia Park",
+        "product_name": "Pams Butter 500g", "price_nzd": "3.49", "unit": "500g",
+        "unit_price_nzd": "6.98", "on_special": true, "valid_date": "2026-07-30",
+        "source": { "table": "Products", "pk": "paknsave#dairy", "sk": "pams-butter-500g" } } },
+    { "seq": 3, "type": "citation", "citation": {
+        "ref": "c2", "store": "new_world", "store_location": "Newmarket",
+        "product_name": "Anchor Butter 500g", "price_nzd": "3.99", "unit": "500g",
+        "unit_price_nzd": "7.98", "on_special": false, "valid_date": "2026-07-30",
+        "source": { "table": "Products", "pk": "new_world#dairy", "sk": "anchor-butter-500g" } } },
+    { "seq": 4, "type": "citation", "citation": {
+        "ref": "c3", "store": "woolworths", "store_location": "Mt Wellington",
+        "product_name": "Woolworths Butter 500g", "price_nzd": "4.20", "unit": "500g",
+        "unit_price_nzd": "8.40", "on_special": false, "valid_date": "2026-07-30",
+        "source": { "table": "Products", "pk": "woolworths#dairy", "sk": "ww-butter-500g" } } },
+    { "seq": 5, "type": "token", "text": "The cheapest butter near you is at Pak'nSave Sylvia Park" },
+    { "seq": 6, "type": "token", "text": " at $3.49 for 500g, currently on special." },
+    { "seq": 7, "type": "price_comparison", "data": {
+        "query_item": "butter 500g",
+        "options": [
+          { "citation_ref": "c1", "is_cheapest": true, "savings_vs_dearest_nzd": "0.71" },
+          { "citation_ref": "c2", "is_cheapest": false },
+          { "citation_ref": "c3", "is_cheapest": false }
+        ],
+        "reasoning": "Pak'nSave Sylvia Park is cheapest at $3.49, saving $0.71 against Woolworths Mt Wellington at $4.20." } },
+    { "seq": 8, "type": "done", "server_time": "2026-07-30T19:42:11Z",
+      "usage": { "model_ids": ["claude-haiku", "claude-sonnet"], "input_tokens": 812, "output_tokens": 145, "latency_ms": 4310, "guardrail_intervened": false } }
+  ]
+}

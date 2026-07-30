@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+.aws/
+cdk.out/
+*.zip
+.pytest_cache/
+.ruff_cache/
+.secrets.baseline

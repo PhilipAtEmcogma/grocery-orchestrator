@@ -1,0 +1,12 @@
+{
+  "version": "1.0",
+  "session_id": "sess-7f3a9c21",
+  "turn_id": "turn-0005-d8a2",
+  "events": [
+    { "seq": 0, "type": "session", "session_id": "sess-7f3a9c21", "turn_id": "turn-0005-d8a2", "version": "1.0" },
+    { "seq": 1, "type": "error", "code": "GUARDRAIL_BLOCKED", "retryable": false,
+      "message": "I can't help with that request. I can help you compare grocery prices or plan meals within a budget." },
+    { "seq": 2, "type": "done", "server_time": "2026-07-30T19:47:01Z",
+      "usage": { "model_ids": [], "input_tokens": 0, "output_tokens": 0, "latency_ms": 340, "guardrail_intervened": true } }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "session_id": "sess-7f3a9c21",
+  "turn_id": "turn-0003-e2f7",
+  "events": [
+    { "seq": 0, "type": "session", "session_id": "sess-7f3a9c21", "turn_id": "turn-0003-e2f7", "version": "1.0" },
+    { "seq": 1, "type": "intent", "intent": "price_check", "confidence": 0.91 },
+    { "seq": 2, "type": "no_data", "requested_item": "wagyu ribeye",
+      "message": "I don't have price data for wagyu ribeye at any of the stores near you. I can check a different cut, or a different item." },
+    { "seq": 3, "type": "done", "server_time": "2026-07-30T19:45:30Z",
+      "usage": { "model_ids": ["claude-haiku"], "input_tokens": 210, "output_tokens": 0, "latency_ms": 890, "guardrail_intervened": false } }
+  ]
+}

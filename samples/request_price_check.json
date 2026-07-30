@@ -1,0 +1,7 @@
+{
+  "version": "1.0",
+  "session_id": "sess-7f3a9c21",
+  "turn_id": "turn-0001-a4b8",
+  "message": "what's the cheapest butter near me?",
+  "location": { "lat": -36.8899, "lon": 174.8536, "label": "Sylvia Park, Auckland", "radius_km": 8 }
+}
