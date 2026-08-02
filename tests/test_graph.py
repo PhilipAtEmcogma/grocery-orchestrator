@@ -1,0 +1,173 @@
+"""
+Walking-skeleton tests. No AWS, no network, deterministic, milliseconds.
+
+These same tests must pass unchanged when the stubs are replaced by Bedrock
+calls and the fixture repo by DynamoDB. That is the point of the protocol
+boundaries.
+"""
+
+from __future__ import annotations
+
+import pytest
+
+from src.models.scripted import ScriptedModelClient
+from src.retrieval.memory import InMemoryPriceRepository
+from src.runner import run_turn
+from src.schemas.contract import (
+    ChatRequest,
+    ErrorCode,
+    assert_grounded,
+)
+
+
+@pytest.fixture(scope="module")
+def repo() -> InMemoryPriceRepository:
+    return InMemoryPriceRepository()
+
+
+@pytest.fixture
+def model() -> ScriptedModelClient:
+    return ScriptedModelClient()
+
+
+def _types(resp) -> list[str]:
+    return [e.type for e in resp.events]
+
+
+def _req(message: str, **kw) -> ChatRequest:
+    return ChatRequest(
+        session_id="sess-testing1",
+        turn_id="turn-testing1",
+        message=message,
+        **kw,
+    )
+
+
+# ------------------------------------------------------------- happy paths
+
+
+def test_price_check_produces_grounded_comparison(repo, model):
+    resp = run_turn(_req("what's the cheapest butter near me?"), repo, model)
+
+    assert "price_comparison" in _types(resp)
+    assert _types(resp)[0] == "session"
+    assert _types(resp)[-1] == "done"
+    assert_grounded(resp)
+
+
+def test_price_check_cheapest_is_actually_cheapest(repo, model):
+    resp = run_turn(_req("cheapest butter"), repo, model)
+
+    citations = {e.citation.ref: e.citation for e in resp.events if e.type == "citation"}
+    comparison = next(e.data for e in resp.events if e.type == "price_comparison")
+
+    flagged = [o for o in comparison.options if o.is_cheapest]
+    assert len(flagged) == 1
+
+    cheapest_price = citations[flagged[0].citation_ref].price_nzd
+    assert cheapest_price == min(c.price_nzd for c in citations.values())
+
+
+def test_intent_event_precedes_content(repo, model):
+    resp = run_turn(_req("how much is milk"), repo, model)
+
+    seqs = {e.type: e.seq for e in resp.events}
+    assert seqs["intent"] < seqs["price_comparison"]
+
+
+def test_seq_is_contiguous_from_zero(repo, model):
+    resp = run_turn(_req("cheapest cheese"), repo, model)
+    assert [e.seq for e in resp.events] == list(range(len(resp.events)))
+
+
+# ------------------------------------------------------------- honest failure
+
+
+def test_unknown_product_returns_no_data_not_a_guess(repo, model):
+    resp = run_turn(_req("what's the cheapest wagyu ribeye"), repo, model)
+
+    assert "no_data" in _types(resp)
+    assert "price_comparison" not in _types(resp)
+    assert _types(resp)[-1] == "done"
+
+
+def test_meal_plan_with_no_plan_reports_infeasible(repo, model):
+    """generate_plan is stubbed to return None, so the repair loop must
+    exhaust and terminate honestly rather than hanging or inventing a plan."""
+    resp = run_turn(
+        _req("feed a flat of 3 for under $30 this week, no seafood",
+             hints={"household_size": 3, "budget_nzd": 30, "days": 3,
+                    "dietary_exclusions": ["seafood"]}),
+        repo,
+        model,
+    )
+
+    errors = [e for e in resp.events if e.type == "error"]
+    assert len(errors) == 1
+    assert errors[0].code == ErrorCode.BUDGET_INFEASIBLE
+    assert _types(resp)[-1] == "done"
+
+
+def test_repair_loop_is_bounded(repo, model):
+    """A runaway repair loop is a cost and latency risk, not just correctness."""
+    resp = run_turn(
+        _req("meal plan for the week", hints={"budget_nzd": 5}),
+        repo,
+        model,
+    )
+    assert _types(resp)[-1] == "done"
+
+
+# ------------------------------------------------------------- grounding
+
+
+def test_every_response_is_grounded(repo, model):
+    messages = [
+        "cheapest butter",
+        "how much is a dozen eggs",
+        "price of frozen peas",
+        "cheapest wagyu ribeye",
+        "hello there",
+    ]
+    for msg in messages:
+        resp = run_turn(_req(msg), repo, model)
+        assert_grounded(resp)
+
+
+def test_dietary_exclusion_removes_seafood(repo, model):
+    resp = run_turn(
+        _req("meal plan", hints={"budget_nzd": 30, "dietary_exclusions": ["seafood"]}),
+        repo,
+        model,
+    )
+    products = [
+        e.citation.source.sk for e in resp.events if e.type == "citation"
+    ]
+    assert not any("tuna" in p or "salmon" in p for p in products)
+
+
+# ------------------------------------------------------------- retrieval unit
+
+
+def test_resolve_product_key_prefers_specific_match(repo):
+    assert repo.resolve_product_key("frozen peas") == "frozen-peas-1kg"
+    assert repo.resolve_product_key("peas") == "frozen-peas-1kg"
+
+
+def test_resolve_returns_none_rather_than_guessing(repo):
+    assert repo.resolve_product_key("wagyu ribeye") is None
+    assert repo.resolve_product_key("truffle oil") is None
+
+
+def test_cheapest_for_product_is_sorted(repo):
+    recs = repo.cheapest_for_product("butter-500g")
+    prices = [r.price_nzd for r in recs]
+    assert prices == sorted(prices)
+
+
+def test_messy_naming_still_resolves_across_stores(repo):
+    """Each chain writes the name differently; all must map to one key."""
+    recs = repo.cheapest_for_product("butter-500g")
+    names = {r.display_name for r in recs}
+    assert len(names) > 1, "fixtures should have inconsistent naming"
+    assert len({r.store for r in recs}) == 3, "all three chains present"
