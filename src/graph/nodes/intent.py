@@ -94,14 +94,16 @@ def _reconcile(
 
     # Exclusions are additive: a stated exclusion never removes a hinted one,
     # because dropping a dietary restriction is the dangerous direction.
-    exclusions = sorted(
-        {*(extracted.dietary_exclusions or []), *(hints.get("dietary_exclusions") or [])}
+    # hints arrives as an untyped dict from the wire, so values are coerced
+    # explicitly rather than trusted.
+    hinted_exclusions = [str(x) for x in (hints.get("dietary_exclusions") or [])]
+    exclusions: list[str] = sorted(
+        {*(extracted.dietary_exclusions or []), *hinted_exclusions}
     )
     constraints["dietary_exclusions"] = exclusions
 
-    stores = extracted.preferred_stores or [
-        Store(s) for s in hints.get("preferred_stores", [])
-    ]
+    hinted_stores = [Store(str(s)) for s in (hints.get("preferred_stores") or [])]
+    stores: list[Store] = extracted.preferred_stores or hinted_stores
     constraints["preferred_stores"] = stores
 
     return constraints, notices
