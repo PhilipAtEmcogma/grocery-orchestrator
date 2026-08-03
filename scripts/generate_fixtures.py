@@ -94,8 +94,11 @@ def money(value: Decimal) -> str:
 
 
 def build() -> list[dict]:
+    """Generate one price record per (store location x catalogue item), skipping
+    deliberately-unstocked combinations, and return them as plain dicts ready for JSON."""
     records: list[dict] = []
 
+    # Outer loop: every store location. Inner loop: every catalogue item.
     for chain, location, lat, lon in STORES:
         factor = Decimal(str(STORE_FACTOR[chain]))
         skip = NOT_STOCKED.get((chain, location), set())
@@ -104,6 +107,8 @@ def build() -> list[dict]:
             if key in skip:
                 continue
 
+            # Scale the base (Pak'nSave) price by this chain's relative
+            # pricing factor, then apply the special discount if applicable.
             price = Decimal(str(base)) * factor
             on_special = key in SPECIALS.get(chain, set())
             if on_special:
@@ -118,6 +123,9 @@ def build() -> list[dict]:
             else:
                 unit_price = price
 
+            # Each chain renders the same canonical product name differently
+            # (see NAME_STYLE), which is the naming inconsistency the
+            # retrieval layer's normaliser must cope with.
             display_name = NAME_STYLE[chain](canonical, unit)
 
             records.append(
@@ -155,6 +163,7 @@ if __name__ == "__main__":
     out.parent.mkdir(exist_ok=True)
     out.write_text(json.dumps(records, indent=2), encoding="utf-8")
 
+    # Summary printout so a human running the script can sanity-check the output.
     stores = {(r["store"], r["store_location"]) for r in records}
     print(f"{len(records)} records, {len(stores)} stores, "
           f"{len({r['product_key'] for r in records})} distinct products")

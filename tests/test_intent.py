@@ -24,6 +24,7 @@ def model() -> ScriptedModelClient:
 
 
 def _state(message: str, hints: dict | None = None) -> dict:
+    """Build the minimal GroceryState dict classify_intent needs to run standalone."""
     return {
         "session_id": "sess-test01",
         "turn_id": "turn-test01",
@@ -49,6 +50,7 @@ def _state(message: str, hints: dict | None = None) -> dict:
     ],
 )
 def test_classification(model, message, expected):
+    """Each sample message should classify to its expected intent."""
     out = classify_intent(_state(message), model)
     assert out["intent"] == expected
 
@@ -60,6 +62,7 @@ def test_uses_fast_tier_not_quality(model):
 
 
 def test_emits_intent_event_first(model):
+    """The IntentEvent must be the very first event, with seq 0."""
     out = classify_intent(_state("cheapest butter"), model)
     assert out["events"][0].type == "intent"
     assert out["events"][0].seq == 0
@@ -69,6 +72,7 @@ def test_emits_intent_event_first(model):
 
 
 def test_extracts_budget_household_days_and_exclusions(model):
+    """One message can carry every kind of constraint at once; all must be extracted."""
     out = classify_intent(
         _state("feed a flat of 3 for under $30 this week, no seafood"), model
     )
@@ -86,6 +90,7 @@ def test_does_not_invent_absent_constraints(model):
 
 
 def test_strips_modifiers_from_query_item(model):
+    """Filler words like 'cheapest'/'near me' should be stripped from the extracted item."""
     out = classify_intent(_state("what's the cheapest butter near me?"), model)
     assert out["constraints"]["query_item"] == "butter"
 
@@ -117,6 +122,7 @@ def test_override_is_reported_to_the_user(model):
 
 
 def test_hint_used_when_message_is_silent(model):
+    """When the message states no household size, the client hint should be used instead."""
     out = classify_intent(_state("plan me some dinners"), {}) if False else \
         classify_intent(_state("plan me some dinners", hints={"household_size": 4}), model)
     assert out["constraints"]["household_size"] == 4

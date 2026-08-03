@@ -31,10 +31,12 @@ def model() -> ScriptedModelClient:
 
 
 def _types(resp) -> list[str]:
+    """Shorthand: the ordered list of event type strings in a response."""
     return [e.type for e in resp.events]
 
 
 def _req(message: str, hints: dict | None = None) -> ChatRequest:
+    """Build a minimal valid ChatRequest for a given message and optional hints."""
     return ChatRequest(
         session_id="sess-testing1",
         turn_id="turn-testing1",
@@ -47,6 +49,7 @@ def _req(message: str, hints: dict | None = None) -> ChatRequest:
 
 
 def test_price_check_produces_grounded_comparison(repo, model):
+    """A basic price question should yield a comparison bookended by session/done events."""
     resp = run_turn(_req("what's the cheapest butter near me?"), repo, model)
 
     assert "price_comparison" in _types(resp)
@@ -56,6 +59,7 @@ def test_price_check_produces_grounded_comparison(repo, model):
 
 
 def test_price_check_cheapest_is_actually_cheapest(repo, model):
+    """The option flagged is_cheapest must genuinely have the lowest price."""
     resp = run_turn(_req("cheapest butter"), repo, model)
 
     citations = {e.citation.ref: e.citation for e in resp.events if e.type == "citation"}
@@ -69,6 +73,7 @@ def test_price_check_cheapest_is_actually_cheapest(repo, model):
 
 
 def test_intent_event_precedes_content(repo, model):
+    """The frontend needs the intent event before the payload it explains."""
     resp = run_turn(_req("how much is milk"), repo, model)
 
     seqs = {e.type: e.seq for e in resp.events}
@@ -76,6 +81,7 @@ def test_intent_event_precedes_content(repo, model):
 
 
 def test_seq_is_contiguous_from_zero(repo, model):
+    """seq must be a gapless 0..n-1 sequence so ordering is unambiguous."""
     resp = run_turn(_req("cheapest cheese"), repo, model)
     assert [e.seq for e in resp.events] == list(range(len(resp.events)))
 
@@ -84,6 +90,7 @@ def test_seq_is_contiguous_from_zero(repo, model):
 
 
 def test_unknown_product_returns_no_data_not_a_guess(repo, model):
+    """A product absent from the fixtures must produce no_data, never an invented price."""
     resp = run_turn(_req("what's the cheapest wagyu ribeye"), repo, model)
 
     assert "no_data" in _types(resp)
@@ -121,6 +128,7 @@ def test_repair_loop_is_bounded(repo, model):
 
 
 def test_every_response_is_grounded(repo, model):
+    """Sweep several message types and check the grounding invariant holds for all of them."""
     messages = [
         "cheapest butter",
         "how much is a dozen eggs",
@@ -134,6 +142,7 @@ def test_every_response_is_grounded(repo, model):
 
 
 def test_dietary_exclusion_removes_seafood(repo, model):
+    """A stated seafood exclusion must actually filter tuna/salmon out of retrieval."""
     resp = run_turn(
         _req("meal plan", hints={"budget_nzd": 30, "dietary_exclusions": ["seafood"]}),
         repo,
@@ -149,16 +158,19 @@ def test_dietary_exclusion_removes_seafood(repo, model):
 
 
 def test_resolve_product_key_prefers_specific_match(repo):
+    """Both the specific and generic synonym should resolve to the same product."""
     assert repo.resolve_product_key("frozen peas") == "frozen-peas-1kg"
     assert repo.resolve_product_key("peas") == "frozen-peas-1kg"
 
 
 def test_resolve_returns_none_rather_than_guessing(repo):
+    """Unknown/unstocked products must resolve to None, never a nearest-match guess."""
     assert repo.resolve_product_key("wagyu ribeye") is None
     assert repo.resolve_product_key("truffle oil") is None
 
 
 def test_cheapest_for_product_is_sorted(repo):
+    """cheapest_for_product must return results in ascending price order."""
     recs = repo.cheapest_for_product("butter-500g")
     prices = [r.price_nzd for r in recs]
     assert prices == sorted(prices)

@@ -83,18 +83,20 @@ def normalise_term(text: str) -> str:
     leaves a stray "s" that would otherwise block an exact match. No product
     term in the catalogue is one character long.
     """
-    cleaned = re.sub(r"[^a-z0-9\s]", " ", text.lower())
+    cleaned = re.sub(r"[^a-z0-9\s]", " ", text.lower())  # lowercase, punctuation -> spaces
     words = [w for w in cleaned.split() if len(w) > 1 and w not in NOISE]
     return " ".join(words)
 
 
 class InMemoryPriceRepository(PriceRepository):
     def __init__(self, fixture_path: Path | None = None) -> None:
+        # Default to the repo-level fixtures/products.json unless overridden.
         path = fixture_path or (
             Path(__file__).resolve().parents[2] / "fixtures" / "products.json"
         )
         raw = json.loads(path.read_text(encoding="utf-8"))
 
+        # Parse every raw JSON record into a typed, immutable PriceRecord.
         self._records: list[PriceRecord] = [
             PriceRecord(
                 product_key=r["product_key"],
@@ -137,6 +139,8 @@ class InMemoryPriceRepository(PriceRepository):
         limit: int = 5,
         stores: list[Store] | None = None,
     ) -> list[PriceRecord]:
+        # _by_product entries are pre-sorted cheapest-first, so filtering by
+        # store and slicing to `limit` is all that's needed here.
         recs = self._by_product.get(product_key, [])
         if stores:
             allowed = set(stores)
@@ -157,14 +161,16 @@ class InMemoryPriceRepository(PriceRepository):
         if not term:
             return None
 
+        # 1. Try the synonym table (free-text phrase -> canonical key).
         if term in self._synonyms:
             return self._synonyms[term]
 
-        # Direct product_key, e.g. from a UI chip rather than free text.
+        # 2. Direct product_key, e.g. from a UI chip rather than free text.
         as_key = term.replace(" ", "-")
         if as_key in self._by_product:
             return as_key
 
+        # 3. No confident match: return None rather than guessing.
         return None
 
     def candidates_for_budget(
@@ -177,6 +183,9 @@ class InMemoryPriceRepository(PriceRepository):
         excluded = set(exclude_categories)
         wanted = set(categories) - excluded
 
+        # For each remaining category, take the cheapest distinct products
+        # up to limit_per_category (a product may have multiple store
+        # records; only the first, cheapest one per product is kept).
         out: list[PriceRecord] = []
         for category in sorted(wanted):
             seen_products: set[str] = set()
@@ -198,6 +207,8 @@ class InMemoryPriceRepository(PriceRepository):
     @staticmethod
     def categories_for_exclusions(exclusions: list[str]) -> list[str]:
         """Map user dietary exclusions to fixture categories."""
+        # Same mapping logic as _exclusion_categories in the nodes package,
+        # exposed here as a repository-level helper.
         out: set[str] = set()
         for ex in exclusions:
             if ex.lower() in {"seafood", "fish", "pescatarian-no"}:

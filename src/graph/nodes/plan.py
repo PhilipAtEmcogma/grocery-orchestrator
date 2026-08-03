@@ -36,6 +36,7 @@ CENT = Decimal("0.01")
 
 
 def _round(value: Decimal) -> Decimal:
+    """Round a Decimal to the nearest cent, half-up (standard money rounding)."""
     return value.quantize(CENT, rounding=ROUND_HALF_UP)
 
 
@@ -63,13 +64,16 @@ def assemble_plan(
     # store -> (location, refs, running total)
     baskets: dict[str, tuple[str, set[str], Decimal]] = {}
 
+    # Walk every meal, then every ingredient line within it, converting the
+    # model's (citation_ref, packs) selection into a priced Ingredient and
+    # accumulating both the meal subtotal and the per-store basket total.
     for draft_meal in draft.meals:
         ingredients: list[Ingredient] = []
         subtotal = Decimal("0")
 
         for line in draft_meal.ingredients:
             citation = citations[line.citation_ref]  # KeyError = hallucinated ref
-            line_cost = _round(citation.price_nzd * line.packs)
+            line_cost = _round(citation.price_nzd * line.packs)  # price * pack multiplier
 
             ingredients.append(
                 Ingredient(
@@ -81,6 +85,8 @@ def assemble_plan(
             )
             subtotal += line_cost
 
+            # Group by store+location so ingredients from the same shop end
+            # up in the same basket.
             key = f"{citation.store.value}#{citation.store_location}"
             location, refs, running = baskets.get(
                 key, (citation.store_location, set(), Decimal("0"))
@@ -101,8 +107,10 @@ def assemble_plan(
             )
         )
 
+    # Grand total is the sum of every meal's subtotal.
     total = _round(sum((m.subtotal_nzd for m in meals), Decimal(0)))
 
+    # Turn the accumulated basket dict into the wire-format StoreBasket list.
     store_baskets = [
         StoreBasket(
             store=citations[next(iter(refs))].store,
@@ -130,6 +138,7 @@ def _cheaper_options(
     citations: list[Citation], used_refs: set[str], limit: int = 6
 ) -> str:
     """Name specific cheaper products the repair pass can swap toward."""
+    # Products not already in the plan, cheapest first, capped at `limit`.
     unused = sorted(
         (c for c in citations if c.ref not in used_refs),
         key=lambda c: c.price_nzd,
@@ -170,6 +179,7 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
     products = render_products(citations, records)
 
     if attempts == 0:
+        # First attempt: full creative planning on the QUALITY model.
         tier = ModelTier.QUALITY
         user_prompt = build_user_prompt(
             message=state["message"],
@@ -180,6 +190,8 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
             products=products,
         )
     else:
+        # Repair attempt: tell the FAST model exactly how much it overshot
+        # by, what it used last time, and which cheaper products remain.
         tier = ModelTier.FAST
         previous = state.get("plan")
         over_by = (
@@ -200,6 +212,7 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
             cheaper_options=_cheaper_options(citations, used),
         )
 
+    # Ask the model for a price-free draft: refs + pack multipliers only.
     try:
         draft = model.structured(
             system=SYSTEM_PROMPT,
@@ -211,6 +224,7 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
     except ModelError as exc:
         return {"plan": None, "validation_errors": [f"generation failed: {exc}"]}
 
+    # Cost the draft in pure Python — this is the only place numbers are produced.
     try:
         plan = assemble_plan(
             draft,
@@ -233,6 +247,8 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
 
 
 def route_after_validation(state: GroceryState) -> str:
+    """No errors -> done. Errors but attempts remain -> retry.
+    Attempts exhausted -> give up honestly."""
     if not state.get("validation_errors"):
         return "finalise"
     if state.get("repair_attempts", 0) >= MAX_REPAIR_ATTEMPTS:

@@ -75,6 +75,7 @@ class ScriptedModelClient(ModelClient):
         tier: ModelTier,
         max_tokens: int = 1024,
     ):
+        # Record every call so tests can assert which tier/schema was used.
         self.calls.append((tier, schema.__name__))
         if self.force_error:
             raise ModelError("scripted failure")
@@ -86,6 +87,7 @@ class ScriptedModelClient(ModelClient):
             "latency_ms": 1,
         }
 
+        # Dispatch to the matching hand-written script based on the requested schema.
         if schema is IntentResult:
             return self._classify(user)
 
@@ -115,14 +117,19 @@ class ScriptedModelClient(ModelClient):
     # ------------------------------------------------------------ scripting
 
     def _classify(self, user: str) -> IntentResult:
+        """Rule-based stand-in for the model's IntentResult structured output."""
         # Strip the prompt delimiters to recover the raw message.
         msg = re.sub(r"<<<[/A-Z_]*>>>", " ", user).strip().lower()
 
+        # Pull out whatever constraints regex patterns can find in the text.
         budget = self._extract_budget(msg)
         household = self._extract_household(msg)
         days = self._extract_days(msg)
         exclusions = self._extract_exclusions(msg)
 
+        # Same priority order as the real fallback: meal-plan cues first,
+        # then price-check cues, then a greeting, then a short bare item name,
+        # else out of scope.
         if any(w in msg for w in _MEAL_WORDS) or budget is not None:
             intent, confidence = Intent.MEAL_PLAN, 0.94
             item = None
@@ -160,6 +167,7 @@ class ScriptedModelClient(ModelClient):
 
     @staticmethod
     def _extract_budget(msg: str) -> Decimal | None:
+        """Find a dollar amount: '$30', '30 dollars', '30 bucks', '30 nzd'."""
         m = re.search(r"\$\s*(\d+(?:\.\d{1,2})?)", msg)
         if m:
             return Decimal(m.group(1))
@@ -168,6 +176,7 @@ class ScriptedModelClient(ModelClient):
 
     @staticmethod
     def _extract_household(msg: str) -> int | None:
+        """Find a household size stated as a digit or spelled-out word."""
         m = re.search(r"(?:flat of|family of|household of|for)\s+(\d+)", msg)
         if m:
             return int(m.group(1))
@@ -179,6 +188,7 @@ class ScriptedModelClient(ModelClient):
 
     @staticmethod
     def _extract_days(msg: str) -> int | None:
+        """Find a number of days, or map 'this/a week' phrasing to 7."""
         m = re.search(r"(\d+)\s*(?:days|nights|dinners)", msg)
         if m:
             return int(m.group(1))
@@ -188,6 +198,7 @@ class ScriptedModelClient(ModelClient):
 
     @staticmethod
     def _extract_exclusions(msg: str) -> list[str]:
+        """Detect stated dietary exclusions via simple substring matching."""
         out: list[str] = []
         if re.search(r"no (?:seafood|fish)|without (?:seafood|fish)", msg):
             out.append("seafood")
@@ -203,6 +214,7 @@ class ScriptedModelClient(ModelClient):
 
     @staticmethod
     def _extract_item(msg: str) -> str | None:
+        """Strip punctuation and stopwords, leaving the likely product name."""
         cleaned = re.sub(r"[^a-z0-9\s]", " ", msg)
         words = [
             w for w in cleaned.split() if len(w) > 1 and w not in _ITEM_STOPWORDS
@@ -217,11 +229,14 @@ class ScriptedModelClient(ModelClient):
         Repair passes (FAST tier) use smaller portions, mimicking a real
         model responding to "cut $X" feedback.
         """
+        # Pull every citation ref out of the rendered products table.
         refs = re.findall(r"^(c\d+) \|", user, flags=re.MULTILINE)
         if not refs:
             refs = ["c1"]
 
         if self.hallucinate_ref:
+            # Test hook: inject a ref that was never in the table, so callers
+            # can verify the KeyError-on-unknown-ref guard actually fires.
             refs = [self.hallucinate_ref, *refs]
 
         if self.plan_packs is not None:

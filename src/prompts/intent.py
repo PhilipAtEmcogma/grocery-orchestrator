@@ -95,5 +95,8 @@ you can help.
 
 def build_user_prompt(message: str) -> str:
     """Delimit the untrusted message, stripping any attempt to forge markers."""
+    # Remove any occurrence of the delimiters from the user's own text first,
+    # so they cannot inject a fake closing marker and smuggle instructions
+    # past it, then wrap the cleaned text between the real markers.
     safe = message.replace(DELIM, "").replace(DELIM_END, "")
     return f"{DELIM}\n{safe}\n{DELIM_END}"

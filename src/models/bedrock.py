@@ -39,6 +39,8 @@ GUARDRAIL_VERSION = os.environ.get("BEDROCK_GUARDRAIL_VERSION", "DRAFT")
 
 
 class BedrockModelClient(ModelClient):
+    """Concrete ModelClient implementation that talks to Amazon Bedrock's Converse API."""
+
     def __init__(self, region: str = REGION) -> None:
         # Retries and timeouts matter: this sits inside a Lambda with a 29s
         # ceiling from API Gateway. Unbounded retries would blow through it.
@@ -70,6 +72,8 @@ class BedrockModelClient(ModelClient):
         Forcing a tool call is more reliable than asking for JSON in prose:
         the model cannot prepend "Sure, here's the JSON:" and break parsing.
         """
+        # Define a single Bedrock "tool" whose input schema is the pydantic
+        # model's JSON schema, then force the model to call it.
         tool_name = schema.__name__
         tool_spec = {
             "toolSpec": {
@@ -90,6 +94,8 @@ class BedrockModelClient(ModelClient):
             },
         )
 
+        # Find the tool-use block in the reply and validate its input against
+        # the requested schema.
         for block in raw.get("output", {}).get("message", {}).get("content", []):
             if "toolUse" in block:
                 try:
@@ -110,6 +116,7 @@ class BedrockModelClient(ModelClient):
         raw = self._converse(
             system=system, user=user, tier=tier, max_tokens=max_tokens
         )
+        # Concatenate every text block in the reply's content list.
         parts = [
             b["text"]
             for b in raw.get("output", {}).get("message", {}).get("content", [])
@@ -121,6 +128,7 @@ class BedrockModelClient(ModelClient):
 
     @property
     def last_usage(self) -> dict:
+        """Copy so callers can't mutate the client's internal usage state."""
         return dict(self._usage)
 
     # ------------------------------------------------------------ internals
@@ -134,6 +142,7 @@ class BedrockModelClient(ModelClient):
         max_tokens: int,
         tool_config: dict | None = None,
     ) -> dict:
+        # Look up which concrete Bedrock model id serves this tier.
         model_id = MODEL_IDS.get(tier)
         if not model_id:
             raise ModelError(
@@ -141,6 +150,8 @@ class BedrockModelClient(ModelClient):
                 f"Set BEDROCK_MODEL_{tier.value.upper()}."
             )
 
+        # temperature=0.0: deterministic output matters more than creativity
+        # for classification/extraction/planning against a fixed catalogue.
         kwargs: dict = {
             "modelId": model_id,
             "system": [{"text": system}],
@@ -165,6 +176,8 @@ class BedrockModelClient(ModelClient):
         except ClientError as exc:
             raise ModelError(f"Bedrock call failed: {exc}") from exc
 
+        # Record token counts and latency for this call so callers/observability
+        # tooling can read them via last_usage afterwards.
         elapsed_ms = int((time.perf_counter() - started) * 1000)
         usage = response.get("usage", {})
         self._usage = {

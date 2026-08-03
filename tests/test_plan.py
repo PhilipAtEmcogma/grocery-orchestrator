@@ -44,6 +44,7 @@ def repo() -> InMemoryPriceRepository:
 
 
 def _citation(ref: str, price: str, store: Store = Store.PAKNSAVE) -> Citation:
+    """Build a minimal valid Citation for a given ref/price, for arithmetic tests."""
     return Citation(
         ref=ref,
         store=store,
@@ -58,6 +59,7 @@ def _citation(ref: str, price: str, store: Store = Store.PAKNSAVE) -> Citation:
 
 
 def _draft(*lines: tuple[str, str]) -> PlanDraft:
+    """Build a single-meal PlanDraft from (citation_ref, packs) pairs."""
     return PlanDraft(
         meals=[
             DraftMeal(
@@ -77,6 +79,7 @@ def _draft(*lines: tuple[str, str]) -> PlanDraft:
 
 
 def _plan_request(message: str, **hints) -> ChatRequest:
+    """Build a ChatRequest for meal-plan tests, passing keyword args through as hints."""
     return ChatRequest(
         session_id="sess-plan01", turn_id="turn-plan01",
         message=message,
@@ -88,6 +91,7 @@ def _plan_request(message: str, **hints) -> ChatRequest:
 
 
 def test_line_cost_is_price_times_packs():
+    """A single ingredient's cost must equal price * packs, computed by assemble_plan."""
     citations = {"c1": _citation("c1", "10.00")}
     plan = assemble_plan(
         _draft(("c1", "0.5")), citations,
@@ -98,6 +102,7 @@ def test_line_cost_is_price_times_packs():
 
 
 def test_subtotal_and_total_are_computed_not_trusted():
+    """Meal subtotal and plan total must both be the sum of their line/meal costs."""
     citations = {
         "c1": _citation("c1", "10.00"),
         "c2": _citation("c2", "3.00"),
@@ -113,6 +118,7 @@ def test_subtotal_and_total_are_computed_not_trusted():
 
 
 def test_within_budget_flag_matches_arithmetic():
+    """within_budget must be False when the computed total exceeds the budget."""
     citations = {"c1": _citation("c1", "40.00")}
     plan = assemble_plan(
         _draft(("c1", "1")), citations,
@@ -156,6 +162,7 @@ def test_shared_pack_counted_once_in_basket():
 
 
 def test_baskets_split_by_store():
+    """Ingredients bought from different stores must end up in separate baskets."""
     citations = {
         "c1": _citation("c1", "5.00", Store.PAKNSAVE),
         "c2": _citation("c2", "3.00", Store.WOOLWORTHS),
@@ -201,6 +208,7 @@ def test_draft_schema_has_no_price_field():
 
 
 def test_plan_output_is_grounded(repo):
+    """An end-to-end meal-plan turn must satisfy the same grounding invariant as price checks."""
     model = ScriptedModelClient()
     resp = run_turn(
         _plan_request("plan dinners for the week", budget_nzd=40, household_size=3),
@@ -213,6 +221,7 @@ def test_plan_output_is_grounded(repo):
 
 
 def test_first_attempt_uses_quality_tier(repo):
+    """The very first plan generation call must use the QUALITY tier."""
     model = ScriptedModelClient()
     run_turn(
         _plan_request("plan dinners", budget_nzd=40, household_size=2), repo, model
@@ -243,6 +252,7 @@ def test_repair_loop_is_bounded(repo):
 
 
 def test_infeasible_budget_reports_honestly(repo):
+    """After exhausting repair attempts, the error code must be BUDGET_INFEASIBLE."""
     model = ScriptedModelClient(plan_packs=Decimal("5"))
     resp = run_turn(
         _plan_request("plan dinners", budget_nzd=5, household_size=2), repo, model
@@ -263,6 +273,7 @@ def test_infeasible_does_not_also_emit_the_failing_plan(repo):
 
 
 def test_missing_budget_is_reported_not_guessed(repo):
+    """With no budget stated or hinted, no meal plan should be generated."""
     model = ScriptedModelClient()
     resp = run_turn(_plan_request("plan me some dinners"), repo, model)
     assert "meal_plan" not in [e.type for e in resp.events]

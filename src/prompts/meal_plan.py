@@ -112,6 +112,7 @@ def render_products(citations: list[Citation], records: dict[str, PriceRecord]) 
         "ref | product | store | pack size | on special",
         "--- | ------- | ----- | --------- | ----------",
     ]
+    # One markdown-table row per citation, in the order they were retrieved.
     for c in citations:
         rec = records.get(c.ref)
         pack = rec.unit if rec else c.unit
@@ -131,8 +132,12 @@ def build_user_prompt(
     exclusions: list[str],
     products: str,
 ) -> str:
+    # Strip any forged delimiter from the user's text before wrapping it, same
+    # injection defence as the intent prompt.
     safe = message.replace(DELIM, "").replace(DELIM_END, "")
 
+    # Build the constraint list as plain lines; budget/exclusions are only
+    # included when actually present.
     constraints = [
         f"Household size: {household_size}",
         f"Days to cover: {days}",

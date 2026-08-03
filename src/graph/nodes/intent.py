@@ -32,12 +32,15 @@ _PRICE_WORDS = ("cheap", "price", "cost", "how much", "compare")
 
 
 def _next_seq(state: GroceryState) -> int:
+    """The next event sequence number: one past however many events exist so far."""
     return len(state.get("events", []))
 
 
 def _fallback(message: str, hints: dict) -> IntentResult:
     """Keyword classification used only when the model call fails."""
     msg = message.lower()
+    # Simple keyword matching, in priority order: meal-plan cues (or an
+    # already-set budget hint) first, then price-check cues, else chat.
     if any(w in msg for w in _MEAL_WORDS) or hints.get("budget_nzd"):
         intent = Intent.MEAL_PLAN
     elif any(w in msg for w in _PRICE_WORDS):
@@ -67,6 +70,8 @@ def _reconcile(
     constraints: Constraints = {}
 
     def take(field: str, extracted_value, hint_value, label: str):
+        """Prefer the value extracted from the message; fall back to the hint.
+        Records a user-facing notice whenever the two disagree."""
         if extracted_value is not None:
             if hint_value is not None and str(hint_value) != str(extracted_value):
                 notices.append(
@@ -76,6 +81,7 @@ def _reconcile(
             return extracted_value
         return hint_value
 
+    # Resolve each scalar constraint independently: message wins, hint is the fallback.
     household = take(
         "household_size", extracted.household_size,
         hints.get("household_size"), "household size",
@@ -87,6 +93,9 @@ def _reconcile(
     )
     days = take("days", extracted.days, hints.get("days"), "duration of")
 
+    # household_size and days always have a sane default; budget stays
+    # absent (not zero) when nobody has stated one, so downstream code can
+    # tell "no budget given" apart from "budget of $0".
     constraints["household_size"] = household if household is not None else 1
     constraints["days"] = days if days is not None else 1
     if budget is not None:
@@ -114,6 +123,8 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
     hints = state.get("hints") or {}
     degraded = False
 
+    # Ask the model to classify the message and extract constraints in one
+    # call, on the cheap FAST tier since this runs on every single turn.
     try:
         extracted = model.structured(
             system=SYSTEM_PROMPT,
@@ -123,6 +134,8 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
             max_tokens=512,
         )
     except (ModelError, ValueError):
+        # Model call failed or returned something unparseable: degrade to
+        # keyword heuristics rather than failing the whole turn.
         extracted = _fallback(message, hints)
         degraded = True
 
@@ -133,6 +146,9 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
     # skipped entirely.
     constraints["query_item"] = extracted.query_item or message
 
+    # Always emit the intent first so the frontend can switch UI treatment
+    # before anything else arrives, then one NoticeEvent per hint override,
+    # each with its own sequence number.
     seq = _next_seq(state)
     events: list[object] = [
         IntentEvent(

@@ -17,6 +17,7 @@ requests_ok = 0
 responses_ok = 0
 failures = []
 
+# Every sample request must parse as a valid ChatRequest.
 for path in sorted(SAMPLES.glob("request_*.json")):
     try:
         ChatRequest.model_validate_json(path.read_text())
@@ -26,6 +27,7 @@ for path in sorted(SAMPLES.glob("request_*.json")):
         failures.append((path.name, e))
         print(f"FAIL  {path.name}: {e}")
 
+# Every sample response must parse AND satisfy the grounding/arithmetic invariants.
 for path in sorted(SAMPLES.glob("response_*.json")):
     try:
         resp = ChatResponse.model_validate_json(path.read_text())
@@ -41,7 +43,9 @@ for path in sorted(SAMPLES.glob("response_*.json")):
 
 print(f"\n{requests_ok} requests, {responses_ok} responses validated")
 
-# Negative test: an ungrounded price must be REJECTED
+# Negative test: an ungrounded price must be REJECTED.
+# This response cites "c99" in a price_comparison payload but never emits a
+# CitationEvent declaring it — assert_grounded must catch that.
 print("\nNegative test — ungrounded price must fail:")
 bad = {
     "version": "1.0",
@@ -64,4 +68,5 @@ try:
 except AssertionError as e:
     print(f"  Correctly rejected: {e}")
 
+# Non-zero exit code fails the CI step if anything above did not behave as expected.
 sys.exit(1 if failures else 0)

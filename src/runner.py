@@ -17,6 +17,7 @@ from src.schemas.contract import ChatRequest, ChatResponse, assert_grounded
 def run_turn(
     request: ChatRequest, repo: PriceRepository, model: ModelClient
 ) -> ChatResponse:
+    # Build a fresh graph per call, wired to this call's repo/model.
     graph = build_graph(repo, model)
 
     # Annotated so the type checker can see this satisfies GroceryState.
@@ -33,6 +34,7 @@ def run_turn(
         "events": [],
     }
 
+    # Run the graph to completion; `final` is the fully-populated state dict.
     final = graph.invoke(initial)
 
     response = ChatResponse(

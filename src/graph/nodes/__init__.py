@@ -42,10 +42,13 @@ MEAL_CATEGORIES = [
 
 
 def _next_seq(state: GroceryState) -> int:
+    """The next event sequence number: one past however many events exist so far."""
     return len(state.get("events", []))
 
 
 def _exclusion_categories(exclusions: list[str]) -> list[str]:
+    """Map free-text dietary exclusions (e.g. 'vegetarian') to fixture categories
+    (e.g. 'meat', 'seafood') that retrieve_prices can filter out."""
     out: set[str] = set()
     for ex in exclusions:
         low = ex.lower()
@@ -89,6 +92,9 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
     key: str | None = None
 
     if intent == Intent.PRICE_CHECK:
+        # Resolve the free-text query to a canonical product, then fetch that
+        # product's prices across stores (cheapest first), optionally
+        # restricted to the user's preferred stores.
         key = repo.resolve_product_key(constraints.get("query_item", ""))
         records = (
             repo.cheapest_for_product(
@@ -98,6 +104,8 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
             else []
         )
     else:
+        # Meal planning: pull cheap candidates across every category the meal
+        # planner might use, skipping categories excluded on dietary grounds.
         records = repo.candidates_for_budget(
             categories=MEAL_CATEGORIES,
             exclude_categories=_exclusion_categories(
@@ -110,6 +118,10 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
     events: list[CitationEvent] = []
     seq = _next_seq(state)
 
+    # Turn each internal PriceRecord into a wire-format Citation with a
+    # short ref ("c1", "c2", ...) that later nodes/prompts refer back to,
+    # and emit one CitationEvent per record so the frontend sees the facts
+    # before any payload that relies on them.
     for i, rec in enumerate(records, start=1):
         citation = Citation(
             ref=f"c{i}",
@@ -173,8 +185,11 @@ def generate_comparison(state: GroceryState) -> dict:
         # be an ungrounded response, which must never ship.
         return {"comparison": None}
 
+    # citations is already sorted cheapest-first by the repository.
     cheapest, dearest = citations[0], citations[-1]
 
+    # Build one PriceOption per store, flagging the cheapest and computing
+    # its savings versus the priciest option.
     options = [
         PriceOption(
             citation_ref=c.ref,
@@ -205,11 +220,15 @@ def validate_plan(state: GroceryState) -> dict:
         return {"validation_errors": ["no plan produced"]}
 
     errors: list[str] = []
+    # Re-derive every subtotal/total from ingredient line costs; catch it if
+    # the plan's numbers don't add up.
     try:
         assert_arithmetic(plan)
     except AssertionError as exc:
         errors.append(str(exc))
 
+    # A mathematically-consistent plan can still be over budget; that's a
+    # separate error that triggers the same repair loop.
     if plan.total_nzd > plan.budget_nzd:
         errors.append(
             f"total {plan.total_nzd} exceeds budget {plan.budget_nzd} "
@@ -252,6 +271,7 @@ def finalise(state: GroceryState) -> dict:
     events: list[object] = []
     seq = _next_seq(state)
 
+    # Emit whichever payload this turn produced (at most one of the two).
     comparison = state.get("comparison")
     if comparison is not None:
         events.append(PriceComparisonEvent(seq=seq, data=comparison))
@@ -262,6 +282,7 @@ def finalise(state: GroceryState) -> dict:
         events.append(MealPlanEvent(seq=seq, data=plan))
         seq += 1
 
+    # The terminal event every turn ends with, success or failure.
     events.append(
         DoneEvent(
             seq=seq,
@@ -276,12 +297,14 @@ def finalise(state: GroceryState) -> dict:
 
 
 def route_after_intent(state: GroceryState) -> str:
+    """Only price_check/meal_plan need retrieved prices; other intents skip straight to finalise."""
     if state.get("intent") in (Intent.PRICE_CHECK, Intent.MEAL_PLAN):
         return "retrieve"
     return "finalise"
 
 
 def route_after_retrieval(state: GroceryState) -> str:
+    """No citations means nothing was found; otherwise branch on which payload to build."""
     if not state.get("citations"):
         return "no_data"
     return "plan" if state.get("intent") == Intent.MEAL_PLAN else "comparison"

@@ -47,7 +47,7 @@ class Constraints(TypedDict, total=False):
     days: int
     dietary_exclusions: list[str]
     preferred_stores: list[Store]
-    query_item: str
+    query_item: str  # the product the user asked about, for price_check turns
 
 
 class TurnInput(TypedDict):
@@ -66,35 +66,35 @@ class TurnInput(TypedDict):
 class GroceryState(TurnInput, total=False):
     """Everything below is populated by nodes as the graph executes."""
 
-    # ---- input
-    hints: dict
-    location: dict | None
+    # ---- input: raw client-supplied context, unvalidated beyond the contract
+    hints: dict              # ClientHints dict, dumped from the request
+    location: dict | None    # Location dict, dumped from the request
 
-    # ---- classification
+    # ---- classification: set by classify_intent
     intent: Intent
     intent_confidence: float
-    intent_degraded: bool
-    constraints: Constraints
+    intent_degraded: bool    # True if the model call failed and keyword fallback was used
+    constraints: Constraints # extracted + hint-reconciled household size, budget, etc.
 
-    # ---- retrieval (the ONLY source of prices)
-    records: list[PriceRecord]
-    citations: list[Citation]
-    citation_index: dict[str, Citation]
-    record_index: dict[str, PriceRecord]
-    resolved_product_key: str | None
+    # ---- retrieval (the ONLY source of prices): set by retrieve_prices
+    records: list[PriceRecord]              # raw price records returned by the repository
+    citations: list[Citation]               # wire-format citations built from those records
+    citation_index: dict[str, Citation]     # citations keyed by ref, for O(1) lookup
+    record_index: dict[str, PriceRecord]    # records keyed by the same refs
+    resolved_product_key: str | None        # canonical product key matched from the query
 
-    # ---- generation
+    # ---- generation: set by generate_comparison / generate_plan
     comparison: PriceComparison | None
     plan: MealPlan | None
     prose: str
 
-    # ---- validate / repair loop
+    # ---- validate / repair loop: set by validate_plan / repair_plan
     repair_attempts: int
     validation_errors: list[str]
 
-    # ---- output
+    # ---- output: accumulated across every node, assembled by finalise
     events: Annotated[list[Event], append_events]
     usage: UsageMeta
 
     # ---- control
-    terminated: bool
+    terminated: bool  # set once a terminal node (no_data/error/finalise path) has run

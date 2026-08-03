@@ -19,6 +19,8 @@ from typing import Protocol
 from src.schemas.contract import Store
 
 
+# frozen=True makes instances immutable/hashable; slots=True avoids a per-instance
+# __dict__ since these are created in bulk from fixture/DB data.
 @dataclass(frozen=True, slots=True)
 class PriceRecord:
     """

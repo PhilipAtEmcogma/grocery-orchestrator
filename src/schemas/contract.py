@@ -35,6 +35,7 @@ CONTRACT_VERSION = "1.0"
 # ---------------------------------------------------------------- enums
 
 
+# The four kinds of turn the assistant can classify a message as.
 class Intent(StrEnum):
     PRICE_CHECK = "price_check"
     MEAL_PLAN = "meal_plan"
@@ -42,6 +43,7 @@ class Intent(StrEnum):
     OUT_OF_SCOPE = "out_of_scope"
 
 
+# Machine-readable failure/status codes carried on ErrorEvent.
 class ErrorCode(StrEnum):
     INVALID_REQUEST = "INVALID_REQUEST"
     NO_DATA = "NO_DATA"
@@ -54,6 +56,7 @@ class ErrorCode(StrEnum):
     INTERNAL_ERROR = "INTERNAL_ERROR"
 
 
+# The three supermarket chains the price data covers.
 class Store(StrEnum):
     PAKNSAVE = "paknsave"
     WOOLWORTHS = "woolworths"
@@ -63,7 +66,9 @@ class Store(StrEnum):
 # ---------------------------------------------------------------- request
 
 
+# The user's approximate location, used to scope which stores are relevant.
 class Location(BaseModel):
+    # Reject unknown fields instead of silently ignoring them.
     model_config = ConfigDict(extra="forbid")
 
     lat: float = Field(ge=-90, le=90)
@@ -83,6 +88,8 @@ class ClientHints(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
+    # All fields are optional: a hint the frontend hasn't collected yet is
+    # simply absent, not a validation error.
     household_size: int | None = Field(default=None, ge=1, le=20)
     budget_nzd: Decimal | None = Field(default=None, gt=0, le=10000)
     days: int | None = Field(default=None, ge=1, le=14)
@@ -90,6 +97,7 @@ class ClientHints(BaseModel):
     preferred_stores: list[Store] = Field(default_factory=list)
 
 
+# The full inbound payload the orchestrator receives for one chat turn.
 class ChatRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -140,12 +148,15 @@ class Citation(BaseModel):
     unit_price_nzd: Decimal | None = Field(default=None, ge=0)
     on_special: bool = False
     valid_date: date
-    source: SourceRef
+    source: SourceRef  # points back to the exact DB record, for auditing
 
 
 # ---------------------------------------------------------------- payloads
+# The actual content shown to the user: price comparisons and meal plans.
+# Every price field here traces back to a Citation via citation_ref.
 
 
+# One store's price for the compared item, as a line in the comparison table.
 class PriceOption(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -154,6 +165,7 @@ class PriceOption(BaseModel):
     savings_vs_dearest_nzd: Decimal | None = Field(default=None, ge=0)
 
 
+# The price_check response payload: one item, compared across stores.
 class PriceComparison(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -165,6 +177,7 @@ class PriceComparison(BaseModel):
     )
 
 
+# One line item within a meal — an ingredient, its quantity, and its cost.
 class Ingredient(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -174,6 +187,7 @@ class Ingredient(BaseModel):
     line_cost_nzd: Decimal = Field(ge=0)
 
 
+# One meal within a plan: a name, who it serves, and its ingredient list.
 class Meal(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -194,6 +208,7 @@ class StoreBasket(BaseModel):
     basket_total_nzd: Decimal = Field(ge=0)
 
 
+# The meal_plan response payload: several meals plus a per-store shopping list.
 class MealPlan(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -213,12 +228,14 @@ class MealPlan(BaseModel):
 # ---------------------------------------------------------------- events
 
 
+# Shared base for every event type: just the ordering number `seq`.
 class _Event(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     seq: int = Field(ge=0, description="Monotonic within a turn. Ordering guarantee.")
 
 
+# First event of every turn: confirms which session/turn this response is for.
 class SessionEvent(_Event):
     type: Literal["session"] = "session"
     session_id: str
@@ -234,6 +251,7 @@ class IntentEvent(_Event):
     confidence: float = Field(ge=0, le=1)
 
 
+# Announces one grounded price fact. Must appear before anything that cites it.
 class CitationEvent(_Event):
     type: Literal["citation"] = "citation"
     citation: Citation
@@ -246,11 +264,13 @@ class TokenEvent(_Event):
     text: str
 
 
+# Carries the finished price-comparison payload.
 class PriceComparisonEvent(_Event):
     type: Literal["price_comparison"] = "price_comparison"
     data: PriceComparison
 
 
+# Carries the finished meal-plan payload.
 class MealPlanEvent(_Event):
     type: Literal["meal_plan"] = "meal_plan"
     data: MealPlan
@@ -275,6 +295,7 @@ class NoDataEvent(_Event):
     message: str
 
 
+# A failure outcome (e.g. budget infeasible, guardrail blocked).
 class ErrorEvent(_Event):
     type: Literal["error"] = "error"
     code: ErrorCode
@@ -282,6 +303,7 @@ class ErrorEvent(_Event):
     retryable: bool = False
 
 
+# Token counts, latency and model ids for the turn — observability, not shown to the user.
 class UsageMeta(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -300,6 +322,9 @@ class DoneEvent(_Event):
     server_time: datetime
 
 
+# The tagged union of every event kind. `discriminator="type"` tells pydantic
+# to pick the right subtype by reading the `type` field, so parsing a raw
+# event dict/JSON automatically produces the correct concrete class.
 Event = Annotated[
     SessionEvent
     | IntentEvent
@@ -340,9 +365,11 @@ def assert_grounded(response: ChatResponse) -> None:
     CitationEvent earlier in the same turn. This is the mechanical expression
     of "no price may originate from model generation".
     """
-    declared: set[str] = set()
-    used: set[str] = set()
+    declared: set[str] = set()  # refs announced via a CitationEvent
+    used: set[str] = set()      # refs actually referenced by payload data
 
+    # Walk the whole event list, collecting which refs were declared and
+    # which were used by any price-comparison or meal-plan payload.
     for ev in response.events:
         if isinstance(ev, CitationEvent):
             declared.add(ev.citation.ref)
@@ -354,6 +381,7 @@ def assert_grounded(response: ChatResponse) -> None:
             for basket in ev.data.baskets:
                 used.update(basket.citation_refs)
 
+    # Any ref used but never declared is an ungrounded (hallucinated) price.
     orphans = used - declared
     if orphans:
         raise AssertionError(f"Ungrounded citation refs: {sorted(orphans)}")
@@ -367,6 +395,8 @@ def assert_arithmetic(plan: MealPlan, tolerance: Decimal = Decimal("0.02")) -> N
     Verify the model did not invent totals. Run before emitting a MealPlanEvent.
     Failure here should trigger a repair cycle, not be passed to the user.
     """
+    # Recompute each meal's subtotal from its ingredient line costs and
+    # compare against the stored value, within a small rounding tolerance.
     for meal in plan.meals:
         expected = sum((i.line_cost_nzd for i in meal.ingredients), Decimal(0))
         if abs(expected - meal.subtotal_nzd) > tolerance:
@@ -374,9 +404,11 @@ def assert_arithmetic(plan: MealPlan, tolerance: Decimal = Decimal("0.02")) -> N
                 f"Meal '{meal.name}' subtotal {meal.subtotal_nzd} != {expected}"
             )
 
+    # Same check for the plan-level total against the sum of meal subtotals.
     expected_total = sum((m.subtotal_nzd for m in plan.meals), Decimal(0))
     if abs(expected_total - plan.total_nzd) > tolerance:
         raise AssertionError(f"Plan total {plan.total_nzd} != {expected_total}")
 
+    # The within_budget flag must agree with the actual total vs. budget.
     if (plan.total_nzd <= plan.budget_nzd) != plan.within_budget:
         raise AssertionError("within_budget flag contradicts the arithmetic")
