@@ -44,7 +44,7 @@ def build_graph(repo: PriceRepository, model: ModelClient):
     g.add_node("retrieve_prices", partial(nodes.retrieve_prices, repo=repo))
     g.add_node("emit_no_data", nodes.emit_no_data)
     g.add_node("generate_comparison", nodes.generate_comparison)
-    g.add_node("generate_plan", nodes.generate_plan)
+    g.add_node("generate_plan", partial(nodes.generate_plan, model=model))
     g.add_node("validate_plan", nodes.validate_plan)
     g.add_node("repair_plan", nodes.repair_plan)
     g.add_node("emit_budget_infeasible", nodes.emit_budget_infeasible)

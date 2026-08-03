@@ -18,6 +18,7 @@ from pydantic import BaseModel
 
 from src.models.base import ModelClient, ModelError, ModelTier
 from src.prompts.intent import IntentResult
+from src.prompts.meal_plan import DraftIngredient, DraftMeal, PlanDraft
 from src.schemas.contract import Intent
 
 _MEAL_WORDS = ("meal", "plan", "dinner", "feed", "recipe", "cook", "week of")
@@ -50,9 +51,16 @@ class ScriptedModelClient(ModelClient):
         *,
         force_error: bool = False,
         overrides: dict | None = None,
+        plan_packs: Decimal | None = None,
+        hallucinate_ref: str | None = None,
     ) -> None:
         self.force_error = force_error
         self.overrides = overrides or {}
+        # plan_packs inflates portion sizes so the first plan lands over
+        # budget on purpose. That is how the repair loop gets tested without
+        # a live model, which cannot be made to fail on demand.
+        self.plan_packs = plan_packs
+        self.hallucinate_ref = hallucinate_ref
         self.calls: list[tuple[ModelTier, str]] = []
         self._usage: dict = {}
 
@@ -80,6 +88,9 @@ class ScriptedModelClient(ModelClient):
 
         if schema is IntentResult:
             return self._classify(user)
+
+        if schema is PlanDraft:
+            return self._plan(user, tier)
 
         raise ModelError(f"ScriptedModelClient has no script for {schema.__name__}")
 
@@ -197,3 +208,41 @@ class ScriptedModelClient(ModelClient):
             w for w in cleaned.split() if len(w) > 1 and w not in _ITEM_STOPWORDS
         ]
         return " ".join(words) if words else None
+
+
+    def _plan(self, user: str, tier: ModelTier) -> PlanDraft:
+        """
+        Build a plan from the refs present in the AVAILABLE PRODUCTS table.
+
+        Repair passes (FAST tier) use smaller portions, mimicking a real
+        model responding to "cut $X" feedback.
+        """
+        refs = re.findall(r"^(c\d+) \|", user, flags=re.MULTILINE)
+        if not refs:
+            refs = ["c1"]
+
+        if self.hallucinate_ref:
+            refs = [self.hallucinate_ref, *refs]
+
+        if self.plan_packs is not None:
+            packs = self.plan_packs
+        elif tier is ModelTier.FAST:
+            packs = Decimal("0.15")   # repair pass: smaller portions
+        else:
+            packs = Decimal("0.5")
+
+        chosen = refs[:4]
+        meal = DraftMeal(
+            name="Scripted Budget Dinner",
+            serves=2,
+            ingredients=[
+                DraftIngredient(
+                    citation_ref=ref,
+                    packs=packs,
+                    qty_display="portion",
+                    item=f"item {ref}",
+                )
+                for ref in chosen
+            ],
+        )
+        return PlanDraft(meals=[meal], reasoning="Scripted selection.")

@@ -80,6 +80,7 @@ class GroceryState(TurnInput, total=False):
     records: list[PriceRecord]
     citations: list[Citation]
     citation_index: dict[str, Citation]
+    record_index: dict[str, PriceRecord]
     resolved_product_key: str | None
 
     # ---- generation

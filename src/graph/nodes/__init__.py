@@ -15,6 +15,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from src.graph.nodes.intent import classify_intent as classify_intent
+from src.graph.nodes.plan import generate_plan as generate_plan
 from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState
 from src.retrieval.base import PriceRepository
 from src.schemas.contract import (
@@ -133,6 +134,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         "records": records,
         "citations": citations,
         "citation_index": {c.ref: c for c in citations},
+        "record_index": dict(zip([c.ref for c in citations], records, strict=False)),
         "resolved_product_key": key,
         "events": events,
     }
@@ -196,16 +198,6 @@ def generate_comparison(state: GroceryState) -> dict:
     return {"comparison": comparison}
 
 
-def generate_plan(state: GroceryState) -> dict:
-    """
-    STUB — produces no plan yet. Replaced by a Sonnet call next increment.
-
-    Returning None exercises the validation failure branch, which is exactly
-    what the skeleton should prove works.
-    """
-    return {"plan": None}
-
-
 def validate_plan(state: GroceryState) -> dict:
     """Arithmetic verification. Never trust model-computed totals."""
     plan = state.get("plan")
@@ -236,6 +228,10 @@ def emit_budget_infeasible(state: GroceryState) -> dict:
     budget = state.get("constraints", {}).get("budget_nzd", Decimal("0"))
     return {
         "terminated": True,
+        # Discard the failing draft. Emitting a plan we have just declared
+        # infeasible would show the user a shopping list that busts their
+        # budget, directly beside an error saying we could not make one.
+        "plan": None,
         "events": [
             ErrorEvent(
                 seq=_next_seq(state),

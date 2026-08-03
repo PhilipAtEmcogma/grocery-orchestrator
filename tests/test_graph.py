@@ -15,7 +15,6 @@ from src.retrieval.memory import InMemoryPriceRepository
 from src.runner import run_turn
 from src.schemas.contract import (
     ChatRequest,
-    ErrorCode,
     assert_grounded,
 )
 
@@ -91,9 +90,8 @@ def test_unknown_product_returns_no_data_not_a_guess(repo, model):
     assert _types(resp)[-1] == "done"
 
 
-def test_meal_plan_with_no_plan_reports_infeasible(repo, model):
-    """generate_plan is stubbed to return None, so the repair loop must
-    exhaust and terminate honestly rather than hanging or inventing a plan."""
+def test_meal_plan_produces_a_costed_plan(repo, model):
+    """The plan node is real now, so a feasible budget must yield a plan."""
     resp = run_turn(
         _req("feed a flat of 3 for under $30 this week, no seafood",
              hints={"household_size": 3, "budget_nzd": 30, "days": 3,
@@ -102,9 +100,9 @@ def test_meal_plan_with_no_plan_reports_infeasible(repo, model):
         model,
     )
 
-    errors = [e for e in resp.events if e.type == "error"]
-    assert len(errors) == 1
-    assert errors[0].code == ErrorCode.BUDGET_INFEASIBLE
+    plans = [e for e in resp.events if e.type == "meal_plan"]
+    assert len(plans) == 1
+    assert plans[0].data.within_budget is True
     assert _types(resp)[-1] == "done"
 
 
