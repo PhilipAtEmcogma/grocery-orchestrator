@@ -15,6 +15,7 @@ from src.retrieval.memory import InMemoryPriceRepository
 from src.runner import run_turn
 from src.schemas.contract import (
     ChatRequest,
+    ClientHints,
     assert_grounded,
 )
 
@@ -33,12 +34,12 @@ def _types(resp) -> list[str]:
     return [e.type for e in resp.events]
 
 
-def _req(message: str, **kw) -> ChatRequest:
+def _req(message: str, hints: dict | None = None) -> ChatRequest:
     return ChatRequest(
         session_id="sess-testing1",
         turn_id="turn-testing1",
         message=message,
-        **kw,
+        hints=ClientHints(**hints) if hints else None,
     )
 
 

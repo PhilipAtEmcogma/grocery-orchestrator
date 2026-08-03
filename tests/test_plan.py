@@ -29,6 +29,7 @@ from src.runner import run_turn
 from src.schemas.contract import (
     ChatRequest,
     Citation,
+    ClientHints,
     ErrorCode,
     SourceRef,
     Store,
@@ -78,7 +79,8 @@ def _draft(*lines: tuple[str, str]) -> PlanDraft:
 def _plan_request(message: str, **hints) -> ChatRequest:
     return ChatRequest(
         session_id="sess-plan01", turn_id="turn-plan01",
-        message=message, hints=hints,
+        message=message,
+        hints=ClientHints(**hints) if hints else None,
     )
 
 
