@@ -107,14 +107,22 @@ src/
   retrieval/
     base.py                 PriceRepository protocol + PriceRecord type
     memory.py                Fixture-backed repository used for all local dev and tests
+    dynamo.py                DynamoDB adapter — scaffolded, raises NotImplementedError (see DYNAMODB-SCHEMA.md)
   runner.py                  ChatRequest -> graph -> validated ChatResponse
+  handler.py                  Lambda entrypoint (API Gateway proxy integration) — every
+                               failure path maps to a contract-valid ErrorEvent, never a bare 500
 
 tests/                      Fast, deterministic, no AWS/network — see Running it locally
-scripts/generate_fixtures.py  Generates fixtures/products.json (deliberately messy product naming)
+scripts/
+  generate_fixtures.py      Generates fixtures/products.json (deliberately messy product naming)
+  dev_server.py              Stdlib-only local HTTP server wrapping lambda_handler, so the
+                              frontend team can integrate against real responses pre-AWS
 validate.py                  Validates samples/*.json against the contract; runs in CI
 samples/                     Example request/response payloads used by validate.py
 fixtures/products.json       Generated seed price data (six NZ stores, ~26 products)
 CONTRACT-v1.md               Human-readable version of the wire contract, for the frontend team
+DYNAMODB-SCHEMA.md           Proposed two-table DynamoDB schema (products + meals) and the
+                              open design decision on how strongly recipes constrain generation
 .kiro/steering/               Locked technical and security decisions for this project
 infra/                       AWS CDK (TypeScript) — not started yet
 ingestion/                   Step Functions price-scraping pipeline — not started yet
@@ -138,18 +146,34 @@ ingestion/                   Step Functions price-scraping pipeline — not star
 - ✅ `ScriptedModelClient` — a deterministic model stand-in that lets the
   whole graph, including the repair loop and induced failures, be tested
   without any AWS account or network access.
-- ✅ 55 passing tests covering classification, extraction, arithmetic,
-  grounding, injection resistance, and the repair loop's bounds.
+- ✅ Lambda handler (`src/handler.py`): API Gateway proxy integration that
+  maps every failure mode (bad input, guardrail block, model error, grounding
+  violation, unhandled exception) to a contract-valid response — never a bare
+  500 or a leaked stack trace/secret.
+- ✅ Local dev server (`scripts/dev_server.py`): stdlib-only HTTP wrapper
+  around the same `lambda_handler`, so the frontend team can integrate
+  against real, contract-valid responses before the AWS account exists.
+- ✅ 71 passing tests covering classification, extraction, arithmetic,
+  grounding, injection resistance, the repair loop's bounds, and the Lambda
+  handler's error mapping.
 - ✅ `validate.py` / sample payloads wired up as a CI-style contract check,
   including a negative test that an ungrounded price is rejected.
+- ✅ DynamoDB schema proposed (`DYNAMODB-SCHEMA.md`) — two tables, GSI design
+  for "cheapest near me", money-as-string, TTL as a Privacy Act control on
+  saved plans. Team review pending.
 - 🚧 Bedrock-backed `ModelClient` (`src/models/bedrock.py`) is written but
   **unexercised** — it needs a live AWS account and model access to test.
 
 ## Not yet built
 
-- **DynamoDB-backed `PriceRepository`.** Retrieval currently only has the
-  in-memory fixture implementation; a `dynamo.py` adapter satisfying the
-  same protocol/tests is the next increment.
+- **DynamoDB-backed `PriceRepository`.** The schema is designed
+  (`DYNAMODB-SCHEMA.md`) and `src/retrieval/dynamo.py` is scaffolded against
+  the `PriceRepository` protocol, but every method still raises
+  `NotImplementedError` — deliberately, so a misconfigured deployment fails
+  loudly instead of silently returning an empty (and therefore
+  indistinguishable-from-"no data") price list. Retrieval runs on the
+  in-memory fixture implementation until the AWS account lands and this gets
+  filled in against a real table.
 - **Ingestion pipeline** (`ingestion/`) — the Step Functions/EventBridge
   scraper pipeline that would populate DynamoDB from real store data.
 - **Infrastructure as code** (`infra/`) — the AWS CDK stack (Lambda,
@@ -178,10 +202,30 @@ python scripts/generate_fixtures.py   # regenerate fixtures/products.json
 ruff check .                  # lint (see pyproject.toml for the enabled rule set)
 ```
 
+To exercise the Lambda handler over real HTTP (what the frontend team should
+point at before the AWS account exists):
+
+```bash
+python scripts/dev_server.py
+# in another shell:
+curl -X POST http://localhost:8000/chat -H "Content-Type: application/json" \
+     -d '{"version":"1.0","session_id":"sess-local01",
+          "turn_id":"turn-local01","message":"cheapest butter"}'
+```
+
+Runs on fixtures + the scripted model, so responses are deterministic and no
+AWS credentials are needed. Setting `USE_DYNAMODB=1` or `USE_BEDROCK=1`
+switches individual dependencies to their AWS-backed implementations once
+those exist (`USE_DYNAMODB=1` currently raises `NotImplementedError` — see
+[Not yet built](#not-yet-built)).
+
 ## Further reading
 
 - [`CONTRACT-v1.md`](CONTRACT-v1.md) — the frontend-facing write-up of the
   wire contract, including full request/response examples.
+- [`DYNAMODB-SCHEMA.md`](DYNAMODB-SCHEMA.md) — proposed two-table DynamoDB
+  schema, the GSI design behind "cheapest near me", and the open decision on
+  how strongly the recipe catalogue should constrain meal generation.
 - [`.kiro/steering/tech.md`](.kiro/steering/tech.md) — locked architecture
   and infrastructure decisions (region, packaging, model tiering, transport
   roadmap, forbidden approaches).
