@@ -1,0 +1,92 @@
+{
+  "_comment": "Kiro agent hooks. These fire on workspace events and run in the background, so quality gates are enforced by the environment rather than by remembering. Ported from the local .git/hooks/pre-commit, but stronger: hooks fire on save and on spec task completion, not only at commit time.",
+  "version": "1.0",
+  "hooks": [
+    {
+      "name": "lint-and-test-on-save",
+      "description": "Run ruff and pytest whenever a Python source file is saved.",
+      "trigger": { "event": "file_saved", "patterns": ["src/**/*.py", "tests/**/*.py"] },
+      "action": {
+        "type": "shell",
+        "command": "ruff check --fix . && ruff check . && python -m pytest -q"
+      },
+      "blocking": false
+    },
+    {
+      "name": "contract-change-guard",
+      "description": "The frontend contract is a published interface. Any edit must re-validate every sample payload and flag the change for the team.",
+      "trigger": { "event": "file_saved", "patterns": ["src/schemas/contract.py"] },
+      "action": {
+        "type": "agent",
+        "prompt": "src/schemas/contract.py changed. Run `python validate.py`. If any sample fails, report exactly which field changed and whether it is a breaking change under the versioning rules in CONTRACT-v1.md. If it is breaking, state that CONTRACT_VERSION must be bumped and the frontend team notified. Do not modify the samples to make them pass."
+      },
+      "blocking": true
+    },
+    {
+      "name": "grounding-invariant-guard",
+      "description": "The grounding guarantee is structural. Changes to the nodes that carry it must be checked against the invariant, not just against the tests.",
+      "trigger": {
+        "event": "file_saved",
+        "patterns": ["src/graph/nodes/*.py", "src/graph/build.py"]
+      },
+      "action": {
+        "type": "agent",
+        "prompt": "A graph node or the topology changed. Verify three invariants still hold: (1) no edge reaches a generate_* node without passing through retrieve_prices; (2) Citations are created only in retrieve_prices; (3) PlanDraft still has no price, cost, or total field. Report any violation as a blocking defect. Then run `python -m pytest -q`."
+      },
+      "blocking": true
+    },
+    {
+      "name": "prompt-change-requires-eval",
+      "description": "A prompt edit with no eval run is an unmeasured change. This is the gate that stops prompt engineering from becoming guesswork.",
+      "trigger": { "event": "file_saved", "patterns": ["src/prompts/*.py"] },
+      "action": {
+        "type": "shell",
+        "command": "python evals/run_intent.py"
+      },
+      "blocking": false
+    },
+    {
+      "name": "security-review-on-iam",
+      "description": "Least privilege is opt-in. Every IAM change gets read before it lands.",
+      "trigger": {
+        "event": "file_saved",
+        "patterns": ["infra/**/*.ts", "infra/**/*.py", "infra/manual/*.json"]
+      },
+      "action": {
+        "type": "agent",
+        "prompt": "An infrastructure or IAM file changed. Check against .kiro/steering/security.md: no wildcard in Action or Resource; DynamoDB permissions scoped to specific table ARNs; no secrets in plaintext; DynamoDB PITR enabled; API Gateway throttling configured. Report each violation with the file and line."
+      },
+      "blocking": true
+    },
+    {
+      "name": "new-node-needs-tests",
+      "description": "Tests gate implementation rather than trailing it.",
+      "trigger": { "event": "file_created", "patterns": ["src/graph/nodes/*.py"] },
+      "action": {
+        "type": "agent",
+        "prompt": "A new graph node was created. Before it is wired into build.py, write tests in tests/ covering: the happy path, the failure path, and the node's behaviour when its model call raises ModelError. Follow the existing style in tests/test_intent.py. Do not modify build.py until the tests exist and pass."
+      },
+      "blocking": true
+    },
+    {
+      "name": "model-config-change-guard",
+      "description": "Enabling a model is a routing change with cost and quality consequences.",
+      "trigger": { "event": "file_saved", "patterns": ["config/models.json"] },
+      "action": {
+        "type": "agent",
+        "prompt": "config/models.json changed. Report which tasks now route differently by running the registry's explain_routing(). If a model was newly enabled, state that it has not been scored on the golden set and that `python evals/run_intent.py --compare` should be run before it serves production traffic. Verify every enabled model has a capabilities block, since code paths branch on tool_use and prompt_caching."
+      },
+      "blocking": false
+    },
+    {
+      "name": "fixture-regeneration",
+      "description": "Keep the committed seed data in sync with its generator.",
+      "trigger": { "event": "file_saved", "patterns": ["scripts/generate_fixtures.py"] },
+      "action": {
+        "type": "shell",
+        "command": "python scripts/generate_fixtures.py && python -m pytest -q"
+      },
+      "blocking": false
+    }
+  ]
+}

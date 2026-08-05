@@ -23,9 +23,10 @@ import time
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 
-from src.models.base import ModelClient, ModelError, ModelTier
+from src.models.base import ModelClient, ModelError, ModelTier, T
+from src.models.registry import ModelRegistry, ModelSpec, RoutingPolicy
 
 REGION = os.environ.get("AWS_REGION", "ap-southeast-2")
 
@@ -39,9 +40,18 @@ GUARDRAIL_VERSION = os.environ.get("BEDROCK_GUARDRAIL_VERSION", "DRAFT")
 
 
 class BedrockModelClient(ModelClient):
-    """Concrete ModelClient implementation that talks to Amazon Bedrock's Converse API."""
-
-    def __init__(self, region: str = REGION) -> None:
+    def __init__(
+        self,
+        region: str = REGION,
+        *,
+        registry: ModelRegistry | None = None,
+        pinned_spec: ModelSpec | None = None,
+    ) -> None:
+        # pinned_spec forces every call to one model. The eval harness uses
+        # this to score models individually; production leaves it None and
+        # lets the registry route per task.
+        self._registry = registry or ModelRegistry()
+        self._pinned = pinned_spec
         # Retries and timeouts matter: this sits inside a Lambda with a 29s
         # ceiling from API Gateway. Unbounded retries would blow through it.
         self._client = boto3.client(
@@ -55,6 +65,11 @@ class BedrockModelClient(ModelClient):
         )
         self._usage: dict = {}
 
+    def _spec_for(self, task: str) -> ModelSpec:
+        if self._pinned is not None:
+            return self._pinned
+        return self._registry.route(task, policy=RoutingPolicy.AUTO)
+
     # ------------------------------------------------------------ interface
 
     def structured(
@@ -62,40 +77,51 @@ class BedrockModelClient(ModelClient):
         *,
         system: str,
         user: str,
-        schema: type[BaseModel],
+        schema: type[T],
         tier: ModelTier,
         max_tokens: int = 1024,
-    ):
+        task: str = "classify_intent",
+    ) -> T:
         """
-        Structured output via tool use.
+        Structured output, adapted to what the model can actually do.
 
-        Forcing a tool call is more reliable than asking for JSON in prose:
-        the model cannot prepend "Sure, here's the JSON:" and break parsing.
+        Tool use is preferred: forcing a tool call means the model cannot
+        prepend "Sure, here's the JSON:" and break parsing. But not every
+        model on Bedrock supports it — Llama does not — so a model without
+        tool use gets the schema in the prompt and its reply parsed. That
+        path is genuinely weaker, which is why the eval harness exists to
+        measure the difference rather than assume it is fine.
         """
-        # Define a single Bedrock "tool" whose input schema is the pydantic
-        # model's JSON schema, then force the model to call it.
-        tool_name = schema.__name__
-        tool_spec = {
-            "toolSpec": {
-                "name": tool_name,
-                "description": f"Return the result as a {tool_name}.",
-                "inputSchema": {"json": schema.model_json_schema()},
-            }
-        }
-
-        raw = self._converse(
-            system=system,
-            user=user,
-            tier=tier,
+        spec = self._spec_for(task)
+        if spec.capabilities.tool_use:
+            return self._structured_via_tool_use(
+                system=system, user=user, schema=schema, spec=spec,
+                max_tokens=max_tokens,
+            )
+        return self._structured_via_prose(
+            system=system, user=user, schema=schema, spec=spec,
             max_tokens=max_tokens,
+        )
+
+    def _structured_via_tool_use(
+        self, *, system: str, user: str, schema: type[T],
+        spec: ModelSpec, max_tokens: int,
+    ) -> T:
+        tool_name = schema.__name__
+        raw = self._converse(
+            system=system, user=user, spec=spec, max_tokens=max_tokens,
             tool_config={
-                "tools": [tool_spec],
+                "tools": [{
+                    "toolSpec": {
+                        "name": tool_name,
+                        "description": f"Return the result as a {tool_name}.",
+                        "inputSchema": {"json": schema.model_json_schema()},
+                    }
+                }],
                 "toolChoice": {"tool": {"name": tool_name}},
             },
         )
 
-        # Find the tool-use block in the reply and validate its input against
-        # the requested schema.
         for block in raw.get("output", {}).get("message", {}).get("content", []):
             if "toolUse" in block:
                 try:
@@ -105,6 +131,32 @@ class BedrockModelClient(ModelClient):
 
         raise ModelError(f"model returned no {tool_name} tool call")
 
+    def _structured_via_prose(
+        self, *, system: str, user: str, schema: type[T],
+        spec: ModelSpec, max_tokens: int,
+    ) -> T:
+        """Fallback for models without tool use. Schema in prompt, parse reply."""
+        schema_json = json.dumps(schema.model_json_schema(), indent=2)
+        augmented_system = (
+            f"{system}\n\n"
+            f"Reply with a single JSON object matching this schema and nothing "
+            f"else. No prose, no explanation, no markdown code fences.\n\n"
+            f"{schema_json}"
+        )
+        raw = self._converse(
+            system=augmented_system, user=user, spec=spec, max_tokens=max_tokens
+        )
+        text = "".join(
+            b.get("text", "")
+            for b in raw.get("output", {}).get("message", {}).get("content", [])
+        )
+        try:
+            return schema.model_validate_json(_extract_json(text))
+        except (ValidationError, ValueError) as exc:
+            raise ModelError(
+                f"{schema.__name__} could not be parsed from prose reply: {exc}"
+            ) from exc
+
     def text(
         self,
         *,
@@ -112,11 +164,11 @@ class BedrockModelClient(ModelClient):
         user: str,
         tier: ModelTier,
         max_tokens: int = 1024,
+        task: str = "generate_prose",
     ) -> str:
         raw = self._converse(
-            system=system, user=user, tier=tier, max_tokens=max_tokens
+            system=system, user=user, spec=self._spec_for(task), max_tokens=max_tokens
         )
-        # Concatenate every text block in the reply's content list.
         parts = [
             b["text"]
             for b in raw.get("output", {}).get("message", {}).get("content", [])
@@ -128,7 +180,6 @@ class BedrockModelClient(ModelClient):
 
     @property
     def last_usage(self) -> dict:
-        """Copy so callers can't mutate the client's internal usage state."""
         return dict(self._usage)
 
     # ------------------------------------------------------------ internals
@@ -138,28 +189,34 @@ class BedrockModelClient(ModelClient):
         *,
         system: str,
         user: str,
-        tier: ModelTier,
+        spec: ModelSpec,
         max_tokens: int,
         tool_config: dict | None = None,
     ) -> dict:
-        # Look up which concrete Bedrock model id serves this tier.
-        model_id = MODEL_IDS.get(tier)
+        model_id = spec.model_id
         if not model_id:
-            raise ModelError(
-                f"No model id configured for tier {tier.value}. "
-                f"Set BEDROCK_MODEL_{tier.value.upper()}."
-            )
+            raise ModelError(f"Model '{spec.key}' has no id configured.")
 
-        # temperature=0.0: deterministic output matters more than creativity
-        # for classification/extraction/planning against a fixed catalogue.
         kwargs: dict = {
             "modelId": model_id,
             "system": [{"text": system}],
             "messages": [{"role": "user", "content": [{"text": user}]}],
-            "inferenceConfig": {"maxTokens": max_tokens, "temperature": 0.0},
+            "inferenceConfig": {
+                "maxTokens": min(max_tokens, spec.max_output_tokens),
+                "temperature": 0.0,
+            },
         }
         if tool_config:
             kwargs["toolConfig"] = tool_config
+
+        # Prompt caching. Only worth a cachePoint if the model supports it AND
+        # the prefix is likely to clear the model minimum — below it the call
+        # succeeds but nothing caches, so we would pay the write cost for
+        # nothing. Verify real hits via cacheReadInputTokens, not by assuming.
+        if spec.capabilities.prompt_caching:
+            approx_tokens = len(system) // 4
+            if approx_tokens >= spec.cache_min_tokens:
+                kwargs["system"] = [{"text": system}, {"cachePoint": {"type": "default"}}]
 
         # Guardrails are opt-in and must be attached explicitly. A missing
         # guardrail id is a configuration error, not something to shrug at:
@@ -176,14 +233,15 @@ class BedrockModelClient(ModelClient):
         except ClientError as exc:
             raise ModelError(f"Bedrock call failed: {exc}") from exc
 
-        # Record token counts and latency for this call so callers/observability
-        # tooling can read them via last_usage afterwards.
         elapsed_ms = int((time.perf_counter() - started) * 1000)
         usage = response.get("usage", {})
         self._usage = {
             "model_ids": [model_id],
+            "model_key": spec.key,
             "input_tokens": usage.get("inputTokens"),
             "output_tokens": usage.get("outputTokens"),
+            "cache_read_tokens": usage.get("cacheReadInputTokens", 0),
+            "cache_write_tokens": usage.get("cacheWriteInputTokens", 0),
             "latency_ms": elapsed_ms,
             "guardrail_intervened": response.get("stopReason") == "guardrail_intervened",
         }
@@ -209,3 +267,33 @@ def describe_configuration() -> str:
         },
         indent=2,
     )
+
+
+def _extract_json(text: str) -> str:
+    """
+    Pull a JSON object out of a prose reply.
+
+    Models without tool use wrap JSON in markdown fences or preamble however
+    firmly you instruct otherwise. Braces are matched rather than regexed so
+    nested objects survive.
+    """
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.split("```")[1]
+        if cleaned.startswith("json"):
+            cleaned = cleaned[4:]
+        cleaned = cleaned.strip()
+
+    start = cleaned.find("{")
+    if start == -1:
+        raise ValueError("no JSON object in reply")
+
+    depth = 0
+    for i, ch in enumerate(cleaned[start:], start=start):
+        if ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                return cleaned[start : i + 1]
+    raise ValueError("unbalanced braces in reply")

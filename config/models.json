@@ -1,0 +1,109 @@
+{
+  "_comment": "Model catalogue. Data, not code, for three reasons: (1) model ids and pricing change faster than releases, (2) under IaC this becomes an SSM Parameter the CDK stack writes, so operators retune routing without a deploy, (3) adding a model is a config change a non-engineer can review. Verify ids with: aws bedrock list-foundation-models --region ap-southeast-2",
+  "version": "1.0",
+  "region": "ap-southeast-2",
+  "default_policy": "tier",
+  "models": [
+    {
+      "key": "claude-haiku",
+      "model_id_env": "BEDROCK_MODEL_CLAUDE_HAIKU",
+      "display_name": "Claude Haiku",
+      "family": "anthropic",
+      "tiers": ["fast"],
+      "capabilities": {
+        "tool_use": true,
+        "system_prompt": true,
+        "prompt_caching": true,
+        "json_mode": true
+      },
+      "limits": {
+        "max_output_tokens": 8192,
+        "cache_min_tokens": 4096
+      },
+      "cost_per_1k": { "input": "0.0008", "output": "0.004" },
+      "enabled": true
+    },
+    {
+      "key": "claude-sonnet",
+      "model_id_env": "BEDROCK_MODEL_CLAUDE_SONNET",
+      "display_name": "Claude Sonnet",
+      "family": "anthropic",
+      "tiers": ["quality", "fast"],
+      "capabilities": {
+        "tool_use": true,
+        "system_prompt": true,
+        "prompt_caching": true,
+        "json_mode": true
+      },
+      "limits": {
+        "max_output_tokens": 8192,
+        "cache_min_tokens": 4096
+      },
+      "cost_per_1k": { "input": "0.003", "output": "0.015" },
+      "enabled": true
+    },
+    {
+      "key": "nova-lite",
+      "model_id_env": "BEDROCK_MODEL_NOVA_LITE",
+      "display_name": "Amazon Nova Lite",
+      "family": "amazon",
+      "tiers": ["fast"],
+      "capabilities": {
+        "tool_use": true,
+        "system_prompt": true,
+        "prompt_caching": false,
+        "json_mode": true
+      },
+      "limits": {
+        "max_output_tokens": 5120,
+        "cache_min_tokens": 0
+      },
+      "cost_per_1k": { "input": "0.00006", "output": "0.00024" },
+      "enabled": false
+    },
+    {
+      "key": "nova-pro",
+      "model_id_env": "BEDROCK_MODEL_NOVA_PRO",
+      "display_name": "Amazon Nova Pro",
+      "family": "amazon",
+      "tiers": ["quality", "fast"],
+      "capabilities": {
+        "tool_use": true,
+        "system_prompt": true,
+        "prompt_caching": false,
+        "json_mode": true
+      },
+      "limits": {
+        "max_output_tokens": 5120,
+        "cache_min_tokens": 0
+      },
+      "cost_per_1k": { "input": "0.0008", "output": "0.0032" },
+      "enabled": false
+    },
+    {
+      "key": "llama-instruct",
+      "model_id_env": "BEDROCK_MODEL_LLAMA",
+      "display_name": "Meta Llama Instruct",
+      "family": "meta",
+      "tiers": ["fast"],
+      "capabilities": {
+        "tool_use": false,
+        "system_prompt": true,
+        "prompt_caching": false,
+        "json_mode": false
+      },
+      "limits": {
+        "max_output_tokens": 4096,
+        "cache_min_tokens": 0
+      },
+      "cost_per_1k": { "input": "0.00072", "output": "0.00072" },
+      "enabled": false
+    }
+  ],
+  "routing": {
+    "classify_intent": { "tier": "fast", "prefer": ["nova-lite", "claude-haiku"] },
+    "generate_plan": { "tier": "quality", "prefer": ["claude-sonnet", "nova-pro"] },
+    "repair_plan": { "tier": "fast", "prefer": ["claude-haiku", "nova-lite"] },
+    "generate_prose": { "tier": "fast", "prefer": ["claude-haiku"] }
+  }
+}
