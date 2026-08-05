@@ -30,6 +30,17 @@ class ModelTier(StrEnum):
 
     Keeping the mapping in one place means retiering a node is a one-line
     change, and the cost/latency consequences of the policy are visible.
+
+    Note for readers of bedrock.py: there is a SECOND, separately-defined
+    `ModelTier` in src/models/registry.py with the same two values. They are
+    not the same class. This one is what nodes pass to `ModelClient.structured()`
+    to declare intent; the registry's copy is what config/models.json's
+    per-task `routing` rules resolve against internally. BedrockModelClient
+    currently routes by the `task` string alone (see `_spec_for`) — the
+    `tier` argument on a call is not itself consulted for Bedrock routing,
+    only recorded by ScriptedModelClient for tests. If you are adding a new
+    task, the tier that actually matters is the one you set in
+    config/models.json's "routing" section for that task key.
     """
 
     FAST = "fast"

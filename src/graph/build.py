@@ -22,6 +22,19 @@ Graph assembly.
 
 The grounding guarantee is the shape itself: generate_* is unreachable except
 through retrieve_prices. There is no edge that skips it.
+
+New to LangGraph? The 30-second model:
+  - A StateGraph is a state machine. `GroceryState` (src/graph/state.py) is
+    the shared dict every node reads from and writes to.
+  - A NODE is a plain function `(state) -> dict`. Its return value is a
+    *partial* update — only the keys it changed — which LangGraph merges
+    into the running state before calling the next node.
+  - An EDGE says "after node A, run node B". A CONDITIONAL edge instead
+    calls a small router function that inspects the state and returns a
+    string key, which selects which node runs next from the dict passed to
+    `add_conditional_edges` (see `route_after_intent` etc. in nodes/__init__.py).
+  - `.compile()` turns the declared nodes/edges into an executable object
+    with an `.invoke(initial_state)` method — that's what `runner.py` calls.
 """
 
 from __future__ import annotations

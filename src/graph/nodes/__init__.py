@@ -48,7 +48,13 @@ def _next_seq(state: GroceryState) -> int:
 
 def _exclusion_categories(exclusions: list[str]) -> list[str]:
     """Map free-text dietary exclusions (e.g. 'vegetarian') to fixture categories
-    (e.g. 'meat', 'seafood') that retrieve_prices can filter out."""
+    (e.g. 'meat', 'seafood') that retrieve_prices can filter out.
+
+    Mirrored by InMemoryPriceRepository.categories_for_exclusions in
+    src/retrieval/memory.py — kept in two places because retrieval
+    implementations may map exclusions to categories differently (e.g. a
+    DynamoDB category taxonomy need not match the fixtures). If you change
+    the exclusion vocabulary, update both."""
     out: set[str] = set()
     for ex in exclusions:
         low = ex.lower()

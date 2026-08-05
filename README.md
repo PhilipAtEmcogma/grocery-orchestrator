@@ -81,9 +81,17 @@ finalise -> END
   with no AWS account and no network.
 - **Model tiering is an explicit policy.** Cheap/fast model for
   classification and repair passes (high volume, low creative demand);
-  the expensive/quality model only for the first meal-plan draft. The
-  mapping lives in one place (`ModelTier` / `src/models/base.py`) so it's a
-  reviewable decision, not something scattered across call sites.
+  the expensive/quality model only for the first meal-plan draft. Nodes
+  request a *tier* (`ModelTier` / `src/models/base.py`), never a model id.
+  `src/models/registry.py` resolves that request against
+  `config/models.json` — a per-task preference order plus, per model,
+  which Bedrock features it actually supports (tool use, prompt caching,
+  JSON mode). That capability data is what lets `BedrockModelClient` adapt
+  its call shape per model instead of assuming every model on Bedrock
+  behaves like Claude — Llama, for instance, gets the schema embedded in
+  the prompt because it has no tool-use support. Routing policy is data,
+  not code, so retiering a task or enabling a new model is a config change,
+  not a deploy.
 
 ## Repository layout
 
@@ -99,6 +107,8 @@ src/
       plan.py              Meal-plan generation + deterministic cost assembly node
   models/
     base.py                ModelClient protocol + ModelTier policy
+    registry.py              Reads config/models.json; routes a task to a concrete
+                              model by tier, preference order and capability
     bedrock.py              Bedrock Converse API implementation (untested — no AWS account yet)
     scripted.py              Deterministic stand-in model used by all current tests
   prompts/
@@ -113,6 +123,14 @@ src/
                                failure path maps to a contract-valid ErrorEvent, never a bare 500
 
 tests/                      Fast, deterministic, no AWS/network — see Running it locally
+evals/
+  run_intent.py              Scores classify_intent against evals/cases/intent.json:
+                              deterministic pass/fail, since intent has a correct answer
+  run_meal_plan.py            Checks meal-plan output against evals/cases/meal_plan.json:
+                              hard invariants (budget, exclusions, grounding) scored
+                              pass/fail, plus reported-not-scored quality metrics
+                              (budget utilisation, ingredient reuse, meal variety)
+  cases/*.json                 The golden sets each harness runs against
 scripts/
   generate_fixtures.py      Generates fixtures/products.json (deliberately messy product naming)
   dev_server.py              Stdlib-only local HTTP server wrapping lambda_handler, so the
@@ -120,6 +138,8 @@ scripts/
 validate.py                  Validates samples/*.json against the contract; runs in CI
 samples/                     Example request/response payloads used by validate.py
 fixtures/products.json       Generated seed price data (six NZ stores, ~26 products)
+config/models.json           Model catalogue: ids (by env var), capabilities, cost,
+                              and per-task routing preference — read by models/registry.py
 CONTRACT-v1.md               Human-readable version of the wire contract, for the frontend team
 DYNAMODB-SCHEMA.md           Proposed two-table DynamoDB schema (products + meals) and the
                               open design decision on how strongly recipes constrain generation
@@ -146,6 +166,8 @@ ingestion/                   Step Functions price-scraping pipeline — not star
 - ✅ `ScriptedModelClient` — a deterministic model stand-in that lets the
   whole graph, including the repair loop and induced failures, be tested
   without any AWS account or network access.
+- ✅ Multi-model routing (`src/models/registry.py`, `config/models.json`) —
+  see Design principles above for why this exists.
 - ✅ Lambda handler (`src/handler.py`): API Gateway proxy integration that
   maps every failure mode (bad input, guardrail block, model error, grounding
   violation, unhandled exception) to a contract-valid response — never a bare
@@ -153,11 +175,17 @@ ingestion/                   Step Functions price-scraping pipeline — not star
 - ✅ Local dev server (`scripts/dev_server.py`): stdlib-only HTTP wrapper
   around the same `lambda_handler`, so the frontend team can integrate
   against real, contract-valid responses before the AWS account exists.
-- ✅ 71 passing tests covering classification, extraction, arithmetic,
-  grounding, injection resistance, the repair loop's bounds, and the Lambda
-  handler's error mapping.
+- ✅ 89 passing tests covering classification, extraction, arithmetic,
+  grounding, injection resistance, the repair loop's bounds, multi-model
+  routing/capability branching, and the Lambda handler's error mapping.
 - ✅ `validate.py` / sample payloads wired up as a CI-style contract check,
   including a negative test that an ungrounded price is rejected.
+- ✅ Eval harnesses (`evals/run_intent.py`, `evals/run_meal_plan.py`) —
+  separate from the unit tests on purpose: unit tests check the code is
+  correct given fixed input, evals check a *model* is good enough, and let
+  you compare models on accuracy, latency and cost before picking one for
+  production. Run against the scripted client with no AWS account, or
+  `--compare claude-haiku claude-sonnet nova-lite` once Bedrock is live.
 - ✅ DynamoDB schema proposed (`DYNAMODB-SCHEMA.md`) — two tables, GSI design
   for "cheapest near me", money-as-string, TTL as a Privacy Act control on
   saved plans. Team review pending.
@@ -200,6 +228,8 @@ pytest                        # run the test suite (fast, deterministic)
 python validate.py            # validate samples/*.json against the contract
 python scripts/generate_fixtures.py   # regenerate fixtures/products.json
 ruff check .                  # lint (see pyproject.toml for the enabled rule set)
+python evals/run_intent.py            # eval harness, scripted client (see Progress to date)
+python evals/run_meal_plan.py
 ```
 
 To exercise the Lambda handler over real HTTP (what the frontend team should
