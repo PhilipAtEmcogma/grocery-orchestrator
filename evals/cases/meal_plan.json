@@ -1,0 +1,98 @@
+{
+  "_comment": "Meal plan golden set. Unlike intent, most of these have no single correct answer — so the checks are INVARIANTS a good plan must satisfy, plus quality metrics that are reported rather than pass/fail. min_budget_used exists because within_budget is a one-sided check: a plan spending $8 of $30 passes it and is probably not feeding anyone.",
+  "version": "1.0",
+  "cases": [
+    {
+      "id": "plan-001",
+      "message": "feed a flat of 3 for under $30 this week, no seafood",
+      "hints": { "household_size": 3, "budget_nzd": 30, "days": 5, "dietary_exclusions": ["seafood"] },
+      "expect": {
+        "must_produce_plan": true,
+        "exclude_categories": ["seafood"],
+        "min_budget_used": 0.35,
+        "min_distinct_meals": 3
+      }
+    },
+    {
+      "id": "plan-002",
+      "message": "cheap dinners for 2 for 3 nights, $20",
+      "hints": { "household_size": 2, "budget_nzd": 20, "days": 3 },
+      "expect": {
+        "must_produce_plan": true,
+        "min_budget_used": 0.35,
+        "min_distinct_meals": 2
+      }
+    },
+    {
+      "id": "plan-003",
+      "message": "vegetarian meal plan for 4 people, 5 days, $60",
+      "hints": { "household_size": 4, "budget_nzd": 60, "days": 5, "dietary_exclusions": ["vegetarian"] },
+      "expect": {
+        "must_produce_plan": true,
+        "exclude_categories": ["meat", "seafood"],
+        "min_budget_used": 0.30,
+        "min_distinct_meals": 3
+      }
+    },
+    {
+      "id": "plan-004",
+      "message": "dairy free dinners for 2, 4 nights, $35",
+      "hints": { "household_size": 2, "budget_nzd": 35, "days": 4, "dietary_exclusions": ["dairy-free"] },
+      "expect": {
+        "must_produce_plan": true,
+        "exclude_categories": ["dairy"],
+        "min_budget_used": 0.25
+      }
+    },
+    {
+      "id": "plan-005",
+      "message": "a week of dinners for one person on $25",
+      "hints": { "household_size": 1, "budget_nzd": 25, "days": 7 },
+      "expect": {
+        "must_produce_plan": true,
+        "min_distinct_meals": 4,
+        "serves_matches_household": true
+      }
+    },
+    {
+      "id": "plan-006",
+      "message": "feed 5 people for 7 days on $15",
+      "hints": { "household_size": 5, "budget_nzd": 15, "days": 7 },
+      "expect": {
+        "must_produce_plan": false,
+        "expect_error_code": "BUDGET_INFEASIBLE"
+      },
+      "note": "Genuinely impossible. Must refuse honestly rather than produce a plan that starves someone."
+    },
+    {
+      "id": "plan-007",
+      "message": "plan dinners for 3",
+      "hints": { "household_size": 3 },
+      "expect": {
+        "must_produce_plan": false
+      },
+      "note": "No budget stated. Must not invent one."
+    },
+    {
+      "id": "plan-008",
+      "message": "meals for 2, no seafood and no dairy, 4 days, $40",
+      "hints": { "household_size": 2, "budget_nzd": 40, "days": 4, "dietary_exclusions": ["seafood", "dairy-free"] },
+      "expect": {
+        "must_produce_plan": true,
+        "exclude_categories": ["seafood", "dairy"],
+        "min_budget_used": 0.25
+      },
+      "note": "Two simultaneous exclusions. Both must hold."
+    },
+    {
+      "id": "plan-009",
+      "message": "generous budget: dinners for 2, 3 nights, $200",
+      "hints": { "household_size": 2, "budget_nzd": 200, "days": 3 },
+      "expect": {
+        "must_produce_plan": true,
+        "min_distinct_meals": 2
+      },
+      "note": "Budget far exceeds need. Should not pad the basket to spend it."
+    }
+  ]
+}

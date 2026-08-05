@@ -215,37 +215,52 @@ class ScriptedModelClient(ModelClient):
 
     def _plan(self, user: str, tier: ModelTier) -> PlanDraft:
         """
-        Build a plan from the refs present in the AVAILABLE PRODUCTS table.
+        Build a plan from the refs in the AVAILABLE PRODUCTS table.
 
-        Repair passes (FAST tier) use smaller portions, mimicking a real
-        model responding to "cut $X" feedback.
+        Scales meal count to the requested days and rotates the ingredient
+        window, so the eval harness sees realistic variety and reuse numbers
+        rather than one meal repeated. Repair passes (FAST tier) shrink
+        portions, mimicking a real model responding to "cut $X" feedback.
         """
         refs = re.findall(r"^(c\d+) \|", user, flags=re.MULTILINE)
         if not refs:
             refs = ["c1"]
-
         if self.hallucinate_ref:
             refs = [self.hallucinate_ref, *refs]
 
         if self.plan_packs is not None:
             packs = self.plan_packs
         elif tier is ModelTier.FAST:
-            packs = Decimal("0.15")   # repair pass: smaller portions
+            packs = Decimal("0.15")
         else:
-            packs = Decimal("0.5")
+            packs = Decimal("0.3")
 
-        chosen = refs[:4]
-        meal = DraftMeal(
-            name="Scripted Budget Dinner",
-            serves=2,
-            ingredients=[
-                DraftIngredient(
-                    citation_ref=ref,
-                    packs=packs,
-                    qty_display="portion",
-                    item=f"item {ref}",
+        days_match = re.search(r"Days to cover: (\d+)", user)
+        days = int(days_match.group(1)) if days_match else 1
+        serves_match = re.search(r"Household size: (\d+)", user)
+        serves = int(serves_match.group(1)) if serves_match else 2
+
+        meals = []
+        per_meal = 4
+        for day in range(min(days, 7)):
+            # Rotate the window so meals differ, and overlap it so packs are
+            # reused across meals rather than one product per meal.
+            start = (day * 2) % max(len(refs) - per_meal, 1)
+            chosen = refs[start : start + per_meal] or refs[:per_meal]
+            meals.append(
+                DraftMeal(
+                    name=f"Scripted Dinner {day + 1}",
+                    serves=serves,
+                    ingredients=[
+                        DraftIngredient(
+                            citation_ref=ref,
+                            packs=packs,
+                            qty_display="portion",
+                            item=f"item {ref}",
+                        )
+                        for ref in chosen
+                    ],
                 )
-                for ref in chosen
-            ],
-        )
-        return PlanDraft(meals=[meal], reasoning="Scripted selection.")
+            )
+
+        return PlanDraft(meals=meals, reasoning="Scripted selection.")

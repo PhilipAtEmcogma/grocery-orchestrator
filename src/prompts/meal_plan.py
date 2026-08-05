@@ -112,7 +112,6 @@ def render_products(citations: list[Citation], records: dict[str, PriceRecord]) 
         "ref | product | store | pack size | on special",
         "--- | ------- | ----- | --------- | ----------",
     ]
-    # One markdown-table row per citation, in the order they were retrieved.
     for c in citations:
         rec = records.get(c.ref)
         pack = rec.unit if rec else c.unit
@@ -132,12 +131,8 @@ def build_user_prompt(
     exclusions: list[str],
     products: str,
 ) -> str:
-    # Strip any forged delimiter from the user's text before wrapping it, same
-    # injection defence as the intent prompt.
     safe = message.replace(DELIM, "").replace(DELIM_END, "")
 
-    # Build the constraint list as plain lines; budget/exclusions are only
-    # included when actually present.
     constraints = [
         f"Household size: {household_size}",
         f"Days to cover: {days}",
@@ -161,23 +156,43 @@ def build_repair_prompt(
     products: str,
     over_by: Decimal,
     budget: Decimal,
+    household_size: int,
+    days: int,
+    exclusions: list[str],
     previous_items: list[str],
     cheaper_options: str,
 ) -> str:
     """
     Feedback for the repair pass.
 
-    Tells the model exactly how much to cut and which specific swaps would
-    achieve it. A vague "try again, it's too expensive" wastes a full
-    generation cycle and often lands over budget again.
+    EVERY constraint is restated, not just the budget. Each Bedrock call is
+    stateless: the repair pass has no memory of the original request. Telling
+    a model to "keep all dietary exclusions" without saying what they are is
+    an instruction it cannot follow — and for an allergy that is a safety
+    defect, not a quality one.
+
+    The feedback is also specific about how much to cut and which swaps would
+    achieve it. A vague "too expensive, try again" wastes a full generation
+    cycle and often lands over budget a second time.
     """
+    constraints = [
+        f"Household size: {household_size}",
+        f"Days to cover: {days}",
+        f"Total budget: ${budget} NZD",
+    ]
+    if exclusions:
+        constraints.append(f"Must exclude: {', '.join(exclusions)}")
+
     return (
         f"{products}\n\n"
-        f"Your previous plan came to ${over_by} OVER the ${budget} budget.\n\n"
+        f"CONSTRAINTS (unchanged from the original request)\n"
+        + "\n".join(constraints)
+        + f"\n\nYour previous plan came to ${over_by} OVER the ${budget} budget.\n\n"
         f"It used: {', '.join(previous_items)}\n\n"
         f"{cheaper_options}\n\n"
-        f"Produce a revised plan that costs at least ${over_by} less. Prefer "
-        f"swapping expensive proteins for cheaper ones, reducing portion "
-        f"multipliers, and reusing a single pack across more meals. Keep all "
-        f"dietary exclusions. Do not state any prices."
+        f"Produce a revised plan covering {days} day(s) for {household_size} "
+        f"person/people that costs at least ${over_by} less. Prefer swapping "
+        f"expensive proteins for cheaper ones, reducing portion multipliers, "
+        f"and reusing a single pack across more meals. Every exclusion above "
+        f"still applies. Do not state any prices."
     )
