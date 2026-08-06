@@ -9,6 +9,7 @@ returned something unparseable".
 from __future__ import annotations
 
 import json
+import uuid
 
 import pytest
 
@@ -22,11 +23,28 @@ def _event(body: str | dict, method: str = "POST") -> dict:
     return {"httpMethod": method, "body": body}
 
 
+@pytest.fixture(autouse=True)
+def _fresh_idempotency_store(monkeypatch):
+    """
+    Reset the cached store between tests.
+
+    It is module-level so it survives warm Lambda invocations, which is the
+    point in production and cross-test contamination here.
+    """
+    import src.handler as handler_mod
+
+    monkeypatch.setattr(handler_mod, "_idempotency", None)
+
+
 def _valid_body(message: str = "cheapest butter", **extra) -> dict:
+    # Unique ids per call. Reusing a turn_id with different content is now a
+    # rejected request, which is the behaviour under test in
+    # test_reused_turn_id_with_different_content_is_rejected.
+    unique = uuid.uuid4().hex[:8]
     return {
         "version": "1.0",
-        "session_id": "sess-handler1",
-        "turn_id": "turn-handler1",
+        "session_id": f"sess-{unique}",
+        "turn_id": f"turn-{unique}",
         "message": message,
         **extra,
     }
@@ -49,10 +67,10 @@ def test_valid_request_returns_200_and_parses():
 
 
 def test_ids_are_echoed_back():
-    result = lambda_handler(_event(_valid_body()))
-    response = _parse(result)
-    assert response.session_id == "sess-handler1"
-    assert response.turn_id == "turn-handler1"
+    body = _valid_body()
+    response = _parse(lambda_handler(_event(body)))
+    assert response.session_id == body["session_id"]
+    assert response.turn_id == body["turn_id"]
 
 
 def test_meal_plan_request_works_end_to_end():

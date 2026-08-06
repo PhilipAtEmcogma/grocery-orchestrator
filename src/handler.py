@@ -33,6 +33,12 @@ from src.schemas.contract import (
     SessionEvent,
     UsageMeta,
 )
+from src.store.idempotency import (
+    AcquireStatus,
+    IdempotencyStore,
+    fingerprint,
+    make_key,
+)
 
 logger = logging.getLogger()
 logger.setLevel(os.environ.get("LOG_LEVEL", "INFO"))
@@ -48,6 +54,7 @@ CORS_HEADERS = {
 # add avoidable latency to a path already tight against the 29s ceiling.
 _repo: PriceRepository | None = None
 _model: ModelClient | None = None
+_idempotency: IdempotencyStore | None = None
 
 
 def _dependencies() -> tuple[PriceRepository, ModelClient]:
@@ -80,6 +87,25 @@ def _dependencies() -> tuple[PriceRepository, ModelClient]:
             _model = ScriptedModelClient()
 
     return _repo, _model
+
+
+def _idempotency_store() -> IdempotencyStore:
+    global _idempotency
+
+    if _idempotency is None:
+        if os.environ.get("USE_DYNAMODB") == "1":
+            from src.store.dynamo_idempotency import DynamoIdempotencyStore
+
+            _idempotency = DynamoIdempotencyStore()
+        else:
+            from src.store.idempotency import InMemoryIdempotencyStore
+
+            # Single-process only. Lambda execution environments share no
+            # memory, so this is correct locally and wrong in production —
+            # which is why USE_DYNAMODB selects the stored implementation.
+            _idempotency = InMemoryIdempotencyStore()
+
+    return _idempotency
 
 
 def _error_response(
@@ -116,9 +142,6 @@ def handle_turn(request: ChatRequest) -> tuple[int, ChatResponse]:
     Run one turn. Separated from the Lambda plumbing so it is testable
     without constructing an API Gateway event.
     """
-    # Imported here rather than at module scope so that constructing a
-    # ChatRequest and hitting a validation error (above) never has to load
-    # boto3/bedrock or the graph — only an actual turn attempt pays for it.
     from src.models.bedrock import GuardrailBlocked
     from src.runner import run_turn
 
@@ -180,6 +203,13 @@ def handle_turn(request: ChatRequest) -> tuple[int, ChatResponse]:
         )
 
 
+def _is_terminal(response: ChatResponse) -> bool:
+    """A result worth caching: anything but a failure the client should retry."""
+    return not any(
+        e.type == "error" and getattr(e, "retryable", False) for e in response.events
+    )
+
+
 def lambda_handler(event: dict[str, Any], context: Any = None) -> dict[str, Any]:
     started = time.perf_counter()
 
@@ -198,11 +228,6 @@ def lambda_handler(event: dict[str, Any], context: Any = None) -> dict[str, Any]
     try:
         request = ChatRequest.model_validate_json(raw_body)
     except ValidationError as exc:
-        # Best-effort recovery of session_id/turn_id so the error response can
-        # still echo them back to the caller. Guarded by the "{" check rather
-        # than a second try/except: raw_body already failed to parse as a
-        # ChatRequest, so re-attempting json.loads on non-object input (e.g.
-        # "not json at all") is skipped instead of risking a second failure.
         payload = json.loads(raw_body) if raw_body.strip().startswith("{") else {}
         logger.warning("invalid_request errors=%d", exc.error_count())
         return _http(
@@ -227,7 +252,78 @@ def lambda_handler(event: dict[str, Any], context: Any = None) -> dict[str, Any]
             ),
         )
 
+    # Idempotency. A client that timed out and retried must not trigger a
+    # second generation — the first is often still running.
+    key = make_key(request.session_id, request.turn_id)
+    payload_hash = fingerprint(raw_body)
+    store = _idempotency_store()
+
+    try:
+        acquired = store.acquire(key, payload_hash)
+    except Exception:
+        # An idempotency store failure must not fail the turn. Degrade to
+        # running the work: a duplicate response is a worse outcome than an
+        # error, but a much better one than no response at all.
+        logger.exception("idempotency_unavailable session=%s", request.session_id)
+        acquired = None
+
+    if acquired is not None:
+        if acquired.status is AcquireStatus.COMPLETED and acquired.cached_response:
+            logger.info(
+                "idempotent_replay session=%s turn=%s",
+                request.session_id,
+                request.turn_id,
+            )
+            return {
+                "statusCode": 200,
+                "headers": {**CORS_HEADERS, "X-Idempotent-Replay": "true"},
+                "body": acquired.cached_response,
+            }
+
+        if acquired.status is AcquireStatus.IN_PROGRESS:
+            return _http(
+                409,
+                _error_response(
+                    session_id=request.session_id,
+                    turn_id=request.turn_id,
+                    code=ErrorCode.RATE_LIMITED,
+                    message="I'm still working on that. Try again in a moment.",
+                    retryable=True,
+                ),
+            )
+
+        if acquired.status is AcquireStatus.PAYLOAD_MISMATCH:
+            # Same turn_id, different content. Returning the cached response
+            # would answer a question the client did not ask.
+            logger.warning(
+                "turn_id_reused session=%s turn=%s",
+                request.session_id,
+                request.turn_id,
+            )
+            return _http(
+                400,
+                _error_response(
+                    session_id=request.session_id,
+                    turn_id=request.turn_id,
+                    code=ErrorCode.INVALID_REQUEST,
+                    message=(
+                        "That request id has already been used for a different "
+                        "message. Please use a new one."
+                    ),
+                    retryable=False,
+                ),
+            )
+
     status, response = handle_turn(request)
+
+    if acquired is not None and acquired.status is AcquireStatus.ACQUIRED:
+        # Only terminal outcomes are cached. Storing a retryable failure would
+        # make the client's retry permanently useless — it would receive the
+        # same failure forever.
+        if _is_terminal(response):
+            store.complete(key, response.model_dump_json())
+        else:
+            store.release(key)
 
     # Log identifiers and shape only. Never the message text, never the
     # location — both are personal information under the Privacy Act.
