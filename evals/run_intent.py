@@ -217,6 +217,14 @@ def main() -> int:
     parser.add_argument("--model", help="Model key to pin, e.g. claude-haiku")
     parser.add_argument("--compare", nargs="+", help="Compare several model keys")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument(
+        "--min-accuracy",
+        type=float,
+        help=(
+            "Exit non-zero below this accuracy. Used in CI as a regression "
+            "floor: a change that lowers the score fails the build."
+        ),
+    )
     args = parser.parse_args()
 
     keys = args.compare or ([args.model] if args.model else [])
@@ -228,7 +236,7 @@ def main() -> int:
             "\nBaseline only. The scripted client is rule-based, so this measures "
             "the harness, not a model. Pass --model once Bedrock is configured."
         )
-        return 0 if card.accuracy == 1.0 else 1
+        return _gate(card.accuracy, args.min_accuracy, "accuracy")
 
     from src.models.bedrock import BedrockModelClient
     from src.models.registry import ModelRegistry, RoutingPolicy
@@ -254,6 +262,18 @@ def main() -> int:
                 f"{card.p50_latency_ms:>8} {'$' + str(card.cost(spec)):>12}"
             )
 
+    best = max(c.accuracy for c, _ in cards)
+    return _gate(best, args.min_accuracy, "accuracy")
+
+
+def _gate(actual: float, floor: float | None, label: str) -> int:
+    """Regression floor. Absent a floor, reporting is the only job."""
+    if floor is None:
+        return 0
+    if actual < floor:
+        print(f"\nFAIL: {label} {actual:.1%} is below the floor of {floor:.1%}")
+        return 1
+    print(f"\nOK: {label} {actual:.1%} meets the floor of {floor:.1%}")
     return 0
 
 

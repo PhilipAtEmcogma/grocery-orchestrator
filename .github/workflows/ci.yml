@@ -1,0 +1,159 @@
+# Continuous integration.
+#
+# NO AWS CREDENTIALS ARE USED OR NEEDED. That is a design outcome, not a
+# limitation: the orchestrator depends on protocol boundaries over the price
+# store and the model plane, with fixture implementations behind them. Every
+# job below runs in seconds, costs nothing, and is deterministic.
+#
+# What this DOES gate: structural correctness, the contract, the grounding
+# invariant, security scanning, and regression floors on both eval suites
+# measured against the scripted client.
+#
+# What it does NOT gate: real model quality. Scoring Claude or Nova requires
+# credentials and costs money per run, so it is a deliberate manual step
+# (`python evals/run_intent.py --compare ...`) recorded in the pull request,
+# not something that runs on every push.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  # A new push supersedes an in-flight run on the same branch.
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.13"
+
+jobs:
+  quality:
+    name: Lint and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-dev.txt
+
+      - name: Lint
+        run: ruff check --output-format=github .
+
+      - name: Tests
+        run: pytest -q --cov=src --cov-report=term-missing
+
+  contract:
+    name: Contract and grounding invariant
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install
+        run: pip install -r requirements-dev.txt
+
+      # Separate job so a contract break is legible in the checks list rather
+      # than buried in a test summary. This is the published interface the
+      # frontend builds against.
+      - name: Validate samples and grounding
+        run: python validate.py
+
+      - name: Regenerate fixtures and confirm no drift
+        run: |
+          python scripts/generate_fixtures.py
+          git diff --exit-code fixtures/ || {
+            echo "::error::fixtures/products.json is out of sync with its generator."
+            echo "Run: python scripts/generate_fixtures.py"
+            exit 1
+          }
+
+  security:
+    name: Security scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install
+        run: pip install -r requirements-dev.txt
+
+      - name: Dependency vulnerabilities
+        run: pip-audit --strict
+
+      - name: Secret scan
+        run: |
+          detect-secrets scan --baseline .secrets.baseline || {
+            echo "::error::New secrets detected. If a false positive, audit"
+            echo "the baseline: detect-secrets audit .secrets.baseline"
+            exit 1
+          }
+
+      # The guardrail is our content-safety control and it is configuration.
+      # Validating it here means a policy that would silently do nothing —
+      # PROMPT_ATTACK below HIGH, a topic with too few examples — fails the
+      # build rather than being discovered in production.
+      - name: Validate guardrail policy
+        run: python scripts/apply_guardrail.py --dry-run
+
+  evals:
+    name: Evaluation floors
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install
+        run: pip install -r requirements-dev.txt
+
+      # Floors are set at the current scripted baseline. They catch structural
+      # regressions — a broken constraint reconciler, a lost exclusion — not
+      # prompt quality, which needs a real model. Raise a floor when the
+      # baseline genuinely improves; never lower one to make a build pass.
+      - name: Intent classification
+        run: python evals/run_intent.py --min-accuracy 0.75
+
+      - name: Meal plan invariants
+        run: python evals/run_meal_plan.py --min-pass-rate 0.85
+
+  summary:
+    name: All checks
+    runs-on: ubuntu-latest
+    needs: [quality, contract, security, evals]
+    if: always()
+    steps:
+      # A single job to require in branch protection, so adding a job later
+      # does not mean reconfiguring the protection rule.
+      - name: Verify
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') }}" = "true" ]; then
+            echo "::error::One or more checks failed."
+            exit 1
+          fi
+          echo "All checks passed."

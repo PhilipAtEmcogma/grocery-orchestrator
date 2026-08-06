@@ -246,6 +246,11 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model")
     parser.add_argument("--compare", nargs="+")
+    parser.add_argument(
+        "--min-pass-rate",
+        type=float,
+        help="Exit non-zero below this invariant pass rate. CI regression floor.",
+    )
     args = parser.parse_args()
 
     keys = args.compare or ([args.model] if args.model else [])
@@ -257,7 +262,7 @@ def main() -> int:
             "\nBaseline only. The scripted planner picks by position, not by "
             "suitability, so treat this as a floor to beat rather than a target."
         )
-        return 0
+        return _gate(card.pass_rate, args.min_pass_rate)
 
     from src.models.bedrock import BedrockModelClient
     from src.models.registry import ModelRegistry, RoutingPolicy
@@ -282,6 +287,17 @@ def main() -> int:
                 f"{card.mean('distinct_meals'):>8.1f}"
             )
 
+    best = max(c.pass_rate for c, _ in cards)
+    return _gate(best, args.min_pass_rate)
+
+
+def _gate(actual: float, floor: float | None) -> int:
+    if floor is None:
+        return 0
+    if actual < floor:
+        print(f"\nFAIL: pass rate {actual:.0%} is below the floor of {floor:.0%}")
+        return 1
+    print(f"\nOK: pass rate {actual:.0%} meets the floor of {floor:.0%}")
     return 0
 
 

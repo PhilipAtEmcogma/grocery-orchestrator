@@ -1,0 +1,37 @@
+# Automated dependency updates.
+#
+# Worth having on a project with a security requirement: pip-audit tells you
+# a vulnerability EXISTS, dependabot opens the pull request that fixes it.
+# CI then proves the fix does not break anything, so upgrades are a review
+# rather than an investigation.
+
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # One pull request for the LangChain family — they release together and
+      # upgrading them piecemeal produces version conflicts.
+      langchain:
+        patterns:
+          - "langchain*"
+          - "langgraph*"
+      dev-tooling:
+        patterns:
+          - "pytest*"
+          - "ruff"
+          - "pip-audit"
+          - "detect-secrets"
+    commit-message:
+      prefix: "deps"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "ci"
