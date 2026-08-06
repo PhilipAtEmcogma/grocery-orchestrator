@@ -26,6 +26,7 @@ from botocore.exceptions import ClientError
 from pydantic import ValidationError
 
 from src.models.base import ModelClient, ModelError, ModelTier, T
+from src.models.guardrail import guard_content_block
 from src.models.registry import ModelRegistry, ModelSpec, RoutingPolicy
 
 REGION = os.environ.get("AWS_REGION", "ap-southeast-2")
@@ -35,8 +36,23 @@ MODEL_IDS = {
     ModelTier.QUALITY: os.environ.get("BEDROCK_MODEL_QUALITY", ""),
 }
 
-GUARDRAIL_ID = os.environ.get("BEDROCK_GUARDRAIL_ID", "")
-GUARDRAIL_VERSION = os.environ.get("BEDROCK_GUARDRAIL_VERSION", "DRAFT")
+def _guardrail_config() -> tuple[str, str, bool]:
+    """
+    Read at call time, not import time.
+
+    Lambda can set environment after module import, and reading at call time
+    is what makes the fail-closed behaviour testable without reloading the
+    module. Returns (id, version, required).
+
+    REQUIRE_GUARDRAIL defaults ON: opting out of content safety must be a
+    deliberate, visible configuration choice, never the accidental result of
+    forgetting to set an id.
+    """
+    return (
+        os.environ.get("BEDROCK_GUARDRAIL_ID", ""),
+        os.environ.get("BEDROCK_GUARDRAIL_VERSION", "DRAFT"),
+        os.environ.get("REQUIRE_GUARDRAIL", "1") == "1",
+    )
 
 
 class BedrockModelClient(ModelClient):
@@ -200,7 +216,11 @@ class BedrockModelClient(ModelClient):
         kwargs: dict = {
             "modelId": model_id,
             "system": [{"text": system}],
-            "messages": [{"role": "user", "content": [{"text": user}]}],
+            # The user turn is wrapped in a guardContent block. Without this
+            # the PROMPT_ATTACK filter never evaluates anything — it has no way
+            # to tell our instructions from the user's. The system prompt is
+            # deliberately NOT wrapped, so our own instructions are not flagged.
+            "messages": [{"role": "user", "content": [guard_content_block(user)]}],
             "inferenceConfig": {
                 "maxTokens": min(max_tokens, spec.max_output_tokens),
                 "temperature": 0.0,
@@ -221,11 +241,22 @@ class BedrockModelClient(ModelClient):
         # Guardrails are opt-in and must be attached explicitly. A missing
         # guardrail id is a configuration error, not something to shrug at:
         # every generation call is required to pass through one.
-        if GUARDRAIL_ID:
+        guardrail_id, guardrail_version, required = _guardrail_config()
+        if guardrail_id:
             kwargs["guardrailConfig"] = {
-                "guardrailIdentifier": GUARDRAIL_ID,
-                "guardrailVersion": GUARDRAIL_VERSION,
+                "guardrailIdentifier": guardrail_id,
+                "guardrailVersion": guardrail_version,
+                # Required for guardContent blocks to be evaluated at all.
+                "trace": "enabled",
             }
+        elif required:
+            # Fail closed. A missing guardrail is a misconfiguration, and
+            # running generation without one is exactly the state this
+            # control exists to prevent.
+            raise ModelError(
+                "BEDROCK_GUARDRAIL_ID is not set and REQUIRE_GUARDRAIL is on. "
+                "Refusing to invoke a model without content safety."
+            )
 
         started = time.perf_counter()
         try:
@@ -257,16 +288,34 @@ class GuardrailBlocked(ModelError):
 
 
 def describe_configuration() -> str:
-    """Diagnostic helper for the smoke test."""
+    """Diagnostic for the smoke test. Reports what is set, never the values."""
+    registry = ModelRegistry()
+    guardrail_id, version, required = _guardrail_config()
     return json.dumps(
         {
             "region": REGION,
-            "fast_model": MODEL_IDS[ModelTier.FAST] or "UNSET",
-            "quality_model": MODEL_IDS[ModelTier.QUALITY] or "UNSET",
-            "guardrail": GUARDRAIL_ID or "UNSET (required before production)",
+            "routing": {
+                task: (
+                    registry.route(task).display_name
+                    if _safe_route(registry, task)
+                    else "UNROUTABLE"
+                )
+                for task in ("classify_intent", "generate_plan", "repair_plan")
+            },
+            "guardrail": "configured" if guardrail_id else "UNSET",
+            "guardrail_version": version if guardrail_id else None,
+            "fail_closed": required,
         },
         indent=2,
     )
+
+
+def _safe_route(registry: ModelRegistry, task: str) -> bool:
+    try:
+        registry.route(task)
+    except Exception:
+        return False
+    return True
 
 
 def _extract_json(text: str) -> str:

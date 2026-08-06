@@ -25,6 +25,10 @@ def _model_ids(monkeypatch):
     monkeypatch.setenv("BEDROCK_MODEL_CLAUDE_SONNET", "apac.test.sonnet")
     monkeypatch.setenv("BEDROCK_MODEL_NOVA_LITE", "apac.test.nova-lite")
     monkeypatch.setenv("BEDROCK_MODEL_LLAMA", "apac.test.llama")
+    # These tests exercise routing and capabilities, not content safety.
+    # A guardrail id is set so the fail-closed check does not mask them;
+    # the fail-closed behaviour itself is tested in test_guardrail.py.
+    monkeypatch.setenv("BEDROCK_GUARDRAIL_ID", "test-guardrail")
 
 
 @pytest.fixture
