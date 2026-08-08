@@ -40,13 +40,15 @@ class IntentResult(BaseModel):
     )
     confidence: float = Field(ge=0, le=1)
 
-    query_item: str | None = Field(
-        default=None,
+    query_items: list[str] = Field(
+        default_factory=list,
+        max_length=5,
         description=(
-            "For price_check ONLY: the single grocery item asked about, as a "
-            "short noun phrase with modifiers removed. "
-            "'what's the cheapest butter near me' -> 'butter'. "
-            "Null for any other intent."
+            "For price_check ONLY: every grocery item asked about, each as a "
+            "short noun phrase with modifiers removed, in the order asked. "
+            "'the cheapest butter near me' -> ['butter']. "
+            "'cheapest for butter, milk and eggs' -> ['butter', 'milk', 'eggs']. "
+            "Empty for any other intent."
         ),
     )
     household_size: int | None = Field(default=None, ge=1, le=20)
@@ -79,11 +81,12 @@ Rules:
 - Extract only what the user actually states. Never infer a budget, household \
 size, or number of days that was not given. Null is the correct answer when a \
 value is absent.
-- query_item is for price_check only. Strip modifiers: "the cheapest butter \
-near me" -> "butter". Keep distinguishing words: "frozen peas" stays "frozen \
+- query_items is for price_check only. Strip modifiers: "the cheapest butter \
+near me" -> ["butter"]. Keep distinguishing words: "frozen peas" stays "frozen \
 peas", because it is a different product from fresh peas.
-- If the user asks about several items at once, set query_item to the first \
-one and lower your confidence.
+- List EVERY item the user asked about, in the order they asked. "butter, milk \
+and eggs" is three items, not one. Never silently drop one.
+- At most five items. If more are asked for, take the first five.
 - Budgets are New Zealand dollars. "$30", "30 dollars", "thirty bucks" all mean \
 30.
 - "a flat of 3", "for 3 people", "me and my two flatmates" all mean \
@@ -95,8 +98,5 @@ you can help.
 
 def build_user_prompt(message: str) -> str:
     """Delimit the untrusted message, stripping any attempt to forge markers."""
-    # Remove any occurrence of the delimiters from the user's own text first,
-    # so they cannot inject a fake closing marker and smuggle instructions
-    # past it, then wrap the cleaned text between the real markers.
     safe = message.replace(DELIM, "").replace(DELIM_END, "")
     return f"{DELIM}\n{safe}\n{DELIM_END}"

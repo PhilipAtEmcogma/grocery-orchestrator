@@ -153,13 +153,13 @@
       "id": "multi-001",
       "message": "what's cheapest for butter, milk and eggs?",
       "expect": { "intent": "price_check", "multi_item": ["butter-500g", "milk-2l", "eggs-size7-dozen"] },
-      "known_gap": "query_item is singular; only the first item is handled."
+      "note": "Was a known gap until query_items became a list. Every item must resolve."
     },
     {
       "id": "multi-002",
       "message": "compare prices for bread and cheese",
       "expect": { "intent": "price_check", "multi_item": ["bread-white-700g", "cheese-tasty-1kg"] },
-      "known_gap": "query_item is singular; only the first item is handled."
+      "note": "Was a known gap until query_items became a list."
     },
     {
       "id": "amb-001",

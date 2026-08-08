@@ -26,10 +26,11 @@ _PRICE_WORDS = ("cheap", "price", "cost", "how much", "compare", "dearest")
 _GREETING = ("hello", "hi ", "hey", "thanks", "who are you", "what can you do")
 
 _ITEM_STOPWORDS = {
-    "what", "whats", "is", "the", "a", "an", "of", "for", "me", "my", "near",
-    "nearby", "cheapest", "cheap", "price", "cost", "how", "much", "buy", "get",
+    "what", "whats", "is", "are", "the", "a", "an", "of", "for", "me", "my",
+    "near", "nearby", "cheapest", "cheap", "price", "prices", "pricing", "cost",
+    "costs", "compare", "comparison", "how", "much", "many", "buy", "get",
     "find", "please", "block", "some", "any", "s", "at", "in", "around", "want",
-    "need", "today", "this", "week",
+    "need", "today", "this", "week", "dearest", "best",
 }
 
 _WORD_NUMBERS = {
@@ -144,6 +145,13 @@ class ScriptedModelClient(ModelClient):
         elif any(w in msg for w in _PRICE_WORDS):
             intent, confidence = Intent.PRICE_CHECK, 0.96
             item = self._extract_item(msg)
+            items = self._extract_items(msg)
+            if len(items) > 1:
+                return IntentResult(
+                    intent=intent, confidence=confidence, query_items=items,
+                    household_size=household, budget_nzd=budget, days=days,
+                    dietary_exclusions=exclusions,
+                )
         elif any(w in msg for w in _GREETING):
             intent, confidence = Intent.GENERAL_CHAT, 0.88
             item = None
@@ -163,7 +171,7 @@ class ScriptedModelClient(ModelClient):
         result = IntentResult(
             intent=intent,
             confidence=confidence,
-            query_item=item,
+            query_items=[item] if item else [],
             household_size=household,
             budget_nzd=budget,
             days=days,
@@ -304,3 +312,25 @@ class ScriptedModelClient(ModelClient):
                 )
             )
         return ProseResult(text="Here is what I found.")
+
+
+    @staticmethod
+    def _extract_items(msg: str) -> list[str]:
+        """
+        Split a multi-item request on commas and 'and'.
+
+        Crude on purpose — a real model handles this far better. The point is
+        that the eval measures the difference rather than the stub hiding it.
+        """
+        body = re.sub(r"[^a-z0-9\s,]", " ", msg)
+        body = re.sub(r"\band\b", ",", body)
+        parts = [p.strip() for p in body.split(",")]
+
+        out: list[str] = []
+        for part in parts:
+            words = [
+                w for w in part.split() if len(w) > 1 and w not in _ITEM_STOPWORDS
+            ]
+            if words:
+                out.append(" ".join(words))
+        return out[:5]

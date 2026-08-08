@@ -84,7 +84,7 @@ def _client_with_stub(spec, monkeypatch):
                 "output": {"message": {"content": [
                     {"toolUse": {"name": "IntentResult", "input": {
                         "intent": "price_check", "confidence": 0.9,
-                        "query_item": "butter",
+                        "query_items": ["butter"],
                         "dietary_exclusions": [], "preferred_stores": [],
                     }}}
                 ]}},
@@ -119,7 +119,7 @@ def test_opting_out_must_be_explicit(monkeypatch):
 
     result = client.structured(system="s", user="u", schema=IntentResult,
                                tier=ModelTier.FAST)
-    assert result.query_item == "butter"
+    assert result.query_items == ["butter"]
 
 
 def test_guardrail_is_attached_when_configured(monkeypatch):

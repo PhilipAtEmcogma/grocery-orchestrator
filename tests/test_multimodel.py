@@ -112,7 +112,7 @@ def _stub_client(monkeypatch, spec, response: dict):
 _INTENT_PAYLOAD = {
     "intent": "price_check",
     "confidence": 0.95,
-    "query_item": "butter",
+    "query_items": ["butter"],
     "dietary_exclusions": [],
     "preferred_stores": [],
 }
@@ -131,7 +131,7 @@ def test_tool_use_model_gets_a_tool_config(monkeypatch, registry):
         system="sys", user="cheapest butter", schema=IntentResult,
         tier=ModelTier.FAST,
     )
-    assert result.query_item == "butter"
+    assert result.query_items == ["butter"]
     assert "toolConfig" in stub.kwargs
 
 
@@ -149,7 +149,7 @@ def test_model_without_tool_use_falls_back_to_prose(monkeypatch, registry):
         system="sys", user="cheapest butter", schema=IntentResult,
         tier=ModelTier.FAST,
     )
-    assert result.query_item == "butter"
+    assert result.query_items == ["butter"]
     assert "toolConfig" not in stub.kwargs
     assert "schema" in stub.kwargs["system"][0]["text"].lower()
 

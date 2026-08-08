@@ -107,7 +107,8 @@ def _check(case: dict, out: dict, repo: InMemoryPriceRepository) -> list[str]:
         failures.append(f"intent {out['intent'].value} not in {expect['intent_in']}")
 
     if "resolves_to" in expect:
-        resolved = repo.resolve_product_key(constraints.get("query_item", ""))
+        items = constraints.get("query_items") or [""]
+        resolved = repo.resolve_product_key(items[0])
         if resolved != expect["resolves_to"]:
             failures.append(f"resolves_to {resolved} != {expect['resolves_to']}")
 
@@ -138,10 +139,15 @@ def _check(case: dict, out: dict, repo: InMemoryPriceRepository) -> list[str]:
             failures.append(f"exclusions {sorted(actual)} missing {sorted(wanted - actual)}")
 
     if "multi_item" in expect:
-        resolved = repo.resolve_product_key(constraints.get("query_item", ""))
-        wanted = expect["multi_item"]
-        if resolved not in wanted:
-            failures.append(f"multi-item: resolved {resolved}, none of {wanted}")
+        # Every item must resolve, not just the first. This is the check the
+        # known_gap cases were waiting on.
+        items = constraints.get("query_items") or []
+        resolved = [repo.resolve_product_key(t) for t in items]
+        missing = [w for w in expect["multi_item"] if w not in resolved]
+        if missing:
+            failures.append(
+                f"multi-item: resolved {resolved}, missing {missing}"
+            )
 
     return failures
 

@@ -132,9 +132,14 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
         dearest = citations[-1]
         figures["savings"] = f"${(dearest.price_nzd - cheapest.price_nzd):.2f}"
 
+        groups = state.get("item_groups") or {}
+        items = ", ".join(k.rsplit("-", 1)[0].replace("-", " ") for k in groups) or (
+            "that item"
+        )
+
         system = PRICE_CHECK_SYSTEM
         user = build_price_check_prompt(
-            query_item=state.get("resolved_product_key") or "that item",
+            query_item=items,
             options=_placeholder_list(citations),
             on_special=cheapest.on_special,
         )

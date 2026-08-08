@@ -47,7 +47,7 @@ class Constraints(TypedDict, total=False):
     days: int
     dietary_exclusions: list[str]
     preferred_stores: list[Store]
-    query_item: str
+    query_items: list[str]
 
 
 class TurnInput(TypedDict):
@@ -81,10 +81,13 @@ class GroceryState(TurnInput, total=False):
     citations: list[Citation]
     citation_index: dict[str, Citation]
     record_index: dict[str, PriceRecord]
-    resolved_product_key: str | None
+    # product_key -> citation refs, one entry per resolved item
+    item_groups: dict[str, list[str]]
+    # items the user asked about that we have no data for
+    unresolved_items: list[str]
 
     # ---- generation
-    comparison: PriceComparison | None
+    comparisons: list[PriceComparison]
     plan: MealPlan | None
     prose: str
     prose_error: str
