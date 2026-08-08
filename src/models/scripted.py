@@ -18,6 +18,7 @@ from typing import cast
 from src.models.base import ModelClient, ModelError, ModelTier, T
 from src.prompts.intent import IntentResult
 from src.prompts.meal_plan import DraftIngredient, DraftMeal, PlanDraft
+from src.prompts.prose import ProseResult
 from src.schemas.contract import Intent
 
 _MEAL_WORDS = ("meal", "plan", "dinner", "feed", "recipe", "cook", "week of")
@@ -52,6 +53,8 @@ class ScriptedModelClient(ModelClient):
         overrides: dict | None = None,
         plan_packs: Decimal | None = None,
         hallucinate_ref: str | None = None,
+        prose_writes_money: bool = False,
+        prose_bad_placeholder: bool = False,
     ) -> None:
         self.force_error = force_error
         self.overrides = overrides or {}
@@ -60,6 +63,10 @@ class ScriptedModelClient(ModelClient):
         # a live model, which cannot be made to fail on demand.
         self.plan_packs = plan_packs
         self.hallucinate_ref = hallucinate_ref
+        # Knobs for the failure paths. A real model cannot be made to write a
+        # literal price on demand, so the rejection cannot otherwise be tested.
+        self.prose_writes_money = prose_writes_money
+        self.prose_bad_placeholder = prose_bad_placeholder
         self.calls: list[tuple[ModelTier, str]] = []
         self._usage: dict = {}
 
@@ -73,6 +80,7 @@ class ScriptedModelClient(ModelClient):
         schema: type[T],
         tier: ModelTier,
         max_tokens: int = 1024,
+        task: str = "classify_intent",
     ) -> T:
         self.calls.append((tier, schema.__name__))
         if self.force_error:
@@ -95,6 +103,9 @@ class ScriptedModelClient(ModelClient):
         if schema is PlanDraft:
             return cast(T, self._plan(user, tier))
 
+        if schema is ProseResult:
+            return cast(T, self._prose(user))
+
         raise ModelError(f"ScriptedModelClient has no script for {schema.__name__}")
 
     def text(
@@ -104,6 +115,7 @@ class ScriptedModelClient(ModelClient):
         user: str,
         tier: ModelTier,
         max_tokens: int = 1024,
+        task: str = "generate_prose",
     ) -> str:
         self.calls.append((tier, "text"))
         if self.force_error:
@@ -264,3 +276,31 @@ class ScriptedModelClient(ModelClient):
             )
 
         return PlanDraft(meals=meals, reasoning="Scripted selection.")
+
+
+    def _prose(self, user: str) -> ProseResult:
+        """Placeholder-only prose, mirroring what a well-behaved model returns."""
+        if self.prose_writes_money:
+            return ProseResult(
+                text="Pak'nSave is cheapest at $2.97 for 500g this week."
+            )
+        if self.prose_bad_placeholder:
+            return ProseResult(text="The cheapest option is [[c99]] this week.")
+
+        refs = re.findall(r"\[\[(c\d+)\]\]", user)
+        if "[[total]]" in user:
+            return ProseResult(
+                text=(
+                    "This plan comes to [[total]] against your budget of "
+                    "[[budget]]. Reusing one pack across several meals kept "
+                    "the cost down."
+                )
+            )
+        if refs:
+            return ProseResult(
+                text=(
+                    f"The cheapest option is [[{refs[0]}]]. "
+                    f"That is the best price across the stores near you."
+                )
+            )
+        return ProseResult(text="Here is what I found.")

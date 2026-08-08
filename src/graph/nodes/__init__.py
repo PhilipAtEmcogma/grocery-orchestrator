@@ -16,6 +16,7 @@ from decimal import Decimal
 
 from src.graph.nodes.intent import classify_intent as classify_intent
 from src.graph.nodes.plan import generate_plan as generate_plan
+from src.graph.nodes.prose import generate_prose as generate_prose
 from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState
 from src.retrieval.base import PriceRepository
 from src.schemas.contract import (
@@ -323,3 +324,4 @@ def route_after_validation(state: GroceryState) -> str:
     if state.get("repair_attempts", 0) >= MAX_REPAIR_ATTEMPTS:
         return "infeasible"
     return "repair"
+
