@@ -29,9 +29,16 @@
 
 - Use `langgraph`, `langchain-core`, `langchain-aws`. Do NOT add the umbrella
   `langchain` package — it adds weight without benefit here.
-- Exclude `numpy` and `zstandard` from the deployment package.
+- Exclude `numpy` and `zstandard` from the deployment package. Neither is
+  imported by our code; both are transitive pulls (`langchain-aws`,
+  `langsmith`).
 - Do not bundle boto3/botocore unless a specific new Bedrock feature requires
-  a newer version than the runtime provides. Document it if you do.
+  a newer version than the runtime provides. Document it if you do. Excluding
+  boto3 also means excluding `jmespath` and `s3transfer` — they exist only to
+  support boto3, and the runtime's own boto3 brings its own copies of both.
+- `scripts/build_lambda.py` is the source of truth for this list
+  (`UNUSED_TRANSITIVE` / `RUNTIME_PROVIDED`) and checks the "never imported"
+  half of it against `src/` on every build rather than trusting this file.
 
 ## Forbidden
 

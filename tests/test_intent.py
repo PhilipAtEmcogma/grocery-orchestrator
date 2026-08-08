@@ -117,8 +117,9 @@ def test_override_is_reported_to_the_user(model):
 
 
 def test_hint_used_when_message_is_silent(model):
-    out = classify_intent(_state("plan me some dinners"), {}) if False else \
-        classify_intent(_state("plan me some dinners", hints={"household_size": 4}), model)
+    out = classify_intent(
+        _state("plan me some dinners", hints={"household_size": 4}), model
+    )
     assert out["constraints"]["household_size"] == 4
 
 

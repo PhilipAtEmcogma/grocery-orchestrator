@@ -169,7 +169,7 @@ mode with a documented precedent in this market.*
 
 ## Phase 10 — Deployment
 
-- [ ] **10.1** Build the deployment archive excluding unused transitive
+- [x] **10.1** Build the deployment archive excluding unused transitive
   packages
 - [ ] **10.2** Enable snapshot-based cold-start optimisation on a published
   alias

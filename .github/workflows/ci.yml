@@ -142,10 +142,34 @@ jobs:
       - name: Meal plan invariants
         run: python evals/run_meal_plan.py --min-pass-rate 0.85
 
+  package:
+    name: Lambda deployment package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      # ubuntu-latest is natively manylinux2014_x86_64, so both the size
+      # measurement and the import check this script does are authoritative
+      # here — unlike a developer running the same script on Windows, which
+      # cannot load the compiled Linux wheels it just downloaded.
+      - name: Build
+        run: python scripts/build_lambda.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lambda-package
+          path: build/lambda.zip
+
   summary:
     name: All checks
     runs-on: ubuntu-latest
-    needs: [quality, contract, security, evals]
+    needs: [quality, contract, security, evals, package]
     if: always()
     steps:
       # A single job to require in branch protection, so adding a job later

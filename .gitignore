@@ -6,6 +6,7 @@ __pycache__/
 .aws/
 cdk.out/
 *.zip
+build/
 .pytest_cache/
 .ruff_cache/
 .secrets.baseline
