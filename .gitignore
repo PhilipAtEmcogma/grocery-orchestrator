@@ -9,4 +9,3 @@ cdk.out/
 build/
 .pytest_cache/
 .ruff_cache/
-.secrets.baseline

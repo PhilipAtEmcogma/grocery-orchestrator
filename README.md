@@ -244,9 +244,10 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   budget, and the packaged archive's importability verified. ~25MB unzipped
   today, well under the budget that justifies zip-over-container (SnapStart
   is zip-only).
-- ✅ DynamoDB schema proposed (`DYNAMODB-SCHEMA.md`) — two tables, GSI design
+- ✅ DynamoDB schema proposed (`DYNAMODB-SCHEMA.md`) — three tables, GSI design
   for "cheapest near me", money-as-string, TTL as a Privacy Act control on
-  saved plans. Team review pending.
+  saved plans, and the idempotency table's conditional-put claim. Team review
+  pending.
 - 🚧 Bedrock-backed `ModelClient` (`src/models/bedrock.py`) is written but
   **unexercised** — it needs a live AWS account and model access to test.
 
@@ -269,7 +270,8 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   behaviour when no guardrail id is configured, `config/guardrail.json` plus
   `scripts/apply_guardrail.py` to create/update it — but no Guardrail has
   been created against a live account yet, so the actual filtering is
-  unverified. Task 8.9 in `.kiro/specs/grocery-orchestrator/tasks.md`.
+  unverified. Task 8.10 in `.kiro/specs/grocery-orchestrator/tasks.md` (8.9,
+  the offline half, is done).
 - **SnapStart on a published alias** (Task 10.2) — the deployment archive
   itself is built (see Progress to date); enabling SnapStart and publishing
   an alias is the next step, once there's somewhere to deploy it to.

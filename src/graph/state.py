@@ -85,6 +85,11 @@ class GroceryState(TurnInput, total=False):
     item_groups: dict[str, list[str]]
     # items the user asked about that we have no data for
     unresolved_items: list[str]
+    # items the user asked about that we never looked up, because the request
+    # exceeded MAX_ITEMS_PER_TURN. Distinct from unresolved_items: we may well
+    # have prices for these, we just did not check. Saying "no data" about them
+    # would be a different lie from saying nothing.
+    skipped_items: list[str]
 
     # ---- generation
     comparisons: list[PriceComparison]

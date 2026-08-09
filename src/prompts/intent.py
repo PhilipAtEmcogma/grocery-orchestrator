@@ -24,6 +24,19 @@ from src.schemas.contract import Intent, Store
 DELIM = "<<<USER_MESSAGE>>>"
 DELIM_END = "<<<END_USER_MESSAGE>>>"
 
+# How many items EXTRACTION may return. Deliberately higher than the number
+# retrieval will actually compare (MAX_ITEMS_PER_TURN in graph.nodes).
+#
+# The two caps do different jobs and must not be collapsed into one. The
+# comparison cap is a latency decision; this one only bounds a list length so a
+# pathological reply cannot blow up the request. If extraction capped at the
+# comparison limit, the orchestrator would never learn that the user asked for
+# more than it answered, and could not tell them — which is exactly the silent
+# drop Req 1.7 forbids. Truncation is a control-flow decision, so it belongs in
+# code where the discarded items are still in hand, not in a prompt where they
+# are gone.
+MAX_EXTRACTED_ITEMS = 12
+
 
 class IntentResult(BaseModel):
     """Structured output schema. The model must return exactly this shape."""
@@ -42,7 +55,7 @@ class IntentResult(BaseModel):
 
     query_items: list[str] = Field(
         default_factory=list,
-        max_length=5,
+        max_length=MAX_EXTRACTED_ITEMS,
         description=(
             "For price_check ONLY: every grocery item asked about, each as a "
             "short noun phrase with modifiers removed, in the order asked. "
@@ -86,7 +99,9 @@ near me" -> ["butter"]. Keep distinguishing words: "frozen peas" stays "frozen \
 peas", because it is a different product from fresh peas.
 - List EVERY item the user asked about, in the order they asked. "butter, milk \
 and eggs" is three items, not one. Never silently drop one.
-- At most five items. If more are asked for, take the first five.
+- List up to {MAX_EXTRACTED_ITEMS} items. Do not truncate to a shorter list on \
+your own judgement: something downstream decides how many can be answered, and \
+it can only tell the user what went unanswered if you reported it.
 - Budgets are New Zealand dollars. "$30", "30 dollars", "thirty bucks" all mean \
 30.
 - "a flat of 3", "for 3 people", "me and my two flatmates" all mean \

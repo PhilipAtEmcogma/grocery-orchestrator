@@ -16,7 +16,7 @@ from decimal import Decimal
 from typing import cast
 
 from src.models.base import ModelClient, ModelError, ModelTier, T
-from src.prompts.intent import IntentResult
+from src.prompts.intent import MAX_EXTRACTED_ITEMS, IntentResult
 from src.prompts.meal_plan import DraftIngredient, DraftMeal, PlanDraft
 from src.prompts.prose import ProseResult
 from src.schemas.contract import Intent
@@ -333,4 +333,7 @@ class ScriptedModelClient(ModelClient):
             ]
             if words:
                 out.append(" ".join(words))
-        return out[:5]
+        # Bounded by what the schema accepts, NOT by how many retrieval will
+        # compare. Truncating here to the comparison cap would hide the
+        # overflow from the node whose job is to report it.
+        return out[:MAX_EXTRACTED_ITEMS]

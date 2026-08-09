@@ -5,17 +5,26 @@ Author: Philip (Backend/Orchestration, AI/Prompt Lead)
 Status: **Proposal for team review**
 Region: `ap-southeast-2` (Sydney)
 
-Two tables, per the 3 Aug team decision. Build manually in the console first,
-migrate to CDK later.
+Three tables. Build manually in the console first, migrate to CDK later.
+
+The 3 Aug team decision covered two — products and meals. The third,
+idempotency, came out of the turn-deduplication work and was missing from this
+document until now.
 
 ---
 
-## Why two tables and not one
+## Why three tables and not one
 
 Single-table design pays off when related entities are fetched *together* in
 one query. Prices and meal data are queried at completely different moments by
 different access patterns, so combining them would add key-design complexity
 and save zero round trips.
+
+The idempotency table is separate for a different reason again. It is
+short-lived operational state, not domain data: one conditional write per turn,
+one read on retry, everything expiring within a day. Putting it alongside
+either of the others would mix a hot, tiny, high-churn access pattern into a
+table sized and keyed for something else.
 
 Within the meal table we *do* use single-table design, because recipes and
 saved plans are both meal-domain entities and the `PK` prefix cleanly
@@ -172,9 +181,120 @@ reliable than a cleanup job someone remembers to write.
 
 ---
 
+## Table 3 — `grocery-idempotency-dev`
+
+Turn deduplication. Written and read by the orchestrator only.
+
+The contract promises that resending a `turn_id` returns the same answer
+without re-running the work. The plan path runs close to the gateway's
+29-second ceiling, so a client timeout followed by a retry is expected, not
+exceptional — and without this table it means paying for generation twice and
+possibly returning a different plan than the first attempt would have.
+
+### Keys
+
+| | Partition key |
+|---|---|
+| Base table | `pk` — `idem#<session_id>#<turn_id>` |
+
+No sort key and no index. There is exactly one access pattern: fetch or claim
+one known key. Anything more would be design for its own sake.
+
+**Scoped by session, not by turn alone.** Clients generate `turn_id` and
+nothing makes it globally unique — two sessions can produce the same value. An
+unscoped key would eventually serve one user another user's shopping list,
+which is a privacy failure created by a caching optimisation.
+
+### Attributes
+
+| Attribute | Type | Notes |
+|---|---|---|
+| `pk` | S | `idem#<session_id>#<turn_id>` |
+| `payload_hash` | S | Truncated SHA-256 of the raw request body |
+| `status` | S | `in_progress` \| `completed` |
+| `response_json` | S | The full `ChatResponse`. Absent while in progress |
+| `started_at` | N | Epoch seconds, when the claim was taken |
+| `ttl` | N | **Unix epoch seconds — 24h.** Enable TTL on this attribute |
+
+### `acquire` must be a conditional put, not a read-then-write
+
+This is the part that is easy to get wrong and impossible to catch on one
+machine.
+
+The obvious implementation reads the key, sees nothing, and writes a marker.
+Two Lambda invocations racing on the same key both read "absent", both write,
+and both proceed to generate — which defeats the entire purpose of the table
+while passing every single-threaded test you write against it.
+
+The claim has to be **one atomic conditional write**: succeed only if no live
+record exists.
+
+```python
+table.put_item(
+    Item={
+        "pk": key,
+        "payload_hash": payload_hash,
+        "status": "in_progress",
+        "started_at": now,
+        "ttl": now + 86400,
+    },
+    ConditionExpression=(
+        "attribute_not_exists(pk) OR (#s = :in_progress AND started_at < :stale)"
+    ),
+    ExpressionAttributeNames={"#s": "status"},
+    ExpressionAttributeValues={
+        ":in_progress": "in_progress",
+        ":stale": now - IN_PROGRESS_TIMEOUT_SECONDS,
+    },
+)
+```
+
+A `ConditionalCheckFailedException` is the normal path, not an error: it means
+somebody else holds the key. Read the item to decide which of the three
+outcomes to return.
+
+**The second clause takes over an abandoned claim.** An invocation that crashed
+mid-turn leaves an `in_progress` marker that nothing will ever complete.
+Without the staleness condition the client is blocked for the full 24-hour TTL
+on a turn that will never finish. The timeout is set longer than the gateway
+ceiling — so a slow-but-alive request is not duplicated — and far shorter than
+the TTL.
+
+Ask for `ReturnValuesOnConditionCheckFailure` so the losing writer gets the
+existing item back without a second round trip.
+
+### The four outcomes
+
+| Outcome | Condition | Handler response |
+|---|---|---|
+| Acquired | No live record, or the existing claim is stale | Run the turn |
+| Completed | `status = completed` | Return `response_json` verbatim |
+| In progress | `status = in_progress`, claim still fresh | `409`, retryable |
+| Payload mismatch | Stored `payload_hash` differs | `400`, **not** retryable |
+
+**Payload mismatch is a rejection, not a cache hit.** The same `turn_id` with
+different content is a client bug. Returning the stored response would answer a
+question the client did not ask, and would do it invisibly.
+
+**Only terminal outcomes are written back.** A turn that failed in a retryable
+way deletes its claim instead of completing it. Caching a transient failure
+would make the client's retry permanently useless — it would receive the same
+failure forever, from a mechanism built to help it recover.
+
+### Console settings that are NOT on by default
+
+- **TTL on the `ttl` attribute** — off by default. Without it this table grows
+  without bound, and it holds request payload hashes and full response bodies
+  including shopping lists.
+- **On-demand capacity** — one small write and one read per turn.
+- Point-in-time recovery is **not** needed here. This is disposable
+  operational state with a 24-hour life; there is nothing to recover to.
+
+---
+
 ## Legal note on the recipe catalogue
 
-Worth raising before anyone starts populating it.
+Worth raising before anyone starts populating the recipe catalogue.
 
 Ingredient *lists* are generally treated as statements of fact and are not
 protected by copyright. The **written method is** — it is creative expression,

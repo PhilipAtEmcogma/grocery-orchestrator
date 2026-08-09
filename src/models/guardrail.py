@@ -71,9 +71,10 @@ def guard_content_block(text: str) -> dict:
 
     NOTE: unverified against the live API — no account yet. If the guardrail
     reports zero prompt-attack evaluations on a known-malicious input, this
-    block shape is the first thing to check. Task 8.9 acceptance requires
+    block shape is the first thing to check. Task 8.10 acceptance requires
     running the red-team cases in evals/cases/guardrail.json against a real
-    endpoint and confirming they are blocked.
+    endpoint and confirming that every must_block case is blocked and every
+    must_allow case is not.
     """
     return {
         "guardContent": {

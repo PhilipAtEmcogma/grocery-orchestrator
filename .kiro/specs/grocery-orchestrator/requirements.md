@@ -45,10 +45,19 @@ results to stores within the requested radius.
 1.6 **IF** no location is provided **THEN THE SYSTEM SHALL** return national
 results rather than refusing the request.
 
-1.7 **[GAP]** **WHEN** a user asks about several items in one message **THE
-SYSTEM SHALL** return a comparison for each item.
-*Current build handles only the first item and lowers confidence. Tracked as
-`multi-001` and `multi-002` in the intent golden set.*
+1.7 **WHEN** a user asks about several items in one message **THE SYSTEM
+SHALL** return a comparison for each item, up to a configured maximum, and
+**IF** any item is not answered — because it could not be resolved, or because
+it exceeded that maximum — **THEN THE SYSTEM SHALL** name it rather than
+omitting it in silence.
+*No longer a gap — implemented and tested. `multi-001` and `multi-002` in the
+intent golden set were the tracked cases and now pass as ordinary cases.*
+*Implemented with a maximum of five comparisons per turn, which this
+requirement did not originally state. The cap is a latency decision against the
+synchronous integration ceiling (design.md §9). Extraction is bounded higher
+than the comparison cap on purpose: if both used the same limit, the
+orchestrator would never see the items it failed to answer and could not name
+them, which is the failure the second clause exists to prevent.*
 
 ---
 
@@ -128,6 +137,20 @@ with the unresolved item omitted.
 integration, including a negative case proving an unresolved reference is
 rejected.
 
+3.7 **WHEN** generating free text about prices **THE SYSTEM SHALL** require the
+model to emit reference placeholders rather than figures, shall expand those
+placeholders from retrieved records after generation, and **IF** the generated
+text contains a literal monetary value **THEN THE SYSTEM SHALL** discard the
+text rather than deliver it.
+*This is 3.4 applied to prose, and it needs stating separately because the
+mechanism is different. A price-free output schema cannot constrain free text —
+the model has a text field, so it can always type a number into it. The
+enforcement is therefore a rejection check rather than a schema restriction,
+which makes it the weakest of the grounding barriers and the one most worth
+testing directly. Discarding the text degrades the turn to its structured
+payload; the requirement is deliberately not to fail the turn, because a
+comparison table without a sentence above it is still a correct answer.*
+
 ---
 
 ## 4. Honest failure [P0]
@@ -188,7 +211,16 @@ without naming them is not followable.*
 actually retrieved, not against the model's report of what it applied.
 
 5.5 **THE SYSTEM SHALL** route all generated content through a content safety
-filter configured to block unsafe food advice.
+filter configured to block unsafe food advice, and **IF** no filter is
+configured **THEN THE SYSTEM SHALL** refuse to invoke the model.
+*Partially met. The code-side half is built and tested: the filter policy is
+version-controlled data rather than console state, a validator rejects the
+configurations that would silently do nothing, untrusted input is tagged so the
+prompt-attack filter evaluates it at all, and generation fails closed when no
+filter is configured. What is not met is evidence that the policy behaves as
+written — a filter's behaviour is only observable against the live service. A
+red-team set of twenty cases exists for that verification; running it is Task
+8.10.*
 
 ---
 
@@ -371,8 +403,21 @@ not as a final phase.
 12.2 **THE SYSTEM SHALL** record per-turn latency, token consumption, model
 used, and regeneration attempts as queryable metrics.
 
-12.3 **THE SYSTEM SHALL** process a repeated request identifier exactly once.
+12.3 **THE SYSTEM SHALL** process a repeated request identifier exactly once,
+and **IF** the same identifier arrives with different content **THEN THE SYSTEM
+SHALL** reject it rather than answer from cache.
 *Without this a client timeout retry re-runs generation and is charged twice.*
+*Implementation added four constraints this requirement does not state, each
+of which the rebuild needs: identifiers are scoped by session, because clients
+generate them and two sessions can collide onto one — serving a user another
+user's shopping list; requests still in flight are detected, because a retry
+usually arrives while the first attempt is still running, which is what a
+timeout means; only terminal outcomes are cached, because caching a transient
+failure makes the client's retry permanently useless; and a failure of the
+store itself degrades to running the work rather than failing the turn.*
+*Met only in a single process today. The stored implementation raises rather
+than pretending to work, so a deployment on the in-memory store would
+deduplicate nothing across execution environments — see Task 6.8.*
 
 12.4 **THE SYSTEM SHALL** be deployable from version-controlled infrastructure
 definitions.

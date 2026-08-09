@@ -28,6 +28,7 @@ from src.schemas.contract import (
     Intent,
     MealPlanEvent,
     NoDataEvent,
+    NoticeEvent,
     PriceComparison,
     PriceComparisonEvent,
     PriceOption,
@@ -48,6 +49,14 @@ MEAL_CATEGORIES = [
 
 def _next_seq(state: GroceryState) -> int:
     return len(state.get("events", []))
+
+
+def _join(items: list[str]) -> str:
+    """Human list: 'a', 'a and b', 'a, b and c'. Truncated per item, not overall."""
+    clean = [i[:80] for i in items]
+    if len(clean) == 1:
+        return clean[0]
+    return f"{', '.join(clean[:-1])} and {clean[-1]}"
 
 
 def _exclusion_categories(exclusions: list[str]) -> list[str]:
@@ -92,7 +101,10 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
 
     Items that do not resolve are recorded rather than dropped. A user who
     asks about three things and is answered about two has been quietly
-    misled; partial results with an explicit gap are the honest outcome.
+    misled; partial results with an explicit gap are the honest outcome. The
+    same applies to items past MAX_ITEMS_PER_TURN, which are named rather than
+    discarded — for the user there is no difference between a question that
+    was answered wrongly and one that was never acknowledged.
     """
     constraints = state.get("constraints", {})
     intent = state.get("intent")
@@ -100,6 +112,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
     records: list = []
     item_groups: dict[str, list[str]] = {}
     unresolved: list[str] = []
+    skipped: list[str] = []
     citations: list[Citation] = []
     events: list = []
     seq = _next_seq(state)
@@ -132,7 +145,9 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
 
     if intent == Intent.PRICE_CHECK:
         stores = constraints.get("preferred_stores") or None
-        for term in constraints.get("query_items", [])[:MAX_ITEMS_PER_TURN]:
+        requested = constraints.get("query_items", [])
+        skipped = list(requested[MAX_ITEMS_PER_TURN:])
+        for term in requested[:MAX_ITEMS_PER_TURN]:
             key = repo.resolve_product_key(term)
             found = (
                 repo.cheapest_for_product(key, limit=5, stores=stores) if key else []
@@ -166,6 +181,22 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
                 )
             )
 
+    # Items we never looked at, because the request exceeded the cap. A notice
+    # rather than a no_data event: we are not claiming there is no price for
+    # these, only that we did not check. Emitted even when nothing resolved,
+    # since "I checked five of your seven items and found nothing" and "I found
+    # nothing" are different statements and only one of them is true.
+    if skipped:
+        events.append(
+            NoticeEvent(
+                seq=seq + len(events),
+                message=(
+                    f"I can look up {MAX_ITEMS_PER_TURN} items at a time, so I "
+                    f"didn't check {_join(skipped)}. Ask me again for those."
+                ),
+            )
+        )
+
     return {
         "records": records,
         "citations": citations,
@@ -173,6 +204,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         "record_index": dict(zip([c.ref for c in citations], records, strict=False)),
         "item_groups": item_groups,
         "unresolved_items": unresolved,
+        "skipped_items": skipped,
         "events": events,
     }
 

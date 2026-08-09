@@ -102,11 +102,18 @@ jobs:
       - name: Dependency vulnerabilities
         run: pip-audit --strict
 
+      # `detect-secrets scan --baseline` is NOT a gate: it rewrites the
+      # baseline in place and exits 0 even when it finds something new. The
+      # hook subcommand is the one that exits non-zero. This job was green for
+      # both wrong reasons before — that command, and a baseline that was
+      # gitignored, so every clean checkout regenerated the file it was
+      # supposed to be compared against.
       - name: Secret scan
         run: |
-          detect-secrets scan --baseline .secrets.baseline || {
-            echo "::error::New secrets detected. If a false positive, audit"
-            echo "the baseline: detect-secrets audit .secrets.baseline"
+          git ls-files -z | xargs -0 detect-secrets-hook --baseline .secrets.baseline || {
+            echo "::error::Secret scan failed. Either a new secret was"
+            echo "detected, or the baseline moved and needs re-committing."
+            echo "Inspect, then: detect-secrets audit .secrets.baseline"
             exit 1
           }
 

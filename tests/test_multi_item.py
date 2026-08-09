@@ -37,6 +37,10 @@ def _no_data(resp) -> list[str]:
     return [e.requested_item for e in resp.events if e.type == "no_data"]
 
 
+def _notices(resp) -> list[str]:
+    return [e.message for e in resp.events if e.type == "notice"]
+
+
 # ------------------------------------------------------------- resolution
 
 
@@ -127,12 +131,83 @@ def test_seq_stays_contiguous_with_multiple_comparisons(repo):
 # ------------------------------------------------------------- bounds
 
 
+EIGHT_ITEMS = "cheapest butter, milk, eggs, bread, cheese, rice, pasta, carrots"
+
+
 def test_item_count_is_capped(repo):
     """A pathological request must not blow the latency budget."""
     from src.graph.nodes import MAX_ITEMS_PER_TURN
 
+    resp = _run(repo, EIGHT_ITEMS)
+    assert len(_comparisons(resp)) <= MAX_ITEMS_PER_TURN
+
+
+def test_items_past_the_cap_are_named_not_dropped(repo):
+    """
+    Req 1.7: unanswered items must be named.
+
+    Eight items asked, five compared. The user is entitled to know which three
+    were not checked — silently answering a subset is the failure mode the
+    partial-resolution path already exists to prevent.
+    """
+    resp = _run(repo, EIGHT_ITEMS)
+
+    notice = " ".join(_notices(resp))
+    assert "rice" in notice
+    assert "pasta" in notice
+    assert "carrots" in notice
+
+
+def test_skipped_items_are_a_notice_not_a_no_data_claim(repo):
+    """
+    We have prices for these; we just did not look. Claiming 'no data' would
+    be a different falsehood from saying nothing at all.
+    """
+    resp = _run(repo, EIGHT_ITEMS)
+
+    assert _notices(resp)
+    assert "rice" not in " ".join(str(i) for i in _no_data(resp))
+
+
+def test_no_notice_when_every_item_fits(repo):
+    """The notice must not fire on ordinary requests."""
+    resp = _run(repo, "what's cheapest for butter, milk and eggs?")
+    assert not [n for n in _notices(resp) if "at a time" in n]
+
+
+def test_skipped_items_recorded_in_state(repo):
+    """The names must survive retrieval, not just be counted."""
+    from src.graph.build import build_graph
+    from src.models.scripted import ScriptedModelClient
+
+    graph = build_graph(repo, ScriptedModelClient())
+    state = graph.invoke(
+        {"session_id": "s", "turn_id": "t", "message": EIGHT_ITEMS}
+    )
+    assert state["skipped_items"] == ["rice", "pasta", "carrots"]
+
+
+def test_overflow_is_reported_even_when_nothing_resolved(repo):
+    """
+    'I found nothing' and 'I checked five of your eight and found nothing'
+    are different statements, and only the second one is true.
+    """
     resp = _run(
         repo,
-        "cheapest butter, milk, eggs, bread, cheese, rice, pasta, carrots",
+        "cheapest wagyu ribeye, truffle oil, saffron, caviar, foie gras, "
+        "butter, milk, eggs",
     )
-    assert len(_comparisons(resp)) <= MAX_ITEMS_PER_TURN
+    assert not _comparisons(resp)
+    assert any("didn't check" in n for n in _notices(resp))
+    assert resp.events[-1].type == "done"
+
+
+def test_extraction_bound_exceeds_the_comparison_cap(repo):
+    """
+    Collapsing the two caps into one would make the overflow unknowable —
+    the orchestrator would never see the items it needs to name.
+    """
+    from src.graph.nodes import MAX_ITEMS_PER_TURN
+    from src.prompts.intent import MAX_EXTRACTED_ITEMS
+
+    assert MAX_EXTRACTED_ITEMS > MAX_ITEMS_PER_TURN
