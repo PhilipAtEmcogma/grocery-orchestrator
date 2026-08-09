@@ -250,7 +250,7 @@ It gates 6.8.*
 
 - [x] **8.1** Static security analysis in the linter
 - [x] **8.2** Dependency vulnerability scanning
-- [ ] **8.3** Secret scanning
+- [x] **8.3** Secret scanning
 - [x] **8.4** Exclude personal data from logs — *Req 11.5*
 - [ ] **8.5** Per-function roles scoped to named resources — *Req 11.1*
   — **[blocked: AWS]**
@@ -269,25 +269,35 @@ It gates 6.8.*
 - [x] **8.13** Commit an audited secret-scanning baseline and use a command
   that fails the build on a new finding
 
-*8.3 has been returned to `[ ]`. The scan was wired into continuous integration
-and marked complete, but it could not fail: the baseline it compares against
-was excluded from version control, so on a clean checkout the tool created the
-baseline it was meant to compare against and exited successfully. A gate that
-cannot fail is not a completed gate, and the checkbox is what gets read.*
+*8.3 was briefly returned to `[ ]` on the belief that the scan silently passed.
+That was wrong, and the real history is worse. Because the baseline was
+excluded from version control, `detect-secrets scan --baseline` did not
+regenerate it and carry on — it exited 2 with `Invalid path`, failing the job.
+**Continuous integration on the default branch was red for four consecutive
+commits** and the failure was not acted on. The gate was not silent; it was
+shouting, and nobody was listening. That is the more useful finding, because a
+gate nobody reads is worth exactly as much as a gate that cannot fail.*
 
-*8.13 fixed the two causes. The baseline is now committed and audited — two
-findings, both confirmed false positives: a guardrail policy entity type named
+*8.13 fixed both defects. The baseline is committed and audited — two findings,
+both confirmed false positives: a guardrail policy entity type named
 `PASSWORD`, and a deliberately fake connection string in the test that asserts
 the handler does not leak it. Neither is a real credential, so nothing genuine
-has been whitelisted. The CI command was also changed: `detect-secrets scan
---baseline` **updates** the baseline in place and exits zero even when it finds
-something new, which is the second reason the gate never fired.
-`detect-secrets-hook` is the command that exits non-zero. Verified by planting
-a fake credential and confirming a non-zero exit.*
+has been whitelisted. Paths are stored with forward slashes, because a baseline
+generated on Windows would otherwise present every known finding as new to the
+Linux runner.*
 
-*8.3 stays open until 8.13 has run green on a real pull request. The whole
-point of this pair is that a security gate is not complete on the word of the
-person who wired it.*
+*The command was changed too, and this defect was real and would have surfaced
+the moment the first one was fixed: `detect-secrets scan --baseline` **rewrites
+the baseline in place and exits zero** when it finds something new. It is a
+maintenance command, not a gate. `detect-secrets-hook` is the one that exits
+non-zero. Fixing only the missing file would have turned a loudly failing job
+into a silently passing one — strictly worse.*
+
+*8.3 is `[x]` because the gate has now been observed doing both halves of its
+job: exit 1 against a planted AWS key, and green on run 31308163941, the first
+passing run on the default branch in four commits. A security gate is complete
+when it has been seen to fail on a planted defect and pass without one — not
+when it is wired, and not on the word of whoever wired it.*
 
 *8.4 is verified by reading the handler, not by a test. Every log statement
 records identifiers, counts and durations only — never message text, never
@@ -400,10 +410,11 @@ BLOCKED ON THE AWS ACCOUNT
 
 BLOCKED ON ANOTHER TEAM
   1.6  contract circulated             -> unblocks the frontend
-
-BLOCKED ON A GREEN CI RUN
-  8.13 baseline committed and gating   -> closes 8.3
 ```
+
+Secret scanning (8.3, 8.13) is closed: the gate was verified failing on a
+planted credential and passing on run 31308163941, the first green run on the
+default branch in four commits.
 
 Everything else is unblocked and can proceed today. In rough order of value:
 

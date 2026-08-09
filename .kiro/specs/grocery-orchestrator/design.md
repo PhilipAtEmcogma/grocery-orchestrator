@@ -458,19 +458,34 @@ deliberate, visible configuration choice — never as the accidental consequence
 of an unset identifier. This is the opposite of the platform default, which is
 what makes it worth stating.
 
-### 10.3 A control that cannot fail is not a control
+### 10.3 A gate nobody reads
 
-Secret scanning was wired into CI, marked complete, and could not fail: the
-baseline it compared against was excluded from version control, so every clean
-checkout regenerated the baseline it was meant to be checked against. The
-scanning command compounded it — the `scan` subcommand rewrites the baseline in
-place and exits zero on a new finding; only the hook subcommand exits non-zero.
+Secret scanning was wired into CI and marked complete. It then failed on four
+consecutive commits to the default branch, and nothing happened. The baseline
+it compared against was excluded from version control, so the scan exited with
+`Invalid path` every time.
 
-Two lessons worth carrying into the rebuild. First, a security gate is not done
-when it is wired, it is done when it has been *seen to fail* on a planted
-defect — the verification step belongs in the task, not in the reviewer's
-optimism. Second, anything a gate reads must be in version control, or the gate
-is reading something it just wrote.
+The instructive part is not the missing file — that is a two-character fix in
+`.gitignore`. It is that a red build on the default branch persisted across
+four commits without being treated as a defect. A gate that fails and is
+ignored provides precisely the assurance of no gate at all, while looking on
+paper like a control.
+
+There was a second defect underneath, and it would have surfaced only after the
+first was fixed: `detect-secrets scan --baseline` rewrites the baseline in
+place and exits zero when it finds something new. It is a maintenance command,
+not a gate; the hook subcommand is the one that exits non-zero. Committing the
+baseline without also changing the command would have converted a loudly
+failing job into a silently passing one — a strictly worse position, and one
+nobody would have gone looking for, because the build would finally have been
+green.
+
+Three things to carry into the rebuild. A gate is done when it has been *seen
+to fail* on a planted defect and pass without one, not when it is wired.
+Anything a gate reads must be in version control, or it is reading something it
+just wrote. And a check whose failure does not block or notify anyone is
+documentation, not enforcement — which is the same argument §8 makes for
+structural guarantees over behavioural ones, applied to the build.
 
 ### 10.4 What is not yet verified
 
