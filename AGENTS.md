@@ -121,6 +121,12 @@ any of those fail. CI (`.github/workflows/ci.yml`) adds eval floors and
 security scanning — **no AWS credentials needed anywhere**, which is a design
 outcome of the protocol boundaries.
 
+**`main` is protected. Direct pushes are rejected, for everyone.** Work on a
+branch and open a pull request; the `All checks` job must pass before merge.
+Note that the pre-commit hook does *not* run the security job, so a clean
+commit locally is not proof CI will be green — that gap is exactly how the
+default branch stayed red for four commits without anyone noticing.
+
 ---
 
 ## Eval discipline
