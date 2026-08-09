@@ -341,6 +341,7 @@ of forgetting to set an identifier.*
 - [x] **9.5** Hook requiring evaluation after prompt changes — *Req 10.5*
 - [x] **9.6** Continuous integration on pull requests
 - [ ] **9.7** Require review on contract and orchestrator changes
+- [x] **9.8** Protect the default branch behind the aggregate check
 
 *9.6 runs six jobs on every pull request and every push to the default branch —
 linting and tests, contract and grounding validation with a fixture drift
@@ -352,6 +353,25 @@ boundaries rather than a limitation.*
 *9.7 is partly served by a pull request template that prompts for the right
 checks, but nothing enforces reviewer assignment: there is no code-owners file.
 A template asks; it does not require.*
+
+*9.8 is what 8.3's history argued for. The `All checks` aggregate job is now a
+required status check on the default branch, with administrators included and
+force-pushes and deletions disabled. Verified by pushing directly and being
+rejected — `GH006: Required status check "All checks" is expected` — not by
+reading the settings page.*
+
+*Two consequences to be deliberate about. **Direct pushes to the default branch
+are no longer possible, including for the repository owner.** All changes go
+through a pull request; that is the cost of the guarantee, and admin exemption
+was declined precisely because the four red commits this fixes were the owner's
+own. And the repository was made **public** to obtain the feature, which is
+free only for public repositories on the current plan — a licensing constraint
+driving a visibility decision, worth naming as such. The history was audited
+for credentials and personal data before publication.*
+
+*The aggregate job exists so this rule names one check. Adding a CI job later
+does not mean editing the protection rule, which is the kind of maintenance
+step that gets skipped.*
 
 ---
 
