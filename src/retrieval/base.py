@@ -63,6 +63,18 @@ class PriceRepository(Protocol):
         Maps to a single DynamoDB GSI1 query with ScanIndexForward=True.
         Returns [] when the product is not stocked anywhere — the caller must
         treat that as the `no_data` path, never as licence to guess.
+
+        `stores` distinguishes None from an empty list, and implementations
+        must not collapse the two:
+
+            None  — no constraint; every store is eligible
+            []    — nothing is eligible; return []
+
+        Spelled out because `if stores:` treats both as "no constraint", which
+        silently WIDENS a filter. Widening is the dangerous direction: an empty
+        intersection ("preferred AND nearby" matching nothing) would return the
+        very stores the user ruled out. Callers wanting "any store" pass None
+        explicitly — see the retrieval node.
         """
         ...
 

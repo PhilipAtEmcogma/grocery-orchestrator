@@ -289,20 +289,45 @@ Consequences:
 
 **The stored implementations must satisfy the same tests as the fixture ones.**
 
-This is currently an intention, not a fact, and the distinction matters enough
-to record. Every test constructs the fixture repository directly, so nothing
-enforces the property — the phrase above has been asserted in this document and
-in the fixture module's own docstring while no shared suite existed to back it.
+This was an assertion in this document for a long time while nothing enforced
+it — every test constructed the fixture repository directly. It is now backed
+by one suite written against the *protocol* and parameterised over its
+implementations, so adding the stored repository means running the existing
+tests rather than writing new ones (Task 2.10).
 
-What makes it real is one suite written against the *protocol* and
-parameterised over its implementations, so adding the stored repository means
-running the existing tests rather than writing new ones. Written now, it
-becomes the specification the stored implementation is built to satisfy;
-written afterwards, it becomes a description of whatever the stored
-implementation happened to do. Task 2.10.
+It was written **before** the stored implementation, deliberately. Written
+first, it is the specification that implementation is built to satisfy. Written
+afterwards, it would be a description of whatever that implementation happened
+to do — a different and much less useful artefact.
+
+Two constraints keep it honest. It touches **protocol members only**: anything
+convenient that is not on the Protocol is precisely what will not exist on the
+stored side, so test data is *discovered* through `candidates_for_budget`
+rather than read out of the fixture file. And it asserts **properties, not
+transcripts** — ordering, limits, types, exclusions — because specific prices
+differ between a seed fixture and live scraped data.
+
+The DynamoDB parameter skips unless a table is configured, so CI stays
+credential-free. A skip is reported as *unverified*, never as a pass.
+
+**The suite is checked against deliberately broken implementations** — a
+substring matcher, a dearest-first store, float money, a leaking exclusion
+filter — and must catch all of them. A conformance suite that cannot fail
+certifies nothing, which §10.3 records the cost of learning.
 
 The same argument applies to the idempotency store (§6.1), whose fixture and
-stored implementations sit behind one protocol for the same reason.
+stored implementations sit behind one protocol for the same reason. It has no
+shared suite yet.
+
+**Writing it surfaced an ambiguity the protocol had left open**, which is the
+sort of thing a second implementation would otherwise have resolved by
+coin-flip. `cheapest_for_product(stores=[])` was accepted via `if stores:`, so
+an explicit empty filter meant "no filter" and returned every store. None and
+`[]` are now specified as distinct — None is "any store", `[]` is "no store
+qualifies" — because silently *widening* a constraint is the dangerous
+direction: an empty intersection of "preferred" and "nearby" would have
+returned exactly the stores the user ruled out. No caller passed `[]`, so
+tightening it changed no behaviour; it removed a trap.
 
 **Unimplemented adapters raise rather than returning empty results.** Both
 stored implementations exist as scaffolding so the wiring is proven, and every
