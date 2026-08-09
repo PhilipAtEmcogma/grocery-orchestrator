@@ -334,7 +334,8 @@ of forgetting to set an identifier.*
 
 ## Phase 9 — Automation
 
-- [x] **9.1** Pre-commit gate running formatting, linting, and tests
+- [x] **9.1** Pre-commit gate running every check that is fast and offline,
+  version controlled so a fresh clone gets the same gate
 - [x] **9.2** Agent hooks for save-time verification
 - [x] **9.3** Blocking hook on contract changes
 - [x] **9.4** Blocking hook verifying grounding invariants
@@ -342,6 +343,28 @@ of forgetting to set an identifier.*
 - [x] **9.6** Continuous integration on pull requests
 - [ ] **9.7** Require review on contract and orchestrator changes
 - [x] **9.8** Protect the default branch behind the aggregate check
+
+*9.1 originally ran lint and tests only, while CI additionally ran a secret
+scan, contract validation, guardrail policy validation and both eval floors.
+A local gate that is a strict subset of the remote gate is worse than none: it
+trains you to read a green signal as meaning something it does not. That is not
+hypothetical — it is why the secret scan failure went unnoticed for four
+commits (see 8.3). The hook now runs every CI check that is fast and offline,
+in about five seconds, and **names the two it does not run** (`pip-audit`, ~16s
+and networked; the package build, minutes) so passing is never read as "CI will
+pass".*
+
+*It also moved out of `.git/hooks` into `scripts/hooks/`, enabled by
+`core.hooksPath`. A hook that exists only in one developer's `.git` directory
+is not a project gate — it is a personal habit that a teammate does not have
+and cannot review. This one is now diffable in a pull request like any other
+control.*
+
+*Each gate was verified by making it fail: a planted credential in a staged
+file, a hand-edited fixture, an unstaged auto-fix, and an impossible eval
+floor. The fixture check regenerates into a backup and restores on every exit
+path, verified by checksum — a hook must not leave the tree different from how
+it found it.*
 
 *9.6 runs six jobs on every pull request and every push to the default branch —
 linting and tests, contract and grounding validation with a fixture drift
