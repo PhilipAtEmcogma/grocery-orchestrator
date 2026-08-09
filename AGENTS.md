@@ -116,16 +116,28 @@ python scripts/apply_guardrail.py --dry-run      # validate guardrail policy
 python scripts/build_lambda.py                   # build/lambda.zip, ~26 MB unzipped
 ```
 
-A pre-commit hook runs `ruff --fix`, `ruff check` and `pytest`. Commits fail if
-any of those fail. CI (`.github/workflows/ci.yml`) adds eval floors and
-security scanning — **no AWS credentials needed anywhere**, which is a design
-outcome of the protocol boundaries.
+The pre-commit hook lives in `scripts/hooks/pre-commit` — **version
+controlled**, not in `.git/hooks`. A fresh clone must enable it once:
+
+```bash
+git config core.hooksPath scripts/hooks
+```
+
+It runs everything CI runs that is fast and offline: ruff, pytest, the secret
+scan on staged files, contract and grounding validation, guardrail policy
+validation, fixture drift, and both eval floors. About five seconds.
+
+**It deliberately does not run `pip-audit` (~16s, needs network) or the Lambda
+package build.** Those stay in CI, and the hook says so on every run, so a pass
+means "CI will not fail for any of the fast, offline reasons" — not "CI will
+pass". Keep that list honest if either side changes.
+
+CI (`.github/workflows/ci.yml`) runs the same checks plus those two — **no AWS
+credentials needed anywhere**, which is a design outcome of the protocol
+boundaries.
 
 **`main` is protected. Direct pushes are rejected, for everyone.** Work on a
 branch and open a pull request; the `All checks` job must pass before merge.
-Note that the pre-commit hook does *not* run the security job, so a clean
-commit locally is not proof CI will be green — that gap is exactly how the
-default branch stayed red for four commits without anyone noticing.
 
 ---
 

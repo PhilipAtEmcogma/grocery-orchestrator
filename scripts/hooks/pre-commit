@@ -1,0 +1,138 @@
+#!/bin/sh
+#
+# Pre-commit gate (Task 9.1).
+#
+# THIS FILE IS VERSION CONTROLLED, unlike a hook living in .git/hooks. It is
+# active via `git config core.hooksPath scripts/hooks`, which a fresh clone must
+# run once:
+#
+#     git config core.hooksPath scripts/hooks
+#
+# A hook that exists only on the author's machine is not a project gate; it is
+# a personal habit that a teammate silently does not have.
+#
+# WHY THIS RUNS MORE THAN LINT AND TESTS
+#
+# It used to run `ruff` and `pytest` only. CI additionally ran a secret scan, a
+# contract check, a guardrail policy validation and both eval floors. That gap
+# is not academic: the default branch stayed red for four consecutive commits
+# because the secret scan only ever ran in CI, so every commit looked clean
+# locally while the build failed. A local gate that is a strict subset of the
+# remote gate teaches you to trust a signal that does not mean what you think.
+#
+# WHAT THIS DELIBERATELY DOES NOT COVER
+#
+#   pip-audit --strict      ~16s and needs the network
+#   Lambda package build    downloads manylinux wheels; minutes, not seconds
+#
+# Both stay in CI. They are listed here so this hook passing is never mistaken
+# for "CI will pass" — it means "CI will not fail for any of the fast, offline
+# reasons". Keep this list accurate if either side changes.
+#
+# Emergency bypass is `git commit --no-verify`. If you use it, expect CI to be
+# the thing that catches you, and go and look at it.
+
+set -e
+
+RED=''
+GREEN=''
+RESET=''
+if [ -t 1 ]; then
+    RED=$(printf '\033[31m')
+    GREEN=$(printf '\033[32m')
+    RESET=$(printf '\033[0m')
+fi
+
+step= # current step name, for the failure message
+fail() {
+    printf '%spre-commit failed: %s%s\n' "$RED" "$step" "$RESET" >&2
+    [ -n "$1" ] && printf '  %s\n' "$1" >&2
+    exit 1
+}
+
+say() { printf '  %s\n' "$1"; }
+
+cd "$(git rev-parse --show-toplevel)"
+
+# --------------------------------------------------------------- lint
+
+step="ruff"
+# --fix first, as before. But a fix applied now is NOT in the staged content,
+# so committing would record the unfixed version and CI would still fail on it.
+# Detect that and stop rather than producing a commit that does not match the
+# tree it was linted from.
+before=$(git diff --name-only)
+ruff check --fix . >/dev/null || fail "run: ruff check ."
+after=$(git diff --name-only)
+if [ "$before" != "$after" ]; then
+    fail "ruff auto-fixed files. Review and 'git add' them, then commit again."
+fi
+ruff check . >/dev/null || fail "run: ruff check ."
+say "${GREEN}ok${RESET} ruff"
+
+# --------------------------------------------------------------- tests
+
+step="pytest"
+python -m pytest -q >/dev/null || fail "run: python -m pytest"
+say "${GREEN}ok${RESET} pytest"
+
+# --------------------------------------------------------------- secrets
+# The gap that let the default branch stay red. Staged files only: the rest of
+# the tree is already accounted for by the committed baseline.
+
+step="secret scan"
+staged=$(git diff --cached --name-only --diff-filter=ACM)
+if [ -n "$staged" ]; then
+    # shellcheck disable=SC2086
+    printf '%s\n' "$staged" | tr '\n' '\0' \
+        | xargs -0 detect-secrets-hook --baseline .secrets.baseline \
+        || fail "a new secret was detected, or the baseline moved and needs re-committing"
+fi
+say "${GREEN}ok${RESET} secret scan"
+
+# --------------------------------------------------------------- contract
+
+step="contract and grounding"
+python validate.py >/dev/null || fail "run: python validate.py"
+say "${GREEN}ok${RESET} contract and grounding"
+
+# --------------------------------------------------------------- guardrail
+
+step="guardrail policy"
+python scripts/apply_guardrail.py --dry-run >/dev/null \
+    || fail "run: python scripts/apply_guardrail.py --dry-run"
+say "${GREEN}ok${RESET} guardrail policy"
+
+# --------------------------------------------------------------- fixtures
+# Only when the generator or its output is staged — the only way they drift.
+# Regenerating rewrites the working copy, so it is backed up and restored on
+# every exit path. A hook must not leave the tree different from how it found
+# it.
+
+step="fixture drift"
+if printf '%s\n' "$staged" | grep -qE '^(scripts/generate_fixtures\.py|fixtures/)'; then
+    backup=$(mktemp)
+    cp fixtures/products.json "$backup"
+    trap 'cp "$backup" fixtures/products.json 2>/dev/null; rm -f "$backup"' EXIT
+    python scripts/generate_fixtures.py >/dev/null || fail "generator errored"
+    if ! git diff --quiet fixtures/; then
+        fail "fixtures/products.json is out of sync with its generator. Run: python scripts/generate_fixtures.py"
+    fi
+    cp "$backup" fixtures/products.json
+    rm -f "$backup"
+    trap - EXIT
+    say "${GREEN}ok${RESET} fixture drift"
+fi
+
+# --------------------------------------------------------------- evals
+# Floors, not targets. Never lower one to make a commit pass.
+
+step="eval floors"
+python evals/run_intent.py --min-accuracy 0.75 >/dev/null \
+    || fail "intent accuracy fell below the floor"
+python evals/run_meal_plan.py --min-pass-rate 0.85 >/dev/null \
+    || fail "meal plan invariants fell below the floor"
+say "${GREEN}ok${RESET} eval floors"
+
+printf '%spre-commit passed%s (pip-audit and the package build run in CI only)\n' \
+    "$GREEN" "$RESET"

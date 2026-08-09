@@ -291,6 +291,8 @@ python -m venv .venv
 .venv\Scripts\activate        # Windows; use `source .venv/bin/activate` on macOS/Linux
 pip install -r requirements.txt -r requirements-dev.txt
 
+git config core.hooksPath scripts/hooks   # enable the pre-commit gate (once)
+
 pytest                        # run the test suite (fast, deterministic)
 python validate.py            # validate samples/*.json against the contract
 python scripts/generate_fixtures.py   # regenerate fixtures/products.json
