@@ -65,7 +65,7 @@ tracked here rather than treated as incidental.*
   — *Req 4.3*
 - [ ] **2.9** Implement the stored price repository against the same protocol
   — *Req 8.1, 8.2* — **[blocked: AWS]**
-- [ ] **2.10** Build one test suite, parameterised over every implementation of
+- [x] **2.10** Build one test suite, parameterised over every implementation of
   the price store protocol, and run it against both
 - [x] **2.11** Resolve and compare every item in a multi-item request, naming
   both the items that could not be resolved and the items that exceeded the
@@ -74,12 +74,32 @@ tracked here rather than treated as incidental.*
 *2.9 is the only orchestrator task blocked on cloud access. Everything above it
 was built and tested without it.*
 
-*2.10 is the acceptance criteria for 2.9 and does not depend on it. `design.md`
-§7 asserts that the stored implementation must satisfy the same tests as the
-fixture one; today that is an assertion, not a fact, because every test
-constructs the in-memory repository directly. The suite should be written
-against the protocol now and applied to the stored implementation the moment it
-exists, so "it passes" means the same thing for both.*
+*2.10 is the acceptance criteria for 2.9 and does not depend on it —
+`tests/test_price_repository_contract.py`, 31 properties over the protocol.
+Written before the stored implementation on purpose: written first it is the
+specification 2.9 is built to satisfy; written afterwards it would only
+describe whatever 2.9 happened to do.*
+
+*It uses protocol members only — test data is discovered through
+`candidates_for_budget` rather than read from `fixtures/products.json`, because
+anything convenient that is not on the Protocol is exactly what will not exist
+on the DynamoDB side. The stored parameter skips unless
+`PRICE_REPO_DYNAMO_TABLE` is set, so CI stays credential-free, and a skip
+reports as **unverified** rather than passing quietly.*
+
+*Verified to have teeth against five deliberately broken implementations — a
+substring matcher, a dearest-first store, float money, a leaking exclusion
+filter, a widening store filter — all caught, with no false positives on the
+conforming one. A conformance suite that cannot fail certifies nothing; 8.3
+records what that costs.*
+
+*Writing it surfaced a real ambiguity: `cheapest_for_product(stores=[])` was
+accepted through `if stores:`, so an explicit empty filter meant "no filter"
+and returned every store. None and `[]` are now specified as distinct in the
+protocol, because silently widening a constraint is the dangerous direction. No
+caller passed `[]`, so the fix changed no behaviour — it closed a trap that the
+second implementation would otherwise have resolved by guesswork, in either
+direction, with nothing to catch the disagreement.*
 
 *2.11 was **moved out of Deferred** — it is implemented and tested. It was
 specified as unbounded ("a comparison for each item") and implemented with a
