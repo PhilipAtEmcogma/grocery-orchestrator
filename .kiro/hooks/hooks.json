@@ -47,7 +47,7 @@
     },
     {
       "name": "security-review-on-iam",
-      "description": "Least privilege is opt-in. Every IAM change gets read before it lands.",
+      "description": "Least privilege is opt-in. Every IAM change gets read before it lands. infra/manual/*.json is gitignored, so it never reaches a PR diff — this hook is the only review it gets, which makes the pattern more load-bearing than the others, not less.",
       "trigger": {
         "event": "file_saved",
         "patterns": ["infra/**/*.ts", "infra/**/*.py", "infra/manual/*.json"]

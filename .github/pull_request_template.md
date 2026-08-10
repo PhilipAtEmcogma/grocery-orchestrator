@@ -38,4 +38,5 @@ Prompt edits are unmeasured until the eval suite has run. Record the numbers:
 
 - [ ] IAM scoped to named resources, no wildcards
 - [ ] No secrets in source or environment variables
-- [ ] Resource config exported to `infra/manual/` and committed
+- [ ] Resource config dumped to `infra/manual/` (gitignored — local only) and
+      `DYNAMODB-SCHEMA.md` updated if what exists differs from what it records

@@ -289,20 +289,45 @@ Consequences:
 
 **The stored implementations must satisfy the same tests as the fixture ones.**
 
-This is currently an intention, not a fact, and the distinction matters enough
-to record. Every test constructs the fixture repository directly, so nothing
-enforces the property — the phrase above has been asserted in this document and
-in the fixture module's own docstring while no shared suite existed to back it.
+This was an assertion in this document for a long time while nothing enforced
+it — every test constructed the fixture repository directly. It is now backed
+by one suite written against the *protocol* and parameterised over its
+implementations, so adding the stored repository means running the existing
+tests rather than writing new ones (Task 2.10).
 
-What makes it real is one suite written against the *protocol* and
-parameterised over its implementations, so adding the stored repository means
-running the existing tests rather than writing new ones. Written now, it
-becomes the specification the stored implementation is built to satisfy;
-written afterwards, it becomes a description of whatever the stored
-implementation happened to do. Task 2.10.
+It was written **before** the stored implementation, deliberately. Written
+first, it is the specification that implementation is built to satisfy. Written
+afterwards, it would be a description of whatever that implementation happened
+to do — a different and much less useful artefact.
+
+Two constraints keep it honest. It touches **protocol members only**: anything
+convenient that is not on the Protocol is precisely what will not exist on the
+stored side, so test data is *discovered* through `candidates_for_budget`
+rather than read out of the fixture file. And it asserts **properties, not
+transcripts** — ordering, limits, types, exclusions — because specific prices
+differ between a seed fixture and live scraped data.
+
+The DynamoDB parameter skips unless a table is configured, so CI stays
+credential-free. A skip is reported as *unverified*, never as a pass.
+
+**The suite is checked against deliberately broken implementations** — a
+substring matcher, a dearest-first store, float money, a leaking exclusion
+filter — and must catch all of them. A conformance suite that cannot fail
+certifies nothing, which §10.3 records the cost of learning.
 
 The same argument applies to the idempotency store (§6.1), whose fixture and
-stored implementations sit behind one protocol for the same reason.
+stored implementations sit behind one protocol for the same reason. It has no
+shared suite yet.
+
+**Writing it surfaced an ambiguity the protocol had left open**, which is the
+sort of thing a second implementation would otherwise have resolved by
+coin-flip. `cheapest_for_product(stores=[])` was accepted via `if stores:`, so
+an explicit empty filter meant "no filter" and returned every store. None and
+`[]` are now specified as distinct — None is "any store", `[]` is "no store
+qualifies" — because silently *widening* a constraint is the dangerous
+direction: an empty intersection of "preferred" and "nearby" would have
+returned exactly the stores the user ruled out. No caller passed `[]`, so
+tightening it changed no behaviour; it removed a trap.
 
 **Unimplemented adapters raise rather than returning empty results.** Both
 stored implementations exist as scaffolding so the wiring is proven, and every
@@ -458,19 +483,34 @@ deliberate, visible configuration choice — never as the accidental consequence
 of an unset identifier. This is the opposite of the platform default, which is
 what makes it worth stating.
 
-### 10.3 A control that cannot fail is not a control
+### 10.3 A gate nobody reads
 
-Secret scanning was wired into CI, marked complete, and could not fail: the
-baseline it compared against was excluded from version control, so every clean
-checkout regenerated the baseline it was meant to be checked against. The
-scanning command compounded it — the `scan` subcommand rewrites the baseline in
-place and exits zero on a new finding; only the hook subcommand exits non-zero.
+Secret scanning was wired into CI and marked complete. It then failed on four
+consecutive commits to the default branch, and nothing happened. The baseline
+it compared against was excluded from version control, so the scan exited with
+`Invalid path` every time.
 
-Two lessons worth carrying into the rebuild. First, a security gate is not done
-when it is wired, it is done when it has been *seen to fail* on a planted
-defect — the verification step belongs in the task, not in the reviewer's
-optimism. Second, anything a gate reads must be in version control, or the gate
-is reading something it just wrote.
+The instructive part is not the missing file — that is a two-character fix in
+`.gitignore`. It is that a red build on the default branch persisted across
+four commits without being treated as a defect. A gate that fails and is
+ignored provides precisely the assurance of no gate at all, while looking on
+paper like a control.
+
+There was a second defect underneath, and it would have surfaced only after the
+first was fixed: `detect-secrets scan --baseline` rewrites the baseline in
+place and exits zero when it finds something new. It is a maintenance command,
+not a gate; the hook subcommand is the one that exits non-zero. Committing the
+baseline without also changing the command would have converted a loudly
+failing job into a silently passing one — a strictly worse position, and one
+nobody would have gone looking for, because the build would finally have been
+green.
+
+Three things to carry into the rebuild. A gate is done when it has been *seen
+to fail* on a planted defect and pass without one, not when it is wired.
+Anything a gate reads must be in version control, or it is reading something it
+just wrote. And a check whose failure does not block or notify anyone is
+documentation, not enforcement — which is the same argument §8 makes for
+structural guarantees over behavioural ones, applied to the build.
 
 ### 10.4 What is not yet verified
 

@@ -65,7 +65,7 @@ tracked here rather than treated as incidental.*
   — *Req 4.3*
 - [ ] **2.9** Implement the stored price repository against the same protocol
   — *Req 8.1, 8.2* — **[blocked: AWS]**
-- [ ] **2.10** Build one test suite, parameterised over every implementation of
+- [x] **2.10** Build one test suite, parameterised over every implementation of
   the price store protocol, and run it against both
 - [x] **2.11** Resolve and compare every item in a multi-item request, naming
   both the items that could not be resolved and the items that exceeded the
@@ -74,12 +74,32 @@ tracked here rather than treated as incidental.*
 *2.9 is the only orchestrator task blocked on cloud access. Everything above it
 was built and tested without it.*
 
-*2.10 is the acceptance criteria for 2.9 and does not depend on it. `design.md`
-§7 asserts that the stored implementation must satisfy the same tests as the
-fixture one; today that is an assertion, not a fact, because every test
-constructs the in-memory repository directly. The suite should be written
-against the protocol now and applied to the stored implementation the moment it
-exists, so "it passes" means the same thing for both.*
+*2.10 is the acceptance criteria for 2.9 and does not depend on it —
+`tests/test_price_repository_contract.py`, 31 properties over the protocol.
+Written before the stored implementation on purpose: written first it is the
+specification 2.9 is built to satisfy; written afterwards it would only
+describe whatever 2.9 happened to do.*
+
+*It uses protocol members only — test data is discovered through
+`candidates_for_budget` rather than read from `fixtures/products.json`, because
+anything convenient that is not on the Protocol is exactly what will not exist
+on the DynamoDB side. The stored parameter skips unless
+`PRICE_REPO_DYNAMO_TABLE` is set, so CI stays credential-free, and a skip
+reports as **unverified** rather than passing quietly.*
+
+*Verified to have teeth against five deliberately broken implementations — a
+substring matcher, a dearest-first store, float money, a leaking exclusion
+filter, a widening store filter — all caught, with no false positives on the
+conforming one. A conformance suite that cannot fail certifies nothing; 8.3
+records what that costs.*
+
+*Writing it surfaced a real ambiguity: `cheapest_for_product(stores=[])` was
+accepted through `if stores:`, so an explicit empty filter meant "no filter"
+and returned every store. None and `[]` are now specified as distinct in the
+protocol, because silently widening a constraint is the dangerous direction. No
+caller passed `[]`, so the fix changed no behaviour — it closed a trap that the
+second implementation would otherwise have resolved by guesswork, in either
+direction, with nothing to catch the disagreement.*
 
 *2.11 was **moved out of Deferred** — it is implemented and tested. It was
 specified as unbounded ("a comparison for each item") and implemented with a
@@ -232,12 +252,25 @@ hold in production.*
 - [ ] **7.6** Orchestrate acquisition with parallel per-retailer error handling
 - [ ] **7.7** Implement name normalisation in ingestion — *Req 8.3*
 - [ ] **7.8** Schedule the refresh — *Req 8.4*
-- [ ] **7.9** Assess terms-of-service risk before live acquisition — *Req 8.8*
+- [x] **7.9** Assess terms-of-service risk before live acquisition — *Req 8.8*
+  — `ACQUISITION-RISK.md`
 - [ ] **7.10** Create the idempotency table with expiry — *Req 12.3*
   — **[blocked: AWS]**
 
-*7.9 gates 7.5. Legal assessment precedes implementation, not the reverse. It
-needs no cloud access and is not started.*
+*7.9 gated 7.5 and is now done. Legal assessment precedes implementation, not
+the reverse — and having run it, the two halves separate. **7.5 is unblocked**:
+it is the acquisition structure, built against fixtures, sending no production
+traffic. **11.4 stays gated**, but on the named conditions in
+`ACQUISITION-RISK.md` §8 rather than on an open question. A gate reading "risk
+unassessed" is unfalsifiable and never clears.*
+
+*Three findings change how 7.5 and 11.4 should be built. Foodstuffs
+`robots.txt` disallows the search endpoints — the catalogue sitemaps are the
+sanctioned traversal, and they are the better engineering anyway. The
+Woolworths NZ terms could not be retrieved and are treated as prohibitive until
+a human confirms them. And the binding constraint is the Fair Trading Act,
+which attaches to the comparison we publish rather than to the fetch: capture
+date must be surfaced to the user, not merely stored under Req 8.4.*
 
 *7.10 is new: the idempotency store needs a table of its own, and it was absent
 from both this phase and the schema document. Its `acquire` operation is a
@@ -250,7 +283,7 @@ It gates 6.8.*
 
 - [x] **8.1** Static security analysis in the linter
 - [x] **8.2** Dependency vulnerability scanning
-- [ ] **8.3** Secret scanning
+- [x] **8.3** Secret scanning
 - [x] **8.4** Exclude personal data from logs — *Req 11.5*
 - [ ] **8.5** Per-function roles scoped to named resources — *Req 11.1*
   — **[blocked: AWS]**
@@ -269,25 +302,35 @@ It gates 6.8.*
 - [x] **8.13** Commit an audited secret-scanning baseline and use a command
   that fails the build on a new finding
 
-*8.3 has been returned to `[ ]`. The scan was wired into continuous integration
-and marked complete, but it could not fail: the baseline it compares against
-was excluded from version control, so on a clean checkout the tool created the
-baseline it was meant to compare against and exited successfully. A gate that
-cannot fail is not a completed gate, and the checkbox is what gets read.*
+*8.3 was briefly returned to `[ ]` on the belief that the scan silently passed.
+That was wrong, and the real history is worse. Because the baseline was
+excluded from version control, `detect-secrets scan --baseline` did not
+regenerate it and carry on — it exited 2 with `Invalid path`, failing the job.
+**Continuous integration on the default branch was red for four consecutive
+commits** and the failure was not acted on. The gate was not silent; it was
+shouting, and nobody was listening. That is the more useful finding, because a
+gate nobody reads is worth exactly as much as a gate that cannot fail.*
 
-*8.13 fixed the two causes. The baseline is now committed and audited — two
-findings, both confirmed false positives: a guardrail policy entity type named
+*8.13 fixed both defects. The baseline is committed and audited — two findings,
+both confirmed false positives: a guardrail policy entity type named
 `PASSWORD`, and a deliberately fake connection string in the test that asserts
 the handler does not leak it. Neither is a real credential, so nothing genuine
-has been whitelisted. The CI command was also changed: `detect-secrets scan
---baseline` **updates** the baseline in place and exits zero even when it finds
-something new, which is the second reason the gate never fired.
-`detect-secrets-hook` is the command that exits non-zero. Verified by planting
-a fake credential and confirming a non-zero exit.*
+has been whitelisted. Paths are stored with forward slashes, because a baseline
+generated on Windows would otherwise present every known finding as new to the
+Linux runner.*
 
-*8.3 stays open until 8.13 has run green on a real pull request. The whole
-point of this pair is that a security gate is not complete on the word of the
-person who wired it.*
+*The command was changed too, and this defect was real and would have surfaced
+the moment the first one was fixed: `detect-secrets scan --baseline` **rewrites
+the baseline in place and exits zero** when it finds something new. It is a
+maintenance command, not a gate. `detect-secrets-hook` is the one that exits
+non-zero. Fixing only the missing file would have turned a loudly failing job
+into a silently passing one — strictly worse.*
+
+*8.3 is `[x]` because the gate has now been observed doing both halves of its
+job: exit 1 against a planted AWS key, and green on run 31308163941, the first
+passing run on the default branch in four commits. A security gate is complete
+when it has been seen to fail on a planted defect and pass without one — not
+when it is wired, and not on the word of whoever wired it.*
 
 *8.4 is verified by reading the handler, not by a test. Every log statement
 records identifiers, counts and durations only — never message text, never
@@ -324,13 +367,37 @@ of forgetting to set an identifier.*
 
 ## Phase 9 — Automation
 
-- [x] **9.1** Pre-commit gate running formatting, linting, and tests
+- [x] **9.1** Pre-commit gate running every check that is fast and offline,
+  version controlled so a fresh clone gets the same gate
 - [x] **9.2** Agent hooks for save-time verification
 - [x] **9.3** Blocking hook on contract changes
 - [x] **9.4** Blocking hook verifying grounding invariants
 - [x] **9.5** Hook requiring evaluation after prompt changes — *Req 10.5*
 - [x] **9.6** Continuous integration on pull requests
 - [ ] **9.7** Require review on contract and orchestrator changes
+- [x] **9.8** Protect the default branch behind the aggregate check
+
+*9.1 originally ran lint and tests only, while CI additionally ran a secret
+scan, contract validation, guardrail policy validation and both eval floors.
+A local gate that is a strict subset of the remote gate is worse than none: it
+trains you to read a green signal as meaning something it does not. That is not
+hypothetical — it is why the secret scan failure went unnoticed for four
+commits (see 8.3). The hook now runs every CI check that is fast and offline,
+in about five seconds, and **names the two it does not run** (`pip-audit`, ~16s
+and networked; the package build, minutes) so passing is never read as "CI will
+pass".*
+
+*It also moved out of `.git/hooks` into `scripts/hooks/`, enabled by
+`core.hooksPath`. A hook that exists only in one developer's `.git` directory
+is not a project gate — it is a personal habit that a teammate does not have
+and cannot review. This one is now diffable in a pull request like any other
+control.*
+
+*Each gate was verified by making it fail: a planted credential in a staged
+file, a hand-edited fixture, an unstaged auto-fix, and an impossible eval
+floor. The fixture check regenerates into a backup and restores on every exit
+path, verified by checksum — a hook must not leave the tree different from how
+it found it.*
 
 *9.6 runs six jobs on every pull request and every push to the default branch —
 linting and tests, contract and grounding validation with a fixture drift
@@ -342,6 +409,25 @@ boundaries rather than a limitation.*
 *9.7 is partly served by a pull request template that prompts for the right
 checks, but nothing enforces reviewer assignment: there is no code-owners file.
 A template asks; it does not require.*
+
+*9.8 is what 8.3's history argued for. The `All checks` aggregate job is now a
+required status check on the default branch, with administrators included and
+force-pushes and deletions disabled. Verified by pushing directly and being
+rejected — `GH006: Required status check "All checks" is expected` — not by
+reading the settings page.*
+
+*Two consequences to be deliberate about. **Direct pushes to the default branch
+are no longer possible, including for the repository owner.** All changes go
+through a pull request; that is the cost of the guarantee, and admin exemption
+was declined precisely because the four red commits this fixes were the owner's
+own. And the repository was made **public** to obtain the feature, which is
+free only for public repositories on the current plan — a licensing constraint
+driving a visibility decision, worth naming as such. The history was audited
+for credentials and personal data before publication.*
+
+*The aggregate job exists so this rule names one check. Adding a CI job later
+does not mean editing the protection rule, which is the kind of maintenance
+step that gets skipped.*
 
 ---
 
@@ -374,7 +460,8 @@ initial delivery.
 
 - [ ] **11.2** Recipe catalogue constraining plan composition — *Req 2.9*
 - [ ] **11.3** Streaming transport — *Req 7.9*
-- [ ] **11.4** Live price acquisition — *Req 8.8*, gated on 7.9
+- [ ] **11.4** Live price acquisition — *Req 8.8*, gated on the conditions in
+  `ACQUISITION-RISK.md` §8
 - [ ] **11.5** Conversation memory across turns
 - [ ] **11.6** Retailer basket hand-off
 
@@ -400,10 +487,11 @@ BLOCKED ON THE AWS ACCOUNT
 
 BLOCKED ON ANOTHER TEAM
   1.6  contract circulated             -> unblocks the frontend
-
-BLOCKED ON A GREEN CI RUN
-  8.13 baseline committed and gating   -> closes 8.3
 ```
+
+Secret scanning (8.3, 8.13) is closed: the gate was verified failing on a
+planted credential and passing on run 31308163941, the first green run on the
+default branch in four commits.
 
 Everything else is unblocked and can proceed today. In rough order of value:
 
@@ -412,9 +500,14 @@ Everything else is unblocked and can proceed today. In rough order of value:
 2.10 shared repository suite     the acceptance criteria 2.9 will be judged by
 5.9  red-team harness            writable offline; makes 8.10 one command
 6.7  structured logging          Req 12.1-12.2, no cloud dependency
-7.9  terms-of-service assessment gates 7.5, needs no code
+7.5  per-retailer acquisition    unblocked by 7.9; fixtures, no live traffic
 9.7  code owners file            makes 9.7's intent enforceable
 ```
+
+7.9 is done (`ACQUISITION-RISK.md`). It unblocked 7.5 and converted 11.4's gate
+from an open question into a named condition list. Three of its six primary
+sources could not be retrieved by automated fetch and are recorded as unknown
+rather than absent — a human must complete that table before 11.4 proceeds.
 
 Task 1.6 still blocks another team and should be completed first regardless of
 other sequencing.
