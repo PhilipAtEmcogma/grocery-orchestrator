@@ -75,13 +75,22 @@ validate_input → classify_intent → retrieve_prices
                                                       └─ ok → generate_prose → finalise
 ```
 
-**Two protocol boundaries** make everything testable without AWS:
+**Three protocol boundaries** make everything testable without AWS:
 - `src/retrieval/base.py` — `PriceRepository`; fixtures now, DynamoDB later
 - `src/models/base.py` — `ModelClient`; scripted now, Bedrock later
+- `src/observability/base.py` — `Telemetry`; a no-op by default, Powertools
+  when the handler installs it
 
 The scripted client has knobs (`plan_packs`, `hallucinate_ref`,
 `prose_writes_money`, `force_error`) to drive failure paths that a live model
 cannot be made to produce on demand.
+
+**Observability stops at the handler.** Powertools' Logger, Tracer and
+Metrics are wired in `src/handler.py`, and `src/observability/powertools.py`
+is the only module that imports the library. Tracing reaches inside the graph
+by *wrapping* the repository and model client, not by importing anything into
+a node. A test walks the import graph and fails if that escapes — see
+design.md §12.
 
 **Model plane, not a Claude endpoint.** Nodes request a *task*;
 `src/models/registry.py` routes it using `config/models.json`. Capabilities are
@@ -108,7 +117,7 @@ rather than substituting silently.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 192 tests, ~1.5s, no AWS
+python -m pytest -q                              # 218 tests, ~4s, no AWS
 ruff check .                                     # must be clean
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -118,7 +127,7 @@ python evals/run_meal_plan.py                    # 89% invariants baseline
 python scripts/generate_fixtures.py              # regenerate seed data
 python scripts/dev_server.py                     # localhost:8000 for frontend
 python scripts/apply_guardrail.py --dry-run      # validate guardrail policy
-python scripts/build_lambda.py                   # build/lambda.zip, ~26 MB unzipped
+python scripts/build_lambda.py                   # build/lambda.zip, ~30 MB unzipped
 ```
 
 The pre-commit hook lives in `scripts/hooks/pre-commit` — **version
@@ -208,6 +217,14 @@ before and after in the commit message.
 - Use Lambda Function URLs for streaming — loses throttling, usage plans and
   auth.
 - Trust model-reported constraint compliance. Verify against retrieved data.
+- Import `aws_lambda_powertools` outside `src/observability/powertools.py`
+  and `src/handler.py`. It ends the no-AWS property CI depends on.
+- Replace the idempotency implementation with Powertools' utility. Ours has
+  session-scoped keys, payload fingerprinting, in-flight detection and
+  terminal-only caching, each deliberately tested — design.md §12.5.
+- Log an exception object, or call `logger.exception()`. A traceback ends
+  with `str(exc)`, and a pydantic `ValidationError` embeds the rejected
+  input — which is the user's message. Use `exception_fields()`.
 - Point acquisition at live retailer sites. Task 11.4 is gated —
   `ACQUISITION-RISK.md` §8. Build against fixtures and recorded responses.
 - Circumvent a retailer's technical controls — bot mitigation, rate limits, an
@@ -226,8 +243,9 @@ before and after in the commit message.
 **Done, tested, no AWS needed:** contract v1.0 · LangGraph orchestrator ·
 intent classification with extraction · meal planning with bounded repair ·
 prose generation · multi-item queries · multi-model registry · guardrail config
-and input tagging · idempotency · two eval suites · handler · local dev server ·
-CI · Lambda deployment archive (Task 10.1) · Kiro specs, steering and hooks ·
+and input tagging · idempotency · Powertools observability (Req 12.1–12.2,
+Task 6.7) · two eval suites · handler · local dev server · CI · Lambda
+deployment archive (Task 10.1) · Kiro specs, steering and hooks ·
 terms-of-service assessment for live acquisition (Task 7.9).
 
 **Blocked on AWS account (not yet provisioned):**
@@ -238,10 +256,9 @@ terms-of-service assessment for live acquisition (Task 7.9).
   is right — flagged in `src/models/guardrail.py`
 - Deployment
 
-**Not started:** SnapStart on a published alias (Task 10.2), Powertools
-observability (Req 12.1–12.2), recipe catalogue (Req 2.9), streaming
-transport (Req 7.9), per-retailer acquisition (Task 7.5 — unblocked by 7.9,
-fixtures only).
+**Not started:** SnapStart on a published alias (Task 10.2), recipe catalogue
+(Req 2.9), streaming transport (Req 7.9), per-retailer acquisition (Task 7.5
+— unblocked by 7.9, fixtures only).
 
 ---
 

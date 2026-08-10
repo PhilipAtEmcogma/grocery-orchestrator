@@ -4,3 +4,8 @@ langchain-aws
 boto3
 pydantic
 python-dotenv
+# Observability (Req 12.1, 12.2). Imported only by src/observability/powertools.py
+# and src/handler.py; the graph, the model plane and both eval harnesses stay
+# free of it so they keep running with no AWS account. The [tracer] extra pulls
+# aws-xray-sdk, which is what emits the subsegments.
+aws-lambda-powertools[tracer]

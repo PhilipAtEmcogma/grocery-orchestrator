@@ -171,6 +171,7 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
 
     if attempts == 0:
         tier = ModelTier.QUALITY
+        task = "generate_plan"
         user_prompt = build_user_prompt(
             message=state["message"],
             household_size=household,
@@ -181,6 +182,7 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
         )
     else:
         tier = ModelTier.FAST
+        task = "repair_plan"
         previous = state.get("plan")
         over_by = (
             _round(previous.total_nzd - budget) if previous else Decimal("0")
@@ -204,12 +206,21 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
         )
 
     try:
+        # `task` is what the registry routes on, and it was previously left
+        # to the parameter's default — so every plan call routed as
+        # 'classify_intent' and landed on the FAST model, silently
+        # contradicting the QUALITY tier this node asks for and leaving the
+        # generate_plan/repair_plan rules in config/models.json unreachable.
+        # It is also the label the trace and the per-model latency metric are
+        # keyed on, so a wrong task attributes the plan path's latency to
+        # classification.
         draft = model.structured(
             system=SYSTEM_PROMPT,
             user=user_prompt,
             schema=PlanDraft,
             tier=tier,
             max_tokens=2048,
+            task=task,
         )
     except ModelError as exc:
         return {"plan": None, "validation_errors": [f"generation failed: {exc}"]}
