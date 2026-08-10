@@ -244,12 +244,13 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   eval regression floors, and the Lambda package build — five jobs, all
   credential-free, gated behind one `summary` job for branch protection.
 - ✅ Lambda deployment archive (`scripts/build_lambda.py`): cross-platform
-  build (manylinux wheels regardless of host OS), unused-transitive packages
-  (`numpy`, `zstandard`, and their now-orphaned deps) and runtime-provided
-  ones (`boto3`, `botocore`) excluded, unzipped size measured against a 240MB
-  budget, and the packaged archive's importability verified. ~30MB unzipped
-  today, well under the budget that justifies zip-over-container (SnapStart
-  is zip-only).
+  build (manylinux wheels regardless of host OS), unused packages (`numpy`,
+  `zstandard`) and runtime-provided ones (`boto3`, `botocore`, `s3transfer`)
+  excluded, unzipped size measured against a 240MB budget, and the packaged
+  archive's importability verified against the archive plus *only* the
+  runtime-provided packages — so "the runtime supplies this" is a tested
+  claim rather than an assumption. ~30MB unzipped today, well under the
+  budget that justifies zip-over-container (SnapStart is zip-only).
 - ✅ Observability (`src/observability/`, Req 12.1–12.2): AWS Lambda
   Powertools for structured JSON logs correlated by `session_id`, X-Ray
   subsegments around retrieval and every model call — including each repair

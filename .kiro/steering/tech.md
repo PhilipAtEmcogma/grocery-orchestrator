@@ -33,12 +33,24 @@
   imported by our code; both are transitive pulls (`langchain-aws`,
   `langsmith`).
 - Do not bundle boto3/botocore unless a specific new Bedrock feature requires
-  a newer version than the runtime provides. Document it if you do. Excluding
-  boto3 also means excluding `jmespath` and `s3transfer` — they exist only to
-  support boto3, and the runtime's own boto3 brings its own copies of both.
+  a newer version than the runtime provides. Document it if you do. `s3transfer`
+  goes with them — it exists only to support boto3, and the runtime brings its
+  own copy.
+- **Bundle everything our dependency tree declares, except what the runtime
+  provides.** `jmespath` was excluded on the reasoning that it only ever served
+  boto3; that stopped being true when Powertools arrived, because
+  `aws_lambda_powertools.logging.logger` imports it unguarded. A transitive of
+  a runtime-provided package may also be a *direct* dependency of one we
+  bundle, and then it is ours. It is ~50 KB.
 - `scripts/build_lambda.py` is the source of truth for this list
   (`UNUSED_TRANSITIVE` / `RUNTIME_PROVIDED`) and checks the "never imported"
   half of it against `src/` on every build rather than trusting this file.
+  That check only reads `src/`, so it cannot see what a bundled third-party
+  package imports — which is exactly how the `jmespath` exclusion survived
+  until the archive failed to import in CI. `verify_import()` is what covers
+  that half, and it now runs the handler against the archive plus *only* the
+  packages `RUNTIME_PROVIDED` names, so the runtime claim is itself tested
+  rather than assumed.
 
 ## Forbidden
 

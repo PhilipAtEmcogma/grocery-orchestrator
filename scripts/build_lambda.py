@@ -30,6 +30,7 @@ Out: build/lambda.zip
 from __future__ import annotations
 
 import ast
+import os
 import platform
 import shutil
 import subprocess
@@ -41,6 +42,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 BUILD_DIR = ROOT / "build"
 STAGE_DIR = BUILD_DIR / "stage"
+# Where the runtime-provided packages are set aside. Never zipped; it exists
+# so verify_import() can stand in for /var/runtime.
+RUNTIME_DIR = BUILD_DIR / "runtime"
 ZIP_PATH = BUILD_DIR / "lambda.zip"
 REQUIREMENTS = ROOT / "requirements.txt"
 
@@ -53,22 +57,30 @@ REQUIREMENTS = ROOT / "requirements.txt"
 # to the repo root later.
 INCLUDE_DIRS = ["src", "config", "fixtures"]
 
-# Installed but never imported anywhere in src/, dead weight either way.
-# numpy and zstandard are transitive pulls from langchain-aws and langsmith
-# respectively. jmespath and s3transfer are boto3-only dependencies that
-# become moot the moment boto3 itself is excluded below — nothing of ours
-# reaches for them directly, and the runtime's own boto3 brings its own
-# copies. verify_unused() checks this claim against src/ directly rather
-# than trusting the design doc.
-UNUSED_TRANSITIVE = ["numpy", "zstandard", "jmespath", "s3transfer"]
+# Installed but never imported by anything we ship, dead weight either way.
+# Transitive pulls from langchain-aws and langsmith respectively.
+# verify_unused() checks this claim against src/ directly rather than trusting
+# the design doc.
+#
+# jmespath used to be on this list, on the reasoning that it was a boto3-only
+# dependency and therefore moot once boto3 was excluded. That stopped being
+# true when Powertools arrived: aws_lambda_powertools.logging.logger imports
+# jmespath unguarded, so the claim "nothing of ours reaches for it" was false
+# the moment we bundled a package that does. The rule that replaces it is
+# statable — bundle everything our dependency tree declares, except what AWS
+# documents the runtime provides — and jmespath is declared by a package we
+# bundle, so it is ours. It costs ~50 KB.
+UNUSED_TRANSITIVE = ["numpy", "zstandard"]
 
-# The opposite case: imported (src/models/bedrock.py uses both directly) but
-# never bundled, because the Lambda Python runtime already ships a boto3 and
-# botocore of its own in /var/runtime — including their own jmespath and
-# s3transfer. Bundling ours too would only be justified by a specific
-# Bedrock feature ahead of the runtime's version — see the dependency rules
-# in tech.md.
-RUNTIME_PROVIDED = ["boto3", "botocore"]
+# The opposite case: imported, but never bundled, because the Lambda Python
+# runtime ships its own copies in /var/runtime. Bundling ours would only be
+# justified by needing a version ahead of the runtime's — see the dependency
+# rules in tech.md. boto3 and botocore are ~80 MB together, which is the whole
+# reason this distinction exists.
+#
+# These are NOT deleted. They are moved aside into RUNTIME_DIR, kept out of
+# the zip, and put back on the path for verify_import() only — see there.
+RUNTIME_PROVIDED = ["boto3", "botocore", "s3transfer"]
 
 EXCLUDED_PACKAGES = UNUSED_TRANSITIVE + RUNTIME_PROVIDED
 
@@ -130,22 +142,37 @@ def install_dependencies(target: Path) -> None:
     subprocess.run(cmd, check=True)  # noqa: S603 -- fixed argv, no shell, no user input
 
 
-def prune_excluded(target: Path, names: list[str]) -> None:
+def _matches(entry: Path, names: list[str]) -> bool:
+    return any(
+        entry.name == name
+        or entry.name.startswith(f"{name}-")
+        or entry.name.startswith(f"{name}.")
+        for name in names
+    )
+
+
+def prune_excluded(target: Path, names: list[str], *, move_to: Path | None = None) -> None:
+    """Remove matching top-level entries, or set them aside if `move_to` is given.
+
+    Moving rather than deleting is what lets verify_import() model /var/runtime
+    without a second pip download: the packages were already resolved by
+    install_dependencies(), so they only need relocating out of the zip.
+    """
     for script_dir in GENERATED_SCRIPT_DIRS:
         shutil.rmtree(target / script_dir, ignore_errors=True)
 
+    if move_to is not None:
+        move_to.mkdir(parents=True, exist_ok=True)
+
     for entry in sorted(target.iterdir()):
-        matches = any(
-            entry.name == name
-            or entry.name.startswith(f"{name}-")
-            or entry.name.startswith(f"{name}.")
-            for name in names
-        )
-        if matches:
-            if entry.is_dir():
-                shutil.rmtree(entry)
-            else:
-                entry.unlink()
+        if not _matches(entry, names):
+            continue
+        if move_to is not None:
+            shutil.move(str(entry), str(move_to / entry.name))
+        elif entry.is_dir():
+            shutil.rmtree(entry)
+        else:
+            entry.unlink()
 
 
 def copy_source(target: Path) -> None:
@@ -174,10 +201,29 @@ def make_zip(source: Path, dest: Path) -> None:
                 zf.write(file_path, file_path.relative_to(source))
 
 
-def verify_import(zip_path: Path) -> None:
+def verify_import(zip_path: Path, runtime_dir: Path) -> None:
     """Unzip to a scratch dir and confirm the handler actually resolves — a
     zip that builds cleanly but can't be imported fails at cold start in
     production instead of here.
+
+    The archive is deliberately NOT self-contained: boto3 and botocore come
+    from the runtime. So the question this answers is "does it import in
+    Lambda", not "does it import alone", and `runtime_dir` supplies exactly
+    the packages RUNTIME_PROVIDED claims are there — nothing else. A package
+    that is neither bundled nor on that list still fails here, which is the
+    point.
+
+    Until Powertools this distinction was invisible: src/models/bedrock.py
+    imports boto3 inside a function, so nothing runtime-provided was reached
+    at import time and "extract it alone and import" happened to pass. That
+    ended permanently when the Tracer became a module-level object — it has
+    to exist to decorate the handler, and constructing it pulls
+    aws_xray_sdk.core.sampling.connector, which imports botocore.session
+    unguarded.
+
+    PYTHONPATH is searched after the working directory, mirroring Lambda's
+    own /var/task-before-/var/runtime order, so a bundled copy would shadow
+    the runtime's exactly as it does in production.
 
     A non-Linux build host cannot do this check honestly: the archive holds
     manylinux wheels (e.g. pydantic_core, a compiled extension), and this
@@ -202,9 +248,11 @@ def verify_import(zip_path: Path) -> None:
         with zipfile.ZipFile(zip_path) as zf:
             zf.extractall(tmp_path)
 
+        env = {**os.environ, "PYTHONPATH": str(runtime_dir)}
         result = subprocess.run(
             [sys.executable, "-c", "from src.handler import lambda_handler"],
             cwd=tmp_path,
+            env=env,
             capture_output=True,
             text=True,
             check=False,
@@ -214,7 +262,10 @@ def verify_import(zip_path: Path) -> None:
             print(result.stderr, file=sys.stderr)
             raise SystemExit("Packaged archive does not import. See output above.")
 
-        print("OK: from src.handler import lambda_handler resolves.")
+        print(
+            "OK: from src.handler import lambda_handler resolves "
+            f"(archive + {', '.join(RUNTIME_PROVIDED)} from the runtime)."
+        )
 
 
 def main() -> int:
@@ -230,8 +281,13 @@ def main() -> int:
     install_dependencies(STAGE_DIR)
 
     before = directory_size(STAGE_DIR)
-    print(f"Pruning excluded packages: {', '.join(EXCLUDED_PACKAGES)} ...")
-    prune_excluded(STAGE_DIR, EXCLUDED_PACKAGES)
+    print(f"Pruning unused packages: {', '.join(UNUSED_TRANSITIVE)} ...")
+    prune_excluded(STAGE_DIR, UNUSED_TRANSITIVE)
+    print(
+        f"Setting aside runtime-provided packages: "
+        f"{', '.join(RUNTIME_PROVIDED)} ..."
+    )
+    prune_excluded(STAGE_DIR, RUNTIME_PROVIDED, move_to=RUNTIME_DIR)
     after_prune = directory_size(STAGE_DIR)
     print(f"  {before / 1024 / 1024:.1f} MB -> {after_prune / 1024 / 1024:.1f} MB")
 
@@ -256,7 +312,7 @@ def main() -> int:
     print(f"  {ZIP_PATH.stat().st_size / 1024 / 1024:.1f} MB zipped")
 
     print("Verifying the packaged archive imports ...")
-    verify_import(ZIP_PATH)
+    verify_import(ZIP_PATH, RUNTIME_DIR)
 
     return 0
 
