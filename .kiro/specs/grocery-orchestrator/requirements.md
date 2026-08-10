@@ -316,8 +316,12 @@ precision.
 8.7 **THE SYSTEM SHALL** retain no personal information in the price store.
 
 8.8 **[GAP]** **THE SYSTEM SHALL** obtain prices from live retailer sources.
-*Current build uses a seed dataset. Live acquisition carries terms-of-service
-risk that must be assessed before implementation.*
+*Current build uses a seed dataset. The terms-of-service risk is now assessed
+— `ACQUISITION-RISK.md`, Task 7.9 — and live acquisition is permitted only
+under the conditions in its §8. Note §4.5: the binding constraint is the Fair
+Trading Act, and it attaches to the comparison we publish rather than to the
+act of collection, which makes the capture date required by 8.4 a
+user-facing obligation and not merely a stored field.*
 
 ---
 

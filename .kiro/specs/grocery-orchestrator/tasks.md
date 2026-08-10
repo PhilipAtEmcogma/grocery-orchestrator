@@ -252,12 +252,25 @@ hold in production.*
 - [ ] **7.6** Orchestrate acquisition with parallel per-retailer error handling
 - [ ] **7.7** Implement name normalisation in ingestion — *Req 8.3*
 - [ ] **7.8** Schedule the refresh — *Req 8.4*
-- [ ] **7.9** Assess terms-of-service risk before live acquisition — *Req 8.8*
+- [x] **7.9** Assess terms-of-service risk before live acquisition — *Req 8.8*
+  — `ACQUISITION-RISK.md`
 - [ ] **7.10** Create the idempotency table with expiry — *Req 12.3*
   — **[blocked: AWS]**
 
-*7.9 gates 7.5. Legal assessment precedes implementation, not the reverse. It
-needs no cloud access and is not started.*
+*7.9 gated 7.5 and is now done. Legal assessment precedes implementation, not
+the reverse — and having run it, the two halves separate. **7.5 is unblocked**:
+it is the acquisition structure, built against fixtures, sending no production
+traffic. **11.4 stays gated**, but on the named conditions in
+`ACQUISITION-RISK.md` §8 rather than on an open question. A gate reading "risk
+unassessed" is unfalsifiable and never clears.*
+
+*Three findings change how 7.5 and 11.4 should be built. Foodstuffs
+`robots.txt` disallows the search endpoints — the catalogue sitemaps are the
+sanctioned traversal, and they are the better engineering anyway. The
+Woolworths NZ terms could not be retrieved and are treated as prohibitive until
+a human confirms them. And the binding constraint is the Fair Trading Act,
+which attaches to the comparison we publish rather than to the fetch: capture
+date must be surfaced to the user, not merely stored under Req 8.4.*
 
 *7.10 is new: the idempotency store needs a table of its own, and it was absent
 from both this phase and the schema document. Its `acquire` operation is a
@@ -447,7 +460,8 @@ initial delivery.
 
 - [ ] **11.2** Recipe catalogue constraining plan composition — *Req 2.9*
 - [ ] **11.3** Streaming transport — *Req 7.9*
-- [ ] **11.4** Live price acquisition — *Req 8.8*, gated on 7.9
+- [ ] **11.4** Live price acquisition — *Req 8.8*, gated on the conditions in
+  `ACQUISITION-RISK.md` §8
 - [ ] **11.5** Conversation memory across turns
 - [ ] **11.6** Retailer basket hand-off
 
@@ -486,9 +500,14 @@ Everything else is unblocked and can proceed today. In rough order of value:
 2.10 shared repository suite     the acceptance criteria 2.9 will be judged by
 5.9  red-team harness            writable offline; makes 8.10 one command
 6.7  structured logging          Req 12.1-12.2, no cloud dependency
-7.9  terms-of-service assessment gates 7.5, needs no code
+7.5  per-retailer acquisition    unblocked by 7.9; fixtures, no live traffic
 9.7  code owners file            makes 9.7's intent enforceable
 ```
+
+7.9 is done (`ACQUISITION-RISK.md`). It unblocked 7.5 and converted 11.4's gate
+from an open question into a named condition list. Three of its six primary
+sources could not be retrieved by automated fetch and are recorded as unknown
+rather than absent — a human must complete that table before 11.4 proceeds.
 
 Task 1.6 still blocks another team and should be completed first regardless of
 other sequencing.

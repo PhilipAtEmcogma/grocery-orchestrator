@@ -18,6 +18,9 @@ plans that provably fit a budget.
   what was decided against and why**. Read it before proposing an alternative.
 - `.kiro/steering/tech.md`, `security.md`, `ai-quality.md` — hard constraints.
 - `CONTRACT-v1.md` — the published interface the frontend builds against.
+- `ACQUISITION-RISK.md` — terms-of-service assessment for live price
+  acquisition (Task 7.9). **Read before touching acquisition.** §8 is the
+  condition list Task 11.4 is gated on.
 
 ---
 
@@ -170,6 +173,16 @@ before and after in the commit message.
 - Use Lambda Function URLs for streaming — loses throttling, usage plans and
   auth.
 - Trust model-reported constraint compliance. Verify against retrieved data.
+- Point acquisition at live retailer sites. Task 11.4 is gated —
+  `ACQUISITION-RISK.md` §8. Build against fixtures and recorded responses.
+- Circumvent a retailer's technical controls — bot mitigation, rate limits, an
+  undocumented internal endpoint. This is the one path in the whole assessment
+  with criminal exposure attached (§4.2). A block is an answer, not an
+  obstacle.
+- Request the Foodstuffs search endpoints. Their `robots.txt` disallows them;
+  the published product sitemaps are the sanctioned traversal.
+- Publish a price without its capture date. Fair Trading Act exposure attaches
+  to our comparison, not to the retailer's price (§4.5).
 
 ---
 
@@ -179,7 +192,8 @@ before and after in the commit message.
 intent classification with extraction · meal planning with bounded repair ·
 prose generation · multi-item queries · multi-model registry · guardrail config
 and input tagging · idempotency · two eval suites · handler · local dev server ·
-CI · Lambda deployment archive (Task 10.1) · Kiro specs, steering and hooks.
+CI · Lambda deployment archive (Task 10.1) · Kiro specs, steering and hooks ·
+terms-of-service assessment for live acquisition (Task 7.9).
 
 **Blocked on AWS account (not yet provisioned):**
 - `src/retrieval/dynamo.py` — raises `NotImplementedError` by design
@@ -191,7 +205,8 @@ CI · Lambda deployment archive (Task 10.1) · Kiro specs, steering and hooks.
 
 **Not started:** SnapStart on a published alias (Task 10.2), Powertools
 observability (Req 12.1–12.2), recipe catalogue (Req 2.9), streaming
-transport (Req 7.9).
+transport (Req 7.9), per-retailer acquisition (Task 7.5 — unblocked by 7.9,
+fixtures only).
 
 ---
 
