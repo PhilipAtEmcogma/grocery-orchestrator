@@ -128,7 +128,9 @@ git config core.hooksPath scripts/hooks
 
 It runs everything CI runs that is fast and offline: ruff, pytest, the secret
 scan on staged files, contract and grounding validation, guardrail policy
-validation, fixture drift, and both eval floors. About five seconds.
+validation, fixture drift, and both eval floors. About five seconds. It first
+puts the project venv on PATH and prints which one — see *Tool version drift*
+below for why that step exists.
 
 **It deliberately does not run `pip-audit` (~16s, needs network) or the Lambda
 package build.** Those stay in CI, and the hook says so on every run, so a pass
@@ -138,6 +140,37 @@ pass". Keep that list honest if either side changes.
 CI (`.github/workflows/ci.yml`) runs the same checks plus those two — **no AWS
 credentials needed anywhere**, which is a design outcome of the protocol
 boundaries.
+
+### Tool version drift is a known failure mode here
+
+**If a check fails locally but CI is green — or passes locally and fails in CI
+— suspect the tooling before the code.** This has cost the project real time
+three times: a `py` launcher selecting a different interpreter, a stray
+`runner.py` earlier on PATH, and a ruff 0.13.3 from an *unrelated project's
+venv* reporting an S603 on `scripts/build_lambda.py` that this project's ruff
+does not raise and CI has never seen. The last one produced a detailed
+investigation of a defect that did not exist.
+
+The failure is nastier than an ordinary red build because it is bidirectional.
+A gate reporting on tools other than the ones CI runs yields both false
+failures and false passes, and nothing on the surface distinguishes them.
+
+Two mitigations, and they cover different halves of the problem:
+
+- **`ruff` is pinned in `requirements-dev.txt`.** Unpinned, CI installs
+  whatever is newest that day, so a linter release can turn `main` red with no
+  repo change. Pinning fixes *which version* the project means.
+- **The hook puts `.venv/Scripts` (Windows) or `.venv/bin` (POSIX) first on
+  PATH.** Every tool it calls is invoked bare, so without this it lints and
+  tests with whatever venv the shell happens to have active. This fixes *whose
+  copy* gets run. If no `.venv` exists it warns and falls back, because a gate
+  that refuses to run teaches less than one that runs and says what it could
+  not guarantee.
+
+Neither helps if you run the tools by hand. `ruff check .` in a shell with
+another project's venv active is measuring that project. Check
+`(Get-Command ruff).Source` or `command -v ruff` before believing a surprising
+local result.
 
 **`main` is protected. Direct pushes are rejected, for everyone.** Work on a
 branch and open a pull request; the `All checks` job must pass before merge.
