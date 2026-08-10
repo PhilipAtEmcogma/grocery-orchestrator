@@ -108,9 +108,11 @@ rather than substituting silently.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 150 tests, ~1s, no AWS
+python -m pytest -q                              # 192 tests, ~1.5s, no AWS
 ruff check .                                     # must be clean
 python validate.py                               # contract samples + grounding
+UPDATE_FIXTURES=1 python -m pytest \
+    tests/test_sample_fixtures.py                # rewrite samples/ from the server
 python evals/run_intent.py                       # 76.7% scripted baseline
 python evals/run_meal_plan.py                    # 89% invariants baseline
 python scripts/generate_fixtures.py              # regenerate seed data
