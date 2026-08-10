@@ -259,6 +259,10 @@ Two details from that capture worth knowing:
 - `savings_vs_dearest_nzd` is only populated on the option where
   `is_cheapest: true`. It's `null` on the others — don't render "save $null".
 
+That whole response is committed as
+[`samples/response_multi_comparison.json`](samples/response_multi_comparison.json)
+— load it as a fixture and check you get three cards.
+
 ### 3.2 `no_data` and `notice` can appear *alongside* results, not only instead of them
 
 The original contract table describes `no_data` as "when we have no data", and
@@ -300,6 +304,9 @@ plus:
   disappears. It's explaining a gap the user can see in the results.
 - A turn can contain **both** result cards and gap messages. Your layout needs
   room for both at once.
+
+That response is committed as
+[`samples/response_partial.json`](samples/response_partial.json).
 
 This matters more than it looks. Silently dropping the `no_data` for wagyu means
 a user who asked about two things gets an answer about one and no indication the
@@ -368,12 +375,13 @@ are validated in CI, so if they drift from the implementation the build breaks.
 | [`samples/response_no_data.json`](samples/response_no_data.json) | **Failure case** — `no_data` as the whole answer |
 | [`samples/response_budget_infeasible.json`](samples/response_budget_infeasible.json) | **Failure case** — `BUDGET_INFEASIBLE` error with alternatives in the message |
 | [`samples/response_guardrail_blocked.json`](samples/response_guardrail_blocked.json) | **Failure case** — `GUARDRAIL_BLOCKED` |
+| [`samples/response_multi_comparison.json`](samples/response_multi_comparison.json) | **§3.1** — three items, three `price_comparison` events, 15 citations |
+| [`samples/response_partial.json`](samples/response_partial.json) | **§3.2** — a partial answer: `no_data` at `seq 7`, results at `seq 10` |
 
-⚠️ **The samples predate the two changes in §3.** None of them shows multiple
-`price_comparison` events or a `no_data` arriving alongside results. Build those
-two cases against the running dev server — the captures in §3 are exactly what it
-returns for those two queries. Ask us if you'd like fixture files for them and
-we'll add them.
+The last two are captured verbatim from the dev server for the queries in §3, so
+they're the exact bytes your handler will see. Use them as the fixtures for your
+N-cards and partial-answer rendering — those are the two cases most likely to be
+missed, and they're now the two easiest to test against.
 
 Also worth knowing: `samples/` shows the *contract*, but the dev server runs off
 `fixtures/`, which has more stores and different prices. The shapes match; the
