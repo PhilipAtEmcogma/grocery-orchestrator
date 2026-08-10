@@ -54,6 +54,47 @@ say() { printf '  %s\n' "$1"; }
 
 cd "$(git rev-parse --show-toplevel)"
 
+# ------------------------------------------------------------ interpreter
+# Every tool below is invoked bare -- `ruff`, `python`, `detect-secrets-hook`
+# -- so each resolves against PATH, which is whatever venv the calling shell
+# happens to have active. That is not necessarily this project's.
+#
+# This has bitten the project three times now: a `py` launcher picking a
+# different interpreter, a stray `runner.py` earlier on PATH, and most
+# recently a ruff 0.13.3 from an unrelated project's venv reporting an S603
+# on scripts/build_lambda.py that this project's pinned ruff does not raise
+# and CI has never seen. Hours went into a defect that did not exist.
+#
+# A gate that reports on tools other than the ones CI runs is worse than no
+# gate: it produces both false failures and false passes, and you cannot tell
+# which you are looking at. So the project venv goes first.
+#
+# Use $(pwd) rather than `git rev-parse --show-toplevel`. On Windows that
+# returns a C:/... path, and a literal colon inside a PATH entry silently
+# corrupts PATH for everything downstream. $(pwd) under Git Bash gives the
+# /c/... form, which is safe.
+
+step="interpreter"
+venv_bin=
+for candidate in .venv/Scripts .venv/bin; do
+    if [ -d "$candidate" ]; then
+        venv_bin=$(pwd)/$candidate
+        break
+    fi
+done
+
+if [ -n "$venv_bin" ]; then
+    PATH="$venv_bin:$PATH"
+    export PATH
+    say "${GREEN}ok${RESET} interpreter ($venv_bin)"
+else
+    printf '%swarning:%s no .venv found (.venv/Scripts or .venv/bin).\n' \
+        "$RED" "$RESET" >&2
+    printf '  Falling back to PATH. Tool versions may differ from CI, so a\n' >&2
+    printf '  pass here proves less than usual. Create the venv and install\n' >&2
+    printf '  requirements-dev.txt to restore the guarantee.\n' >&2
+fi
+
 # --------------------------------------------------------------- lint
 
 step="ruff"
