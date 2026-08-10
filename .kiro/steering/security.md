@@ -41,3 +41,8 @@ with the component they protect, not in a phase at the end.
 | 3 | API Gateway | Throttling, usage plan, Cognito authoriser |
 | 3 | Sessions | TTL, scoping, Privacy Act review |
 | 4 | Observability | Structured logging, tracing, alarms |
+
+Week 4's logging and tracing are done and verified offline (Task 6.7). Alarms
+are not: they need metrics from a deployment to alarm on. The logging half
+carries a Privacy Act constraint of its own — Req 11.5, design.md §12.4 — and
+the enforcement point is `src/observability/base.py`, not each call site.

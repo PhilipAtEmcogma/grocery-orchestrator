@@ -425,7 +425,7 @@ default.
 | 11.2 No embedded credentials | Managed secret storage; identity-based access |
 | 11.3 Input validation | Schema validation at the boundary; length limits |
 | 11.4 Rate limiting | Gateway throttling and usage plans |
-| 11.5 No personal data in logs | Identifiers and counts only; never message text or location |
+| 11.5 No personal data in logs | Identifiers and counts only; never message text or location. Enforced in one place and tested against a real turn — §12.4 |
 | 11.6 Expiry | Time-to-live on stored plans and sessions |
 | 11.7 Data protection | Point-in-time recovery and encryption enabled explicitly |
 | 12.3 Exactly-once turns | Atomic claim on a session-scoped key (§6.1) |
@@ -545,3 +545,91 @@ The build is manual first by team decision. To keep the conversion mechanical:
    it. That export is the specification the definitions are written from.
 4. Adopt existing resources into the stack during migration rather than
    recreating them, so no data is lost.
+
+---
+
+## 12. Observability (Req 12.1, 12.2)
+
+AWS Lambda Powertools, attached at the handler and nowhere else.
+
+### 12.1 Why the boundary matters more than the library
+
+The graph, the model plane, the retrieval layer and both eval harnesses run
+with no AWS account. That is not a convenience — it is why CI needs no
+credentials and why every failure path is testable. An observability library
+imported by a node would end that quietly, so Powertools stays behind a
+Protocol (`src/observability/base.py`) whose default implementation discards
+everything. Exactly one module imports `aws_lambda_powertools`, and a test
+walks the import graph of `src/` and `evals/` to keep it that way.
+
+Tracing still has to reach inside the graph, because that is where the time
+goes. It does so without the graph knowing: `PriceRepository` and
+`ModelClient` are already Protocols with swappable implementations, so
+decorators implementing the same interfaces slot in at the handler and are
+invisible to every node. The same seam that lets fixtures stand in for
+DynamoDB carries the instrumentation.
+
+| Signal | Mechanism |
+|---|---|
+| 12.1 Structured logs | JSON to stdout, correlation id from `session_id`, turn id and Lambda context injected, cold-start flagged |
+| 12.2 Latency | Subsegment per retrieval call and per model call; `TurnLatency`, `RetrievalLatency` and `ModelLatency` metrics |
+| 12.2 Tokens | `InputTokens`, `OutputTokens`, `CacheReadTokens`, summed per turn from the model client's usage |
+| 12.2 Model used | `ModelLatency` dimensioned by model and task; the registry key, not the raw id |
+| 12.2 Regeneration attempts | `RepairAttempts`, plus `RepairExhausted` when the loop gives up |
+| Silent turns | `TurnWithoutContent`, dimensioned by intent |
+| Exactly-once (12.3) | `IdempotentReplay`, `TurnIdReused`, `IdempotencyUnavailable` |
+
+### 12.2 The repair loop is measured per attempt, not as a block
+
+The loop spans four nodes, so a single span around it would have to be opened
+by the graph. What is emitted instead is one subsegment per attempt —
+`model.generate_plan` at attempt 0, then `model.repair_plan` at 1 and 2 — and
+the total on the metric. For the 29-second question this is the more useful
+shape: the decision turns on what a second and third generation cost, which a
+combined figure hides.
+
+Repair attempts are counted from the model calls rather than read off the
+finished plan, because on the infeasible path the failing plan is discarded
+and there is nothing left to read.
+
+### 12.3 A turn that answers nobody is a metric, not a silence
+
+`out_of_scope` and `general_chat` return session, intent and done, and no
+content event. So does a generation path that has started dropping its
+output. `TurnWithoutContent` is dimensioned by intent so the two are
+distinguishable: a baseline on the conversational intents, an alarm on any
+other. Without it the first report of a model change breaking generation is a
+user complaint.
+
+### 12.4 Req 11.5 constrains all of this
+
+Logs, and traces on the same rule. Three functions in
+`src/observability/base.py` produce every field derived from a request, a
+response or an exception, so the property is reviewable in one place and
+tested against a real turn rather than asserted.
+
+Three specific traps, each of which was live:
+
+- `log_event` is passed `False` explicitly. Left to its default, the
+  `POWERTOOLS_LOGGER_LOG_EVENT` environment variable dumps the whole API
+  Gateway event — message included — and a configuration change becomes a
+  privacy incident.
+- `capture_response` is `False` on the tracer. A meal-plan response carries
+  the applied dietary exclusions.
+- `logger.exception()` is never called. A traceback ends with `str(exc)`, and
+  a pydantic `ValidationError` embeds the input that failed — which, for a
+  malformed request, is the user's message. Exceptions are rendered as a
+  type and a list of `file:line` frames; the message survives only for
+  exception types whose text is known to be internal.
+
+Hint *keys* are withheld along with hint values, and the count reported
+instead: a key list would report that this user has dietary restrictions,
+which may imply health information (Req 11.6).
+
+### 12.5 Powertools' idempotency utility was not adopted
+
+Req 12.3 is already implemented (§6.1) with four decisions the utility does
+not share: session-scoped keys, payload fingerprinting that rejects rather
+than replays, in-flight detection, and caching only terminal outcomes. Each is
+tested. Swapping in a library default would be a behaviour change wearing the
+costume of a dependency upgrade.

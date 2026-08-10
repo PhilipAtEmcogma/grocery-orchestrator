@@ -121,6 +121,10 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
             schema=IntentResult,
             tier=ModelTier.FAST,
             max_tokens=512,
+            # Explicit rather than relying on the parameter default: this is
+            # both the registry's routing key and the label the trace and the
+            # per-model latency metric are grouped by.
+            task="classify_intent",
         )
     except (ModelError, ValueError):
         extracted = _fallback(message, hints)

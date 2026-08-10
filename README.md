@@ -126,6 +126,12 @@ src/
   store/
     idempotency.py           Session-scoped dedup: acquire/complete/release, in-memory
     dynamo_idempotency.py    DynamoDB adapter — scaffolded, raises NotImplementedError
+  observability/
+    base.py                 Telemetry protocol + no-op default, and the three
+                              functions that decide what may appear in a log (Req 11.5)
+    instrumented.py          Repository/model decorators that emit spans and
+                              per-model latency without the graph importing anything
+    powertools.py            The only module that imports aws-lambda-powertools
   runner.py                  ChatRequest -> graph -> validated ChatResponse
   handler.py                  Lambda entrypoint (API Gateway proxy integration) — every
                                failure path maps to a contract-valid ErrorEvent, never a bare 500
@@ -238,12 +244,23 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   eval regression floors, and the Lambda package build — five jobs, all
   credential-free, gated behind one `summary` job for branch protection.
 - ✅ Lambda deployment archive (`scripts/build_lambda.py`): cross-platform
-  build (manylinux wheels regardless of host OS), unused-transitive packages
-  (`numpy`, `zstandard`, and their now-orphaned deps) and runtime-provided
-  ones (`boto3`, `botocore`) excluded, unzipped size measured against a 240MB
-  budget, and the packaged archive's importability verified. ~25MB unzipped
-  today, well under the budget that justifies zip-over-container (SnapStart
-  is zip-only).
+  build (manylinux wheels regardless of host OS), unused packages (`numpy`,
+  `zstandard`) and runtime-provided ones (`boto3`, `botocore`, `s3transfer`)
+  excluded, unzipped size measured against a 240MB budget, and the packaged
+  archive's importability verified against the archive plus *only* the
+  runtime-provided packages — so "the runtime supplies this" is a tested
+  claim rather than an assumption. ~30MB unzipped today, well under the
+  budget that justifies zip-over-container (SnapStart is zip-only).
+- ✅ Observability (`src/observability/`, Req 12.1–12.2): AWS Lambda
+  Powertools for structured JSON logs correlated by `session_id`, X-Ray
+  subsegments around retrieval and every model call — including each repair
+  attempt separately, which is what the 29-second-ceiling decision needs —
+  and EMF metrics for latency, tokens, cache reads, repair attempts,
+  guardrail interventions, idempotent replays and turns that produce no
+  content event. Powertools is imported by exactly two files; the graph and
+  both eval harnesses stay free of it, and a test walks the import graph to
+  keep it that way. Logs are asserted to contain no message text, location or
+  dietary information on a real turn (Req 11.5).
 - ✅ DynamoDB schema proposed (`DYNAMODB-SCHEMA.md`) — three tables, GSI design
   for "cheapest near me", money-as-string, TTL as a Privacy Act control on
   saved plans, and the idempotency table's conditional-put claim. Team review
@@ -278,9 +295,10 @@ ingestion/                   Step Functions price-scraping pipeline — not star
 - **WebSocket streaming transport** — the contract is event-shaped
   specifically so this upgrade from the current REST-shaped flow doesn't
   require changing the payloads.
-- **Cognito authoriser, API Gateway throttling/usage plans, structured
-  logging/tracing/alarms** — see the security steering doc's week-by-week
-  schedule for what's planned versus done.
+- **Cognito authoriser, API Gateway throttling/usage plans, alarms** — see the
+  security steering doc's week-by-week schedule for what's planned versus
+  done. Structured logging, tracing and metrics are done (Task 6.7, below);
+  the alarms built on those metrics still need a deployment to alarm on.
 
 ## Running it locally
 
@@ -318,6 +336,13 @@ AWS credentials are needed. Setting `USE_DYNAMODB=1` or `USE_BEDROCK=1`
 switches individual dependencies to their AWS-backed implementations once
 those exist (`USE_DYNAMODB=1` currently raises `NotImplementedError` — see
 [Not yet built](#not-yet-built)).
+
+The dev server emits the same structured logs and EMF metric records the
+Lambda does — they print to stdout, which is exactly where CloudWatch reads
+them from in production. X-Ray tracing switches itself off outside Lambda, so
+no daemon is needed. Namespacing is configurable via `POWERTOOLS_SERVICE_NAME`
+and `POWERTOOLS_METRICS_NAMESPACE`; `LOG_LEVEL` sets log verbosity.
+`POWERTOOLS_LOGGER_LOG_EVENT` is deliberately ignored — see design.md §12.4.
 
 ## Further reading
 

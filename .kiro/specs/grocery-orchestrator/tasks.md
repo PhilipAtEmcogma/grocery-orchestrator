@@ -212,7 +212,7 @@ rather than a manual afternoon.*
 - [x] **6.5** Local development server for frontend integration
 - [x] **6.6** Idempotent handling of repeated request identifiers, against a
   single-process store — *Req 12.3*
-- [ ] **6.7** Structured logging and metrics — *Req 12.1, 12.2*
+- [x] **6.7** Structured logging, tracing and metrics — *Req 12.1, 12.2*
 - [ ] **6.8** Implement the stored idempotency store against the same protocol
   — *Req 12.3* — **[blocked: AWS]**
 
@@ -229,6 +229,33 @@ requests are detected, because a retry usually arrives while the first attempt
 is still running; and only terminal outcomes are cached, because caching a
 transient failure would make the client's retry permanently useless. A store
 outage degrades to running the work rather than failing the turn.*
+
+*6.7 is Powertools — Logger, Tracer and Metrics — attached at the handler
+boundary only. The graph and both eval harnesses import none of it, so they
+still run with no AWS account, which is the property CI depends on; a test
+walks the import graph and fails if it escapes. Tracing reaches inside the
+graph without the graph knowing, by wrapping the `PriceRepository` and
+`ModelClient` protocols in decorators that implement the same interfaces —
+the same seam that already lets fixtures stand in for DynamoDB.*
+
+*6.7 also declined Powertools' idempotency utility. Ours (6.6) fingerprints
+the payload, scopes keys by session, detects in-flight requests and caches
+only terminal outcomes; the utility's model is close but not the same, and
+replacing four tested decisions with a library default would be a behaviour
+change dressed as a dependency upgrade.*
+
+*The repair loop is traced as one subsegment per attempt rather than one span
+around the loop, because the loop spans four graph nodes and wrapping it
+would put tracing inside the graph. Per-attempt timings are the better input
+to 10.5 anyway: the question is what a second and third generation cost
+against the 29-second ceiling, not what they cost together.*
+
+*Found while wiring the per-model metric: `generate_plan` never passed a
+`task`, so it took the parameter's default of `classify_intent` and every
+plan call routed to the FAST model — contradicting the QUALITY tier the node
+asks for and leaving the `generate_plan` and `repair_plan` rules in
+`config/models.json` unreachable. Invisible under the scripted client, which
+ignores routing. Fixed here because the metric is keyed on the same label.*
 
 *6.6 and 6.8 are split because the completed half is correct only in a single
 process. Lambda execution environments share no memory, so in deployment the
@@ -449,7 +476,11 @@ step that gets skipped.*
   — **[blocked: AWS]**
 
 *10.5 produces the evidence for any decision about the timeout constraint. That
-decision should follow measurement, not precede it.*
+decision should follow measurement, not precede it. The instrumentation it
+needs is now in place (6.7): the plan path emits a subsegment per model call,
+including each repair attempt separately, and `ModelLatency` is dimensioned by
+model and task. What is still missing is a deployment to measure — the numbers
+themselves, not the means of collecting them.*
 
 ---
 
@@ -499,10 +530,14 @@ Everything else is unblocked and can proceed today. In rough order of value:
 1.6  circulate the contract      the only item blocking another team
 2.10 shared repository suite     the acceptance criteria 2.9 will be judged by
 5.9  red-team harness            writable offline; makes 8.10 one command
-6.7  structured logging          Req 12.1-12.2, no cloud dependency
 7.5  per-retailer acquisition    unblocked by 7.9; fixtures, no live traffic
 9.7  code owners file            makes 9.7's intent enforceable
 ```
+
+6.7 is done. It was on this list as "no cloud dependency", and that held: the
+logger, tracer and metrics are all asserted offline against the real
+Powertools objects, so the first deployment inherits verified instrumentation
+rather than instrumentation that has never run.
 
 7.9 is done (`ACQUISITION-RISK.md`). It unblocked 7.5 and converted 11.4's gate
 from an open question into a named condition list. Three of its six primary
