@@ -7,6 +7,17 @@ raises rather than returning plausible-looking empty results, because a
 silently empty price list would look like "no data" instead of "misconfigured".
 
 Schema is specified in DYNAMODB-SCHEMA.md.
+
+ACCEPTANCE CRITERIA ALREADY EXIST. tests/test_price_repository_contract.py is
+parameterised over every implementation of the protocol and was written before
+this file on purpose, so it is the specification rather than a description of
+whatever gets built. Run it against a real table with:
+
+    PRICE_REPO_DYNAMO_TABLE=grocery-products-dev python -m pytest \\
+        tests/test_price_repository_contract.py
+
+Until that variable is set the DynamoDB parameter reports as skipped and
+UNVERIFIED. Do not read a green suite as this adapter being correct.
 """
 
 from __future__ import annotations

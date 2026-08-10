@@ -1,8 +1,10 @@
 """
 Fixture-backed PriceRepository. No AWS required.
 
-Used for all local development and all tests. The DynamoDB implementation
-must satisfy the same tests.
+Used for all local development and all tests. The DynamoDB implementation must
+satisfy the same tests — that is enforced, not merely stated, by
+tests/test_price_repository_contract.py, which is parameterised over every
+implementation of the protocol.
 """
 
 from __future__ import annotations
@@ -142,7 +144,10 @@ class InMemoryPriceRepository(PriceRepository):
         # _by_product entries are pre-sorted cheapest-first, so filtering by
         # store and slicing to `limit` is all that's needed here.
         recs = self._by_product.get(product_key, [])
-        if stores:
+        # `is not None`, not truthiness: an explicit [] means nothing qualifies.
+        # `if stores:` would treat it as "no filter" and return every store —
+        # widening a constraint rather than honouring it. See base.py.
+        if stores is not None:
             allowed = set(stores)
             recs = [r for r in recs if r.store in allowed]
         return recs[:limit]

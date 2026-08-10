@@ -345,7 +345,8 @@ mechanical rather than archaeological:
 2. **Name consistently**: `grocery-<thing>-dev`. CDK will want to create
    resources alongside the manual ones during migration, and identical names
    collide.
-3. **Dump the config immediately after creating each resource**, and commit it:
+3. **Dump the config immediately after creating each resource**, into
+   `infra/manual/`:
 
 ```bash
 aws dynamodb describe-table --table-name grocery-products-dev \
@@ -355,6 +356,18 @@ aws dynamodb describe-table --table-name grocery-products-dev \
 4. When migrating, use `cdk import` to adopt the existing tables into a stack
    rather than recreating them, so no data is lost.
 
-The dumped JSON is the exact spec of what exists. Writing the CDK then becomes
-transcription from a known document instead of clicking through consoles
-trying to remember what was set three weeks earlier.
+**`infra/manual/` is gitignored — the dumps are local artefacts, not committed
+records.** `describe-table` output carries the account ID in every ARN, and
+that is not something to put in a repository this project intends to open up.
+
+That makes **this document the committed reference for the CDK migration**, and
+the dumps a regenerable check against it. Regenerate them from the live account
+when the migration starts; do not rely on a copy from three weeks earlier.
+
+Be aware of what the trade costs. A dump captures what AWS *actually* set —
+applied defaults, billing mode, stream settings, index status — where this
+document captures what we *intended*. Those diverge, quietly, and the dump is
+what would have caught it. The mitigation is that regenerating is one command
+and must be step one of the migration, not a later reconciliation. If the two
+ever disagree, **the dump is right and this document is stale**, and fixing
+this document is part of the migration work.

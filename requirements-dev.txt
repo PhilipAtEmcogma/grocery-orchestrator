@@ -1,6 +1,6 @@
 -r requirements.txt
 pytest
 pytest-cov
-ruff
+ruff==0.16.2
 pip-audit
 detect-secrets
