@@ -1,0 +1,447 @@
+{
+    "version": "1.0",
+    "session_id": "sess-7f3a9c21",
+    "turn_id": "turn-0004-b1c9",
+    "events": [
+        {
+            "seq": 0,
+            "type": "session",
+            "session_id": "sess-7f3a9c21",
+            "turn_id": "turn-0004-b1c9",
+            "version": "1.0"
+        },
+        {
+            "seq": 1,
+            "type": "intent",
+            "intent": "price_check",
+            "confidence": 0.96
+        },
+        {
+            "seq": 2,
+            "type": "citation",
+            "citation": {
+                "ref": "c1",
+                "store": "paknsave",
+                "store_location": "Mangere",
+                "product_name": "Pams Butter 500g",
+                "price_nzd": "2.97",
+                "unit": "500g",
+                "unit_price_nzd": "5.94",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "paknsave#dairy",
+                    "sk": "butter-500g"
+                }
+            }
+        },
+        {
+            "seq": 3,
+            "type": "citation",
+            "citation": {
+                "ref": "c2",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Butter 500g",
+                "price_nzd": "2.97",
+                "unit": "500g",
+                "unit_price_nzd": "5.94",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "paknsave#dairy",
+                    "sk": "butter-500g"
+                }
+            }
+        },
+        {
+            "seq": 4,
+            "type": "citation",
+            "citation": {
+                "ref": "c3",
+                "store": "woolworths",
+                "store_location": "Mt Wellington",
+                "product_name": "Butter, 500g",
+                "price_nzd": "3.91",
+                "unit": "500g",
+                "unit_price_nzd": "7.82",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "woolworths#dairy",
+                    "sk": "butter-500g"
+                }
+            }
+        },
+        {
+            "seq": 5,
+            "type": "citation",
+            "citation": {
+                "ref": "c4",
+                "store": "woolworths",
+                "store_location": "Ponsonby",
+                "product_name": "Butter, 500g",
+                "price_nzd": "3.91",
+                "unit": "500g",
+                "unit_price_nzd": "7.82",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "woolworths#dairy",
+                    "sk": "butter-500g"
+                }
+            }
+        },
+        {
+            "seq": 6,
+            "type": "citation",
+            "citation": {
+                "ref": "c5",
+                "store": "new_world",
+                "store_location": "Devonport",
+                "product_name": "Value BUTTER 500G",
+                "price_nzd": "4.12",
+                "unit": "500g",
+                "unit_price_nzd": "8.24",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "new_world#dairy",
+                    "sk": "butter-500g"
+                }
+            }
+        },
+        {
+            "seq": 7,
+            "type": "citation",
+            "citation": {
+                "ref": "c6",
+                "store": "paknsave",
+                "store_location": "Mangere",
+                "product_name": "Pams Milk 2L",
+                "price_nzd": "4.19",
+                "unit": "2L",
+                "unit_price_nzd": "2.10",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "paknsave#dairy",
+                    "sk": "milk-2l"
+                }
+            }
+        },
+        {
+            "seq": 8,
+            "type": "citation",
+            "citation": {
+                "ref": "c7",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Milk 2L",
+                "price_nzd": "4.19",
+                "unit": "2L",
+                "unit_price_nzd": "2.10",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "paknsave#dairy",
+                    "sk": "milk-2l"
+                }
+            }
+        },
+        {
+            "seq": 9,
+            "type": "citation",
+            "citation": {
+                "ref": "c8",
+                "store": "woolworths",
+                "store_location": "Mt Wellington",
+                "product_name": "Milk, 2L",
+                "price_nzd": "4.69",
+                "unit": "2L",
+                "unit_price_nzd": "2.34",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "woolworths#dairy",
+                    "sk": "milk-2l"
+                }
+            }
+        },
+        {
+            "seq": 10,
+            "type": "citation",
+            "citation": {
+                "ref": "c9",
+                "store": "woolworths",
+                "store_location": "Ponsonby",
+                "product_name": "Milk, 2L",
+                "price_nzd": "4.69",
+                "unit": "2L",
+                "unit_price_nzd": "2.34",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "woolworths#dairy",
+                    "sk": "milk-2l"
+                }
+            }
+        },
+        {
+            "seq": 11,
+            "type": "citation",
+            "citation": {
+                "ref": "c10",
+                "store": "new_world",
+                "store_location": "Devonport",
+                "product_name": "Value MILK 2L",
+                "price_nzd": "4.94",
+                "unit": "2L",
+                "unit_price_nzd": "2.47",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "new_world#dairy",
+                    "sk": "milk-2l"
+                }
+            }
+        },
+        {
+            "seq": 12,
+            "type": "citation",
+            "citation": {
+                "ref": "c11",
+                "store": "paknsave",
+                "store_location": "Mangere",
+                "product_name": "Pams White Bread 700g",
+                "price_nzd": "2.19",
+                "unit": "700g",
+                "unit_price_nzd": "3.13",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "paknsave#bakery",
+                    "sk": "bread-white-700g"
+                }
+            }
+        },
+        {
+            "seq": 13,
+            "type": "citation",
+            "citation": {
+                "ref": "c12",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams White Bread 700g",
+                "price_nzd": "2.19",
+                "unit": "700g",
+                "unit_price_nzd": "3.13",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "paknsave#bakery",
+                    "sk": "bread-white-700g"
+                }
+            }
+        },
+        {
+            "seq": 14,
+            "type": "citation",
+            "citation": {
+                "ref": "c13",
+                "store": "new_world",
+                "store_location": "Devonport",
+                "product_name": "Value WHITE BREAD 700G",
+                "price_nzd": "2.20",
+                "unit": "700g",
+                "unit_price_nzd": "3.14",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "new_world#bakery",
+                    "sk": "bread-white-700g"
+                }
+            }
+        },
+        {
+            "seq": 15,
+            "type": "citation",
+            "citation": {
+                "ref": "c14",
+                "store": "new_world",
+                "store_location": "Newmarket",
+                "product_name": "Value WHITE BREAD 700G",
+                "price_nzd": "2.20",
+                "unit": "700g",
+                "unit_price_nzd": "3.14",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "new_world#bakery",
+                    "sk": "bread-white-700g"
+                }
+            }
+        },
+        {
+            "seq": 16,
+            "type": "citation",
+            "citation": {
+                "ref": "c15",
+                "store": "woolworths",
+                "store_location": "Mt Wellington",
+                "product_name": "White Bread, 700g",
+                "price_nzd": "2.45",
+                "unit": "700g",
+                "unit_price_nzd": "3.50",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "Products",
+                    "pk": "woolworths#bakery",
+                    "sk": "bread-white-700g"
+                }
+            }
+        },
+        {
+            "seq": 17,
+            "type": "token",
+            "text": "The cheapest option is $2.97 at Pak'nSave Mangere."
+        },
+        {
+            "seq": 18,
+            "type": "token",
+            "text": " That is the best price across the stores near you."
+        },
+        {
+            "seq": 19,
+            "type": "price_comparison",
+            "data": {
+                "query_item": "butter-500g",
+                "options": [
+                    {
+                        "citation_ref": "c1",
+                        "is_cheapest": true,
+                        "savings_vs_dearest_nzd": "1.15"
+                    },
+                    {
+                        "citation_ref": "c2",
+                        "is_cheapest": false,
+                        "savings_vs_dearest_nzd": null
+                    },
+                    {
+                        "citation_ref": "c3",
+                        "is_cheapest": false,
+                        "savings_vs_dearest_nzd": null
+                    },
+                    {
+                        "citation_ref": "c4",
+                        "is_cheapest": false,
+                        "savings_vs_dearest_nzd": null
+                    },
+                    {
+                        "citation_ref": "c5",
+                        "is_cheapest": false,
+                        "savings_vs_dearest_nzd": null
+                    }
+                ],
+                "reasoning": "Paknsave Mangere is cheapest at $2.97 for 500g."
+            }
+        },
+        {
+            "seq": 20,
+            "type": "price_comparison",
+            "data": {
+                "query_item": "milk-2l",
+                "options": [
+                    {
+                        "citation_ref": "c6",
+                        "is_cheapest": true,
+                        "savings_vs_dearest_nzd": "0.75"
+                    },
+                    {
+                        "citation_ref": "c7",
+                        "is_cheapest": false,
+                        "savings_vs_dearest_nzd": null
+                    },
+                    {
+                        "citation_ref": "c8",
+                        "is_cheapest": false,
+                        "savings_vs_dearest_nzd": null
+                    },
+                    {
+                        "citation_ref": "c9",
+                        "is_cheapest": false,
+                        "savings_vs_dearest_nzd": null
+                    },
+                    {
+                        "citation_ref": "c10",
+                        "is_cheapest": false,
+                        "savings_vs_dearest_nzd": null
+                    }
+                ],
+                "reasoning": "Paknsave Mangere is cheapest at $4.19 for 2L."
+            }
+        },
+        {
+            "seq": 21,
+            "type": "price_comparison",
+            "data": {
+                "query_item": "bread-white-700g",
+                "options": [
+                    {
+                        "citation_ref": "c11",
+                        "is_cheapest": true,
+                        "savings_vs_dearest_nzd": "0.26"
+                    },
+                    {
+                        "citation_ref": "c12",
+                        "is_cheapest": false,
+                        "savings_vs_dearest_nzd": null
+                    },
+                    {
+                        "citation_ref": "c13",
+                        "is_cheapest": false,
+                        "savings_vs_dearest_nzd": null
+                    },
+                    {
+                        "citation_ref": "c14",
+                        "is_cheapest": false,
+                        "savings_vs_dearest_nzd": null
+                    },
+                    {
+                        "citation_ref": "c15",
+                        "is_cheapest": false,
+                        "savings_vs_dearest_nzd": null
+                    }
+                ],
+                "reasoning": "Paknsave Mangere is cheapest at $2.19 for 700g."
+            }
+        },
+        {
+            "seq": 22,
+            "type": "done",
+            "usage": {
+                "model_ids": [],
+                "input_tokens": null,
+                "output_tokens": null,
+                "latency_ms": null,
+                "guardrail_intervened": false
+            },
+            "server_time": "2026-08-10T05:57:56.557511Z"
+        }
+    ]
+}
