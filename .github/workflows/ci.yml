@@ -66,6 +66,17 @@ jobs:
       # says "0 errors" whether it analysed the repo or nothing at all, and a
       # config that silently resolved to an empty file set would look exactly
       # like a passing type check. The count is the evidence that it ran.
+      #
+      # NODE IS DELIBERATELY NOT PINNED, and not installed by a setup-node
+      # step. pyright is a TypeScript program and Node is only its interpreter:
+      # what it reports is fixed by the pyright version and the typeshed it
+      # bundles, both pinned in requirements-dev.txt. A Node change can stop
+      # pyright running — loudly, as a failed step — but cannot quietly change
+      # a verdict, which is the drift that pinning ruff exists to prevent. The
+      # runner's own Node is used (no download in the log); local runs here use
+      # Node 22 and produce byte-identical output: 53 files, same version, same
+      # zero. If this step ever fails on Node, pin it then, and pin it to a
+      # version, not to whatever fixes the build that day.
       - name: Type check
         run: pyright --stats
 
