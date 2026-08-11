@@ -153,6 +153,15 @@ jobs:
       - name: Validate guardrail policy
         run: python scripts/apply_guardrail.py --dry-run
 
+      # The alarms are the other control that is configuration rather than
+      # console state, and they fail the same way: an alarm on a metric no
+      # filter publishes, or one that needs two crashes to fire, deploys clean
+      # and reads as a healthy service. tests/test_alarms.py additionally
+      # checks the filter pattern against the log line the handler really
+      # emits, which is the drift AWS cannot see.
+      - name: Validate alarm policy
+        run: python scripts/apply_alarms.py --dry-run
+
   evals:
     name: Evaluation floors
     runs-on: ubuntu-latest

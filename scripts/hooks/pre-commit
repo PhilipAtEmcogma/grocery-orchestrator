@@ -194,6 +194,17 @@ python scripts/apply_guardrail.py --dry-run >/dev/null \
     || fail "run: python scripts/apply_guardrail.py --dry-run"
 say "${GREEN}ok${RESET} guardrail policy"
 
+# --------------------------------------------------------------- alarms
+# Same reasoning as the guardrail above: the config is the source of truth and
+# the validator rejects the settings that produce an alarm which silently does
+# nothing — a metric no filter publishes, a comparison that needs two crashes
+# to fire, a topic with no action. No AWS account required.
+
+step="alarm policy"
+python scripts/apply_alarms.py --dry-run >/dev/null \
+    || fail "run: python scripts/apply_alarms.py --dry-run"
+say "${GREEN}ok${RESET} alarm policy"
+
 # --------------------------------------------------------------- fixtures
 # Only when the generator or its output is staged — the only way they drift.
 # Regenerating rewrites the working copy, so it is backed up and restored on
