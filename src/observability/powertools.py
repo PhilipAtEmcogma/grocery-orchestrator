@@ -114,6 +114,18 @@ class PowertoolsTelemetry:
 TELEMETRY = PowertoolsTelemetry()
 
 
+# Static conformance, the other half of the pair in `base.py` — see the note
+# there for why an annotated binding is the only thing that actually checks
+# this, and why this half cannot live in that module. `type[Span]` because
+# `_XraySpan` needs a live subsegment to instantiate and this must not
+# construct one; it still checks that INSTANCES satisfy the protocol.
+if TYPE_CHECKING:
+    from src.observability.base import Span, Telemetry
+
+    _telemetry_conforms: Telemetry = TELEMETRY
+    _span_conforms: type[Span] = _XraySpan
+
+
 @dataclass(frozen=True)
 class LocalLambdaContext:
     """

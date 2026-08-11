@@ -2,6 +2,19 @@
 pythonpath = ["."]
 testpaths = ["tests"]
 
+[tool.pyright]
+# Config lives here rather than in the invocations, so the hook, CI and the
+# editor all check the same files under the same rules. A type checker
+# configured per-caller is a type checker that disagrees with itself.
+#
+# `build/` MUST stay excluded: it holds the vendored Lambda runtime (boto3,
+# botocore — tens of thousands of files), and scanning it turns a 4-second
+# check into a very long one for third-party code we do not own.
+include = ["src", "tests", "evals", "scripts", "validate.py"]
+exclude = ["build", ".venv", "**/__pycache__"]
+pythonVersion = "3.13"
+typeCheckingMode = "standard"
+
 [tool.ruff]
 target-version = "py313"
 line-length = 100

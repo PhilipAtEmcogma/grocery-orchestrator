@@ -137,11 +137,29 @@ controlled**, not in `.git/hooks`. A fresh clone must enable it once:
 git config core.hooksPath scripts/hooks
 ```
 
-It runs everything CI runs that is fast and offline: ruff, pytest, the secret
-scan on staged files, contract and grounding validation, guardrail policy
-validation, fixture drift, and both eval floors. About five seconds. It first
-puts the project venv on PATH and prints which one — see *Tool version drift*
-below for why that step exists.
+It runs everything CI runs that is fast and offline: ruff, **pyright**, pytest,
+the secret scan on staged files, contract and grounding validation, guardrail
+policy validation, fixture drift, and both eval floors. About ten seconds — the
+type check is roughly four of them. It first puts the project venv on PATH and
+prints which one — see *Tool version drift* below for why that step exists.
+
+**Types are a gate, not a suggestion.** `pyright` is pinned in
+`requirements-dev.txt` and configured once in `pyproject.toml` under
+`[tool.pyright]`, so the hook, CI and your editor check the same files under
+the same rules — it is the engine Pylance embeds, so a failure here is the
+error already underlined in your editor. Ruff does not check types, and the
+gap was not theoretical: the `Telemetry` protocol declared `span()` as
+returning `None` while both implementations returned a context manager, so
+neither satisfied the protocol that exists to define them. Ten errors, and
+neither ruff nor the tests could see any of them, because a Protocol is
+verified statically or not at all — `isinstance()` against a runtime-checkable
+Protocol only tests that attribute *names* exist, never their signatures.
+
+That is also why `src/observability/base.py` and `powertools.py` carry
+`_..._conforms:` bindings under `if TYPE_CHECKING:`. Assigning an
+implementation to a protocol-annotated name is the thing that makes a checker
+verify it; without one, a protocol nothing is assigned to is checked by
+nobody. Add one for any new protocol implementation.
 
 **It deliberately does not run `pip-audit` (~16s, needs network) or the Lambda
 package build.** Those stay in CI, and the hook says so on every run, so a pass
@@ -208,6 +226,22 @@ supporting habits, both of which would have caught this one on their own:
 
 The general form of this is the same one the section above is about: a signal
 that looks like the one you wanted, produced by something else entirely.
+
+**Check `git status` after a mutation run, even when the content is
+byte-identical.** A scratch harness that plants a defect and restores the
+original with Python's `pathlib.write_text` does not restore the original on
+Windows: text mode translates `\n` to `\r\n`, so every restored file comes back
+CRLF. It happened here to `src/runner.py` and `src/graph/nodes/plan.py`, and
+the content diff was empty — only the line endings moved. `.gitattributes`
+normalises on commit so nothing reached history, but the files sat modified in
+the tree, and an unexamined `git status` before `git add -A` is how that gets
+committed on a repo without that safety net. Pass `newline="\n"` when a harness
+writes a file back, and glance at `git status` before staging regardless.
+
+This is the sixth finding in a row of one shape: a control that looked like it
+was working — a privacy test that read one stream, a secret scan that never
+ran, a protocol nothing checked, a restore that did not restore. Assume the
+check is the thing that is broken until you have watched it fail.
 
 **`main` is protected. Direct pushes are rejected, for everyone.** Work on a
 branch and open a pull request; the `All checks` job must pass before merge.

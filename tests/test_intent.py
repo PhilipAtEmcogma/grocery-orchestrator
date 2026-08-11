@@ -12,6 +12,7 @@ from decimal import Decimal
 import pytest
 
 from src.graph.nodes.intent import classify_intent
+from src.graph.state import GroceryState
 from src.models.base import ModelTier
 from src.models.scripted import ScriptedModelClient
 from src.prompts.intent import DELIM, DELIM_END, build_user_prompt
@@ -23,14 +24,20 @@ def model() -> ScriptedModelClient:
     return ScriptedModelClient()
 
 
-def _state(message: str, hints: dict | None = None) -> dict:
-    return {
+def _state(message: str, hints: dict | None = None) -> GroceryState:
+    # Annotated as GroceryState, not dict. `classify_intent` takes the
+    # TypedDict, and a bare dict is not assignable to one — so every call site
+    # below was a type error, and the helper was the single place to fix it.
+    # GroceryState is total=False, so this partial mapping is valid; the
+    # remaining keys are filled in by nodes as the graph runs.
+    state: GroceryState = {
         "session_id": "sess-test01",
         "turn_id": "turn-test01",
         "message": message,
         "hints": hints or {},
         "events": [],
     }
+    return state
 
 
 # ------------------------------------------------------------- classification

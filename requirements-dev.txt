@@ -2,5 +2,9 @@
 pytest
 pytest-cov
 ruff==0.16.2
+# Pinned for the same reason ruff is: unpinned, CI installs whatever is newest
+# that day, and a checker release can turn main red with no repo change. This
+# is the engine Pylance embeds, so the editor and the gate agree.
+pyright==1.1.411
 pip-audit
 detect-secrets
