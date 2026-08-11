@@ -227,6 +227,22 @@ supporting habits, both of which would have caught this one on their own:
 The general form of this is the same one the section above is about: a signal
 that looks like the one you wanted, produced by something else entirely.
 
+**Check `git status` after a mutation run, even when the content is
+byte-identical.** A scratch harness that plants a defect and restores the
+original with Python's `pathlib.write_text` does not restore the original on
+Windows: text mode translates `\n` to `\r\n`, so every restored file comes back
+CRLF. It happened here to `src/runner.py` and `src/graph/nodes/plan.py`, and
+the content diff was empty — only the line endings moved. `.gitattributes`
+normalises on commit so nothing reached history, but the files sat modified in
+the tree, and an unexamined `git status` before `git add -A` is how that gets
+committed on a repo without that safety net. Pass `newline="\n"` when a harness
+writes a file back, and glance at `git status` before staging regardless.
+
+This is the sixth finding in a row of one shape: a control that looked like it
+was working — a privacy test that read one stream, a secret scan that never
+ran, a protocol nothing checked, a restore that did not restore. Assume the
+check is the thing that is broken until you have watched it fail.
+
 **`main` is protected. Direct pushes are rejected, for everyone.** Work on a
 branch and open a pull request; the `All checks` job must pass before merge.
 
