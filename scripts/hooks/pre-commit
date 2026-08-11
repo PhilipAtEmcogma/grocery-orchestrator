@@ -25,6 +25,10 @@
 #   pip-audit --strict      ~16s and needs the network
 #   Lambda package build    downloads manylinux wheels; minutes, not seconds
 #
+# One partial exception: pyright uses the system Node if it finds one and
+# downloads it once if not. That is a fresh-venv cost only, and it is why the
+# type check is not listed as strictly offline.
+#
 # Both stay in CI. They are listed here so this hook passing is never mistaken
 # for "CI will pass" — it means "CI will not fail for any of the fast, offline
 # reasons". Keep this list accurate if either side changes.
@@ -110,6 +114,26 @@ if [ "$before" != "$after" ]; then
 fi
 ruff check . >/dev/null || fail "run: ruff check ."
 say "${GREEN}ok${RESET} ruff"
+
+# --------------------------------------------------------------- types
+# Ruff does not check types, and the gap was not theoretical: the Telemetry
+# protocol declared span() as returning None while both implementations
+# returned a context manager, so NEITHER satisfied the protocol it existed to
+# define. Ten errors, invisible to ruff and to the tests, because a Protocol
+# is checked statically or not at all — isinstance() against a runtime
+# Protocol only tests that attribute NAMES exist, not their signatures.
+#
+# Configuration is in pyproject.toml so this, CI and the editor agree; see
+# [tool.pyright] there. Pyright is the engine Pylance embeds, so an error
+# here is the one the author already has underlined in front of them.
+#
+# ~4s, and one caveat to the "fast and offline" rule below: the pyright pip
+# package uses the system Node if it finds one and downloads it once if not.
+# That download happens on a fresh venv only, never afterwards.
+
+step="pyright"
+pyright >/dev/null 2>&1 || fail "type errors. Run: pyright"
+say "${GREEN}ok${RESET} pyright"
 
 # --------------------------------------------------------------- tests
 

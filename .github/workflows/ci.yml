@@ -51,6 +51,19 @@ jobs:
       - name: Lint
         run: ruff check --output-format=github .
 
+      # Ruff does not check types. The Telemetry protocol declared span() as
+      # returning None while both implementations returned a context manager,
+      # so neither satisfied the protocol — ten errors that ruff and the tests
+      # could not see, because a Protocol is verified statically or not at all.
+      # Config is in pyproject.toml [tool.pyright], shared with the pre-commit
+      # hook and the editor, so all three check the same files the same way.
+      #
+      # Plain output, not `--output-format=github` like ruff above: pyright
+      # 1.1.411 has no such flag (only `--outputjson`), and passing one it
+      # does not know is a failure that only appears in CI.
+      - name: Type check
+        run: pyright
+
       - name: Tests
         run: pytest -q --cov=src --cov-report=term-missing
 

@@ -137,11 +137,29 @@ controlled**, not in `.git/hooks`. A fresh clone must enable it once:
 git config core.hooksPath scripts/hooks
 ```
 
-It runs everything CI runs that is fast and offline: ruff, pytest, the secret
-scan on staged files, contract and grounding validation, guardrail policy
-validation, fixture drift, and both eval floors. About five seconds. It first
-puts the project venv on PATH and prints which one — see *Tool version drift*
-below for why that step exists.
+It runs everything CI runs that is fast and offline: ruff, **pyright**, pytest,
+the secret scan on staged files, contract and grounding validation, guardrail
+policy validation, fixture drift, and both eval floors. About ten seconds — the
+type check is roughly four of them. It first puts the project venv on PATH and
+prints which one — see *Tool version drift* below for why that step exists.
+
+**Types are a gate, not a suggestion.** `pyright` is pinned in
+`requirements-dev.txt` and configured once in `pyproject.toml` under
+`[tool.pyright]`, so the hook, CI and your editor check the same files under
+the same rules — it is the engine Pylance embeds, so a failure here is the
+error already underlined in your editor. Ruff does not check types, and the
+gap was not theoretical: the `Telemetry` protocol declared `span()` as
+returning `None` while both implementations returned a context manager, so
+neither satisfied the protocol that exists to define them. Ten errors, and
+neither ruff nor the tests could see any of them, because a Protocol is
+verified statically or not at all — `isinstance()` against a runtime-checkable
+Protocol only tests that attribute *names* exist, never their signatures.
+
+That is also why `src/observability/base.py` and `powertools.py` carry
+`_..._conforms:` bindings under `if TYPE_CHECKING:`. Assigning an
+implementation to a protocol-annotated name is the thing that makes a checker
+verify it; without one, a protocol nothing is assigned to is checked by
+nobody. Add one for any new protocol implementation.
 
 **It deliberately does not run `pip-audit` (~16s, needs network) or the Lambda
 package build.** Those stay in CI, and the hook says so on every run, so a pass

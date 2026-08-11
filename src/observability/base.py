@@ -23,7 +23,7 @@ needs credentials.
 from __future__ import annotations
 
 import traceback
-from contextlib import contextmanager
+from contextlib import AbstractContextManager, contextmanager
 from dataclasses import dataclass, field
 from pathlib import PurePath
 from typing import TYPE_CHECKING, Any, Protocol
@@ -96,7 +96,22 @@ class Telemetry(Protocol):
     the number is per-model, per-intent, or per-turn.
     """
 
-    def span(self, name: str, **annotations: str | int | float | bool): ...
+    # The return type is load-bearing and was wrong. Left unannotated, a
+    # checker infers `None` from the `...` body, so BOTH implementations
+    # failed to satisfy this protocol — they are `@contextmanager`-decorated
+    # and return a `_GeneratorContextManager`. Every `with telemetry.span(...)`
+    # was an error, and so was every assignment of a concrete telemetry to a
+    # `Telemetry` parameter. The implementations were right; this line was
+    # wrong.
+    #
+    # `AbstractContextManager[Span]` rather than `[Any]`: the two
+    # implementations yield different concrete spans (`NullSpan`, `_XraySpan`)
+    # but both satisfy `Span`, and the context manager is covariant in what it
+    # yields, so the common protocol types this exactly. `Any` would type-check
+    # just as quietly if someone yielded something with no `annotate()`.
+    def span(
+        self, name: str, **annotations: str | int | float | bool
+    ) -> AbstractContextManager[Span]: ...
 
     def count(self, name: str, value: float = 1.0, **dimensions: str) -> None: ...
 
@@ -136,6 +151,29 @@ class NullTelemetry:
 
 _NULL_SPAN = NullSpan()
 NULL_TELEMETRY = NullTelemetry()
+
+
+# ------------------------------------------------- static conformance checks
+#
+# These bindings exist ONLY to be type-checked. Assigning a concrete object to
+# a protocol-annotated name is what makes a checker verify the implementation
+# against the protocol, member by member and return type by return type.
+#
+# Without them nothing checked conformance at all. `Protocol` is not
+# `@runtime_checkable` here, and even if it were, `isinstance()` against a
+# runtime-checkable Protocol only tests that the attribute NAMES exist — it
+# does not look at signatures or return types. So the tests could pass, the
+# suite could be green, and `Telemetry` could be a description of something no
+# implementation actually was. That is exactly what had happened: `span()`
+# declared a `None` return that neither implementation had.
+#
+# The Powertools implementation is asserted in `powertools.py` instead, for
+# the reason this module exists: importing it here would drag
+# `aws_lambda_powertools` into the graph and the eval harness, which is the
+# boundary `test_graph_and_evals_do_not_import_powertools` enforces.
+if TYPE_CHECKING:
+    _null_telemetry_conforms: Telemetry = NULL_TELEMETRY
+    _null_span_conforms: Span = _NULL_SPAN
 
 
 # ------------------------------------------------------------------ turn stats

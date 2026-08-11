@@ -123,7 +123,16 @@ def log_stream():
     """
     from src.observability.powertools import logger
 
+    # Powertools types `registered_handler` as the base `logging.Handler`,
+    # which has no stream. It is a StreamHandler in fact — that is the whole
+    # reason this fixture can rebind it — so narrow it rather than reaching
+    # through the declared type. The assert also turns a future Powertools
+    # change of handler class into a clear failure here instead of an
+    # AttributeError inside a privacy test.
     handler = logger.registered_handler
+    assert isinstance(handler, logging.StreamHandler), (
+        f"expected a StreamHandler to rebind, got {type(handler).__name__}"
+    )
     previous = handler.stream
     stream = io.StringIO()
     handler.setStream(stream)
