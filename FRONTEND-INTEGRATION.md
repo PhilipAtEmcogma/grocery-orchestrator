@@ -336,10 +336,24 @@ Two behaviours that surprise people:
   no `error`. If your UI waits for text before clearing the spinner, it hangs.
   Wait for `done`.
 - **The HTTP status is not the outcome.** You'll see `200`, `400` (malformed
-  request or a reused `turn_id` with different content), and `409` (that
-  `turn_id` is still in flight — back off and retry). In every case the body is
-  a valid `ChatResponse` with a `done` event. Parse the body; don't branch on the
-  status code.
+  request or a reused `turn_id` with different content), `409` (that `turn_id`
+  is still in flight — back off and retry), and `500` (a bug on our side). In
+  every case the body is a valid `ChatResponse` with a `done` event. Parse the
+  body; don't branch on the status code.
+
+  **`500` is additive — if you already handle `400` and `409`, you need no
+  change.** It carries the same body shape as everything else: a retryable
+  `INTERNAL_ERROR` event followed by `done`. Treat it exactly as you treat an
+  `INTERNAL_ERROR` at `200` — retry once with the same `turn_id`. The only
+  thing to avoid is a transport layer that throws on 5xx before your parser
+  sees the body: if your HTTP client does that by default (`fetch` does not,
+  `axios` does), turn it off for this endpoint, or you'll lose a response
+  that's telling you what happened.
+
+  The reason it isn't just another `200`: at `200` a crash we didn't predict
+  looks identical to an internal error we did, and nobody finds out without
+  reading logs. The status distinguishes them for our alerting, not for your
+  branching.
 
 ### Error codes
 
@@ -354,7 +368,7 @@ Two behaviours that surprise people:
 | `OUT_OF_SCOPE` | ❌ | Not a grocery question |
 | `UPSTREAM_TIMEOUT` | ✅ | Retry with the **same** `turn_id` |
 | `RATE_LIMITED` | ✅ | Back off, then retry |
-| `INTERNAL_ERROR` | ✅ | Retry once, same `turn_id` |
+| `INTERNAL_ERROR` | ✅ | Retry once, same `turn_id`. Arrives at `200` when we handled the failure, `500` when it escaped — same body, same handling |
 
 `NO_DATA` exists in the enum but you should never see it as an `error` — it comes
 through as a `no_data` event instead.

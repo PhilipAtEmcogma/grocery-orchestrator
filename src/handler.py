@@ -2,12 +2,17 @@
 Lambda entrypoint (API Gateway proxy integration).
 
 THE INVARIANT: this function always returns a contract-valid ChatResponse.
-There is no code path that returns a bare 500, a stack trace, or a body the
-frontend cannot parse. A client that has implemented the event handler never
-needs a special case for "the backend fell over".
+There is no code path that returns a stack trace, an empty body, or anything
+the frontend cannot parse. A client that has implemented the event handler
+never needs a special case for "the backend fell over".
 
 That is why every exception is mapped to an ErrorEvent followed by a DoneEvent
 rather than being allowed to propagate.
+
+The invariant is about the BODY, not the status. An unhandled exception still
+answers 500 — see `_last_resort` — because a bug that got past the handlers
+should be visible to anything watching HTTP. It answers 500 with a parseable
+ChatResponse, which is the part that matters to the client.
 
 OBSERVABILITY (Req 12.1, 12.2) IS ATTACHED HERE AND NOWHERE ELSE. The
 Powertools logger, tracer and metrics live at this boundary; the graph
@@ -33,6 +38,8 @@ location, no dietary information. Note in particular:
 
 from __future__ import annotations
 
+import binascii
+import contextlib
 import json
 import os
 import time
@@ -161,6 +168,38 @@ def _idempotency_store() -> IdempotencyStore:
             _idempotency = InMemoryIdempotencyStore()
 
     return _idempotency
+
+
+def _best_effort_ids(raw_body: str) -> tuple[str, str]:
+    """
+    Recover the session and turn ids from a body that failed validation, so
+    the error response can still be correlated with the client's request.
+
+    THIS FUNCTION MUST NOT RAISE, and the bare `except Exception` is the
+    honest way to say so rather than a shrug. It is called from inside an
+    `except ValidationError` block, and an exception raised there does NOT
+    fall through to the sibling `except (json.JSONDecodeError, ...)` clause —
+    sibling handlers only catch what the `try` raised. It escapes the handler
+    entirely and becomes the bare 500 this module exists to prevent.
+
+    That is not hypothetical: this replaces a `json.loads()` guarded only by
+    `startswith("{")`, which let a truncated body like `{"session_id": "x",`
+    through to the parser and straight out of the Lambda.
+
+    The body is already known to be malformed, so every step has to tolerate
+    failure — including the parse succeeding but yielding a list, a string or
+    a null, none of which have `.get`.
+    """
+    try:
+        payload = json.loads(raw_body)
+        if not isinstance(payload, dict):
+            return "unknown-session", "unknown-turn"
+        return (
+            str(payload.get("session_id") or "unknown-session"),
+            str(payload.get("turn_id") or "unknown-turn"),
+        )
+    except Exception:
+        return "unknown-session", "unknown-turn"
 
 
 def _error_response(
@@ -342,19 +381,26 @@ def _observed_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     TELEMETRY.count(METRIC_TURNS)
 
     raw_body = event.get("body") or "{}"
-    if event.get("isBase64Encoded"):
-        import base64
-
-        raw_body = base64.b64decode(raw_body).decode("utf-8")
 
     # Parse and validate. A malformed request still gets a contract-valid
     # response, because the frontend's error handling should not need a
     # special case for "the body wasn't JSON".
+    #
+    # The base64 decode belongs INSIDE this try, not before it. API Gateway
+    # sets isBase64Encoded on binary content types, and a body that is not
+    # valid base64 raises binascii.Error while one that is not valid UTF-8
+    # raises UnicodeDecodeError — the very exception the second clause below
+    # names. Decoded above the try, neither could ever reach the handler that
+    # was written for them.
     try:
+        if event.get("isBase64Encoded"):
+            import base64
+
+            raw_body = base64.b64decode(raw_body).decode("utf-8")
+
         request = ChatRequest.model_validate_json(raw_body)
     except ValidationError as exc:
-        payload = json.loads(raw_body) if raw_body.strip().startswith("{") else {}
-        session_id = str(payload.get("session_id") or "unknown-session")
+        session_id, turn_id = _best_effort_ids(raw_body)
         logger.set_correlation_id(session_id)
         # exception_fields() reduces the ValidationError to a count and the
         # field paths that failed. Logging the exception itself would log the
@@ -365,13 +411,13 @@ def _observed_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
             400,
             _error_response(
                 session_id=session_id,
-                turn_id=str(payload.get("turn_id") or "unknown-turn"),
+                turn_id=turn_id,
                 code=ErrorCode.INVALID_REQUEST,
                 message="That request wasn't in a format I understand.",
                 retryable=False,
             ),
         )
-    except (json.JSONDecodeError, UnicodeDecodeError) as exc:
+    except (json.JSONDecodeError, UnicodeDecodeError, binascii.Error) as exc:
         logger.warning("unparseable_body", extra=exception_fields(exc))
         TELEMETRY.count(METRIC_INVALID_REQUEST)
         return _http(
@@ -458,10 +504,21 @@ def _observed_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         # Only terminal outcomes are cached. Storing a retryable failure would
         # make the client's retry permanently useless — it would receive the
         # same failure forever.
-        if _is_terminal(response):
-            store.complete(key, response.model_dump_json())
-        else:
-            store.release(key)
+        #
+        # Guarded for the same reason acquire() is: an idempotency store
+        # failure must not fail the turn. The work is already done and the
+        # response is already correct — throwing it away because the bookkeeping
+        # write failed would turn a degraded cache into a failed request. It
+        # was only acquire() that was protected, which left the store able to
+        # fail the turn from two lines further down.
+        try:
+            if _is_terminal(response):
+                store.complete(key, response.model_dump_json())
+            else:
+                store.release(key)
+        except Exception as exc:
+            logger.error("idempotency_unavailable", extra=exception_fields(exc))
+            TELEMETRY.count(METRIC_IDEMPOTENCY_UNAVAILABLE)
 
     elapsed_ms = int((time.perf_counter() - started) * 1000)
     _emit_turn_metrics(response=response, stats=stats, elapsed_ms=elapsed_ms)
@@ -503,5 +560,74 @@ def lambda_handler(event: dict[str, Any], context: Any = None) -> dict[str, Any]
     decorated path Lambda does, rather than a second uninstrumented one. An
     observability layer that only runs in production is an observability
     layer nobody has tested.
+
+    AND THE LAST RESORT. The invariant at the top of this file says there is
+    no path out of here without a contract-valid body. Until now that was a
+    property of having enumerated the raising call sites correctly, and three
+    were missed — all the same shape: code sitting before the `try`, or
+    inside an `except` block, where a raise cannot reach the clause written
+    for it. That review is the one that has now failed, so the invariant is
+    made structural rather than remembered.
+
+    This does not make failures quiet, and it is not a way of turning a crash
+    into a success. Anything arriving here is a bug: it is logged at ERROR
+    with its type and code location, and answered with a 500. What changes is
+    only that the client gets a body it can parse instead of whatever API
+    Gateway synthesises from a stack trace.
     """
-    return _observed_handler(event, context if context is not None else LocalLambdaContext())
+    try:
+        return _observed_handler(
+            event, context if context is not None else LocalLambdaContext()
+        )
+    except Exception as exc:
+        return _last_resort(event, exc)
+
+
+def _last_resort(event: dict[str, Any], exc: BaseException) -> dict[str, Any]:
+    """
+    Turn an escaped exception into the same contract-valid response every
+    other failure produces.
+
+    The BODY is identical to every other internal failure: a retryable
+    INTERNAL_ERROR followed by a done event, so a client that parses the body
+    — which is what the contract tells it to do — needs no new case.
+
+    The STATUS is 500, and deliberately not the 200 that `handle_turn`'s
+    handled internal errors return. This function only runs when the
+    enumeration of raising call sites has already turned out to be wrong. At
+    200 that is indistinguishable at the HTTP layer from an internal error we
+    predicted and handled, so nobody learns the net fired without reading
+    logs — and the whole reason it exists is that reading was not enough.
+    5xx is the one signal that reaches gateway metrics, load-balancer alarms
+    and uptime checks without anyone having wired up a log filter first.
+
+    No metric is emitted. The Powertools metrics decorator has already
+    flushed this invocation's EMF record by the time an exception reaches
+    here, so a count added now would sit in the metric set and be attributed
+    to the NEXT invocation of a warm environment. The log line and the status
+    are the alarm; see design.md 12.6.
+    """
+    # `event` is typed as a dict and API Gateway always sends one, but this
+    # function is reached exactly when something has already violated an
+    # assumption — and `event.get` on a non-dict would raise from inside the
+    # net, which is the bug this whole change is about.
+    body = event.get("body") if isinstance(event, dict) else None
+    session_id, turn_id = _best_effort_ids(body or "{}")
+
+    # Belt and braces: this is the function that must not raise, and it is
+    # reached precisely when assumptions have already failed. Losing the log
+    # line is bad; losing the response as well because the logger was the
+    # thing that broke is worse.
+    with contextlib.suppress(Exception):
+        logger.error("handler_escaped", extra=exception_fields(exc))
+
+    return _http(
+        500,
+        _error_response(
+            session_id=session_id,
+            turn_id=turn_id,
+            code=ErrorCode.INTERNAL_ERROR,
+            message="Something went wrong on my end. Please try again.",
+            retryable=True,
+        ),
+    )

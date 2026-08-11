@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import io
 import json
+import logging
 import uuid
 
 import pytest
@@ -68,6 +69,18 @@ FORBIDDEN = [
     "Aro",
     "-41.29",
     "174.76",
+]
+
+# Field NAMES, which leak even when their values do not. `hint_count` is a
+# number rather than a key list precisely because "this user set
+# dietary_exclusions" reports that they have dietary restrictions, and a
+# restriction can imply health information (Req 11.6). Kept separate from
+# FORBIDDEN because these are our schema's words, not the user's — a test
+# asserting "this came from the request" cannot use them.
+FORBIDDEN_KEYS = [
+    "dietary_exclusions",
+    "budget_nzd",
+    "household_size",
 ]
 
 
@@ -145,6 +158,74 @@ def captured(capfd, log_stream):
     return read
 
 
+class _RecordSink(logging.Handler):
+    """A root handler that keeps every stdlib record, at any level."""
+
+    def __init__(self) -> None:
+        super().__init__(level=logging.NOTSET)
+        self.lines: list[str] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        # Never raise: a formatting error here would mask the leak the caller
+        # is looking for, so fall back to the rawest form of the record.
+        try:
+            self.lines.append(self.format(record))
+        except Exception:  # pragma: no cover - defensive
+            self.lines.append(f"{record.name} {record.msg!r} {record.args!r}")
+
+
+@pytest.fixture
+def every_sink(capfd, log_stream):
+    """
+    Everything this invocation could put in CloudWatch — not just stdout.
+
+    `captured()` reads stdout, which is where Powertools writes. That is not
+    the whole log surface, and the two tests below exist because the gaps are
+    reachable:
+
+    * Lambda ships the function's STDERR to the same log group. A bare
+      `sys.stderr.write` or anything writing to it leaks exactly as much as a
+      print, and a fixture reading only `.out` scores it as a pass.
+    * The graph deliberately cannot import Powertools (see
+      `test_graph_and_evals_do_not_import_powertools`), so a node author who
+      wants to log has stdlib `logging` and nothing else. Those records go to
+      a root handler — installed by the Lambda runtime in production, and by
+      pytest here, which swallows them before they reach any stream. So this
+      attaches its own root handler rather than trusting a stream to catch
+      them.
+    * Both loggers are forced to DEBUG, because the level is an environment
+      variable. A `logger.debug(request.message)` that is silent at the
+      default INFO is one `LOG_LEVEL` change away from being printed, and a
+      test that cannot see it is a test that approves it.
+    """
+    from src.observability.powertools import logger as powertools_logger
+
+    root = logging.getLogger()
+    sink = _RecordSink()
+    sink.setFormatter(logging.Formatter("%(name)s %(levelname)s %(message)s"))
+
+    previous_root_level = root.level
+    previous_log_level = powertools_logger.log_level
+    root.addHandler(sink)
+    root.setLevel(logging.DEBUG)
+    powertools_logger.setLevel(logging.DEBUG)
+
+    def read() -> str:
+        streams = capfd.readouterr()
+        text = "\n".join([streams.out, streams.err, log_stream.getvalue(), *sink.lines])
+        log_stream.seek(0)
+        log_stream.truncate(0)
+        sink.lines.clear()
+        return text
+
+    try:
+        yield read
+    finally:
+        root.removeHandler(sink)
+        root.setLevel(previous_root_level)
+        powertools_logger.setLevel(previous_log_level)
+
+
 @pytest.fixture
 def never_affordable(monkeypatch):
     """
@@ -213,10 +294,14 @@ def _event(body: dict | str) -> dict:
     }
 
 
-def _meal_plan_body(**extra) -> dict:
-    """A turn that exercises retrieval, plan generation and the repair loop."""
+def _personal_body(message: str, **extra) -> dict:
+    """
+    A request carrying all three kinds of personal information at once —
+    message text, a location and dietary exclusions — so that whichever path
+    the turn takes, there is something of each kind available to leak.
+    """
     return _body(
-        PERSONAL_MESSAGE,
+        message,
         hints={
             "household_size": 5,
             "budget_nzd": 20,
@@ -226,6 +311,29 @@ def _meal_plan_body(**extra) -> dict:
         location={"lat": -41.29, "lon": 174.76, "label": PERSONAL_LABEL},
         **extra,
     )
+
+
+def _meal_plan_body(**extra) -> dict:
+    """A turn that exercises retrieval, plan generation and the repair loop."""
+    return _personal_body(PERSONAL_MESSAGE, **extra)
+
+
+def _invoke(body: dict | str) -> dict:
+    from src.handler import lambda_handler
+
+    return lambda_handler(_event(body))
+
+
+def _types(result: dict) -> set[str]:
+    return {event["type"] for event in json.loads(result["body"])["events"]}
+
+
+def _codes(result: dict) -> set[str]:
+    return {
+        str(event["code"]).lower()
+        for event in json.loads(result["body"])["events"]
+        if event["type"] == "error"
+    }
 
 
 def _metric(emf: list[dict], name: str) -> list[tuple[float, dict]]:
@@ -284,6 +392,241 @@ def test_no_request_content_reaches_stdout_on_a_real_turn(captured):
     lowered = raw.lower()
     leaked = [term for term in FORBIDDEN if term.lower() in lowered]
     assert not leaked, f"personal information reached stdout: {leaked}\n{raw}"
+
+
+# ---------------------------------------------- every path, every log sink
+#
+# The test above runs ONE turn and reads ONE stream, which is how the leak it
+# was written for survived review: the reviewer checks the log calls on the
+# path in front of them, and the test agrees with the reviewer. These
+# scenarios exist so that a careless log line has nowhere quiet to sit. Each
+# one asserts the path it claims to take BEFORE the scan, because a scenario
+# that silently stops reaching `emit_no_data` degrades into a fourth copy of
+# the meal-plan turn and still passes.
+
+
+def _turn_meal_plan(monkeypatch) -> None:
+    assert "meal_plan" in _types(_invoke(_meal_plan_body()))
+
+
+def _turn_price_check(monkeypatch) -> None:
+    """butter and milk are in the fixtures, so this reaches
+    generate_comparison — a node the meal-plan turn never visits."""
+    result = _invoke(
+        _personal_body("whanau shopping: how much do butter and milk cost")
+    )
+    assert "price_comparison" in _types(result)
+
+
+def _turn_no_data(monkeypatch) -> None:
+    """Nothing in the fixtures matches, so the graph takes the no-data edge."""
+    result = _invoke(_personal_body("how much do quinoa and halloumi cost"))
+    assert "no_data" in _types(result)
+    assert "price_comparison" not in _types(result)
+
+
+def _turn_out_of_scope(monkeypatch) -> None:
+    result = _invoke(_personal_body("write me a limerick about quinoa and halloumi"))
+    assert _types(result) == {"session", "intent", "done"}
+
+
+def _turn_budget_infeasible(monkeypatch) -> None:
+    """The repair loop runs to exhaustion and the failing plan is discarded."""
+    from decimal import Decimal
+
+    import src.handler as handler_mod
+    from src.models.scripted import ScriptedModelClient
+
+    monkeypatch.setattr(
+        handler_mod, "_model", ScriptedModelClient(plan_packs=Decimal("5"))
+    )
+    assert "budget_infeasible" in _codes(_invoke(_meal_plan_body()))
+
+
+def _turn_guardrail_blocked(monkeypatch) -> None:
+    """
+    The exception text is the blocked content, which is the worst thing in
+    the process to log — and the reason the handler's guardrail branch logs a
+    bare event name with no fields at all.
+    """
+    from src.models.bedrock import GuardrailBlocked
+
+    def blocked(*_args, **_kwargs):
+        raise GuardrailBlocked(f"blocked input: {PERSONAL_MESSAGE}")
+
+    monkeypatch.setattr("src.runner.run_turn", blocked)
+    assert "guardrail_blocked" in _codes(_invoke(_meal_plan_body()))
+
+
+def _turn_unhandled_exception(monkeypatch) -> None:
+    import src.handler as handler_mod
+
+    def boom(*_args, **_kwargs):
+        raise RuntimeError(f"leaking the message: {PERSONAL_MESSAGE}")
+
+    monkeypatch.setattr(handler_mod, "_dependencies", boom)
+    assert "internal_error" in _codes(_invoke(_meal_plan_body()))
+
+
+def _turn_handler_escaped(monkeypatch) -> None:
+    """
+    The last-resort net in `lambda_handler`. It is a log call on a path that
+    by definition nobody predicted, so it gets scanned like the predictable
+    ones — the exception carries the message here for exactly that reason.
+    """
+    import src.handler as handler_mod
+
+    def boom(*_args, **_kwargs):
+        raise RuntimeError(f"escaped with: {PERSONAL_MESSAGE}")
+
+    monkeypatch.setattr(handler_mod, "_observed_handler", boom)
+    assert "internal_error" in _codes(_invoke(_meal_plan_body()))
+
+
+def _turn_model_error(monkeypatch) -> None:
+    """
+    ModelError text is allowlisted into the log, so the text here is what a
+    real one carries. Putting the user's message in a ModelError would be
+    contriving the leak the allowlist deliberately accepts; the point of this
+    scenario is that the error PATH gets scanned like every other.
+    """
+    from src.models.base import ModelError
+
+    def throttled(*_args, **_kwargs):
+        raise ModelError("ThrottlingException from bedrock-runtime")
+
+    monkeypatch.setattr("src.runner.run_turn", throttled)
+    assert "internal_error" in _codes(_invoke(_meal_plan_body()))
+
+
+def _turn_invalid_request(monkeypatch) -> None:
+    """Valid JSON, wrong shape — the message rides in on a rejected field."""
+    result = _invoke(
+        {"session_id": "short", "message": PERSONAL_MESSAGE, "nonsense": True}
+    )
+    assert result["statusCode"] == 400
+
+
+def _turn_unparseable_body(monkeypatch) -> None:
+    result = _invoke(f"this is not json at all: {PERSONAL_MESSAGE}")
+    assert result["statusCode"] == 400
+
+
+def _turn_idempotent_replay(monkeypatch) -> None:
+    body = _meal_plan_body()
+    _invoke(body)
+    replay = _invoke(body)
+    assert replay["headers"]["X-Idempotent-Replay"] == "true"
+
+
+def _turn_id_reused(monkeypatch) -> None:
+    first = _meal_plan_body()
+    _invoke(first)
+    result = _invoke({**first, "message": f"{PERSONAL_MESSAGE} plus extra halloumi"})
+    assert result["statusCode"] == 400
+
+
+def _turn_in_flight(monkeypatch) -> None:
+    from src.handler import _idempotency_store
+    from src.store.idempotency import fingerprint, make_key
+
+    body = _meal_plan_body()
+    raw = json.dumps(body)
+    _idempotency_store().acquire(
+        make_key(body["session_id"], body["turn_id"]), fingerprint(raw)
+    )
+    assert _invoke(raw)["statusCode"] == 409
+
+
+TURNS = {
+    "budget_infeasible": _turn_budget_infeasible,
+    "guardrail_blocked": _turn_guardrail_blocked,
+    "handler_escaped": _turn_handler_escaped,
+    "idempotent_replay": _turn_idempotent_replay,
+    "in_flight": _turn_in_flight,
+    "invalid_request": _turn_invalid_request,
+    "meal_plan": _turn_meal_plan,
+    "model_error": _turn_model_error,
+    "no_data": _turn_no_data,
+    "out_of_scope": _turn_out_of_scope,
+    "price_check": _turn_price_check,
+    "turn_id_reused": _turn_id_reused,
+    "unhandled_exception": _turn_unhandled_exception,
+    "unparseable_body": _turn_unparseable_body,
+}
+
+
+@pytest.mark.parametrize("turn", sorted(TURNS))
+def test_no_personal_information_reaches_any_log_sink(turn, every_sink, monkeypatch):
+    """
+    THE REGRESSION TEST FOR THE LEAK.
+
+    Every branch the handler and the graph can take, run for real, with the
+    message, the location and the dietary exclusions all present in the
+    request — and then every sink the invocation could have written to is
+    searched: stdout, stderr, the Powertools stream and stdlib logging, at
+    DEBUG.
+
+    Reading the log calls is what let the last one through. This does not
+    read them. It asserts on what came out.
+    """
+    TURNS[turn](monkeypatch)
+
+    written = every_sink()
+    assert written.strip(), "the turn wrote nothing at all, so the scan proves nothing"
+
+    lowered = written.lower()
+    leaked = sorted(
+        {term for term in (*FORBIDDEN, *FORBIDDEN_KEYS) if term.lower() in lowered}
+    )
+    if leaked:
+        offending = [
+            line
+            for line in written.splitlines()
+            if any(term.lower() in line.lower() for term in leaked)
+        ]
+        pytest.fail(
+            f"personal information reached the logs on the {turn} path: {leaked}\n"
+            + "\n".join(offending[:10])
+        )
+
+
+def test_the_leak_scan_can_actually_see_a_leak(every_sink, monkeypatch):
+    """
+    The scan above is only worth its runtime if it fails when it should, and
+    each sink is a separate way for it to stop looking — the original leak was
+    invisible to a stdout-only reader. So write the message to all four and
+    require every one of them to be caught.
+
+    Without this, a refactor that quietly drops a sink turns the whole
+    parametrised suite green and nobody finds out until the next incident.
+    """
+    import sys
+
+    from src.observability.powertools import logger as powertools_logger
+
+    sinks = {
+        "stdout": lambda: print(PERSONAL_MESSAGE),
+        "stderr": lambda: sys.stderr.write(PERSONAL_MESSAGE + "\n"),
+        "powertools": lambda: powertools_logger.info(
+            "careless", extra={"m": PERSONAL_MESSAGE}
+        ),
+        # The one available to a graph node, which cannot import Powertools.
+        "stdlib_logging": lambda: logging.getLogger("src.graph.nodes.plan").debug(
+            "planning for %s", PERSONAL_MESSAGE
+        ),
+        "hint_keys": lambda: powertools_logger.info(
+            "careless", extra={"hints": ["household_size", "dietary_exclusions"]}
+        ),
+    }
+
+    for name, leak in sinks.items():
+        every_sink()  # discard anything buffered from the previous sink
+        leak()
+        lowered = every_sink().lower()
+        assert any(
+            term.lower() in lowered for term in (*FORBIDDEN, *FORBIDDEN_KEYS)
+        ), f"a leak written to {name} was invisible to the scan"
 
 
 def test_turn_log_reports_shape_not_content(captured):
