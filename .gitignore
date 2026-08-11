@@ -10,3 +10,7 @@ build/
 .pytest_cache/
 .ruff_cache/
 infra/manual/
+
+# Per-developer Claude Code tool permissions. Only the .local variant, so a
+# shared .claude/settings.json remains possible.
+.claude/settings.local.json
