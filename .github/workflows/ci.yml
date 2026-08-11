@@ -61,8 +61,13 @@ jobs:
       # Plain output, not `--output-format=github` like ruff above: pyright
       # 1.1.411 has no such flag (only `--outputjson`), and passing one it
       # does not know is a failure that only appears in CI.
+      #
+      # `--stats` for one line: "Found N source files". Without it the log
+      # says "0 errors" whether it analysed the repo or nothing at all, and a
+      # config that silently resolved to an empty file set would look exactly
+      # like a passing type check. The count is the evidence that it ran.
       - name: Type check
-        run: pyright
+        run: pyright --stats
 
       - name: Tests
         run: pytest -q --cov=src --cov-report=term-missing
