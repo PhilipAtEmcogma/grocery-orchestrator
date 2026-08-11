@@ -1,0 +1,69 @@
+{
+  "_comment": "The two alarms design.md 12.6 says are worth having on day one. Alarms are configuration, not console state, for the same reasons the guardrail is (design.md 10.1): reviewable in a pull request, diffable, reproducible in another account. Apply with scripts/apply_alarms.py.",
+
+  "version": "1.0",
+  "region": "ap-southeast-2",
+  "environment": "dev",
+
+  "_naming": "Every name carries the -dev suffix so generated resources can coexist with manually created ones during the migration to IaC (design.md 11, point 2).",
+
+  "notification": {
+    "topic_name": "grocery-orchestrator-alarms-dev",
+    "_note": "Alarms point here. An alarm with no action is not an alarm, so apply_alarms.py refuses to create one without a topic, and warns when the topic it created has no subscribers — an alarm nobody is subscribed to fails the same way one paragraph further out.",
+    "_subscriptions": "Deliberately not declared here. SNS email subscriptions require the recipient to confirm out of band, so a config file cannot make one true; subscribe once, by hand, and the script tells you if you have not."
+  },
+
+  "metric_filters": [
+    {
+      "name": "grocery-orchestrator-handler-escaped-dev",
+      "log_group": "/aws/lambda/grocery-orchestrator-dev",
+      "_pattern_note": "A JSON selector, NOT the substring \"handler_escaped\". A substring pattern matches any log line that happens to contain the text — an exception message quoting it, a test fixture, a future log line about the alarm itself — and each of those is a page at 3am for nothing. This binds to the structured field Powertools writes.",
+      "pattern": "{ $.message = \"handler_escaped\" }",
+      "metric_name": "HandlerEscaped",
+      "namespace": "GroceryOrchestrator",
+      "metric_value": "1",
+      "_default_value_note": "0, not absent. Without it the metric has datapoints only when the pattern matches, so the alarm sits in INSUFFICIENT_DATA forever and OK never means 'checked and fine' — it means 'never looked'. With 0-fill, a quiet period is an affirmative all-clear.",
+      "default_value": 0
+    }
+  ],
+
+  "alarms": [
+    {
+      "name": "grocery-orchestrator-handler-escaped-dev",
+      "description": "An exception escaped every handler in src/handler.py and hit the last resort in lambda_handler(). Always a bug: every anticipated failure is mapped to an error event before this point. The log line carries the exception type and file:line frames.",
+      "namespace": "GroceryOrchestrator",
+      "metric_name": "HandlerEscaped",
+      "dimensions": {},
+      "statistic": "Sum",
+      "period": 300,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "threshold": 1,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching"
+    },
+    {
+      "name": "grocery-orchestrator-api-5xx-dev",
+      "description": "Any 5xx from the API. The gateway's own metric, so it fires even when the failure is upstream of our code or logging is the thing that broke — which is why it overlaps the handler_escaped alarm deliberately.",
+      "namespace": "AWS/ApiGateway",
+      "metric_name": "5XXError",
+      "_dimensions_note": "ApiName must match the deployed API exactly. A dimension that matches nothing yields a metric with no datapoints, which looks identical to a healthy service.",
+      "dimensions": {
+        "ApiName": "grocery-orchestrator-dev"
+      },
+      "statistic": "Sum",
+      "period": 300,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "threshold": 1,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching"
+    }
+  ],
+
+  "tags": [
+    { "key": "Project", "value": "SmartGrocery" },
+    { "key": "Env", "value": "dev" },
+    { "key": "ManagedBy", "value": "config/alarms.json" }
+  ]
+}

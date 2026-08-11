@@ -634,10 +634,16 @@ than replays, in-flight detection, and caching only terminal outcomes. Each is
 tested. Swapping in a library default would be a behaviour change wearing the
 costume of a dependency upgrade.
 
-### 12.6 The two alarms to wire when the account lands
+### 12.6 The two alarms, as configuration
 
-Nothing here is alerting yet — there is no account to alarm in. When there is,
-these two are the ones worth having on day one, and they are cheap because the
+Both are now defined in `config/alarms.json` and applied by
+`scripts/apply_alarms.py`, following the guardrail pattern (§10.1): the file is
+the source of truth, not the console, so the alerting is reviewable in a pull
+request, diffable, and reproducible in another account. Nothing is deployed —
+there is still no account — but `--dry-run` validates offline and runs in CI
+and the pre-commit hook, so the definitions cannot rot while they wait.
+
+These are the two worth having on day one, and they are cheap because the
 signals already exist:
 
 - **`handler_escaped` in the logs.** A metric filter on this log line, alarm on
@@ -657,8 +663,36 @@ signals already exist:
   (CONTRACT-v1.md documents it as additive for clients).
 
 The two overlap deliberately. The log filter says what broke and where; the 5xx
-alarm fires even if logging is the thing that broke.
+alarm fires even if logging is the thing that broke. `test_alarms.py` asserts
+that separation holds — the 5xx alarm must stay on an `AWS/` namespace, because
+an alarm we publish ourselves cannot survive our own logging failing.
+
+**What the validator is for.** Not schema-checking. An alarm fails quietly in
+more ways than it fails loudly, and each check in `apply_alarms.py` is one of
+them: an alarm on a metric no filter publishes (a metric-name typo is not an
+error anywhere in AWS — it is an alarm that sits in INSUFFICIENT_DATA looking
+calm); `GreaterThanThreshold` with threshold 1, which needs a *second* crash to
+fire; `Average` instead of `Sum`, which dilutes a single event across the
+period; `treatMissingData: breaching`, which pages on an idle system until
+someone mutes it; a substring filter pattern rather than a JSON selector, which
+matches any log line quoting the text; and no notification topic, which makes
+the alarm a dashboard widget. `apply_alarms.py` also refuses to finish quietly
+when the topic it just created has no confirmed subscriber — the same failure
+one level further out.
+
+**The check AWS cannot do.** The alarm is a string in a JSON file pointing at a
+string in a Python file. Rename the event in `src/handler.py` and the filter
+still deploys, still looks right in the console, and matches nothing forever —
+indistinguishable from a service that never crashes. So `test_alarms.py` drives
+a real turn into the last-resort path, captures what Powertools actually wrote,
+and applies the shipped filter pattern to it. It also asserts the pattern does
+*not* match an ordinary turn, because an alarm broad enough to fire on success
+is one that gets muted in a week.
 
 Everything else can wait for a dashboard. `TurnWithoutContent` (§12.3) is the
 next candidate, but it needs a baseline on the conversational intents first,
 and there is no traffic to take one from.
+
+Not deployed. When the account lands, the remaining manual step is subscribing
+someone to the topic and confirming it; the script says so, loudly, and exits
+non-zero until it is true.

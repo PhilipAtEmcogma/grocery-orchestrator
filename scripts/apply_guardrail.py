@@ -106,7 +106,7 @@ def main() -> int:
     )
 
     if args.dry_run:
-        print("\nDry run — no AWS calls made.")
+        print("\nDry run - no AWS calls made.")
         return 0
 
     import boto3
