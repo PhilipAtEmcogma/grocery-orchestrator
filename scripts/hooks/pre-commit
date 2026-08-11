@@ -124,10 +124,36 @@ say "${GREEN}ok${RESET} pytest"
 step="secret scan"
 staged=$(git diff --cached --name-only --diff-filter=ACM)
 if [ -n "$staged" ]; then
+    scan_status=0
     # shellcheck disable=SC2086
     printf '%s\n' "$staged" | tr '\n' '\0' \
         | xargs -0 detect-secrets-hook --baseline .secrets.baseline \
+        || scan_status=$?
+
+    # detect-secrets writes paths with the local os.sep, so the same commit
+    # yields forward slashes from Linux and backslashes from Windows. Both are
+    # READ correctly on either platform — it converts separators on load — so
+    # this is not a broken gate, it is churn: the file flips form as commits
+    # arrive from different machines, and a security artefact whose diff is
+    # usually noise is one whose real changes get waved through. Canonicalise
+    # before reporting, so the fix is already on disk when the author is told
+    # to stage it. See scripts/normalise_secrets_baseline.py.
+    #
+    # Runs whether or not the scan passed: a rewrite accompanies the failure,
+    # and a baseline committed from another platform can need it even when
+    # nothing was detected.
+    normalise_status=0
+    python scripts/normalise_secrets_baseline.py || normalise_status=$?
+    [ "$normalise_status" -le 1 ] \
+        || fail "could not read .secrets.baseline — see the error above"
+
+    [ "$scan_status" -eq 0 ] \
         || fail "a new secret was detected, or the baseline moved and needs re-committing"
+
+    # Same rule as ruff above: a file fixed after staging is not the file that
+    # would be committed. Stop rather than record a baseline CI will reject.
+    [ "$normalise_status" -eq 0 ] \
+        || fail ".secrets.baseline was not canonical. Run: git add .secrets.baseline"
 fi
 say "${GREEN}ok${RESET} secret scan"
 
