@@ -633,3 +633,32 @@ not share: session-scoped keys, payload fingerprinting that rejects rather
 than replays, in-flight detection, and caching only terminal outcomes. Each is
 tested. Swapping in a library default would be a behaviour change wearing the
 costume of a dependency upgrade.
+
+### 12.6 The two alarms to wire when the account lands
+
+Nothing here is alerting yet — there is no account to alarm in. When there is,
+these two are the ones worth having on day one, and they are cheap because the
+signals already exist:
+
+- **`handler_escaped` in the logs.** A metric filter on this log line, alarm on
+  `>= 1`. `src/handler.py` maps every anticipated failure to an error event, so
+  this line is emitted only when an exception got past all of them. It carries
+  the exception type and `file:line` frames, which is enough to open the right
+  file before opening the dashboard. It has fired for three distinct bugs so
+  far, all the same shape — code above the `try`, or inside an `except`, where
+  a raise cannot reach the clause written for it.
+- **Any 5xx from the API.** Alarm on the gateway's own `5XXError` metric, no
+  instrumentation needed. This is why `_last_resort` answers 500 rather than
+  the 200 a *handled* internal error returns: at 200 an unanticipated crash is
+  indistinguishable at the HTTP layer from one we predicted, so the only way to
+  learn the net fired is to already be reading logs — and the reason the net
+  exists is that reading was not enough. The body is a contract-valid
+  `ChatResponse` either way, so the status is free to carry the signal
+  (CONTRACT-v1.md documents it as additive for clients).
+
+The two overlap deliberately. The log filter says what broke and where; the 5xx
+alarm fires even if logging is the thing that broke.
+
+Everything else can wait for a dashboard. `TurnWithoutContent` (§12.3) is the
+next candidate, but it needs a baseline on the conversational intents first,
+and there is no traffic to take one from.

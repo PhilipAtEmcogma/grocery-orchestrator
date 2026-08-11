@@ -73,6 +73,30 @@ back in the `meal_plan` payload.
 Every event has a `seq` (monotonic from 0 within a turn) and a `type`.
 **Render in `seq` order.** Over WebSocket, `seq` lets you detect gaps.
 
+### HTTP status
+
+**Every status carries a parseable `ChatResponse` with a `done` event, including
+`500`.** The outcome of a turn is in the body, not the status line — parse the
+body rather than branching on the status.
+
+| Status | When |
+|---|---|
+| `200` | The turn completed. This includes turns that ended in an `error` event we anticipated and handled. |
+| `400` | The request was malformed, or reused a `turn_id` with different content. |
+| `409` | That `turn_id` is still in flight. Back off and retry. |
+| `500` | A bug on our side that got past the error handling. Body is a retryable `INTERNAL_ERROR` + `done`, exactly as at `200`. |
+
+`500` is **additive**: a client already handling `200`, `400` and `409` needs no
+change to handle it. The distinction between an `INTERNAL_ERROR` at `200` and one
+at `500` exists for our alerting — a `500` means specifically "a failure nobody
+predicted", which is otherwise invisible without reading logs. For a client both
+mean the same thing: retry once with the same `turn_id`.
+
+One caveat: some HTTP clients reject 5xx before you can read the body (`axios`
+does by default, `fetch` does not). If yours does, disable that for this
+endpoint — the body on a `500` is still the contract response and still tells
+you what happened.
+
 ### Event types
 
 | `type` | When | What to do with it |
@@ -138,7 +162,7 @@ JS: use `Intl.NumberFormat` for display and a decimal lib for arithmetic.
 | `OUT_OF_SCOPE` | ❌ | Not a grocery/meal question |
 | `UPSTREAM_TIMEOUT` | ✅ | Retry with the **same** `turn_id` |
 | `RATE_LIMITED` | ✅ | Back off and retry |
-| `INTERNAL_ERROR` | ✅ | Retry once with the same `turn_id` |
+| `INTERNAL_ERROR` | ✅ | Retry once with the same `turn_id`. Arrives at HTTP `200` when handled, `500` when it escaped the handlers — identical body either way |
 
 `BUDGET_INFEASIBLE` matters. It's the honest answer when you can't feed five
 people for $15. Please don't render it as a generic failure — the `message`
