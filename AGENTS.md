@@ -183,6 +183,32 @@ another project's venv active is measuring that project. Check
 `(Get-Command ruff).Source` or `command -v ruff` before believing a surprising
 local result.
 
+### When verifying that a gate FAILS, assert on the failure, not the exit code
+
+**A non-zero exit can mean the tool never ran.** Checking that a gate catches
+something is only worth doing if the check can tell "it caught it" apart from
+"it crashed", and an exit code alone cannot.
+
+This produced a false green while verifying the secret scan. The verification
+planted a credential and asserted a non-zero exit — but it invoked the scan
+through `bash -c`, and on Windows `bash` resolves to the WSL launcher, which
+failed to start and exited non-zero. Every planted-credential check passed
+without detect-secrets running once. The bug was only visible because a later
+assertion in the same run expected exit *zero* and got the same WSL error.
+
+So assert on the content: which file the finding names, which rule fired. Two
+supporting habits, both of which would have caught this one on their own:
+
+- **Check the input, not just the output.** The corrected version asserts the
+  scan was handed the expected number of files — 91 for the whole tree, 2 for
+  the staged set — because a scan of nothing also exits zero.
+- **Prefer invoking the tool directly over routing it through a shell.** The
+  fix was to build the file list in Python and call `detect-secrets-hook` with
+  it, which removed the failure mode rather than detecting it.
+
+The general form of this is the same one the section above is about: a signal
+that looks like the one you wanted, produced by something else entirely.
+
 **`main` is protected. Direct pushes are rejected, for everyone.** Work on a
 branch and open a pull request; the `All checks` job must pass before merge.
 
