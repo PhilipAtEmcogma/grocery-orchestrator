@@ -20,3 +20,7 @@ frontend/dist/
 frontend/.env
 frontend/.env.local
 frontend/.env.*.local
+
+# macOS
+.DS_Store
+**/.DS_Store
