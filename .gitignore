@@ -14,3 +14,9 @@ infra/manual/
 # Per-developer Claude Code tool permissions. Only the .local variant, so a
 # shared .claude/settings.json remains possible.
 .claude/settings.local.json
+
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
