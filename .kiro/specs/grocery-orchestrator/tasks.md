@@ -1,24 +1,112 @@
 # Tasks — Smart Grocery & Meal Budget Assistant
 
-**Status:** Draft for team review
+**Status:** Approved pilot roadmap plus archived reference-build ledger
 **Traces to:** `requirements.md`, `design.md`
 
-Status reflects the reference implementation built before the Kiro rebuild.
-`[x]` items exist and are tested; they are the evidence the specification is
-achievable, and their tests are the acceptance criteria for the rebuild.
+The approved Pilot Tasks below are the current execution order. The later
+legacy sections preserve implementation history and old task ids used by
+commits and documentation; their historical `[blocked: AWS]` labels do not
+describe current account availability and must not override the Pilot Task
+status.
 
-Items that cannot be completed without the AWS account are marked
-**[blocked: AWS]**. They are not "not started" — in most cases the code-side
-half is built and tested, and what remains is verification against a live
-service. Where a task had both halves, it has been split so the completed half
-is not hidden behind the blocked one.
+`[x]` in the legacy ledger means the reference behavior existed and had the
+stated evidence at the time. It does not imply that the stronger pilot
+acceptance criteria are met.
 
-Where a task was implemented differently from how it was specified, the
-difference is recorded in the note beneath it rather than by editing the task
-to match the code. The specification is the input to the rebuild; a quietly
-adjusted task teaches the rebuild nothing.
+Where a legacy task id such as `6.7` is referenced elsewhere, it refers to
+the reference-implementation ledger retained below. New work uses the
+**Pilot Task** ids in the approved roadmap.
 
 ---
+
+## Approved production-pilot roadmap
+
+Documentation alignment is a hard execution gate: Pilot Task 2 must not begin
+until Pilot Task 1 is complete and the offline consistency checks pass. An
+unchecked task is planned, not implemented.
+
+- [x] **Pilot Task 1 — Align documentation and design before code changes.**
+  Reconciled requirements, design, task status, contract/schema guidance,
+  README/AGENTS, steering, and ADRs; cross-document review and offline gates
+  passed on 2026-08-23.
+- [ ] **Pilot Task 2 — Repair and prove the grounding boundary.** Correct exact
+  source keys, remove uncited literal prices, and strengthen ordering, source,
+  equality, and literal-money assertions with negative controls.
+- [ ] **Pilot Task 3 — Make Guardrail behavior explicit and testable.** Ensure
+  interventions from every model node become one `GUARDRAIL_BLOCKED` outcome;
+  add the red-team harness and require a numbered version.
+- [ ] **Pilot Task 4 — Correct request semantics and payable arithmetic.** Ask
+  for missing required constraints and define verified consumption and
+  full-pack payable totals.
+- [ ] **Pilot Task 5 — Enforce location, store scope, and freshness.** Extend
+  repository contracts and route stale-only data to an honest outcome.
+- [ ] **Pilot Task 6 — Harden DynamoDB access and idempotency.** Hash the
+  canonical validated request; return and rotate a claim owner token/version on
+  every acquire/takeover; require owner-conditional `complete()` and
+  `release()`; add shared contract and race tests, pagination coverage, all-table
+  PITR evidence, and a queryable candidate access pattern for scale.
+- [ ] **Pilot Task 7 — Reconcile and qualify the model plane.** Align the
+  adapter with `langchain-aws`, move routing toward SSM, disable unscored
+  models, and publish scorecards for every enabled route.
+- [ ] **Pilot Task 8 — Deliver the early read-only MCP demonstration.** Expose
+  coarse local tools that invoke the complete deterministic service; no raw
+  infrastructure, arbitrary I/O, writes, scraping, or unguarded generation.
+- [ ] **Pilot Task 9 — Establish CDK and adopt existing data resources.** Build
+  the TypeScript CDK app scaffold and stateful construct/stack; import existing
+  tables with no-replacement assertions and reviewed adoption evidence.
+- [ ] **Pilot Task 10 — Define the deployable service plane.** Codify the
+  Python 3.13 zip Lambda, published SnapStart alias, REST API, Guardrail,
+  strict CORS, throttling, usage plan, SSM configuration, log retention, and
+  scoped IAM.
+- [ ] **Pilot Task 11 — Deploy and verify the anonymous pilot safely.** Treat
+  resource adoption and deployment as separately reviewed operations in
+  account `097087133897`, region `ap-southeast-2`.
+- [ ] **Pilot Task 12 — Add operational acceptance gates.** Build dashboards,
+  alarms, budgets, quota review, latency/cost baselines, and alarm drills.
+- [ ] **Pilot Task 13 — Build controlled ingestion.** Use EventBridge and Step
+  Functions Inline Map with fixture/recorded adapters, provenance,
+  normalization, partial failure, retry, and dead-letter behavior; no live
+  retailer traffic.
+- [ ] **Pilot Task 14 — Add a bounded data-quality agent.** Review capped
+  snapshots with read-only tools and human approval; no publication authority.
+- [ ] **Pilot Task 15 — Introduce the curated recipe catalogue.** Models select
+  recipe ids and product citations; code owns scaling, safety, and totals.
+- [ ] **Pilot Task 16 — Wire and release the complete pilot increment.** Run
+  offline, live-adapter, infrastructure, security, evaluation, load, privacy,
+  recovery, MCP, and cost gates before declaring the pilot releasable.
+
+### Pilot acceptance targets
+
+- 100% pass for grounding, literal-money rejection, arithmetic, dietary
+  fail-closed, Guardrail propagation, and their negative controls.
+- Every enabled model has a published scorecard; every active route scores at
+  least 90% on its applicable golden set.
+- Measurement targets: p95 price checks under 5 seconds, p95 meal plans under
+  20 seconds, and p99 meal plans under the approximately 25-second escalation
+  trigger.
+- At least 99% successful service responses during the pilot, excluding
+  intentional contract-valid refusals; unhandled 5xx below 1%.
+- No message, raw location, dietary value, credential, or model prompt in logs
+  or traces.
+- Every published price has an exact source key, store location, and capture
+  date.
+- Record cost per successful task; alert at 50%, 80%, and 100% of the approved
+  monthly pilot budget and review unit-cost regressions over 20%.
+
+### Later roadmap
+
+After measured pilot stability: Cognito ownership, WebSocket delivery,
+consented preference persistence with TTL, remote MCP with OAuth 2.1, gated
+live retailer acquisition, and separate development/staging/production
+environments. AgentCore remains contingent on the documented p99 trigger and
+mentor approval.
+
+---
+
+## Legacy reference-implementation ledger
+
+The sections below preserve the original build history and task ids. They are
+not the execution order for the approved production-pilot work.
 
 ## Phase 1 — Interface and foundations
 
@@ -141,19 +229,19 @@ and nut-free support) is future work — see Phase 11.*
   — *Req 9.4*
 - [x] **3.8** Insert cache markers only where supported and above the minimum,
   and record utilisation — *Req 9.6*
-- [ ] **3.9** Verify cache utilisation against a live endpoint
-  — **[blocked: AWS]**
+- [ ] **3.9** Verify cache utilisation against accessible live endpoints
+  — **[pending model qualification evidence]**
 - [x] **3.10** Implement the managed-inference adapter behind the model
   protocol
 
-*3.10 was built but never specified. The adapter is now verified against live
-Bedrock endpoints (Nova Lite and Nova Pro in ap-southeast-2). Live eval results:
-Nova Lite 83.3% intent accuracy, Nova Pro 100% intent accuracy at p50 ~600ms.
-Discovered and fixed: `guardContent` blocks require `guardrailConfig` or Bedrock
-rejects with a ValidationException — the adapter now defers tagging until a
-guardrail is configured. Claude models are blocked on the Anthropic use-case
-form; once available, routing restores them to their configured preference
-positions (Sonnet for plan generation, Haiku for classification/repair).*
+*3.10 was built but never specified. The adapter is verified against live
+Bedrock endpoints (Nova Lite and Nova Pro in ap-southeast-2). Current evidence:
+Nova Lite 83.3% and Nova Pro 100% on intent; Nova Pro 64% on meal-plan
+invariants. Claude access remains blocked by Anthropic verification. The
+current catalogue is Nova-first, but no production route is qualified until
+Pilot Task 7 publishes task-specific scorecards, disables unscored models, and
+each enabled active route reaches 90%. Claude routing, if later selected, is an
+evidence-based configuration decision rather than an automatic restoration.*
 
 ---
 
@@ -175,13 +263,12 @@ that a plan for a user with a stated allergy was being regenerated with no
 knowledge of the allergy. Unit tests did not catch it; only end-to-end
 evaluation against realistic constraint combinations did.*
 
-*4.7 was specified as a prompt and delivered as considerably more: a prompt, a
-placeholder-only output schema, a graph node, a renderer that expands
-placeholders into retrieved figures, a rejection check for money-shaped
-strings, and a degradation path that drops the prose rather than failing the
-turn. It also covers price checks, not only plans as the task states. The node
-half of that work has no Phase 2 entry; it is recorded here because that is
-where it was specified, and in `design.md` §3 where the topology is.*
+*4.7 delivered a prompt, placeholder-only model output, a graph node, a
+renderer, a rejection check for model-supplied money, and an optional-prose
+degradation path. The current renderer expands placeholders into figures; that
+is now explicitly non-conforming because token events have no field-level
+`citation_ref`. Pilot Task 2 changes rendered prose to money-free labels and
+adds whole-response checks. The node also covers price checks, not only plans.*
 
 ---
 
@@ -194,11 +281,11 @@ where it was specified, and in `design.md` §3 where the topology is.*
 - [x] **5.5** Budget floor check, not only the ceiling
 - [ ] **5.6** Subjective quality scoring for variety and appeal
 - [ ] **5.7** Score every candidate model and publish the comparison
-  — *Req 9.5* — **[blocked: AWS]**
+  — *Req 9.5* — **[current blocker: model-specific access and missing scorecards]**
 - [x] **5.8** Red-team case set for content safety, covering both content that
   must be blocked and content that must be allowed
-- [ ] **5.9** Harness that runs the red-team set against a live endpoint and
-  reports each case's outcome — **[blocked: AWS]** for execution only
+- [ ] **5.9** Harness that runs the red-team set against the numbered live
+  Guardrail and reports each case's outcome
 
 *5.3's mechanism is built and currently has nothing to report: no case in
 either golden set carries a known-gap marker any more. The last two were the
@@ -214,9 +301,9 @@ policy, and a filter that refuses ordinary grocery questions is a broken
 product rather than a safe one.*
 
 *5.9 does not exist. The case set is currently data that nothing consumes. The
-harness itself can be written offline; only running it needs an endpoint.
-Writing it before the account lands means live verification is one command
-rather than a manual afternoon.*
+Guardrail and accessible Nova endpoints now exist, so AWS account availability
+is no longer the blocker. Pilot Task 3 builds the harness and verifies both
+policy outcomes and graph-level intervention propagation.*
 
 ---
 
@@ -288,8 +375,9 @@ hold in production.*
 - [x] **7.1** Create the products table with the price-ordered index
   — *Req 8.2*
 - [ ] **7.2** Create the meals table with expiry — *Req 11.6*
-  — **[blocked: AWS]**
-- [x] **7.3** Enable recovery and verify encryption — *Req 11.7*
+  — **[superseded by Pilot Tasks 9 and 15; create CDK-first]**
+- [x] **7.3** Enable products-table recovery and verify encryption
+  — *Req 11.7*; all-table PITR evidence remains in Pilot Tasks 6/9/16
 - [x] **7.4** Load the seed dataset
 - [ ] **7.5** Implement per-retailer acquisition with isolated failure
   — *Req 8.5*
@@ -329,15 +417,16 @@ It gates 6.8.*
 - [x] **8.3** Secret scanning
 - [x] **8.4** Exclude personal data from logs — *Req 11.5*
 - [ ] **8.5** Per-function roles scoped to named resources — *Req 11.1*
-  — **[blocked: AWS]**
-- [ ] **8.6** Managed secret storage — *Req 11.2* — **[blocked: AWS]**
+  — **[superseded by Pilot Tasks 9–10]**
+- [ ] **8.6** Managed secret storage — *Req 11.2* — **[superseded by Pilot Task 10]**
 - [ ] **8.7** Gateway throttling and usage plans — *Req 11.4*
-  — **[blocked: AWS]**
-- [ ] **8.8** Authentication on the endpoint — **[blocked: AWS]**
+  — **[superseded by Pilot Task 10]**
+- [ ] **8.8** Authentication on the endpoint — **[later roadmap after anonymous pilot]**
 - [x] **8.9** Define the content safety policy as version-controlled data and
   validate it offline — *Req 5.5*
-- [ ] **8.10** Verify the content safety policy against a live endpoint using
-  the red-team set from 5.8 — *Req 5.5* — **[blocked: AWS]**
+- [ ] **8.10** Verify the content safety policy against the numbered live
+  Guardrail using the red-team set from 5.8 — *Req 5.5*; superseded by Pilot
+  Task 3
 - [x] **8.11** Tag untrusted input so the prompt-attack filter evaluates it
   — *Req 6.5*
 - [x] **8.12** Fail closed when no content safety filter is configured
@@ -380,15 +469,13 @@ records identifiers, counts and durations only — never message text, never
 location. A test asserting that property would be worth adding, since the
 failure mode is a single careless log line added later.*
 
-*8.9 and 8.10 are split because the offline half is genuinely finished and the
-live half genuinely cannot start. What exists: the policy as a reviewable,
-diffable configuration file rather than console state; a validator that fails
-the build on the mistakes which produce a policy that silently does nothing —
-a prompt-attack filter below maximum strength, a denied topic with too few
-examples to classify well, refusal messaging too short to help a user; and
-tests over the policy content itself. What does not exist: any evidence the
-policy behaves as intended, because a filter's behaviour is only observable
-against the live service.*
+*8.9 and 8.10 were split to distinguish policy-as-code from behavioral
+evidence. The offline half is finished: the policy is reviewable configuration,
+the validator catches inert settings, and tests cover policy content. Since
+then, Guardrail `b1xezpqe04kx` version `1` and Nova invocation have been live
+verified at a basic level. What remains is no longer blocked on AWS access:
+Pilot Task 3 must build and run the twenty-case must-block/must-allow harness
+and prove interventions survive every graph-node boundary.*
 
 *8.11 was built but never specified, and it is the step most easily missed. The
 prompt-attack filter evaluates nothing unless untrusted regions of the prompt
@@ -404,7 +491,8 @@ content safety filter is configured. Opting out is possible for local work but
 must be an explicit, visible configuration choice, never the accidental result
 of forgetting to set an identifier.*
 
-*8.10 remains the highest-priority security item that is blocked.*
+*Legacy 8.10 is superseded by the unblocked Pilot Task 3 and remains a
+release blocker until the harness and propagation evidence pass.*
 
 ---
 
@@ -479,17 +567,17 @@ step that gets skipped.*
 - [x] **10.1** Build the deployment archive excluding unused transitive
   packages
 - [ ] **10.2** Enable snapshot-based cold-start optimisation on a published
-  alias — **[blocked: AWS]**
+  alias — **[superseded by Pilot Task 10]**
 - [ ] **10.3** Deploy the endpoint with cross-origin support
-  — **[blocked: AWS]**
-- [ ] **10.4** Export every manually created resource's configuration and
-  commit it — *Req 12.4* — **[blocked: AWS]**
+  — **[superseded by Pilot Tasks 10–11; strict CORS required]**
+- [ ] **10.4** Regenerate live configuration locally and record sanitized
+  adoption assertions — *Req 12.4*; superseded by Pilot Task 9
 - [ ] **10.5** Measure latency on the plan path and record percentiles
-  — **[blocked: AWS]**
+  — **[requires Pilot Task 11 deployment; measured in Pilot Task 12]**
 - [ ] **10.6** Convert to version-controlled infrastructure definitions
-  — *Req 12.4* — **[blocked: AWS]**
+  — *Req 12.4* — **[superseded by Pilot Tasks 9–10]**
 - [ ] **10.7** Adopt existing resources rather than recreating them
-  — **[blocked: AWS]**
+  — **[superseded by Pilot Task 9]**
 
 *10.5 produces the evidence for any decision about the timeout constraint. That
 decision should follow measurement, not precede it. The instrumentation it
@@ -500,12 +588,14 @@ themselves, not the means of collecting them.*
 
 ---
 
-## Phase 11 — Deferred
+## Phase 11 — Legacy deferred ledger
 
-Specified so they are tracked rather than forgotten. None are required for the
-initial delivery.
+This dated section preserves the pre-pilot backlog. Current priority and release
+scope come only from Pilot Tasks 1–16 above. In particular, legacy 11.2 is
+superseded by required Pilot Task 15; the remaining entries are later or gated.
 
-- [ ] **11.2** Recipe catalogue constraining plan composition — *Req 2.9*
+- [ ] **11.2** Recipe catalogue constraining plan composition — *Req 2.9* —
+  **[superseded by required Pilot Task 15]**
 - [ ] **11.3** Streaming transport — *Req 7.9*
 - [ ] **11.4** Live price acquisition — *Req 8.8*, gated on the conditions in
   `ACQUISITION-RISK.md` §8
@@ -527,23 +617,26 @@ resolves to the right piece of work.*
 What is blocked, and by what:
 
 ```
-BLOCKED ON ANTHROPIC USE-CASE VERIFICATION
-  3.9  cache utilisation verified      -> confirms a latency mitigation
-  5.7  candidate models scored         -> required before production traffic
-  8.10 live content safety verified    -> required before any public exposure
+BLOCKED ON ANTHROPIC ACCOUNT VERIFICATION
+  Claude task scoring                -> required before any Claude route can enable
 
-COMPLETED (previously blocked on AWS account)
+AVAILABLE NOW; EVIDENCE STILL MISSING
+  3.9  cache utilisation             -> run per accessible candidate model
+  5.7  task-specific scorecards      -> required for every enabled route
+  5.9/8.10 Guardrail harness         -> existing Guardrail + Nova can execute it
+
+COMPLETED LIVE BASE RESOURCES
   7.1  products table created          ✓
-  7.3  PITR + encryption verified      ✓
+  7.3  products PITR + encryption      ✓ (all-table PITR remains Pilot 6/9/16)
   7.4  seed data loaded                ✓
-  7.10 idempotency table created       ✓
+  7.10 idempotency table created       ✓ (owner fencing/PITR still open)
   2.9  stored price repository         ✓ (31 contract tests passing)
-  6.8  stored idempotency store        ✓ (all 5 outcomes verified live)
+  6.8  stored idempotency store        ✓ (five current outcomes only)
 
-STILL BLOCKED ON AWS
-  7.2  meals table created             -> needed for recipe catalogue
-  8.5  per-function IAM roles          -> needed for deployment
-  10.5 latency measured                -> informs 11.3
+REQUIRES PLANNED CDK/SERVICE WORK, NOT A MISSING ACCOUNT
+  7.2  meals table                    -> Pilot Task 15, created CDK-first
+  8.5  per-function IAM roles         -> Pilot Tasks 9–10
+  10.5 latency measured               -> service deployment then Pilot Task 12
 
 BLOCKED ON ANOTHER TEAM
   1.6  contract circulated             -> unblocks the frontend
@@ -553,32 +646,8 @@ Secret scanning (8.3, 8.13) is closed: the gate was verified failing on a
 planted credential and passing on run 31308163941, the first green run on the
 default branch in four commits.
 
-Everything else is unblocked and can proceed today. In rough order of value:
-
-```
-1.6  circulate the contract      the only item blocking another team
-2.10 shared repository suite     the acceptance criteria 2.9 will be judged by
-5.9  red-team harness            writable offline; makes 8.10 one command
-7.5  per-retailer acquisition    unblocked by 7.9; fixtures, no live traffic
-9.7  code owners file            makes 9.7's intent enforceable
-```
-
-6.7 is done. It was on this list as "no cloud dependency", and that held: the
-logger, tracer and metrics are all asserted offline against the real
-Powertools objects, so the first deployment inherits verified instrumentation
-rather than instrumentation that has never run.
-
-7.9 is done (`ACQUISITION-RISK.md`). It unblocked 7.5 and converted 11.4's gate
-from an open question into a named condition list. Three of its six primary
-sources could not be retrieved by automated fetch and are recorded as unknown
-rather than absent — a human must complete that table before 11.4 proceeds.
-
-Task 1.6 still blocks another team and should be completed first regardless of
-other sequencing.
-
-The shape worth noticing: most of what remains outside the AWS-blocked column
-is verification rather than construction. 2.10 and 5.9 both exist to make a
-claim checkable that is currently only asserted — that the stored repository
-behaves like the fixture one, and that the content safety policy does what its
-configuration says. Writing both before the account lands turns the first day
-of cloud access into running tests rather than writing them.
+The legacy ledger has no current execution-order authority. Immediate work is
+defined by the Pilot Tasks: correctness and verification Tasks 2–8, substantial
+CDK/service/ingestion/recipe construction in Tasks 9–15, then integrated release
+gates in Task 16. Historical ids above remain only so old commits and notes can
+be interpreted.

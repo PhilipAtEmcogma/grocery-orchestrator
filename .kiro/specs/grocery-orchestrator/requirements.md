@@ -1,9 +1,10 @@
 # Requirements — Smart Grocery & Meal Budget Assistant
 
-**Status:** Draft for team review
+**Status:** Approved production-pilot baseline; implementation gaps remain
 **Author:** Philip (Backend/Orchestration, AI/Prompt Lead)
 **Scope:** Whole system. Sections 7–9 cover layers owned by other team members
-and are offered as a starting point, not a decision.
+and remain integration requirements rather than claims of ownership.
+**Architecture decision:** `docs/adr/0001-deterministic-core-bounded-agent-extensions.md`
 
 Acceptance criteria use EARS notation:
 - **WHEN** `<trigger>` **THE SYSTEM SHALL** `<response>` — event-driven
@@ -12,8 +13,15 @@ Acceptance criteria use EARS notation:
 - **THE SYSTEM SHALL** `<response>` — ubiquitous
 
 Requirements marked **[P0]** are non-negotiable. Requirements marked
-**[GAP]** are known limitations of the current build, specified so they are
-tracked rather than forgotten.
+**[GAP]** are approved but not yet implemented. Notes marked **Current defect**
+describe behavior that exists in the reference implementation and must be
+corrected before deployment; they are not accepted exceptions to the
+requirement.
+
+The first release target is a reproducible workshop demonstration followed by
+a small anonymous production pilot. The design must preserve a documented path
+to Cognito ownership, streaming transport, controlled live acquisition, and
+commercial scale without building those components prematurely.
 
 ---
 
@@ -64,16 +72,19 @@ them, which is the failure the second clause exists to prevent.*
 ## 2. Meal planning
 
 **User story:** As someone feeding a household on a fixed budget, I want a meal
-plan that provably fits my budget, so that I can shop without recalculating.
+plan whose checkout cost provably fits my budget, so that I can shop without
+recalculating or discovering that fractional ingredient use hid the cost of
+whole packs.
 
 ### Acceptance criteria
 
 2.1 **WHEN** a user requests a meal plan with a stated budget, household size,
-and duration **THE SYSTEM SHALL** produce a plan whose total cost does not
-exceed the budget.
+and duration **THE SYSTEM SHALL** produce a plan whose authoritative payable
+total does not exceed the budget.
 
-2.2 **WHEN** producing a meal plan **THE SYSTEM SHALL** compute every line
-cost, meal subtotal, and plan total arithmetically from stored prices.
+2.2 **WHEN** producing a meal plan **THE SYSTEM SHALL** compute every ingredient
+use, meal consumption subtotal, required pack count, shopping-list line total,
+and plan payable total arithmetically from retrieved prices.
 
 2.3 **WHEN** producing a meal plan **THE SYSTEM SHALL** verify the arithmetic
 before delivery and **IF** verification fails **THEN THE SYSTEM SHALL** discard
@@ -82,9 +93,10 @@ the plan and regenerate rather than deliver it.
 2.4 **THE SYSTEM SHALL** bound regeneration to a configured maximum number of
 attempts.
 
-2.5 **WHEN** producing a meal plan **THE SYSTEM SHALL** provide a shopping list
-grouped by store, counting each product once at full pack price even where it
-is used across several meals.
+2.5 **WHEN** producing a meal plan **THE SYSTEM SHALL** aggregate repeated use
+of the same cited product, round the aggregate quantity up to the required
+whole-pack count, list the product once in its store basket, and calculate the
+amount payable as full pack price multiplied by that pack count.
 
 2.6 **WHEN** producing a meal plan **THE SYSTEM SHALL** set each meal's serving
 count to the stated household size.
@@ -92,14 +104,19 @@ count to the stated household size.
 2.7 **THE SYSTEM SHALL** favour reusing a single product across several meals
 over introducing additional products, to reduce both cost and waste.
 
-2.8 **IF** the user states no budget **THEN THE SYSTEM SHALL NOT** infer one,
-and shall ask for it instead.
+2.8 **IF** budget, household size, or duration required for a meal plan is not
+stated **THEN THE SYSTEM SHALL NOT** infer it and shall return a contract-valid,
+actionable clarification instead.
+*Current defect: the reference implementation defaults missing household size
+and duration and can route a missing budget through the infeasible-plan path.
+Pilot Task 4 corrects this before deployment.*
 
 2.9 **[GAP]** **WHEN** producing a meal plan **THE SYSTEM SHALL** select meals
 from a curated recipe catalogue rather than composing them freely.
-*Not yet built. Decision open — see DYNAMODB-SCHEMA.md "Open decision".
-Rationale: a curated catalogue extends the grounding guarantee from prices to
-meals, so the model cannot invent an unappetising or uncookable combination.*
+*Not yet built. The approved direction is catalogue-constrained selection:
+the model selects recipe ids and product citations while deterministic code
+owns scaling, dietary verification, arithmetic, and payable totals (Pilot Task
+15).*
 
 ---
 
@@ -114,42 +131,55 @@ rather than unlikely.
 
 ### Acceptance criteria
 
-3.1 **THE SYSTEM SHALL NOT** present any monetary value that did not originate
-from the price store.
+3.1 **THE SYSTEM SHALL NOT** present any source price that did not originate
+from the price store. Derived savings and totals shall be computed only from
+those source prices.
 
-3.2 **THE SYSTEM SHALL** make every monetary value in a response traceable to a
-specific record in the price store, by reference.
+3.2 **THE SYSTEM SHALL** make every source price and derived monetary value in
+a response traceable to the exact price-store records from which it was
+computed.
 
 3.3 **THE SYSTEM SHALL** reach content generation only via a path that has
 first performed retrieval. No execution path shall exist that generates a
 priced response without retrieval.
 
 3.4 **THE SYSTEM SHALL** provide the language model with no mechanism for
-emitting a price. The model's output schema shall contain no price, cost, or
-total field.
+emitting a price. The model's structured output schema shall contain no price,
+cost, saving, or total field.
 
 3.5 **WHEN** assembling a response **THE SYSTEM SHALL** verify that every
-referenced record was actually retrieved, and **IF** any reference is
-unresolved **THEN THE SYSTEM SHALL** refuse the response rather than deliver it
-with the unresolved item omitted.
+referenced record was actually retrieved, every citation's table/partition
+key/sort key identifies that exact stored record, and every cited value equals
+the retrieved value. **IF** any check fails **THEN THE SYSTEM SHALL** refuse
+the response.
 
 3.6 **THE SYSTEM SHALL** enforce 3.5 as an automated check in continuous
-integration, including a negative case proving an unresolved reference is
-rejected.
+integration, with negative cases for unknown references, incorrect source
+keys, altered values, and content emitted before its citation.
 
-3.7 **WHEN** generating free text about prices **THE SYSTEM SHALL** require the
-model to emit reference placeholders rather than figures, shall expand those
-placeholders from retrieved records after generation, and **IF** the generated
-text contains a literal monetary value **THEN THE SYSTEM SHALL** discard the
-text rather than deliver it.
-*This is 3.4 applied to prose, and it needs stating separately because the
-mechanism is different. A price-free output schema cannot constrain free text —
-the model has a text field, so it can always type a number into it. The
-enforcement is therefore a rejection check rather than a schema restriction,
-which makes it the weakest of the grounding barriers and the one most worth
-testing directly. Discarding the text degrades the turn to its structured
-payload; the requirement is deliberately not to fail the turn, because a
-comparison table without a sentence above it is still a correct answer.*
+3.7 **WHEN** generating or assembling free text about prices **THE SYSTEM
+SHALL** reject literal monetary values in every user-visible prose-like field.
+The model may use citation placeholders for reference validation, but the
+renderer shall resolve them only to non-monetary product/store labels; source
+prices remain in citation events and structured content with `citation_ref`.
+Non-essential text that violates this rule shall be discarded. Essential
+structured content that violates it shall fail the response rather than
+degrade.
+*Current defect: the prose renderer expands placeholders into figures and
+comparison reasoning contains a literal price. Neither token events nor the
+reasoning field carries its own `citation_ref`, so both violate the target
+wire-level rule. Pilot Task 2 removes literal money from all prose-like fields
+and broadens the assertion accordingly.*
+
+3.8 **THE SYSTEM SHALL** emit a citation before every event that references it
+and shall reject a response whose event ordering violates this rule.
+
+3.9 **THE SYSTEM SHALL** require every published price citation to include the
+exact source key, store location, and capture date.
+*Current defect: the source partition key is derived from store and category,
+while the products table key is store and location. Documentation describes
+the required key; code and generated samples remain non-conforming until Pilot
+Task 2.*
 
 ---
 
@@ -214,13 +244,14 @@ actually retrieved, not against the model's report of what it applied.
 filter configured to block unsafe food advice, and **IF** no filter is
 configured **THEN THE SYSTEM SHALL** refuse to invoke the model.
 *Partially met. The code-side half is built and tested: the filter policy is
-version-controlled data rather than console state, a validator rejects the
-configurations that would silently do nothing, untrusted input is tagged so the
-prompt-attack filter evaluates it at all, and generation fails closed when no
-filter is configured. What is not met is evidence that the policy behaves as
-written — a filter's behaviour is only observable against the live service. A
-red-team set of twenty cases exists for that verification; running it is Task
-8.10.*
+version-controlled data rather than console state, a validator rejects
+configurations that would silently do nothing, untrusted input is tagged, and
+generation fails closed when no filter is configured. Guardrail
+`b1xezpqe04kx`, version `1`, has basic attached live-invocation evidence. That
+does not prove policy quality or intervention propagation: Pilot Task 3 must
+run the twenty-case must-block/must-allow harness through an accessible model
+path and prove every graph node preserves `GuardrailBlocked` to the single
+service outcome.*
 
 5.6 **IF** a stated dietary exclusion cannot be reliably mapped to the
 retrieval filter **THEN THE SYSTEM SHALL** refuse the meal plan and report
@@ -421,23 +452,108 @@ not as a final phase.
 used, and regeneration attempts as queryable metrics.
 
 12.3 **THE SYSTEM SHALL** process a repeated request identifier exactly once,
-and **IF** the same identifier arrives with different content **THEN THE SYSTEM
-SHALL** reject it rather than answer from cache.
-*Without this a client timeout retry re-runs generation and is charged twice.*
-*Implementation added four constraints this requirement does not state, each
-of which the rebuild needs: identifiers are scoped by session, because clients
-generate them and two sessions can collide onto one — serving a user another
-user's shopping list; requests still in flight are detected, because a retry
-usually arrives while the first attempt is still running, which is what a
-timeout means; only terminal outcomes are cached, because caching a transient
-failure makes the client's retry permanently useless; and a failure of the
-store itself degrades to running the work rather than failing the turn.*
-*Met only in a single process today. The stored implementation raises rather
-than pretending to work, so a deployment on the in-memory store would
-deduplicate nothing across execution environments — see Task 6.8.*
+and **IF** the same identifier arrives with different validated content **THEN
+THE SYSTEM SHALL** reject it rather than answer from cache.
+
+12.3.1 **THE SYSTEM SHALL** scope an idempotency key by session and turn and
+fingerprint the canonical validated request, not raw transport bytes; object-key
+order, insignificant JSON whitespace, and omitted-versus-explicit-null optional
+fields shall not produce different fingerprints.
+
+12.3.2 **WHEN** an invocation acquires a new or stale claim **THE SYSTEM SHALL**
+create and return a fresh opaque owner token/version.
+
+12.3.3 **WHEN** an invocation completes or releases a claim **THE SYSTEM SHALL**
+condition the operation on both `in_progress` status and the owner token/version
+returned by its acquire; **IF** that condition fails **THEN THE SYSTEM SHALL
+NOT** overwrite or delete the newer owner's claim.
+
+12.3.4 **THE SYSTEM SHALL** detect requests still in flight, cache only terminal
+outcomes, release its own claim after retryable failure, and degrade a store
+outage to running the work rather than failing the turn.
+
+*Without this a client timeout retry re-runs generation and is charged twice.
+Session scoping prevents cross-user collisions. Owner fencing prevents an old
+invocation that resumes after stale takeover from completing or deleting the
+new owner's claim. The DynamoDB implementation is live-verified for the five
+current outcomes, but canonical fingerprinting and owner fencing remain Pilot
+Task 6 work and are not production-ready.*
 
 12.4 **THE SYSTEM SHALL** be deployable from version-controlled infrastructure
-definitions.
-*Initial build is manual by team decision. Every manually created resource
-shall have its configuration exported and committed, so the later conversion is
-transcription rather than reconstruction.*
+definitions, adopting existing stateful resources rather than recreating them.
+*CDK is not implemented. Pilot Tasks 9–10 define separate stateful and service
+constructs, deterministic synthesis, and a reviewed import-before-deploy
+sequence.*
+
+12.5 **IF** a production stage is missing DynamoDB, Bedrock, a numbered
+Guardrail version, stored idempotency, strict CORS, or named resource
+configuration **THEN THE SYSTEM SHALL** fail startup rather than select a demo
+implementation.
+
+12.6 **THE SYSTEM SHALL** measure p50, p95, and p99 latency by task, successful
+service response rate, unhandled 5xx rate, model/token/cache use, and estimated
+cost per successful task.
+
+12.7 **THE SYSTEM SHALL** alarm at 50%, 80%, and 100% of the approved monthly
+pilot budget and require review of unit-cost regressions above 20%.
+
+12.8 **THE SYSTEM SHALL** provide alarms for escaped handlers and API 5xx before
+pilot traffic, then add measured alarms for latency, model errors, Guardrail
+interventions, throttling, stale data, idempotency failures, and silent turns.
+
+---
+
+## 13. MCP and bounded agentic workflows
+
+13.1 **[GAP]** **THE SYSTEM SHALL** provide a local read-only MCP façade for an
+approved client, initially Kiro, whose coarse tools invoke the complete
+deterministic application service.
+
+13.2 **THE MCP FAÇADE SHALL NOT** expose raw DynamoDB operations, AWS SDK calls,
+filesystem access, arbitrary network access, retailer acquisition, production
+writes, citation creation, or unguarded model generation.
+
+13.3 **WHEN** an MCP tool is called **THE SYSTEM SHALL** validate its input and
+output schemas, enforce row/call/time limits, sanitize results, and record a
+privacy-safe audit event.
+
+13.4 **THE SYSTEM SHALL** preserve the same grounding, dietary, arithmetic,
+Guardrail, idempotency, and contract assertions whether the application service
+is invoked through REST, local code, or MCP.
+
+13.5 **[GAP]** **THE SYSTEM SHALL** permit a bounded data-quality agent to
+review only a capped ingestion snapshot with read-only tools and produce cited
+findings for human approval.
+
+13.6 **THE DATA-QUALITY AGENT SHALL NOT** publish prices, mutate production
+data, act on a finding without deterministic reference validation, or receive
+raw user messages, locations, or dietary data.
+
+13.7 **THE SYSTEM SHALL NOT** use Bedrock Agents Classic. **THE SYSTEM SHALL
+NOT** use AgentCore unless measured p99 meal-plan latency exceeds approximately
+25 seconds after the documented mitigations and a mentor approves the change.
+
+---
+
+## 14. Production-pilot acceptance
+
+14.1 **THE SYSTEM SHALL** pass 100% of grounding, literal-money, arithmetic,
+dietary fail-closed, Guardrail-propagation, and negative-control tests before a
+release candidate is deployed.
+
+14.2 **THE SYSTEM SHALL NOT** enable a model for a production route unless it
+has a published scorecard and scores at least 90% on the applicable golden set.
+
+14.3 **THE SYSTEM SHALL** target p95 price-check latency below 5 seconds, p95
+meal-plan latency below 20 seconds, and p99 meal-plan latency below the
+approximately 25-second escalation trigger, subject to deployment measurement.
+
+14.4 **THE SYSTEM SHALL** target at least 99% successful service responses
+during the pilot, excluding intentional contract-valid refusals, and less than
+1% unhandled 5xx responses.
+
+14.5 **THE SYSTEM SHALL NOT** record message text, raw location, dietary
+values, credentials, or model prompts in logs or traces.
+
+14.6 **THE SYSTEM SHALL NOT** publish a price unless its exact source key,
+store location, and capture date have been validated.

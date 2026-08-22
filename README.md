@@ -6,11 +6,25 @@ questions by grounding every answer in real, retrieved supermarket price
 data. Built for the AWS AI Innovation Mentorship Workshop as a reference
 implementation of the **retrieve-then-generate** pattern on Amazon Bedrock.
 
-This repository is the **orchestrator**: the Lambda-hosted brain that takes a
-chat turn from the frontend, classifies it, fetches prices, calls a model,
-and returns a validated response. It does not include the frontend, the
-price-ingestion pipeline, or the AWS infrastructure — those are separate,
-not-yet-built pieces described under [Not yet built](#not-yet-built) below.
+This repository is the **orchestrator and AI application layer**. The existing
+reference implementation takes a chat turn, classifies it, retrieves prices,
+invokes Bedrock through a task-based model plane, and returns a validated event
+response. DynamoDB adapters, the products/idempotency tables, Nova model calls,
+and a numbered Bedrock Guardrail have been verified live in
+`ap-southeast-2`.
+
+It is **not yet a deployable production pilot**. Exact source provenance,
+literal-money enforcement, Guardrail exception propagation, location and
+freshness semantics, payable-total semantics, production fail-closed startup,
+CDK adoption, API controls, and deployment SLO evidence remain open. Planned
+MCP and agentic components are described in the approved Pilot Tasks and
+`docs/adr/0001-deterministic-core-bounded-agent-extensions.md`; they are not
+implemented yet.
+
+The approved direction preserves the deterministic LangGraph workflow and adds
+one early local, read-only MCP façade whose coarse tools invoke the complete
+application service. A later bounded data-quality agent may produce a human
+review queue but has no price-publication or production-write authority.
 
 ## The core idea
 
@@ -25,10 +39,11 @@ ignore:
 - The meal-planning model never writes a number. It selects product
   references and pack quantities; every price, subtotal and total is
   computed afterwards in plain Python from the retrieved records.
-- Every price in the response carries a `citation_ref` pointing back to a
-  `Citation` that was emitted *before* anything that uses it. A response
-  where a price has no matching citation is a contract violation, checked
-  automatically by `assert_grounded()`.
+- Every structured priced item carries a `citation_ref` to a `Citation` in the
+  same response. The current `assert_grounded()` checks only that referenced
+  ids were declared somewhere and that a terminal event exists; it does **not**
+  yet prove citation order, exact table/PK/SK, or value equality. Pilot Task 2
+  adds those checks and their negative controls.
 - If a product genuinely can't be found, the assistant says so
   (`no_data` / `budget_infeasible`) instead of guessing. Honest failure is a
   first-class outcome, not an error to paper over.
@@ -80,19 +95,14 @@ generate_prose -> finalise -> END
   `PriceRepository` are `Protocol`s. Every node depends on those, never on
   `boto3` directly, which is what lets the whole graph run and be tested
   with no AWS account and no network.
-- **Model tiering is an explicit policy.** Cheap/fast model for
-  classification and repair passes (high volume, low creative demand);
-  the expensive/quality model only for the first meal-plan draft. Nodes
-  request a *tier* (`ModelTier` / `src/models/base.py`), never a model id.
-  `src/models/registry.py` resolves that request against
-  `config/models.json` — a per-task preference order plus, per model,
-  which Bedrock features it actually supports (tool use, prompt caching,
-  JSON mode). That capability data is what lets `BedrockModelClient` adapt
-  its call shape per model instead of assuming every model on Bedrock
-  behaves like Claude — Llama, for instance, gets the schema embedded in
-  the prompt because it has no tool-use support. Routing policy is data,
-  not code, so retiering a task or enabling a new model is a config change,
-  not a deploy.
+- **Model routing is explicit policy data.** Nodes request a task and a
+  capability/tier need, never a model id. `src/models/registry.py` resolves the
+  task against `config/models.json` using per-task preference and each model's
+  declared support for tool use, prompt caching, and structured output.
+  `BedrockModelClient` therefore adapts call shape instead of assuming every
+  Bedrock model behaves like Claude. A model is eligible for pilot routing only
+  after a task-specific scorecard reaches the 90% floor; Pilot Task 7 disables
+  currently unqualified entries and moves the catalogue toward SSM.
 
 ## Repository layout
 
@@ -106,13 +116,15 @@ src/
       __init__.py          Retrieval, validation, repair-loop bookkeeping, routing, finalise
       intent.py            Intent classification + constraint extraction node
       plan.py              Meal-plan generation + deterministic cost assembly node
-      prose.py             Placeholder-based explanatory text; renders figures from
-                            citations, rejects any literal money that slips through
+      prose.py             Placeholder-based explanatory text; current renderer
+                            expands figures and must become money-free in Pilot Task 2
   models/
     base.py                ModelClient protocol + ModelTier policy
     registry.py              Reads config/models.json; routes a task to a concrete
                               model by tier, preference order and capability
-    bedrock.py              Bedrock Converse API implementation (untested — no AWS account yet)
+    bedrock.py              Bedrock Converse implementation; live-verified with Nova
+                              Lite/Pro, pending langchain-aws alignment and production
+                              model qualification
     scripted.py              Deterministic stand-in model used by all current tests
     guardrail.py             Per-request input tagging so the PROMPT_ATTACK filter
                               actually evaluates untrusted content
@@ -163,8 +175,8 @@ config/
                               and per-task routing preference — read by models/registry.py
   guardrail.json              Bedrock Guardrail policy — read by scripts/apply_guardrail.py
 CONTRACT-v1.md               Human-readable version of the wire contract, for the frontend team
-DYNAMODB-SCHEMA.md           Proposed two-table DynamoDB schema (products + meals) and the
-                              open design decision on how strongly recipes constrain generation
+DYNAMODB-SCHEMA.md           Current products/idempotency schema plus planned meals,
+                              owner-fenced idempotency, candidate access, and CDK adoption
 AGENTS.md                    Working agreement for anyone (human or agent) picking up this repo —
                               the three invariants, conventions, and current state at a glance
 .github/workflows/ci.yml     Lint, tests, contract/grounding validation, security scanning,
@@ -179,8 +191,10 @@ ingestion/                   Step Functions price-scraping pipeline — not star
 
 ## Progress to date
 
-- ✅ Contract v1.0 frozen (`src/schemas/contract.py`, `CONTRACT-v1.md`) —
-  event shape, grounding invariants, request/response schemas.
+- ✅ Contract v1.0 published as the compatibility baseline
+  (`src/schemas/contract.py`, `CONTRACT-v1.md`) — event shape, grounding
+  invariants, and request/response schemas. Additive pilot hardening remains;
+  breaking changes require v2.
 - ✅ Graph topology built and wired end-to-end in LangGraph
   (`src/graph/build.py`), including the bounded repair loop.
 - ✅ Intent classification node: model-backed with keyword-heuristic
@@ -197,31 +211,31 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   without any AWS account or network access.
 - ✅ Multi-model routing (`src/models/registry.py`, `config/models.json`) —
   see Design principles above for why this exists.
-- ✅ Prose generation node (`src/graph/nodes/prose.py`): explanatory text
-  written entirely in `[[c1]]`-style placeholders, rendered into real figures
-  from citations after generation, with `assert_no_literal_money()` rejecting
-  any money-shaped string that slips through. Degrades to no prose — never
-  fails the turn — if generation or rendering fails.
+- 🚧 Prose generation node (`src/graph/nodes/prose.py`): the model emits
+  `[[c1]]`-style placeholders and model-supplied money is rejected. The current
+  renderer expands placeholders into real figures, so token text is not yet
+  compliant with the target money-free wire rule. Pilot Task 2 changes the
+  renderer and validates every prose-like field; optional prose still degrades
+  safely when generation or rendering fails.
 - ✅ Multi-item price queries: "cheapest for butter, milk and eggs" resolves
   and compares every item asked about, with partial resolution (`no_data` per
   unresolved item) rather than silently answering about only the first one.
-- ✅ Idempotency (`src/store/idempotency.py`): resending a `turn_id` replays
-  the cached response rather than re-running generation. Session-scoped keys,
-  payload fingerprinting (a reused `turn_id` with different content is
-  rejected, not silently answered), in-flight detection so a retry that
-  arrives mid-request doesn't trigger a second run, and only terminal
-  outcomes are cached — a retryable failure is never cached as permanent.
-- ✅ Guardrail input tagging (`src/models/guardrail.py`): fresh per-request
-  tags so the PROMPT_ATTACK filter actually evaluates untrusted content (it
-  silently evaluates nothing without this), plus fail-closed enforcement in
-  `BedrockModelClient` — a generation call refuses to run with no guardrail
-  configured unless that's an explicit, visible opt-out. The Guardrail
-  *resource* itself is not yet created against a live account; see
-  [Not yet built](#not-yet-built).
-- ✅ Lambda handler (`src/handler.py`): API Gateway proxy integration that
-  maps every failure mode (bad input, guardrail block, model error, grounding
-  violation, unhandled exception) to a contract-valid response — never a bare
-  500 or a leaked stack trace/secret.
+- 🚧 Idempotency (`src/store/idempotency.py`): the current stores replay
+  completed turns, scope keys by session, detect in-flight work, reject reused
+  ids with a different raw-body fingerprint, and cache only terminal outcomes.
+  Canonical validated-request hashing and stale-owner fencing are not yet
+  implemented; Pilot Task 6 is required before the exactly-once production
+  claim is valid.
+- ✅ Guardrail configuration, input tagging, and fail-closed attachment are
+  implemented. The live resource `grocery-assistant-guardrail-dev`
+  (`b1xezpqe04kx`, version `1`) has been created and basic invocation verified.
+  The complete twenty-case must-block/must-allow harness is still planned;
+  creation alone is not policy-quality evidence.
+- 🚧 Lambda handler (`src/handler.py`): API Gateway proxy integration maps
+  bad input, model errors, grounding violations, and escaped exceptions to
+  contract-valid bodies. A `GUARDRAIL_BLOCKED` boundary mapping exists, but
+  graph-node `ModelError` catches can swallow the specialized intervention;
+  end-to-end Guardrail outcome mapping remains Pilot Task 3 work.
 - ✅ Local dev server (`scripts/dev_server.py`): stdlib-only HTTP wrapper
   around the same `lambda_handler`, so the frontend team can integrate
   against real, contract-valid responses before the AWS account exists.
@@ -236,8 +250,9 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   separate from the unit tests on purpose: unit tests check the code is
   correct given fixed input, evals check a *model* is good enough, and let
   you compare models on accuracy, latency and cost before picking one for
-  production. Run against the scripted client with no AWS account, or
-  `--compare claude-haiku claude-sonnet nova-lite` once Bedrock is live.
+  production. Run against the scripted client without AWS, or compare
+  accessible Bedrock candidates explicitly. Claude comparisons remain blocked
+  on Anthropic account verification.
   Baselines against the scripted client: 76.7% intent accuracy, 91% meal-plan
   invariant pass rate — floors enforced in CI, not targets to read as model
   quality.
@@ -263,46 +278,51 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   both eval harnesses stay free of it, and a test walks the import graph to
   keep it that way. Logs are asserted to contain no message text, location or
   dietary information on a real turn (Req 11.5).
-- ✅ DynamoDB schema proposed (`DYNAMODB-SCHEMA.md`) — three tables, GSI design
-  for "cheapest near me", money-as-string, TTL as a Privacy Act control on
-  saved plans, and the idempotency table's conditional-put claim.
+- ✅ DynamoDB schema and migration plan documented (`DYNAMODB-SCHEMA.md`) —
+  current products/idempotency tables, planned meals catalogue, GSI/candidate
+  access, money-as-string, owner-fenced idempotency target, and CDK adoption.
 - ✅ DynamoDB tables created and seeded (`grocery-products-dev` with PITR,
-  `grocery-idempotency-dev` with TTL). Both stored adapters implemented and
-  passing their contract/verification tests against live tables.
+  `grocery-idempotency-dev` with TTL). The price repository passes its shared
+  live contract suite; the idempotency store's five current outcomes were
+  live-verified. Canonical hashing, stale-owner fencing, a shared idempotency
+  suite, and idempotency-table PITR remain Pilot Task 6/9 work.
 - ✅ Bedrock adapter verified live against Nova Lite and Nova Pro in
-  ap-southeast-2. Intent eval: Nova Lite 83.3%, Nova Pro 100%. Meal-plan
-  eval: Nova Pro 64% (Claude Sonnet is the intended quality model; blocked
-  on Anthropic use-case verification).
-- 🚧 Claude model access pending Anthropic use-case verification (~2h).
-  Once unblocked, meal-plan eval re-run against Sonnet is expected to reach
-  the 90% invariant floor.
+  `ap-southeast-2`. Intent evidence: Nova Lite 83.3%, Nova Pro 100%. Meal-plan
+  evidence: Nova Pro 64%, below the 90% pilot floor.
+- 🚧 Claude access remains pending Anthropic account verification. Haiku,
+  Sonnet, Nova Lite, and Nova Pro are still marked `enabled` in the development
+  catalogue even though no complete task-specific scorecard set exists; that
+  is a documented Pilot Task 7 configuration defect, not production
+  qualification. Pilot routing must disable every entry that has not met its
+  active task's 90% floor.
 
 ## Not yet built
 
-- **DynamoDB meals table** (`grocery-meals-dev`) — the recipe catalogue table.
-  Products and idempotency tables are built and operational; meals is next
-  when the recipe catalogue feature starts.
-- **Ingestion pipeline** (`ingestion/`) — the Step Functions/EventBridge
-  scraper pipeline that would populate DynamoDB from real store data.
-- **Infrastructure as code** (`infra/`) — the AWS CDK stack (Lambda,
-  API Gateway, DynamoDB, Bedrock Guardrail, IAM).
-- **The Bedrock Guardrail resource itself.** The code-side enforcement is
-  built and tested — input tagging (`src/models/guardrail.py`), fail-closed
-  behaviour when no guardrail id is configured, `config/guardrail.json` plus
-  `scripts/apply_guardrail.py` to create/update it — but no Guardrail has
-  been created against a live account yet, so the actual filtering is
-  unverified. Task 8.10 in `.kiro/specs/grocery-orchestrator/tasks.md` (8.9,
-  the offline half, is done).
-- **SnapStart on a published alias** (Task 10.2) — the deployment archive
-  itself is built (see Progress to date); enabling SnapStart and publishing
-  an alias is the next step, once there's somewhere to deploy it to.
-- **WebSocket streaming transport** — the contract is event-shaped
-  specifically so this upgrade from the current REST-shaped flow doesn't
-  require changing the payloads.
-- **Cognito authoriser, API Gateway throttling/usage plans, alarms** — see the
-  security steering doc's week-by-week schedule for what's planned versus
-  done. Structured logging, tracing and metrics are done (Task 6.7, below);
-  the alarms built on those metrics still need a deployment to alarm on.
+The following list is intentionally limited to approved future components and
+known pilot hardening. Planned items are not current capabilities.
+
+- **Core correctness hardening (Pilot Tasks 2–7):** exact source keys and
+  literal-money assertions; Guardrail propagation/red-team harness;
+  clarification and payable totals; location/freshness; idempotency ownership
+  and candidate-query access; qualified model routing and SSM configuration.
+- **Local read-only MCP façade** (Pilot Task 8) and **bounded data-quality
+  reviewer** (Pilot Task 14).
+- **DynamoDB meals table** and curated recipe catalogue (Pilot Task 15).
+- **Controlled ingestion pipeline** using EventBridge and Step Functions
+  Inline Map over fixtures/recorded responses (Pilot Task 13). Live retailer
+  traffic remains gated by `ACQUISITION-RISK.md` §8.
+- **TypeScript CDK and service deployment** (Pilot Tasks 9–11): adoption of
+  existing stateful resources, Lambda/API Gateway, strict CORS, scoped IAM,
+  SSM routing, published SnapStart alias, throttling, and usage plan.
+- **Operational release evidence** (Pilot Task 12): dashboards, deployed
+  alarms, budgets, quota review, load/cost tests, and measured SLOs.
+- **Later roadmap:** Cognito ownership, WebSocket transport, consented
+  preferences with TTL, remote MCP with OAuth 2.1, gated live acquisition,
+  and separate environments. AgentCore remains contingency-only.
+
+The Guardrail resource itself is not in this list: version `1` exists and basic
+invocation was verified. What remains is the full policy-quality harness and
+CDK adoption.
 
 ## Running it locally
 
@@ -356,9 +376,9 @@ and `POWERTOOLS_METRICS_NAMESPACE`; `LOG_LEVEL` sets log verbosity.
   snapshot. Start here if you're picking this repo up cold.
 - [`CONTRACT-v1.md`](CONTRACT-v1.md) — the frontend-facing write-up of the
   wire contract, including full request/response examples.
-- [`DYNAMODB-SCHEMA.md`](DYNAMODB-SCHEMA.md) — proposed two-table DynamoDB
-  schema, the GSI design behind "cheapest near me", and the open decision on
-  how strongly the recipe catalogue should constrain meal generation.
+- [`DYNAMODB-SCHEMA.md`](DYNAMODB-SCHEMA.md) — current products and
+  idempotency schemas, the planned catalogue-constrained meals domain,
+  production candidate-query options, and the CDK adoption sequence.
 - [`.kiro/specs/grocery-orchestrator/`](.kiro/specs/grocery-orchestrator/) —
   numbered requirements, the design doc (`design.md` §8 records what was
   decided against and why — read it before proposing an alternative), and
