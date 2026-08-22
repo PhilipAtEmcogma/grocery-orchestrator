@@ -53,6 +53,13 @@ placeholders, and `assert_no_literal_money()` rejects any money-shaped string.
   instruction to "keep all exclusions" without naming them is unfollowable.
   This was a real bug the eval harness caught.
 - Verified against retrieved products, not against what the model claims.
+- **Mapped from a reviewable table, or refused.** The mapping from user
+  terms ("vegan", "no dairy") to fixture categories lives in
+  `src/graph/dietary.py`. Anything unmapped — "gluten-free" against a
+  fixture with no gluten tag — routes to `emit_dietary_unsupported` and
+  returns `UNSUPPORTED_EXCLUSION`. Filtering an incomplete map would
+  produce a plan we cannot verify; silent drop is the exact shape of the
+  bug that used to serve dairy to a vegan user, so it fails closed.
 
 ---
 
@@ -67,12 +74,14 @@ points (classify intent, select products); code owns every control-flow
 decision. This is deliberate — see design.md §8.
 
 ```
-validate_input → classify_intent → retrieve_prices
-                                    ├─ no citations → emit_no_data → finalise
-                                    ├─ price_check → generate_comparison → generate_prose → finalise
-                                    └─ meal_plan → generate_plan → validate_plan
-                                                      ↑ repair (bounded, 2) ┘
-                                                      └─ ok → generate_prose → finalise
+validate_input → classify_intent
+                    ├─ meal_plan + unsupported exclusion → emit_dietary_unsupported → finalise
+                    └─ retrieve_prices
+                        ├─ no citations → emit_no_data → finalise
+                        ├─ price_check → generate_comparison → generate_prose → finalise
+                        └─ meal_plan → generate_plan → validate_plan
+                                          ↑ repair (bounded, 2) ┘
+                                          └─ ok → generate_prose → finalise
 ```
 
 **Three protocol boundaries** make everything testable without AWS:
@@ -117,13 +126,13 @@ rather than substituting silently.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 218 tests, ~4s, no AWS
+python -m pytest -q                              # 304 tests, ~5s, no AWS
 ruff check .                                     # must be clean
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
     tests/test_sample_fixtures.py                # rewrite samples/ from the server
 python evals/run_intent.py                       # 76.7% scripted baseline
-python evals/run_meal_plan.py                    # 89% invariants baseline
+python evals/run_meal_plan.py                    # 91% invariants baseline
 python scripts/generate_fixtures.py              # regenerate seed data
 python scripts/dev_server.py                     # localhost:8000 for frontend
 python scripts/apply_guardrail.py --dry-run      # validate guardrail policy
@@ -302,6 +311,7 @@ before and after in the commit message.
 
 **Done, tested, no AWS needed:** contract v1.0 · LangGraph orchestrator ·
 intent classification with extraction · meal planning with bounded repair ·
+dietary exclusion mapping with fail-closed refusal (Req 5.6, Task 2.12) ·
 prose generation · multi-item queries · multi-model registry · guardrail config
 and input tagging · idempotency · Powertools observability (Req 12.1–12.2,
 Task 6.7) · two eval suites · handler · local dev server · CI · Lambda

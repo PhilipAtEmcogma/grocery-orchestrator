@@ -158,15 +158,18 @@ JS: use `Intl.NumberFormat` for display and a decimal lib for arithmetic.
 | `NO_DATA` | ❌ | Not an error path; see `no_data` event instead |
 | `STALE_DATA` | ⬜ | Data too old to be trustworthy |
 | `BUDGET_INFEASIBLE` | ❌ | Budget genuinely can't be met. `message` suggests alternatives — **render it, don't swallow it** |
+| `UNSUPPORTED_EXCLUSION` | ❌ | A stated dietary term we can't safely honour against our current catalogue (e.g. `gluten-free` while we still lack per-product allergen tagging). `message` names the terms we can honour — render it, don't swallow it |
 | `GUARDRAIL_BLOCKED` | ❌ | Request refused on safety grounds |
 | `OUT_OF_SCOPE` | ❌ | Not a grocery/meal question |
 | `UPSTREAM_TIMEOUT` | ✅ | Retry with the **same** `turn_id` |
 | `RATE_LIMITED` | ✅ | Back off and retry |
 | `INTERNAL_ERROR` | ✅ | Retry once with the same `turn_id`. Arrives at HTTP `200` when handled, `500` when it escaped the handlers — identical body either way |
 
-`BUDGET_INFEASIBLE` matters. It's the honest answer when you can't feed five
-people for $15. Please don't render it as a generic failure — the `message`
-contains actionable alternatives.
+`BUDGET_INFEASIBLE` and `UNSUPPORTED_EXCLUSION` both matter. The first is the
+honest answer when you can't feed five people for $15; the second is the
+honest answer when someone asks for gluten-free and we cannot guarantee it.
+Please don't render either as a generic failure — the `message` field is
+where the actionable alternatives are.
 
 ---
 

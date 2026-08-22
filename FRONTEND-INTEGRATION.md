@@ -364,6 +364,7 @@ Two behaviours that surprise people:
 | `INVALID_REQUEST` | ❌ | A bug on one of our sides |
 | `STALE_DATA` | ⬜ | Data too old to trust |
 | `BUDGET_INFEASIBLE` | ❌ | **Render the `message`** — it contains real alternatives ("raise the budget, reduce the days…"). Not a generic failure. |
+| `UNSUPPORTED_EXCLUSION` | ❌ | A stated dietary term we cannot safely honour (e.g. `gluten-free` while we still lack allergen tagging). Also **render the `message`** — it lists the terms we can honour, so the user has an actionable next step |
 | `GUARDRAIL_BLOCKED` | ❌ | Refused on safety grounds |
 | `OUT_OF_SCOPE` | ❌ | Not a grocery question |
 | `UPSTREAM_TIMEOUT` | ✅ | Retry with the **same** `turn_id` |
@@ -388,6 +389,7 @@ are validated in CI, so if they drift from the implementation the build breaks.
 | [`samples/response_meal_plan.json`](samples/response_meal_plan.json) | Happy path: full plan, meals, per-store baskets |
 | [`samples/response_no_data.json`](samples/response_no_data.json) | **Failure case** — `no_data` as the whole answer |
 | [`samples/response_budget_infeasible.json`](samples/response_budget_infeasible.json) | **Failure case** — `BUDGET_INFEASIBLE` error with alternatives in the message |
+| [`samples/response_unsupported_exclusion.json`](samples/response_unsupported_exclusion.json) | **Failure case** — `UNSUPPORTED_EXCLUSION` for a dietary term we cannot honour (e.g. gluten-free) |
 | [`samples/response_guardrail_blocked.json`](samples/response_guardrail_blocked.json) | **Failure case** — `GUARDRAIL_BLOCKED` |
 | [`samples/response_multi_comparison.json`](samples/response_multi_comparison.json) | **§3.1** — three items, three `price_comparison` events, 15 citations |
 | [`samples/response_partial.json`](samples/response_partial.json) | **§3.2** — a partial answer: `no_data` at `seq 7`, results at `seq 10` |

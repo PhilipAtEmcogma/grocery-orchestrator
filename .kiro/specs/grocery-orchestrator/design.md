@@ -104,8 +104,11 @@ price.
 
 | Node | Model? | Responsibility |
 |---|---|---|
+| Node | Model? | Responsibility |
+|---|---|---|
 | `validate_input` | no | Emit session event, initialise state |
-| `classify_intent` | yes, low-cost | Classify and extract constraints |
+| `classify_intent` | yes, low-cost | Classify, extract constraints, record any unmappable dietary terms |
+| `emit_dietary_unsupported` | no | Honest refusal for a dietary term we cannot honour (Req 5.6) |
 | `retrieve_prices` | no | Query price store; **only** creator of references |
 | `emit_no_data` | no | Honest "no data" outcome (Req 4.1) |
 | `generate_comparison` | **no** | Assemble comparison from references |
@@ -143,6 +146,19 @@ configured maximum (Req 2.4).
 
 **Failed drafts are discarded** on the infeasible path (Req 4.5). Delivering an
 over-budget plan beside a message saying no plan was possible is incoherent.
+
+**Unsupported dietary exclusions refuse before retrieval** (Req 5.6). The
+mapping from user terms to fixture categories is data — `SUPPORTED_EXCLUSIONS`
+in `src/graph/dietary.py` — and `classify_intent` records any terms it could
+not map. Meal-plan routing sees the list is non-empty and goes to
+`emit_dietary_unsupported`, which returns `ErrorCode.UNSUPPORTED_EXCLUSION`
+with a message naming the terms we can honour. The graph does not do the
+work for a plan we cannot verify: filtering an incomplete map would ship a
+plan whose safety was probabilistic rather than checkable, which is the exact
+shape of the bug that used to serve dairy to a vegan user. Price checks are
+not gated the same way — a dietary term does not apply to a single-product
+query and blocking one would refuse a legitimate question for no safety
+benefit.
 
 ---
 

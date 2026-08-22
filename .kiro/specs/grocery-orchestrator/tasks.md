@@ -70,6 +70,9 @@ tracked here rather than treated as incidental.*
 - [x] **2.11** Resolve and compare every item in a multi-item request, naming
   both the items that could not be resolved and the items that exceeded the
   per-turn cap — *Req 1.7*
+- [x] **2.12** Refuse a meal plan whose stated dietary exclusion cannot be
+  reliably mapped, with the mapping table as a single reviewable source of
+  truth — *Req 5.6*
 
 *2.9 is the only orchestrator task blocked on cloud access. Everything above it
 was built and tested without it.*
@@ -109,6 +112,19 @@ silence; they are now named in a notice, because the requirement's second
 clause applies to them as much as to items that failed to resolve. Extraction
 is deliberately bounded higher than the comparison cap so the overflow is
 knowable at all — see the note on `MAX_EXTRACTED_ITEMS`.*
+
+*2.12 closes the safety bug that a "vegan" or "gluten-free" user could get
+meat, dairy or gluten in their meal plan. Extraction produced the term, no
+mapping honoured it, and no downstream check caught the silent drop.
+`src/graph/dietary.py::SUPPORTED_EXCLUSIONS` is now the single reviewable
+source of truth for what an exclusion means; `classify_intent` records any
+term it cannot map; the router sends meal-plan turns with a non-empty
+"unsupported" list to `emit_dietary_unsupported` before doing retrieval or
+generation work; and the response carries `ErrorCode.UNSUPPORTED_EXCLUSION`
+with a message naming the terms we can honour. Enforced structurally rather
+than by verification: a plan we cannot filter reliably is never built. A
+larger fix (per-product allergen tagging in fixtures, enabling gluten-free
+and nut-free support) is future work — see Phase 11.*
 
 ---
 
@@ -495,6 +511,10 @@ initial delivery.
   `ACQUISITION-RISK.md` §8
 - [ ] **11.5** Conversation memory across turns
 - [ ] **11.6** Retailer basket hand-off
+- [ ] **11.7** Per-product allergen tagging in fixtures and stored records,
+  extending `SUPPORTED_EXCLUSIONS` to cover gluten-free, nut-free and similar
+  terms that the current category-based mapping cannot honour reliably —
+  *Req 5.6 widened*
 
 *11.1 (multi-item price queries) was implemented and has moved to **2.11**. The
 number is retired rather than reused, so a reference to 11.1 elsewhere still

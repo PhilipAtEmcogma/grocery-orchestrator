@@ -236,7 +236,7 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   you compare models on accuracy, latency and cost before picking one for
   production. Run against the scripted client with no AWS account, or
   `--compare claude-haiku claude-sonnet nova-lite` once Bedrock is live.
-  Baselines against the scripted client: 76.7% intent accuracy, 89% meal-plan
+  Baselines against the scripted client: 76.7% intent accuracy, 91% meal-plan
   invariant pass rate — floors enforced in CI, not targets to read as model
   quality.
 - ✅ CI (`.github/workflows/ci.yml`): lint, tests, contract/grounding

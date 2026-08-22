@@ -31,10 +31,6 @@ from src.models.registry import ModelRegistry, ModelSpec, RoutingPolicy
 
 REGION = os.environ.get("AWS_REGION", "ap-southeast-2")
 
-MODEL_IDS = {
-    ModelTier.FAST: os.environ.get("BEDROCK_MODEL_FAST", ""),
-    ModelTier.QUALITY: os.environ.get("BEDROCK_MODEL_QUALITY", ""),
-}
 
 def _guardrail_config() -> tuple[str, str, bool]:
     """

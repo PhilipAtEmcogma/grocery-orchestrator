@@ -222,6 +222,19 @@ written — a filter's behaviour is only observable against the live service. A
 red-team set of twenty cases exists for that verification; running it is Task
 8.10.*
 
+5.6 **IF** a stated dietary exclusion cannot be reliably mapped to the
+retrieval filter **THEN THE SYSTEM SHALL** refuse the meal plan and report
+the terms it can honour, rather than produce a plan that filters an
+incomplete map.
+*Silently ignoring an unmappable term was the shape of the bug that used to
+serve dairy to a vegan user: "vegan" was extracted, no mapping existed, the
+term was dropped, and no downstream check caught it. Honest refusal is safer
+than a best-effort plan. Enforced structurally by routing to
+`emit_dietary_unsupported` before retrieval, with the mapping table in
+`src/graph/dietary.py` reviewable in one place. Returns
+`ErrorCode.UNSUPPORTED_EXCLUSION`; the message names the terms we can honour
+so the user has an actionable next step.*
+
 ---
 
 ## 6. Conversational interface
