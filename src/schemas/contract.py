@@ -49,6 +49,11 @@ class ErrorCode(StrEnum):
     NO_DATA = "NO_DATA"
     STALE_DATA = "STALE_DATA"
     BUDGET_INFEASIBLE = "BUDGET_INFEASIBLE"
+    # An honest refusal when the user states a dietary exclusion we cannot
+    # guarantee against our current data. Additive per Req 7.9 — dropping a
+    # restriction is the dangerous direction of error, so the safe response
+    # is refusal, not a best-effort plan.
+    UNSUPPORTED_EXCLUSION = "UNSUPPORTED_EXCLUSION"
     GUARDRAIL_BLOCKED = "GUARDRAIL_BLOCKED"
     OUT_OF_SCOPE = "OUT_OF_SCOPE"
     UPSTREAM_TIMEOUT = "UPSTREAM_TIMEOUT"

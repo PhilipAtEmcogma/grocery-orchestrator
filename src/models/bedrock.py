@@ -31,10 +31,6 @@ from src.models.registry import ModelRegistry, ModelSpec, RoutingPolicy
 
 REGION = os.environ.get("AWS_REGION", "ap-southeast-2")
 
-MODEL_IDS = {
-    ModelTier.FAST: os.environ.get("BEDROCK_MODEL_FAST", ""),
-    ModelTier.QUALITY: os.environ.get("BEDROCK_MODEL_QUALITY", ""),
-}
 
 def _guardrail_config() -> tuple[str, str, bool]:
     """
@@ -216,11 +212,10 @@ class BedrockModelClient(ModelClient):
         kwargs: dict = {
             "modelId": model_id,
             "system": [{"text": system}],
-            # The user turn is wrapped in a guardContent block. Without this
-            # the PROMPT_ATTACK filter never evaluates anything — it has no way
-            # to tell our instructions from the user's. The system prompt is
-            # deliberately NOT wrapped, so our own instructions are not flagged.
-            "messages": [{"role": "user", "content": [guard_content_block(user)]}],
+            # Default: plain text. When a guardrail is configured (below),
+            # this is upgraded to a guardContent block so the PROMPT_ATTACK
+            # filter can distinguish user input from our instructions.
+            "messages": [{"role": "user", "content": [{"text": user}]}],
             "inferenceConfig": {
                 "maxTokens": min(max_tokens, spec.max_output_tokens),
                 "temperature": 0.0,
@@ -249,6 +244,13 @@ class BedrockModelClient(ModelClient):
                 # Required for guardContent blocks to be evaluated at all.
                 "trace": "enabled",
             }
+            # guardContent tagging only works when a guardrail is attached.
+            # Without it, Bedrock rejects the block with a ValidationException.
+            # The tag tells the PROMPT_ATTACK filter which content is untrusted
+            # user input vs our system instructions.
+            kwargs["messages"] = [
+                {"role": "user", "content": [guard_content_block(user)]}
+            ]
         elif required:
             # Fail closed. A missing guardrail is a misconfiguration, and
             # running generation without one is exactly the state this

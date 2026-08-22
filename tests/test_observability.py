@@ -54,7 +54,7 @@ from src.schemas.contract import ChatRequest
 # appear nowhere else in this repository. If any of them reaches stdout, it
 # got there from the request.
 PERSONAL_MESSAGE = (
-    "dinner plan for a whanau of five on $20 this week, "
+    "dinner plan for a whanau of five on $30 this week, "
     "quinoa and halloumi, absolutely no shellfish"
 )
 PERSONAL_LABEL = "Aro Valley"
@@ -313,7 +313,7 @@ def _personal_body(message: str, **extra) -> dict:
         message,
         hints={
             "household_size": 5,
-            "budget_nzd": 20,
+            "budget_nzd": 30,
             "days": 3,
             "dietary_exclusions": PERSONAL_EXCLUSIONS,
         },

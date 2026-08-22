@@ -39,4 +39,14 @@ regardless of how it reads.
 ## Enabling a model
 
 A model in `config/models.json` with `enabled: true` must have been scored on
-the golden set first. Ship the scorecard with the change.
+the golden set first. Ship the scorecard with the change. For production-pilot
+routing, every enabled model must score at least 90% on each task it can
+actively serve; a good score on classification does not qualify the same model
+for meal planning. Models blocked on account/provider access remain disabled
+until they are scored. Never lower a floor or reorder routing to conceal a
+failed score.
+
+The scorecard records model key and resolved model id, region/inference
+profile, date, prompt version, case-set revision, pass rate, latency
+percentiles, token use, cache reads, and estimated cost. A configuration change
+is not complete until the evidence changes with it.

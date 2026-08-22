@@ -2,8 +2,21 @@
 
 **Smart Grocery & Meal Budget Assistant**
 Owner: Backend/Orchestration + AI/Prompt Lead
-Status: **Draft for frontend team review** — please raise issues before build starts
+Status: **Published shape; frontend review and pilot-hardening gaps remain**
 Region: `ap-southeast-2` (Sydney)
+
+The v1 event shapes remain the compatibility baseline. Documentation now
+records several release blockers without pretending they are implemented:
+exact DynamoDB source-key verification, citation-before-use enforcement,
+location/radius filtering, stale-data policy, missing-constraint clarification,
+and authoritative full-pack payable totals. Those changes must remain additive
+within v1 where possible; any breaking schema change requires v2 and a
+transition period.
+
+The current generated samples still reflect the reference implementation and
+therefore do not yet prove exact source-key integrity. Pilot Task 2 updates the
+implementation and regenerates samples together; documentation alignment alone
+does not rewrite executable fixtures.
 
 ---
 
@@ -46,10 +59,19 @@ the transport upgrade costs you almost nothing. Please do that.
 | Field | Required | Notes |
 |---|---|---|
 | `session_id` | ✅ | Stable across a conversation. 8–64 chars. |
-| `turn_id` | ✅ | **Unique per turn**, client-generated. Used for idempotency — resend the same `turn_id` on network retry and you won't get a duplicate charge or duplicate answer. |
+| `turn_id` | ✅ | **Unique per turn**, client-generated. Used for idempotency — resend the same `turn_id` on network retry. Target behavior compares canonical validated content, not raw JSON bytes. |
 | `message` | ✅ | Raw user text, max 2000 chars. |
 | `location` | ⬜ | Omit if the user hasn't granted permission. Price results will be national rather than local. |
 | `hints` | ⬜ | Optional, from UI controls (sliders, chips, etc). |
+
+The target idempotency guarantee returns the same completed answer without a
+second generation. Canonicalization treats insignificant whitespace, object-key
+order, and omitted-versus-explicit-null optional fields as equivalent.
+**Current pilot blockers:** the handler still fingerprints the raw request body,
+and stale takeover does not yet fence `complete()`/`release()` with an owner
+token. Formatting-equivalent retries can therefore mismatch, and an old owner
+can race a newer claim. Pilot Task 6 updates both stores and their shared
+canonicalization/race/contract tests.
 
 **On `hints`:** these *supplement* natural-language extraction, they don't
 replace it. If the user types "actually make it $50" while the budget slider
@@ -114,10 +136,12 @@ you what happened.
 
 ### The citation model — please read this bit
 
-**No monetary value appears inline in a payload without a `citation_ref`.**
+**No source price appears inline in a content payload without a
+`citation_ref`.** Derived savings and totals are computed from cited prices and
+must remain traceable to the records used.
 
-Prices live only in `citation` events. Payloads reference them by `ref`
-(`"c1"`, `"c2"`…). To display a price, look it up in your citation map.
+Prices live in `citation` events. Payloads reference them by `ref` (`"c1"`,
+`"c2"`…). To display a source price, look it up in the citation map.
 
 ```json
 { "seq": 2, "type": "citation", "citation": {
@@ -130,17 +154,50 @@ Prices live only in `citation` events. Payloads reference them by `ref`
     "unit_price_nzd": "6.98",
     "on_special": true,
     "valid_date": "2026-07-30",
-    "source": { "table": "Products", "pk": "paknsave#dairy", "sk": "pams-butter-500g" }
+    "source": {
+      "table": "grocery-products-dev",
+      "pk": "paknsave#sylvia-park",
+      "sk": "butter-500g"
+    }
 } }
 ```
 
-This exists so that *"never invent a price"* is mechanically enforceable rather
-than a promise. A response containing a `citation_ref` with no matching
-`citation` event is a **contract violation** and fails our CI. The `source`
-field traces back to the exact DynamoDB record.
+The target invariant requires `source` to identify the exact DynamoDB base
+record: `table` is the configured physical table name (for the current live
+environment, `grocery-products-dev`), `pk` is
+`store_key = <chain>#<location-slug>`, and `sk` is the normalized
+`product_key`. A response must emit the citation before any event that uses its
+ref, and final validation must compare citation values with the retrieved
+record.
 
-**Please surface `valid_date` and `on_special` in the UI.** Stale prices are our
-biggest trust risk and users should be able to see how fresh the data is.
+**Current implementation gap:** generated samples and the running reference
+implementation still use the logical table label `Products`, derive `pk` from
+store and category, and may emit a non-normalized `sk`; deterministic
+comparison reasoning and rendered token text contain literal prices. They are
+not evidence of exact provenance until Pilot Task 2 fixes code, assertions, and
+samples together. Frontend code should continue resolving structured option
+prices through `citation_ref` and must not parse prose for money.
+
+**Please surface `valid_date` and `on_special` in the UI.** Location/radius and
+stale-data enforcement are planned in Pilot Task 5. Until that lands, the
+presence of a location or capture date does not prove that the server filtered
+by radius or rejected old data.
+
+### Meal-plan totals
+
+The v1 payload currently carries one `total_nzd`. Pilot Task 4 will define and
+verify the authoritative full-pack amount payable after aggregating repeated
+ingredient use. If exposing both consumption and payable totals requires new
+optional fields, that is an additive v1 change. The frontend must use the
+server-verified payable total for budget messaging and must not recompute with
+floating-point arithmetic.
+
+### Missing meal-plan constraints
+
+Budget, household size, and duration are required to produce a meaningful
+plan. The target behavior is a contract-valid clarification when one is
+missing. The exact additive v1 event/message representation will be agreed with
+the frontend before Pilot Task 4 changes the executable schema.
 
 ### Money is sent as a string
 
@@ -158,32 +215,41 @@ JS: use `Intl.NumberFormat` for display and a decimal lib for arithmetic.
 | `NO_DATA` | ❌ | Not an error path; see `no_data` event instead |
 | `STALE_DATA` | ⬜ | Data too old to be trustworthy |
 | `BUDGET_INFEASIBLE` | ❌ | Budget genuinely can't be met. `message` suggests alternatives — **render it, don't swallow it** |
+| `UNSUPPORTED_EXCLUSION` | ❌ | A stated dietary term we can't safely honour against our current catalogue (e.g. `gluten-free` while we still lack per-product allergen tagging). `message` names the terms we can honour — render it, don't swallow it |
 | `GUARDRAIL_BLOCKED` | ❌ | Request refused on safety grounds |
 | `OUT_OF_SCOPE` | ❌ | Not a grocery/meal question |
 | `UPSTREAM_TIMEOUT` | ✅ | Retry with the **same** `turn_id` |
 | `RATE_LIMITED` | ✅ | Back off and retry |
 | `INTERNAL_ERROR` | ✅ | Retry once with the same `turn_id`. Arrives at HTTP `200` when handled, `500` when it escaped the handlers — identical body either way |
 
-`BUDGET_INFEASIBLE` matters. It's the honest answer when you can't feed five
-people for $15. Please don't render it as a generic failure — the `message`
-contains actionable alternatives.
+`BUDGET_INFEASIBLE` and `UNSUPPORTED_EXCLUSION` both matter. The first is the
+honest answer when you can't feed five people for $15; the second is the
+honest answer when someone asks for gluten-free and we cannot guarantee it.
+Please don't render either as a generic failure — the `message` field is
+where the actionable alternatives are.
 
 ---
 
-## Latency expectations
+## Latency expectations and pilot targets
 
-| Turn type | Expected p50 | Design for |
+The figures below are targets until Pilot Task 12 measures a deployed service;
+they are not current SLO evidence.
+
+| Turn type | Pilot target | Client treatment |
 |---|---|---|
-| `price_check` | ~4–6s | Spinner |
-| `meal_plan` | ~18–25s | **Progress affordance** — show `intent` and `citation` events as they arrive so the user sees work happening |
+| `price_check` | p95 < 5s | Spinner |
+| `meal_plan` | p95 < 20s; p99 < ~25s escalation trigger | Progress affordance; show safe partial events when streaming exists |
 
-The meal-plan path runs a validate-and-repair loop: we generate a plan, check
-the arithmetic in code, and regenerate if it's over budget. `repair_attempts`
-in the payload tells you how many cycles it took. This is why streaming matters.
+The meal-plan path runs a validate-and-repair loop: the service generates a
+plan, verifies arithmetic in code, and regenerates within a fixed bound. The
+current REST response is returned as one event list; event-at-a-time WebSocket
+delivery is later roadmap work.
 
-**REST phase caveat:** API Gateway caps synchronous integrations at 29 seconds.
-A large meal plan may occasionally hit this and return `UPSTREAM_TIMEOUT`.
-Handle it gracefully — it's the reason we're moving to WebSocket in week 3.
+**REST phase caveat:** the architecture retains a 29-second synchronous design
+ceiling. A large meal plan may hit `UPSTREAM_TIMEOUT`; clients should retry
+with the same `turn_id`. Increasing gateway timeout is not the first remedy:
+measure and apply the documented model/plan-size/prefilter/prose mitigations
+before considering a quota trade-off or the AgentCore contingency.
 
 ---
 
@@ -191,7 +257,7 @@ Handle it gracefully — it's the reason we're moving to WebSocket in week 3.
 
 | File | Purpose |
 |---|---|
-| `schemas/contract.py` | Pydantic v2 models — **source of truth** |
+| `src/schemas/contract.py` | Pydantic v2 models — **source of truth** |
 | `samples/request_*.json` | Example requests |
 | `samples/response_*.json` | Example responses, incl. failure cases |
 | `validate.py` | CI check: schema + grounding + arithmetic invariants |

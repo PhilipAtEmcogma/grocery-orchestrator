@@ -41,11 +41,16 @@ from src.schemas.contract import ChatRequest, ClientHints, MealPlan
 
 CASES = Path(__file__).parent / "cases" / "meal_plan.json"
 
-# Which fixture categories each exclusion term rules out.
+# Which fixture categories each exclusion term rules out. Mirrors
+# `src/graph/dietary.SUPPORTED_EXCLUSIONS`, kept in step by a sanity test
+# in `tests/test_dietary.py` — a divergence between the harness and the
+# production mapping would score a plan against categories the plan was
+# never filtered on.
 EXCLUSION_CATEGORIES = {
     "seafood": {"seafood"},
     "vegetarian": {"meat", "seafood"},
     "dairy-free": {"dairy"},
+    "vegan": {"meat", "seafood", "dairy", "chilled"},
 }
 
 

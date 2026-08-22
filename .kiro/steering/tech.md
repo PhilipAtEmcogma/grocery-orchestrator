@@ -2,6 +2,11 @@
 
 ## Locked decisions (30 Jul 2026)
 
+These are target constraints for implementation and deployment, not claims that
+the service plane, CDK application, ingestion pipeline, MCP façade, or agents
+already exist. Current live evidence is limited to the resources and adapters
+listed in `AGENTS.md`.
+
 - **Language:** Python 3.13. **Region:** `ap-southeast-2` (Sydney), ALL resources.
 - **Orchestration:** LangGraph inside the orchestrator **Lambda**.
   This matches the mentor's specified pattern: receive question -> retrieve
@@ -11,19 +16,49 @@
 - **Packaging:** Lambda **zip**, not container. Measured at ~47 MB with
   `numpy` and `zstandard` excluded (transitive, unused at import) and
   boto3/botocore taken from the Lambda runtime. Well under the 250 MB limit.
-- **SnapStart:** enabled, on a published alias. Requires zip — container
+- **SnapStart:** must be enabled on a published alias. Requires zip — container
   images are NOT SnapStart-eligible. This is why we are not containerising.
-- **Model access:** Bedrock Converse API via `langchain-aws`.
-  Haiku for intent classification and repair passes. Sonnet for meal planning.
-- **Transport:** API Gateway REST synchronous for weeks 1-2, upgrading to
-  API Gateway **WebSocket** streaming in week 3. Contract is event-shaped so
-  the swap does not change the interface.
-- **Ingestion:** **Step Functions** state machine (Map state, per-store error
-  handling) triggered by EventBridge -> scraper Lambdas -> DynamoDB.
-  NOT a single monolithic scraper Lambda.
-- **IaC:** AWS CDK (TypeScript) in `infra/`.
-- **Contract:** `schemas/contract.py` is the single source of truth. Changes
+- **Model access:** Bedrock Converse API via `langchain-aws`. Haiku is the
+  intended classification/repair candidate and Sonnet the intended meal-plan
+  candidate, but neither is qualified until account access and task-specific
+  scorecards meet the 90% floor. The development catalogue currently marks all
+  Claude and Nova candidates `enabled`; this is a known non-production state
+  that Pilot Task 7 must reconcile by disabling every unqualified active route.
+  Current Nova evidence does not qualify every route.
+- **Transport:** API Gateway REST synchronous for the initial pilot. API Gateway
+  **WebSocket** streaming is a later approved upgrade; the contract is
+  event-shaped so the swap does not change the interface.
+- **Ingestion:** **Step Functions** state machine (Inline Map, per-store error
+  handling) triggered by EventBridge -> source-adapter Lambdas -> DynamoDB.
+  NOT a single monolithic scraper Lambda. Fixture/recorded adapters come first;
+  live acquisition remains separately gated.
+- **IaC:** AWS CDK (TypeScript) in `infra/`; planned under Pilot Tasks 9–10.
+- **Contract:** `src/schemas/contract.py` is the single source of truth. Changes
   there require regenerating samples and passing `validate.py`.
+
+## MCP and agentic boundaries
+
+- The safety-critical shopper path remains the deterministic LangGraph
+  workflow. An agent never decides whether retrieval, arithmetic, dietary
+  validation, or final grounding checks run.
+- The first MCP server is local and read-only. It exposes coarse application
+  operations that invoke the complete service; never raw DynamoDB, AWS SDK,
+  filesystem, arbitrary network, retailer acquisition, writes, or unguarded
+  generation.
+- A bounded data-quality agent may review a capped ingestion snapshot and
+  produce a human review artefact. It has no publication authority.
+- Remote MCP, persistent agent memory, and additional agent runtimes are later
+  decisions requiring identity, retention, rate-limit, timeout, audit, and cost
+  controls.
+- AgentCore remains subject to the meal-path p99 contingency and mentor
+  sign-off below; MCP interest is not a separate approval to use it.
+
+## Production mode
+
+Local fixture/scripted dependencies must be selected explicitly. A production
+stage fails closed unless DynamoDB, Bedrock, a numbered Guardrail version,
+stored idempotency, strict CORS, and named resources are configured. Missing
+settings must never silently select demo adapters.
 
 ## Dependency rules
 

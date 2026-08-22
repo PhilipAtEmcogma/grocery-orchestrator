@@ -28,6 +28,20 @@ with the component they protect, not in a phase at the end.
 - **Logging:** no PII in logs. Log `session_id`, never raw location or free
   text that could identify a user.
 - **Sessions:** scope by session id with a TTL. Privacy Act 2020 applies.
+- **Exact provenance:** every citation identifies the exact DynamoDB table,
+  partition key, and sort key; values must equal the retrieved record and the
+  citation must precede use.
+- **MCP tools:** validate inputs and outputs, use strict allowlists, cap rows and
+  calls, enforce timeouts/rate limits, sanitize results, and audit operation
+  names without logging arguments that contain personal data. Initial tools
+  are read-only and expose no raw AWS, database, filesystem, network, scraping,
+  or generation primitive.
+- **Agents:** bounded specialist agents have least-privilege read-only tools and
+  no price-publication or production-write authority. Human approval is
+  required before acting on a review finding.
+- **Production mode:** reject wildcard CORS, draft/missing Guardrails,
+  in-memory stores, scripted models, fixture repositories, and unnamed
+  resources in a production stage.
 
 ## Schedule
 
@@ -38,7 +52,8 @@ with the component they protect, not in a phase at the end.
 | 2 | DynamoDB | PITR on, encryption verified, no PII in price tables |
 | 2 | Generation node | **Bedrock Guardrail created and attached** |
 | 2 | Intent node | Input validation, prompt-injection delimiting |
-| 3 | API Gateway | Throttling, usage plan, Cognito authoriser |
+| 3 | API Gateway | Strict CORS, throttling, and usage plan for anonymous pilot |
+| Later ownership phase | API Gateway | Cognito authoriser before user-owned data or preferences |
 | 3 | Sessions | TTL, scoping, Privacy Act review |
 | 4 | Observability | Structured logging, tracing, alarms |
 

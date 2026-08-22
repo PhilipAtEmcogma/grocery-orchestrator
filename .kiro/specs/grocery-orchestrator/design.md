@@ -9,31 +9,89 @@ a reviewer to re-propose the options that were already ruled out.
 
 ---
 
-## 1. Architecture
+## 1. Architecture and delivery status
 
-```
+This document distinguishes four states:
+
+- **Implemented:** present in the workspace and covered by offline tests.
+- **Live verified:** observed against AWS in `ap-southeast-2`; the exact scope
+  of verification is stated.
+- **Planned:** approved target behavior with an unchecked Pilot Task.
+- **Blocked:** cannot be completed until a named external condition clears.
+
+The production-pilot target is:
+
+```text
 Browser
-   |  HTTPS
+   | HTTPS
 Static site (S3 + CloudFront)
-   |  POST /chat
-API Gateway (REST)
+   | POST /chat
+API Gateway REST (strict CORS, throttling, usage plan; Cognito seam)
    |
-Orchestrator Lambda
-   |-- LangGraph state machine
-   |-- Price store (DynamoDB)
-   |-- Model plane (Bedrock, per-task routing)
+Published Lambda alias (Python 3.13 zip + SnapStart)
    |
-Response (ordered typed events)
+Deterministic LangGraph workflow
+   |-- Price and recipe repositories (DynamoDB)
+   |-- Model plane (Bedrock Converse + numbered Guardrail)
+   |-- Grounding, dietary and arithmetic assertions
+   |
+Ordered contract events
 ```
 
-Separately, on a schedule:
+Separately, for controlled ingestion:
 
-```
-EventBridge -> Step Functions -> scraper Lambdas -> DynamoDB
+```text
+EventBridge -> Step Functions Inline Map -> per-source adapters
+            -> provenance/normalisation validation -> DynamoDB
+                                      `-> bounded data-quality review -> human queue
 ```
 
-**Region:** `ap-southeast-2` (Sydney). Auckland lacks the required Bedrock and
-Lambda features.
+The approved agentic extension is outside the safety-critical control path:
+
+```text
+Kiro or approved MCP client -> local read-only MCP facade
+                            -> coarse application tools
+                            -> complete deterministic application service
+```
+
+The MCP façade does not expose raw DynamoDB, AWS SDK, filesystem, arbitrary
+network, retailer scraping, production writes, or unguarded generation. The
+bounded data-quality agent can report cited anomalies over a capped snapshot,
+but deterministic code and a human remain the publication authority. See
+`docs/adr/0001-deterministic-core-bounded-agent-extensions.md`.
+
+**Region:** `ap-southeast-2` (Sydney) for every AWS resource. The orchestrator
+remains a zip Lambda; containerising it would forfeit SnapStart. API Gateway
+REST is the first transport. WebSocket delivery, Cognito ownership, remote MCP,
+and persistent preferences are later phases with explicit gates.
+
+### 1.1 Current release blockers
+
+The reference implementation is not yet a deployable pilot. The following are
+known defects or missing controls, not accepted design trade-offs:
+
+1. Citation source partition keys are currently derived from store and category
+   rather than the products table's store-and-location key.
+2. Comparison reasoning currently contains a literal price despite the
+   citation-only wire rule, and final assertions do not yet validate exact
+   source keys, citation ordering, source equality, or every prose-like field.
+3. `GuardrailBlocked` is a `ModelError` and can be swallowed by graph-node
+   fallback handling instead of reaching the handler's `GUARDRAIL_BLOCKED`
+   mapping.
+4. Location is accepted but not enforced by the repository, and capture dates
+   are surfaced but not evaluated against a freshness policy.
+5. Meal-plan totals do not yet distinguish consumed ingredient cost from the
+   full-pack amount payable at checkout strongly enough for every multipack and
+   reuse case.
+6. Production dependency selection can fall back to fixture/scripted adapters
+   when environment settings are absent.
+7. CDK resource adoption, least-privilege IAM, API controls, the published
+   SnapStart alias, dashboards, budgets, and deployment verification are not
+   implemented.
+8. Active model routing and enabled-model scorecards do not yet satisfy the
+   approved 90% production threshold for every task.
+
+Pilot Tasks 2–12 close these blockers before public traffic.
 
 ---
 
@@ -73,18 +131,25 @@ mechanism, because §2.2 does not transfer: a prose field is a string, and a
 model can always type a number into a string. There is no schema shape that
 makes a price unrepresentable in a sentence.
 
-So the model writes `[[c1]]` placeholders instead of figures, and application
-code expands them from the retrieved records after generation. Three checks
-run before the text is delivered:
+So the model writes `[[c1]]` placeholders instead of figures. The target
+renderer resolves a known placeholder only to a non-monetary product/store
+label; the source price remains in the citation event and in structured fields
+that carry `citation_ref`. Token text and comparison reasoning have no
+field-level citation reference, so they remain money-free. Three checks run
+before text is delivered:
 
-1. Any money-shaped string in the model's output rejects the text. Both
-   `$2.97` and "71 cents" count; quantities like "500g pack" and "3 days" do
-   not, since over-rejection would leave nothing worth reading.
+1. Any money-shaped string in either model output or rendered user-visible text
+   rejects the text. Both `$2.97` and "71 cents" count; quantities like "500g
+   pack" and "3 days" do not, since over-rejection would leave nothing useful.
 2. A placeholder referring to something that was never retrieved rejects the
    text — the same rule as §2.3, applied to prose.
-3. Expansion of an unknown placeholder raises rather than leaving `[[c9]]`
-   visible or dropping it silently. A dropped placeholder produces a sentence
-   missing its subject; a visible one shows the user a defect.
+3. An unknown placeholder raises rather than remaining visible or disappearing
+   silently. A dropped placeholder produces a sentence missing its subject; a
+   visible one shows the user a defect.
+
+**Current gap:** the implemented renderer expands placeholders into monetary
+figures. Pilot Task 2 changes rendering and validates every prose-like field;
+until then, generated token text is not evidence of the target wire invariant.
 
 **Failure degrades rather than propagating.** All three checks discard the
 prose and let the turn deliver its structured payload. A comparison table with
@@ -104,8 +169,11 @@ price.
 
 | Node | Model? | Responsibility |
 |---|---|---|
+| Node | Model? | Responsibility |
+|---|---|---|
 | `validate_input` | no | Emit session event, initialise state |
-| `classify_intent` | yes, low-cost | Classify and extract constraints |
+| `classify_intent` | yes, low-cost | Classify, extract constraints, record any unmappable dietary terms |
+| `emit_dietary_unsupported` | no | Honest refusal for a dietary term we cannot honour (Req 5.6) |
 | `retrieve_prices` | no | Query price store; **only** creator of references |
 | `emit_no_data` | no | Honest "no data" outcome (Req 4.1) |
 | `generate_comparison` | **no** | Assemble comparison from references |
@@ -143,6 +211,19 @@ configured maximum (Req 2.4).
 
 **Failed drafts are discarded** on the infeasible path (Req 4.5). Delivering an
 over-budget plan beside a message saying no plan was possible is incoherent.
+
+**Unsupported dietary exclusions refuse before retrieval** (Req 5.6). The
+mapping from user terms to fixture categories is data — `SUPPORTED_EXCLUSIONS`
+in `src/graph/dietary.py` — and `classify_intent` records any terms it could
+not map. Meal-plan routing sees the list is non-empty and goes to
+`emit_dietary_unsupported`, which returns `ErrorCode.UNSUPPORTED_EXCLUSION`
+with a message naming the terms we can honour. The graph does not do the
+work for a plan we cannot verify: filtering an incomplete map would ship a
+plan whose safety was probabilistic rather than checkable, which is the exact
+shape of the bug that used to serve dairy to a vegan user. Price checks are
+not gated the same way — a dietary term does not apply to a single-product
+query and blocking one would refuse a legitimate question for no safety
+benefit.
 
 ---
 
@@ -242,9 +323,12 @@ identifiers and nothing makes them globally unique. A collision across sessions
 would serve one user another user's shopping list — a privacy failure produced
 by an optimisation.
 
-**The payload is fingerprinted.** The same identifier arriving with different
-content is a client bug. Returning the cached response would answer a question
-nobody asked, so it is rejected as a non-retryable client error instead.
+**The validated payload is canonically fingerprinted.** The same identifier
+arriving with different validated content is a client bug. Whitespace, object-key
+order, and omitted-versus-explicit-null optional fields do not create different
+fingerprints. Returning the cached response for genuinely different content
+would answer a question nobody asked, so it is rejected as a non-retryable
+client error instead.
 
 **In-flight requests are detected.** A retry usually arrives while the first
 attempt is *still running* — that is what a timeout means. A store that only
@@ -253,9 +337,14 @@ in-progress marker is honoured for longer than the gateway ceiling, so a
 slow-but-alive request is not duplicated, but short enough that a crashed
 invocation does not block retries until the expiry.
 
+**Claim ownership is fenced.** Every successful acquire or stale takeover
+returns a fresh opaque owner token/version. Completion and release are
+conditional on that token and `in_progress` status, so an old invocation that
+resumes after takeover cannot overwrite or delete the new owner's claim.
+
 **Only terminal outcomes are cached.** Caching a transient failure would make
 the client's retry permanently useless: it would receive the same failure
-forever. A retryable error releases the claim instead.
+forever. A retryable error releases only the caller's owned claim instead.
 
 **The store failing does not fail the turn.** If the store is unreachable the
 handler runs the work anyway. A duplicated response is a worse outcome than a
@@ -267,11 +356,11 @@ would both read "absent" and both proceed, which is exactly the case the
 mechanism exists to prevent and exactly the case that testing on one machine
 will not surface.
 
-**Single-process today.** The fixture store is correct in one process and
-silently wrong across many: Lambda execution environments share no memory, so
-a deployment on it would deduplicate nothing while appearing to work. This is
-why the stored implementation is not optional in production, and why it raises
-rather than returning plausible results (§7).
+**Current versus target.** The in-memory and DynamoDB stores exist, and the
+five current DynamoDB outcomes have live evidence. Production readiness still
+requires canonical validated request hashing, a shared protocol contract suite,
+and stale-owner fencing in both implementations. Production startup must reject
+the in-memory store rather than silently selecting it.
 
 ---
 
@@ -329,12 +418,13 @@ direction: an empty intersection of "preferred" and "nearby" would have
 returned exactly the stores the user ruled out. No caller passed `[]`, so
 tightening it changed no behaviour; it removed a trap.
 
-**Unimplemented adapters raise rather than returning empty results.** Both
-stored implementations exist as scaffolding so the wiring is proven, and every
-method raises. An empty price list would be indistinguishable from a genuine
-"no data" outcome, and a store that never deduplicates is indistinguishable
-from one where nothing was retried — both would look like working software. A
-misconfigured deployment should fail loudly at the first call.
+**Implemented adapters fail loudly on misconfiguration.** The fixture and
+DynamoDB price repositories and the in-memory and DynamoDB idempotency stores
+are implemented; the shared price-repository suite has been live-verified
+against DynamoDB. Production still needs a shared idempotency contract suite,
+claim-owner conditions, and startup validation that rejects demo adapters.
+Returning an empty result for a misconfigured repository remains forbidden
+because it is indistinguishable from a genuine no-data outcome.
 
 ---
 
@@ -431,7 +521,7 @@ default.
 | 12.3 Exactly-once turns | Atomic claim on a session-scoped key (§6.1) |
 | 5.5 Content safety (policy) | Guardrail policy as version-controlled data, validated in CI |
 | 5.5 Content safety (enforcement) | Attached to every generation call; call refuses to run without one |
-| 5.5 Content safety (verification) | **Not met** — requires a live endpoint |
+| 5.5 Content safety (verification) | **Partially verified** — numbered Guardrail creation and basic attached invocation are live; intervention propagation and the 20-case must-block/must-allow harness remain unmet |
 | 6.5 Untrusted input | User text delimited; system instruction declares it data |
 | 6.5 Untrusted input (filter) | Per-request input tagging, so the prompt-attack filter evaluates it |
 
@@ -512,39 +602,42 @@ just wrote. And a check whose failure does not block or notify anyone is
 documentation, not enforcement — which is the same argument §8 makes for
 structural guarantees over behavioural ones, applied to the build.
 
-### 10.4 What is not yet verified
+### 10.4 What remains to be verified
 
-Everything in §10.1–10.2 describes code that is built and tested offline. None
-of it has been observed working against a live service. A twenty-case red-team
-set exists for that — thirteen cases that must be blocked across prompt
-injection, unsafe preparation, disordered eating, medical advice,
-age-restricted goods and payment data, and seven ordinary grocery questions
-that must be *allowed*.
+The Guardrail `b1xezpqe04kx`, version `1`, has been created and observed on a
+basic attached Bedrock invocation in `ap-southeast-2`. That verifies the live
+resource, numbered attachment, and basic request shape; it does **not** verify
+policy quality or graph-level intervention behavior.
+
+A twenty-case red-team set defines the missing evidence — thirteen cases that
+must be blocked across prompt injection, unsafe preparation, disordered eating,
+medical advice, age-restricted goods and payment data, and seven ordinary
+grocery questions that must be *allowed*. Pilot Task 3 builds the harness,
+runs every case through an accessible model path, and proves that an
+intervention crosses every graph node unchanged to the single
+`GUARDRAIL_BLOCKED` service outcome.
 
 The must-allow half is not padding. Over-blocking is the usual failure mode of
 an aggressive policy, and a filter that refuses legitimate grocery questions
 has produced a broken product rather than a safe one. A verification set
 containing only attacks cannot detect that.
 
-One specific thing to check first: the request shape used to mark untrusted
-regions is unverified against the live API. If the guardrail reports zero
-prompt-attack evaluations on a known-malicious input, that is where to look —
-and it would mean the control has been inert the whole time while appearing
-configured.
+The first diagnostic on a failed prompt-attack case is the live evaluation
+metadata for the tagged untrusted region. Basic invocation evidence does not
+prove that each attack class is evaluated or that the policy blocks and allows
+the intended cases.
 
 ---
 
 ## 11. Path to infrastructure as code (Req 12.4)
 
-The build is manual first by team decision. To keep the conversion mechanical:
-
-1. Tag every resource on creation with project, environment, and owner.
-2. Name consistently with an environment suffix, so generated resources can
-   coexist with manual ones during migration.
-3. Export each resource's configuration immediately after creation and commit
-   it. That export is the specification the definitions are written from.
-4. Adopt existing resources into the stack during migration rather than
-   recreating them, so no data is lost.
+The products and idempotency tables already exist outside CDK. Pilot Task 9
+adopts/imports them into a stateful TypeScript stack before any service-plane
+deployment; replacement is forbidden. Regenerated live configuration is local
+review evidence because it contains account-bearing ARNs, while sanitized CDK
+assertions and review outcomes are committed. New resources are CDK-first.
+Stateful adoption and service deployment are separate reviewed operations. See
+§16 and `DYNAMODB-SCHEMA.md` for the target stack split and import sequence.
 
 ---
 
@@ -636,12 +729,11 @@ costume of a dependency upgrade.
 
 ### 12.6 The two alarms, as configuration
 
-Both are now defined in `config/alarms.json` and applied by
-`scripts/apply_alarms.py`, following the guardrail pattern (§10.1): the file is
-the source of truth, not the console, so the alerting is reviewable in a pull
-request, diffable, and reproducible in another account. Nothing is deployed —
-there is still no account — but `--dry-run` validates offline and runs in CI
-and the pre-commit hook, so the definitions cannot rot while they wait.
+The alarm definitions are version-controlled in `config/alarms.json` and
+validated by `scripts/apply_alarms.py --dry-run`. They are not deployed because
+the service plane does not yet exist; that is a deployment gap, not absence of
+an AWS account. Offline validation runs in CI and the pre-commit hook so the
+definitions cannot rot while they wait.
 
 These are the two worth having on day one, and they are cheap because the
 signals already exist:
@@ -693,6 +785,115 @@ Everything else can wait for a dashboard. `TurnWithoutContent` (§12.3) is the
 next candidate, but it needs a baseline on the conversational intents first,
 and there is no traffic to take one from.
 
-Not deployed. When the account lands, the remaining manual step is subscribing
-someone to the topic and confirming it; the script says so, loudly, and exits
-non-zero until it is true.
+Not deployed. The AWS account and base resources exist; after the service
+plane is deployed, someone must subscribe to the topic and confirm it. The
+script says so, loudly, and exits non-zero until that is true.
+
+---
+
+## 13. Location, store scope, provenance and freshness (planned)
+
+The request schema already accepts location and every citation already carries
+store location and capture date, but the repository contract does not yet make
+location or freshness a selection constraint. Until Pilot Task 5 lands, the
+assistant must not claim that results are nearby or current merely because
+those fields are present.
+
+The target repository request carries an explicit store scope, optional
+location/radius, and an `as_of`/freshness policy. Price checks may query GSI1 by
+product and filter the bounded result set by eligible store locations. Meal
+candidate retrieval must not retain the current full-table scan at production
+scale; Pilot Task 6 selects either a category/location/freshness index or a
+materialized candidate view. Stale-only results route to a contract-valid
+honest outcome rather than being labelled current.
+
+Every citation identifies the exact base-table record using
+`store_key = <chain>#<location-slug>` and `product_key`. The current
+store/category source key is a release-blocking implementation defect, not an
+alternative schema.
+
+## 14. Payable meal-plan arithmetic (planned)
+
+The user budget applies to the amount payable at checkout, not a fractional
+consumption estimate. The target design maintains two concepts:
+
+- **Consumption subtotal:** ingredient quantity consumed by meals, useful for
+  allocation and waste analysis.
+- **Payable total:** full pack price multiplied by the whole packs required
+  after aggregating repeated use of each cited product.
+
+The shopping list contains each cited product once per store, with its required
+pack count and payable line total. The plan budget check uses the payable total.
+Both figures are derived from citations in Python; neither is accepted from a
+model. The current arithmetic does not prove every reuse/multipack case and is
+not pilot-ready until Pilot Task 4 closes that gap.
+
+## 15. Guardrail intervention semantics (planned correction)
+
+A Guardrail intervention is a safety outcome, not an ordinary model failure.
+`GuardrailBlocked` must cross every graph-node boundary unchanged and be mapped
+once to `GUARDRAIL_BLOCKED` at the service boundary. Intent heuristics, repair
+cycles, and optional-prose degradation remain valid for ordinary model errors
+only. The current shared `ModelError` catches can swallow the specialized
+exception; Pilot Task 3 corrects this and adds node-by-node negative tests plus
+the live must-block/must-allow harness.
+
+The live Guardrail resource exists (`b1xezpqe04kx`, version `1`) in the Sydney
+workshop account. That proves creation and basic invocation, not full policy
+quality: the twenty-case red-team harness remains planned.
+
+## 16. Production configuration and CDK adoption (planned)
+
+Local development may select fixtures and the scripted model explicitly.
+Production mode must instead validate at startup that DynamoDB, Bedrock, a
+numbered Guardrail version, strict CORS, and the stored idempotency adapter are
+configured. Missing production dependencies must fail closed; absence of an
+environment flag must never select a demo implementation.
+
+The TypeScript CDK application is split by deployment lifecycle:
+
+1. **Stateful construct/stack:** adopted products and idempotency tables, later
+   meals/recipes, encryption, PITR, TTL, retention and deletion protection.
+2. **Service construct/stack:** Python 3.13 zip Lambda, published version,
+   SnapStart alias, REST API, throttling, usage plan, strict CORS, log
+   retention, alarms, budgets, SSM model catalogue and least-privilege IAM.
+
+Existing tables are adopted/imported before service deployment and must not be
+recreated. Synthesis is deterministic, performs no account lookup or mutation,
+and is covered by CDK assertions. Resource adoption and deployment are
+separate reviewed operations.
+
+## 17. MCP and bounded agentic extensions (planned)
+
+Pilot Task 8 delivers a local, read-only MCP façade for Kiro or another approved
+client. Tools are coarse application capabilities—grounded comparison,
+grounded plan request, and provenance inspection—and call the complete
+application service. The MCP layer cannot manufacture citations or invoke an
+internal generation node directly.
+
+Pilot Task 14 adds a bounded data-quality reviewer over a capped ingestion
+snapshot. It has read-only tools, call/time limits, Guardrails, schema-checked
+outputs, deterministic record-reference validation, and no publication role.
+Findings enter a human review queue. See ADR 0001 for the accepted boundaries
+and rejected alternatives.
+
+## 18. Production-pilot acceptance gates
+
+A release candidate requires all of the following evidence:
+
+- 100% pass for grounding, literal-money, arithmetic, dietary fail-closed and
+  Guardrail-propagation controls, including negative tests.
+- A scorecard for every enabled model and at least 90% on each active route's
+  applicable golden set.
+- Measured targets of p95 under 5 seconds for price checks, p95 under 20 seconds
+  for meal plans, and p99 under the approximately 25-second escalation trigger.
+- At least 99% successful service responses during the pilot, excluding
+  intentional contract-valid refusals, with unhandled 5xx below 1%.
+- No message, raw location, dietary value, credential, or model prompt in logs
+  or traces.
+- Exact source key, store location, and capture date for every published price.
+- Cost per successful task, budget alerts at 50/80/100%, and review of unit-cost
+  regressions above 20%.
+
+These are targets subject to deployment measurement, not claims about the
+current reference implementation.

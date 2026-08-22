@@ -7,8 +7,14 @@ Contract version **1.0**. This guide is the practical companion to
 ever disagree, [`src/schemas/contract.py`](src/schemas/contract.py) is the source
 of truth — it's Pydantic, and CI validates every sample against it.
 
-Everything below was run against the dev server on 2026-08-10. The responses are
-real captured output, not hand-written examples.
+Everything below was captured from the dev server on 2026-08-10 and documents
+current reference behavior, including release-blocking defects: citation
+`table` is a logical label, `pk` uses category instead of location, `sk` may
+not be the normalized base key, and comparison/prose text contains literal
+money. The examples remain unchanged until Pilot Task 2 fixes code and
+regenerates samples atomically. Do not treat those fields as the target
+contract; the corrected target is in
+[`CONTRACT-v1.md`](CONTRACT-v1.md).
 
 ---
 
@@ -60,9 +66,11 @@ curl -X POST http://localhost:8000/chat \
 ```
 
 `session_id` and `turn_id` are **client-generated**, 8–64 chars, UUIDv4 is fine.
-`turn_id` must be unique per turn — it's the idempotency key, so if you retry a
-timed-out request with the *same* `turn_id` you get the original answer back
-rather than a second generation.
+`turn_id` must be unique per turn. On retry, resend the same validated request
+with the same `turn_id`; the target service replays the completed answer rather
+than starting a second generation. Pilot Task 6 still has to add canonical
+validated-request hashing and stale-owner fencing before that exactly-once
+property is production-ready.
 
 ### The response you get back
 
@@ -100,16 +108,20 @@ rather than a second generation.
 }
 ```
 
-Read that shape carefully, because it's the whole model:
+Read that shape as a captured reference response, not as proof of the target
+invariants. It contains two known defects scheduled for Pilot Task 2:
 
-- **No price appears inside `price_comparison`.** The options carry a
-  `citation_ref` and nothing else. To render "$2.97" you look up `c1` in the
-  citations you already received. This is deliberate — it makes "never invent a
-  price" a structural guarantee rather than a promise.
-- **Citations always arrive before anything that references them.** So build the
-  lookup map as events stream past and it will always be populated in time.
-- **`price_comparison` arrives late**, after the prose tokens — not immediately
-  after the citations. Don't wait for it before showing anything.
+- Options correctly carry `citation_ref`, but `reasoning` and token text still
+  contain literal money. Frontends must resolve structured prices from
+  citations and must not parse prose for monetary truth.
+- Citation source fields currently use the logical label `Products` and
+  `<store>#<category>` rather than the exact configured physical table name,
+  `<store>#<location-slug>` base PK, and normalized product SK. The target
+  contract example in `CONTRACT-v1.md` is authoritative for exact provenance.
+
+The intended streaming property remains that citations arrive before any
+structured content event that references them. Pilot Task 2 broadens final
+validation and regenerates these captured samples after implementation.
 
 ---
 
@@ -364,6 +376,7 @@ Two behaviours that surprise people:
 | `INVALID_REQUEST` | ❌ | A bug on one of our sides |
 | `STALE_DATA` | ⬜ | Data too old to trust |
 | `BUDGET_INFEASIBLE` | ❌ | **Render the `message`** — it contains real alternatives ("raise the budget, reduce the days…"). Not a generic failure. |
+| `UNSUPPORTED_EXCLUSION` | ❌ | A stated dietary term we cannot safely honour (e.g. `gluten-free` while we still lack allergen tagging). Also **render the `message`** — it lists the terms we can honour, so the user has an actionable next step |
 | `GUARDRAIL_BLOCKED` | ❌ | Refused on safety grounds |
 | `OUT_OF_SCOPE` | ❌ | Not a grocery question |
 | `UPSTREAM_TIMEOUT` | ✅ | Retry with the **same** `turn_id` |
@@ -388,6 +401,7 @@ are validated in CI, so if they drift from the implementation the build breaks.
 | [`samples/response_meal_plan.json`](samples/response_meal_plan.json) | Happy path: full plan, meals, per-store baskets |
 | [`samples/response_no_data.json`](samples/response_no_data.json) | **Failure case** — `no_data` as the whole answer |
 | [`samples/response_budget_infeasible.json`](samples/response_budget_infeasible.json) | **Failure case** — `BUDGET_INFEASIBLE` error with alternatives in the message |
+| [`samples/response_unsupported_exclusion.json`](samples/response_unsupported_exclusion.json) | **Failure case** — `UNSUPPORTED_EXCLUSION` for a dietary term we cannot honour (e.g. gluten-free) |
 | [`samples/response_guardrail_blocked.json`](samples/response_guardrail_blocked.json) | **Failure case** — `GUARDRAIL_BLOCKED` |
 | [`samples/response_multi_comparison.json`](samples/response_multi_comparison.json) | **§3.1** — three items, three `price_comparison` events, 15 citations |
 | [`samples/response_partial.json`](samples/response_partial.json) | **§3.2** — a partial answer: `no_data` at `seq 7`, results at `seq 10` |
