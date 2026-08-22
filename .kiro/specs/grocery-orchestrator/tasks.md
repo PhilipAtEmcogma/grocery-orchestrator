@@ -63,8 +63,8 @@ tracked here rather than treated as incidental.*
 - [x] **2.7** Define the price store protocol with a fixture implementation
 - [x] **2.8** Implement exact-match product resolution with no fuzzy fallback
   — *Req 4.3*
-- [ ] **2.9** Implement the stored price repository against the same protocol
-  — *Req 8.1, 8.2* — **[blocked: AWS]**
+- [x] **2.9** Implement the stored price repository against the same protocol
+  — *Req 8.1, 8.2*
 - [x] **2.10** Build one test suite, parameterised over every implementation of
   the price store protocol, and run it against both
 - [x] **2.11** Resolve and compare every item in a multi-item request, naming
@@ -146,12 +146,14 @@ and nut-free support) is future work — see Phase 11.*
 - [x] **3.10** Implement the managed-inference adapter behind the model
   protocol
 
-*3.10 was built but never specified. The adapter is written and structurally
-complete — capability branching, cache markers, guardrail attachment, usage
-capture, and a distinct blocked-by-safety-filter error — but it has never run
-against a live endpoint, so it carries no test coverage beyond stubbed
-transport. Everything above it is proven by the scripted client, which is why
-it is the only new surface when the account lands.*
+*3.10 was built but never specified. The adapter is now verified against live
+Bedrock endpoints (Nova Lite and Nova Pro in ap-southeast-2). Live eval results:
+Nova Lite 83.3% intent accuracy, Nova Pro 100% intent accuracy at p50 ~600ms.
+Discovered and fixed: `guardContent` blocks require `guardrailConfig` or Bedrock
+rejects with a ValidationException — the adapter now defers tagging until a
+guardrail is configured. Claude models are blocked on the Anthropic use-case
+form; once available, routing restores them to their configured preference
+positions (Sonnet for plan generation, Haiku for classification/repair).*
 
 ---
 
@@ -229,8 +231,8 @@ rather than a manual afternoon.*
 - [x] **6.6** Idempotent handling of repeated request identifiers, against a
   single-process store — *Req 12.3*
 - [x] **6.7** Structured logging, tracing and metrics — *Req 12.1, 12.2*
-- [ ] **6.8** Implement the stored idempotency store against the same protocol
-  — *Req 12.3* — **[blocked: AWS]**
+- [x] **6.8** Implement the stored idempotency store against the same protocol
+  — *Req 12.3*
 
 *6.4: dependency construction was originally outside the error boundary, so a
 misconfigured store returned an unparseable failure — the exact outcome the
@@ -283,13 +285,12 @@ hold in production.*
 
 ## Phase 7 — Data and ingestion
 
-- [ ] **7.1** Create the products table with the price-ordered index
-  — *Req 8.2* — **[blocked: AWS]**
+- [x] **7.1** Create the products table with the price-ordered index
+  — *Req 8.2*
 - [ ] **7.2** Create the meals table with expiry — *Req 11.6*
   — **[blocked: AWS]**
-- [ ] **7.3** Enable recovery and verify encryption — *Req 11.7*
-  — **[blocked: AWS]**
-- [ ] **7.4** Load the seed dataset — **[blocked: AWS]**
+- [x] **7.3** Enable recovery and verify encryption — *Req 11.7*
+- [x] **7.4** Load the seed dataset
 - [ ] **7.5** Implement per-retailer acquisition with isolated failure
   — *Req 8.5*
 - [ ] **7.6** Orchestrate acquisition with parallel per-retailer error handling
@@ -297,8 +298,7 @@ hold in production.*
 - [ ] **7.8** Schedule the refresh — *Req 8.4*
 - [x] **7.9** Assess terms-of-service risk before live acquisition — *Req 8.8*
   — `ACQUISITION-RISK.md`
-- [ ] **7.10** Create the idempotency table with expiry — *Req 12.3*
-  — **[blocked: AWS]**
+- [x] **7.10** Create the idempotency table with expiry — *Req 12.3*
 
 *7.9 gated 7.5 and is now done. Legal assessment precedes implementation, not
 the reverse — and having run it, the two halves separate. **7.5 is unblocked**:
@@ -527,13 +527,22 @@ resolves to the right piece of work.*
 What is blocked, and by what:
 
 ```
-BLOCKED ON THE AWS ACCOUNT
-  7.1, 7.2, 7.4 product store created  -> unblocks 2.9
-  7.10 idempotency table created       -> unblocks 6.8
-  2.9  stored price repository         -> unblocks 10.3
-  8.10 live content safety verified    -> required before any public exposure
+BLOCKED ON ANTHROPIC USE-CASE VERIFICATION
   3.9  cache utilisation verified      -> confirms a latency mitigation
   5.7  candidate models scored         -> required before production traffic
+  8.10 live content safety verified    -> required before any public exposure
+
+COMPLETED (previously blocked on AWS account)
+  7.1  products table created          ✓
+  7.3  PITR + encryption verified      ✓
+  7.4  seed data loaded                ✓
+  7.10 idempotency table created       ✓
+  2.9  stored price repository         ✓ (31 contract tests passing)
+  6.8  stored idempotency store        ✓ (all 5 outcomes verified live)
+
+STILL BLOCKED ON AWS
+  7.2  meals table created             -> needed for recipe catalogue
+  8.5  per-function IAM roles          -> needed for deployment
   10.5 latency measured                -> informs 11.3
 
 BLOCKED ON ANOTHER TEAM

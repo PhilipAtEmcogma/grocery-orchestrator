@@ -40,10 +40,11 @@ validate_input
   v
 classify_intent
   |--- general_chat / out_of_scope ------------------> finalise
+  |--- meal_plan + unsupported exclusion ------------> emit_dietary_unsupported -> finalise
   v
 retrieve_prices            <-- the ONLY source of prices
   |--- no citations -----> emit_no_data -------------> finalise
-  |--- price_check ------> generate_comparison ------> finalise
+  |--- price_check ------> generate_comparison -> generate_prose -> finalise
   v (meal_plan)
 generate_plan  <----------------+
   v                             |
@@ -51,7 +52,7 @@ validate_plan                   | repair (bounded)
   |--- errors ---> repair_plan +
   |--- attempts exhausted ---> emit_budget_infeasible -> finalise
   v ok
-finalise -> END
+generate_prose -> finalise -> END
 ```
 
 ## Design principles
@@ -122,10 +123,10 @@ src/
   retrieval/
     base.py                 PriceRepository protocol + PriceRecord type
     memory.py                Fixture-backed repository used for all local dev and tests
-    dynamo.py                DynamoDB adapter — scaffolded, raises NotImplementedError (see DYNAMODB-SCHEMA.md)
+    dynamo.py                DynamoDB-backed repository — implemented, passing 31 contract tests
   store/
     idempotency.py           Session-scoped dedup: acquire/complete/release, in-memory
-    dynamo_idempotency.py    DynamoDB adapter — scaffolded, raises NotImplementedError
+    dynamo_idempotency.py    DynamoDB-backed idempotency store — implemented, verified live
   observability/
     base.py                 Telemetry protocol + no-op default, and the three
                               functions that decide what may appear in a log (Req 11.5)
@@ -224,10 +225,11 @@ ingestion/                   Step Functions price-scraping pipeline — not star
 - ✅ Local dev server (`scripts/dev_server.py`): stdlib-only HTTP wrapper
   around the same `lambda_handler`, so the frontend team can integrate
   against real, contract-valid responses before the AWS account exists.
-- ✅ 150 passing tests covering classification, extraction, arithmetic,
+- ✅ 304 passing tests covering classification, extraction, arithmetic,
   grounding, injection resistance, the repair loop's bounds, multi-model
   routing/capability branching, multi-item queries, idempotency, guardrail
-  tagging, and the Lambda handler's error mapping.
+  tagging, dietary exclusion mapping with fail-closed refusal, and the Lambda
+  handler's error mapping.
 - ✅ `validate.py` / sample payloads wired up as a CI-style contract check,
   including a negative test that an ungrounded price is rejected.
 - ✅ Eval harnesses (`evals/run_intent.py`, `evals/run_meal_plan.py`) —
@@ -263,21 +265,23 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   dietary information on a real turn (Req 11.5).
 - ✅ DynamoDB schema proposed (`DYNAMODB-SCHEMA.md`) — three tables, GSI design
   for "cheapest near me", money-as-string, TTL as a Privacy Act control on
-  saved plans, and the idempotency table's conditional-put claim. Team review
-  pending.
-- 🚧 Bedrock-backed `ModelClient` (`src/models/bedrock.py`) is written but
-  **unexercised** — it needs a live AWS account and model access to test.
+  saved plans, and the idempotency table's conditional-put claim.
+- ✅ DynamoDB tables created and seeded (`grocery-products-dev` with PITR,
+  `grocery-idempotency-dev` with TTL). Both stored adapters implemented and
+  passing their contract/verification tests against live tables.
+- ✅ Bedrock adapter verified live against Nova Lite and Nova Pro in
+  ap-southeast-2. Intent eval: Nova Lite 83.3%, Nova Pro 100%. Meal-plan
+  eval: Nova Pro 64% (Claude Sonnet is the intended quality model; blocked
+  on Anthropic use-case verification).
+- 🚧 Claude model access pending Anthropic use-case verification (~2h).
+  Once unblocked, meal-plan eval re-run against Sonnet is expected to reach
+  the 90% invariant floor.
 
 ## Not yet built
 
-- **DynamoDB-backed `PriceRepository` and `IdempotencyStore`.** The products
-  schema is designed (`DYNAMODB-SCHEMA.md`) and `src/retrieval/dynamo.py` /
-  `src/store/dynamo_idempotency.py` are scaffolded against their protocols,
-  but every method still raises `NotImplementedError` — deliberately, so a
-  misconfigured deployment fails loudly instead of silently behaving like
-  working software (an empty, indistinguishable-from-"no data" price list; a
-  store that never deduplicates). Both run on their in-memory fixture
-  implementations until the AWS account lands.
+- **DynamoDB meals table** (`grocery-meals-dev`) — the recipe catalogue table.
+  Products and idempotency tables are built and operational; meals is next
+  when the recipe catalogue feature starts.
 - **Ingestion pipeline** (`ingestion/`) — the Step Functions/EventBridge
   scraper pipeline that would populate DynamoDB from real store data.
 - **Infrastructure as code** (`infra/`) — the AWS CDK stack (Lambda,
@@ -333,9 +337,10 @@ curl -X POST http://localhost:8000/chat -H "Content-Type: application/json" \
 
 Runs on fixtures + the scripted model, so responses are deterministic and no
 AWS credentials are needed. Setting `USE_DYNAMODB=1` or `USE_BEDROCK=1`
-switches individual dependencies to their AWS-backed implementations once
-those exist (`USE_DYNAMODB=1` currently raises `NotImplementedError` — see
-[Not yet built](#not-yet-built)).
+switches individual dependencies to their AWS-backed implementations (requires
+valid AWS credentials in the environment — SSO profile or env vars). Both
+adapters are implemented and verified; the default remains fixtures + scripted
+for offline development.
 
 The dev server emits the same structured logs and EMF metric records the
 Lambda does — they print to stdout, which is exactly where CloudWatch reads

@@ -132,6 +132,8 @@ python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
     tests/test_sample_fixtures.py                # rewrite samples/ from the server
 python evals/run_intent.py                       # 76.7% scripted baseline
+python evals/run_intent.py --model nova-lite     # 83.3% live (Nova Lite)
+python evals/run_intent.py --model nova-pro      # 100% live (Nova Pro)
 python evals/run_meal_plan.py                    # 91% invariants baseline
 python scripts/generate_fixtures.py              # regenerate seed data
 python scripts/dev_server.py                     # localhost:8000 for frontend
@@ -319,12 +321,26 @@ deployment archive (Task 10.1) · Kiro specs, steering and hooks ·
 terms-of-service assessment for live acquisition (Task 7.9).
 
 **Blocked on AWS account (not yet provisioned):**
-- `src/retrieval/dynamo.py` — raises `NotImplementedError` by design
-- `src/store/dynamo_idempotency.py` — same; `acquire` must be a conditional
-  put on `attribute_not_exists`, not read-then-write
-- Live Bedrock verification, including whether the `guardContent` block shape
-  is right — flagged in `src/models/guardrail.py`
+- Claude model access — requires Anthropic use-case form submission in the
+  Bedrock console. Nova models work; Claude is needed for meal-plan quality.
 - Deployment
+
+**Done, verified against live AWS (ap-southeast-2):**
+- DynamoDB tables created: `grocery-products-dev` (GSI1 for cheapest-first
+  queries, PITR on), `grocery-idempotency-dev` (TTL on `ttl` attribute)
+- Seed data loaded: 152 products across 3 stores, queryable via GSI1
+- `src/retrieval/dynamo.py` — implemented, passing all 31 contract tests
+  against the live table (Task 2.9)
+- `src/store/dynamo_idempotency.py` — implemented with atomic conditional put,
+  verified all five outcomes against the live table (Task 6.8)
+- Bedrock adapter invokes successfully with task-based routing
+- `guardContent` tagging deferred until a guardrail is configured (discovered:
+  Bedrock rejects `guardContent` without `guardrailConfig`)
+- Intent eval: Nova Lite 83.3%, Nova Pro 100% (p50 latency ~600ms)
+- Meal-plan eval: Nova Pro 64% — below the 90% scripted floor because Nova Pro
+  lacks Claude Sonnet's constraint-following for multi-day plan assembly.
+  Routing prefers Claude Sonnet for `generate_plan`; once Claude access lands
+  this will be re-verified.
 
 **Not started:** SnapStart on a published alias (Task 10.2), recipe catalogue
 (Req 2.9), streaming transport (Req 7.9), per-retailer acquisition (Task 7.5
