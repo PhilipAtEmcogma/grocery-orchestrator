@@ -19,6 +19,7 @@ from decimal import Decimal
 from src.graph.dietary import map_exclusions
 from src.graph.state import Constraints, GroceryState
 from src.models.base import ModelClient, ModelError, ModelTier
+from src.models.bedrock import GuardrailBlocked
 from src.prompts.intent import (
     SYSTEM_PROMPT,
     IntentResult,
@@ -127,6 +128,8 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
             # per-model latency metric are grouped by.
             task="classify_intent",
         )
+    except GuardrailBlocked:
+        raise
     except (ModelError, ValueError):
         extracted = _fallback(message, hints)
         degraded = True

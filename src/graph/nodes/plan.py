@@ -16,6 +16,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState
 from src.models.base import ModelClient, ModelError, ModelTier
+from src.models.bedrock import GuardrailBlocked
 from src.prompts.meal_plan import (
     SYSTEM_PROMPT,
     PlanDraft,
@@ -222,6 +223,8 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
             max_tokens=2048,
             task=task,
         )
+    except GuardrailBlocked:
+        raise
     except ModelError as exc:
         return {"plan": None, "validation_errors": [f"generation failed: {exc}"]}
 

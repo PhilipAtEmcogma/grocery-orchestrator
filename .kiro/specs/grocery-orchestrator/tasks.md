@@ -36,9 +36,12 @@ unchecked task is planned, not implemented.
   key structure checks, added `assert_no_literal_money_in_response` covering
   token text, reasoning, and notice messages with three negative controls.
   All offline gates passed on 2026-08-23.
-- [ ] **Pilot Task 3 — Make Guardrail behavior explicit and testable.** Ensure
-  interventions from every model node become one `GUARDRAIL_BLOCKED` outcome;
-  add the red-team harness and require a numbered version.
+- [x] **Pilot Task 3 — Make Guardrail behavior explicit and testable.**
+  GuardrailBlocked now propagates unchanged through every model node (intent,
+  plan, prose) to the handler's single GUARDRAIL_BLOCKED mapping. Four
+  per-node negative tests prove the exception is never swallowed. Red-team
+  eval harness (`evals/run_guardrail.py`) runs the 20-case must-block/must-allow
+  set; structural verification passes offline. All gates passed on 2026-08-23.
 - [ ] **Pilot Task 4 — Correct request semantics and payable arithmetic.** Ask
   for missing required constraints and define verified consumption and
   full-pack payable totals.

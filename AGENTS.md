@@ -161,6 +161,8 @@ python evals/run_intent.py                       # 76.7% scripted baseline
 python evals/run_intent.py --model nova-lite     # 83.3% live (Nova Lite)
 python evals/run_intent.py --model nova-pro      # 100% live (Nova Pro)
 python evals/run_meal_plan.py                    # 91% invariants baseline
+python evals/run_guardrail.py                    # must_allow structural (scripted)
+python evals/run_guardrail.py --model nova-lite  # full must-block/must-allow (live)
 python scripts/generate_fixtures.py              # regenerate seed data
 python scripts/dev_server.py                     # localhost:8000 for frontend
 python scripts/apply_guardrail.py --dry-run      # validate guardrail policy

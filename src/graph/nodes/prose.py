@@ -16,6 +16,7 @@ import re
 
 from src.graph.state import GroceryState
 from src.models.base import ModelClient, ModelError, ModelTier
+from src.models.bedrock import GuardrailBlocked
 from src.prompts.prose import (
     MEAL_PLAN_SYSTEM,
     PRICE_CHECK_SYSTEM,
@@ -164,6 +165,8 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
 
         rendered = render(result.text, citation_index, figures)
 
+    except GuardrailBlocked:
+        raise
     except (ModelError, ValueError, KeyError) as exc:
         # Degrade silently to the structured payload. The comparison table or
         # plan is the substance; the sentence above it is not.
