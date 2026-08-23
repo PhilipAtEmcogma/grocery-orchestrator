@@ -51,6 +51,7 @@ def _to_record(item: dict) -> PriceRecord:
         valid_date=item["valid_date"],
         lat=float(item["lat"]),
         lon=float(item["lon"]),
+        store_key=item["store_key"],
     )
 
 
@@ -75,6 +76,10 @@ class DynamoPriceRepository(PriceRepository):
         }
 
     # ------------------------------------------------------------ interface
+
+    @property
+    def table_name(self) -> str:
+        return self._table_name
 
     def cheapest_for_product(
         self, product_key: str, *, limit: int = 5, stores: list[Store] | None = None

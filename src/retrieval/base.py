@@ -45,10 +45,16 @@ class PriceRecord:
     valid_date: str
     lat: float
     lon: float
+    store_key: str  # DynamoDB base-table PK, e.g. "paknsave#sylvia-park"
 
 
 class PriceRepository(Protocol):
     """Read-side interface over the price store."""
+
+    @property
+    def table_name(self) -> str:
+        """The configured physical DynamoDB table name for citation provenance."""
+        ...
 
     def cheapest_for_product(
         self,

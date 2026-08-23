@@ -1,72 +1,631 @@
 {
-  "version": "1.0",
-  "session_id": "sess-7f3a9c21",
-  "turn_id": "turn-0002-c9d1",
-  "events": [
-    { "seq": 0, "type": "session", "session_id": "sess-7f3a9c21", "turn_id": "turn-0002-c9d1", "version": "1.0" },
-    { "seq": 1, "type": "intent", "intent": "meal_plan", "confidence": 0.94 },
-    { "seq": 2, "type": "citation", "citation": {
-        "ref": "c1", "store": "paknsave", "store_location": "Sylvia Park",
-        "product_name": "Beef Mince 1kg", "price_nzd": "11.99", "unit": "1kg",
-        "on_special": true, "valid_date": "2026-07-30",
-        "source": { "table": "Products", "pk": "paknsave#meat", "sk": "beef-mince-1kg" } } },
-    { "seq": 3, "type": "citation", "citation": {
-        "ref": "c2", "store": "paknsave", "store_location": "Sylvia Park",
-        "product_name": "Pasta Spirals 500g", "price_nzd": "1.29", "unit": "500g",
-        "on_special": false, "valid_date": "2026-07-30",
-        "source": { "table": "Products", "pk": "paknsave#pantry", "sk": "pasta-spirals-500g" } } },
-    { "seq": 4, "type": "citation", "citation": {
-        "ref": "c3", "store": "paknsave", "store_location": "Sylvia Park",
-        "product_name": "Chopped Tomatoes 400g", "price_nzd": "1.10", "unit": "400g",
-        "on_special": false, "valid_date": "2026-07-30",
-        "source": { "table": "Products", "pk": "paknsave#pantry", "sk": "chopped-tomatoes-400g" } } },
-    { "seq": 5, "type": "citation", "citation": {
-        "ref": "c4", "store": "woolworths", "store_location": "Mt Wellington",
-        "product_name": "Brown Onions 1.5kg", "price_nzd": "2.50", "unit": "1.5kg",
-        "on_special": true, "valid_date": "2026-07-30",
-        "source": { "table": "Products", "pk": "woolworths#produce", "sk": "brown-onions-1500g" } } },
-    { "seq": 6, "type": "citation", "citation": {
-        "ref": "c5", "store": "paknsave", "store_location": "Sylvia Park",
-        "product_name": "Rice 1kg", "price_nzd": "2.79", "unit": "1kg",
-        "on_special": false, "valid_date": "2026-07-30",
-        "source": { "table": "Products", "pk": "paknsave#pantry", "sk": "rice-1kg" } } },
-    { "seq": 7, "type": "citation", "citation": {
-        "ref": "c6", "store": "paknsave", "store_location": "Sylvia Park",
-        "product_name": "Mixed Frozen Vegetables 1kg", "price_nzd": "3.49", "unit": "1kg",
-        "on_special": false, "valid_date": "2026-07-30",
-        "source": { "table": "Products", "pk": "paknsave#frozen", "sk": "mixed-frozen-veg-1kg" } } },
-    { "seq": 8, "type": "notice", "message": "Prices last refreshed 30 Jul 2026, 6:00am NZST." },
-    { "seq": 9, "type": "token", "text": "Here's a 3-day plan for 3 people at $23.16 total, $6.84 under your $30 budget." },
-    { "seq": 10, "type": "meal_plan", "data": {
-        "household_size": 3, "days": 3, "budget_nzd": "30.00", "total_nzd": "23.16",
-        "within_budget": true, "repair_attempts": 1,
-        "dietary_exclusions_applied": ["seafood"],
-        "meals": [
-          { "name": "Beef Bolognese Pasta", "serves": 3, "subtotal_nzd": "9.63",
-            "ingredients": [
-              { "item": "Beef mince", "qty": "500g", "citation_ref": "c1", "line_cost_nzd": "6.00" },
-              { "item": "Pasta spirals", "qty": "500g", "citation_ref": "c2", "line_cost_nzd": "1.29" },
-              { "item": "Chopped tomatoes", "qty": "400g", "citation_ref": "c3", "line_cost_nzd": "1.10" },
-              { "item": "Brown onion", "qty": "1 large", "citation_ref": "c4", "line_cost_nzd": "1.24" } ] },
-          { "name": "Beef and Vegetable Rice Bowl", "serves": 3, "subtotal_nzd": "9.61",
-            "ingredients": [
-              { "item": "Beef mince", "qty": "500g", "citation_ref": "c1", "line_cost_nzd": "5.99" },
-              { "item": "Rice", "qty": "500g", "citation_ref": "c5", "line_cost_nzd": "1.40" },
-              { "item": "Mixed frozen vegetables", "qty": "300g", "citation_ref": "c6", "line_cost_nzd": "1.05" },
-              { "item": "Brown onion", "qty": "1 large", "citation_ref": "c4", "line_cost_nzd": "1.17" } ] },
-          { "name": "Tomato Rice with Vegetables", "serves": 3, "subtotal_nzd": "3.92",
-            "ingredients": [
-              { "item": "Rice", "qty": "500g", "citation_ref": "c5", "line_cost_nzd": "1.39" },
-              { "item": "Chopped tomatoes", "qty": "400g", "citation_ref": "c3", "line_cost_nzd": "1.10" },
-              { "item": "Mixed frozen vegetables", "qty": "400g", "citation_ref": "c6", "line_cost_nzd": "1.34" },
-              { "item": "Brown onion", "qty": "1 medium", "citation_ref": "c4", "line_cost_nzd": "0.09" } ] }
-        ],
-        "baskets": [
-          { "store": "paknsave", "store_location": "Sylvia Park",
-            "citation_refs": ["c1", "c2", "c3", "c5", "c6"], "basket_total_nzd": "20.66" },
-          { "store": "woolworths", "store_location": "Mt Wellington",
-            "citation_refs": ["c4"], "basket_total_nzd": "2.50" } ] } },
-    { "seq": 11, "type": "done", "server_time": "2026-07-30T19:44:02Z",
-      "usage": { "model_ids": ["claude-haiku", "claude-sonnet"], "input_tokens": 3120, "output_tokens": 1480, "latency_ms": 21740, "guardrail_intervened": false } }
-  ]
+    "version": "1.0",
+    "session_id": "sess-7f3a9c21",
+    "turn_id": "turn-0002-c9d1",
+    "events": [
+        {
+            "seq": 0,
+            "type": "session",
+            "session_id": "sess-7f3a9c21",
+            "turn_id": "turn-0002-c9d1-regen",
+            "version": "1.0"
+        },
+        {
+            "seq": 1,
+            "type": "intent",
+            "intent": "meal_plan",
+            "confidence": 0.94
+        },
+        {
+            "seq": 2,
+            "type": "notice",
+            "message": "Using duration of 7 from your message rather than 3."
+        },
+        {
+            "seq": 3,
+            "type": "citation",
+            "citation": {
+                "ref": "c1",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams White Bread 700g",
+                "price_nzd": "2.19",
+                "unit": "700g",
+                "unit_price_nzd": "3.13",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "bread-white-700g"
+                }
+            }
+        },
+        {
+            "seq": 4,
+            "type": "citation",
+            "citation": {
+                "ref": "c2",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Size 7 Eggs Dozen",
+                "price_nzd": "8.49",
+                "unit": "12ea",
+                "unit_price_nzd": "707.50",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "eggs-size7-dozen"
+                }
+            }
+        },
+        {
+            "seq": 5,
+            "type": "citation",
+            "citation": {
+                "ref": "c3",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Butter 500g",
+                "price_nzd": "2.97",
+                "unit": "500g",
+                "unit_price_nzd": "5.94",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "butter-500g"
+                }
+            }
+        },
+        {
+            "seq": 6,
+            "type": "citation",
+            "citation": {
+                "ref": "c4",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Milk 2L",
+                "price_nzd": "4.19",
+                "unit": "2L",
+                "unit_price_nzd": "2.10",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "milk-2l"
+                }
+            }
+        },
+        {
+            "seq": 7,
+            "type": "citation",
+            "citation": {
+                "ref": "c5",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Plain Yoghurt 1kg",
+                "price_nzd": "4.99",
+                "unit": "1kg",
+                "unit_price_nzd": "4.99",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "yoghurt-plain-1kg"
+                }
+            }
+        },
+        {
+            "seq": 8,
+            "type": "citation",
+            "citation": {
+                "ref": "c6",
+                "store": "woolworths",
+                "store_location": "Mt Wellington",
+                "product_name": "Frozen Peas, 1kg",
+                "price_nzd": "2.85",
+                "unit": "1kg",
+                "unit_price_nzd": "2.85",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "woolworths#mt-wellington",
+                    "sk": "frozen-peas-1kg"
+                }
+            }
+        },
+        {
+            "seq": 9,
+            "type": "citation",
+            "citation": {
+                "ref": "c7",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Mixed Frozen Veg 1kg",
+                "price_nzd": "3.49",
+                "unit": "1kg",
+                "unit_price_nzd": "3.49",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "frozen-mixed-veg-1kg"
+                }
+            }
+        },
+        {
+            "seq": 10,
+            "type": "citation",
+            "citation": {
+                "ref": "c8",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Pork Sausages 500g",
+                "price_nzd": "5.49",
+                "unit": "500g",
+                "unit_price_nzd": "10.98",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "pork-sausages-500g"
+                }
+            }
+        },
+        {
+            "seq": 11,
+            "type": "citation",
+            "citation": {
+                "ref": "c9",
+                "store": "woolworths",
+                "store_location": "Mt Wellington",
+                "product_name": "Chicken Thighs, 1kg",
+                "price_nzd": "9.51",
+                "unit": "1kg",
+                "unit_price_nzd": "9.51",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "woolworths#mt-wellington",
+                    "sk": "chicken-thigh-1kg"
+                }
+            }
+        },
+        {
+            "seq": 12,
+            "type": "citation",
+            "citation": {
+                "ref": "c10",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Beef Mince 1kg",
+                "price_nzd": "10.19",
+                "unit": "1kg",
+                "unit_price_nzd": "10.19",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "beef-mince-1kg"
+                }
+            }
+        },
+        {
+            "seq": 13,
+            "type": "citation",
+            "citation": {
+                "ref": "c11",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Pasta Spirals 500g",
+                "price_nzd": "1.10",
+                "unit": "500g",
+                "unit_price_nzd": "2.20",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "pasta-spirals-500g"
+                }
+            }
+        },
+        {
+            "seq": 14,
+            "type": "citation",
+            "citation": {
+                "ref": "c12",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Chopped Tomatoes 400g",
+                "price_nzd": "1.10",
+                "unit": "400g",
+                "unit_price_nzd": "2.75",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "tomatoes-canned-400g"
+                }
+            }
+        },
+        {
+            "seq": 15,
+            "type": "citation",
+            "citation": {
+                "ref": "c13",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Baked Beans 420g",
+                "price_nzd": "1.59",
+                "unit": "420g",
+                "unit_price_nzd": "3.79",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "beans-baked-420g"
+                }
+            }
+        },
+        {
+            "seq": 16,
+            "type": "citation",
+            "citation": {
+                "ref": "c14",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Carrots 1kg",
+                "price_nzd": "1.99",
+                "unit": "1kg",
+                "unit_price_nzd": "1.99",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "carrots-1kg"
+                }
+            }
+        },
+        {
+            "seq": 17,
+            "type": "citation",
+            "citation": {
+                "ref": "c15",
+                "store": "woolworths",
+                "store_location": "Mt Wellington",
+                "product_name": "Brown Onions, 1.5kg",
+                "price_nzd": "2.38",
+                "unit": "1.5kg",
+                "unit_price_nzd": "1.59",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "woolworths#mt-wellington",
+                    "sk": "onions-brown-1-5kg"
+                }
+            }
+        },
+        {
+            "seq": 18,
+            "type": "citation",
+            "citation": {
+                "ref": "c16",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Broccoli Head",
+                "price_nzd": "2.49",
+                "unit": "each",
+                "unit_price_nzd": "2.49",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "broccoli-each"
+                }
+            }
+        },
+        {
+            "seq": 19,
+            "type": "token",
+            "text": "This plan comes to the plan total against your budget of your budget."
+        },
+        {
+            "seq": 20,
+            "type": "token",
+            "text": " Reusing one pack across several meals kept the cost down."
+        },
+        {
+            "seq": 21,
+            "type": "meal_plan",
+            "data": {
+                "household_size": 3,
+                "days": 7,
+                "budget_nzd": "30",
+                "total_nzd": "18.62",
+                "within_budget": true,
+                "repair_attempts": 1,
+                "meals": [
+                    {
+                        "name": "Scripted Dinner 1",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "item c1",
+                                "qty": "portion",
+                                "citation_ref": "c1",
+                                "line_cost_nzd": "0.33"
+                            },
+                            {
+                                "item": "item c2",
+                                "qty": "portion",
+                                "citation_ref": "c2",
+                                "line_cost_nzd": "1.27"
+                            },
+                            {
+                                "item": "item c3",
+                                "qty": "portion",
+                                "citation_ref": "c3",
+                                "line_cost_nzd": "0.45"
+                            },
+                            {
+                                "item": "item c4",
+                                "qty": "portion",
+                                "citation_ref": "c4",
+                                "line_cost_nzd": "0.63"
+                            }
+                        ],
+                        "subtotal_nzd": "2.68"
+                    },
+                    {
+                        "name": "Scripted Dinner 2",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "item c3",
+                                "qty": "portion",
+                                "citation_ref": "c3",
+                                "line_cost_nzd": "0.45"
+                            },
+                            {
+                                "item": "item c4",
+                                "qty": "portion",
+                                "citation_ref": "c4",
+                                "line_cost_nzd": "0.63"
+                            },
+                            {
+                                "item": "item c5",
+                                "qty": "portion",
+                                "citation_ref": "c5",
+                                "line_cost_nzd": "0.75"
+                            },
+                            {
+                                "item": "item c6",
+                                "qty": "portion",
+                                "citation_ref": "c6",
+                                "line_cost_nzd": "0.43"
+                            }
+                        ],
+                        "subtotal_nzd": "2.26"
+                    },
+                    {
+                        "name": "Scripted Dinner 3",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "item c5",
+                                "qty": "portion",
+                                "citation_ref": "c5",
+                                "line_cost_nzd": "0.75"
+                            },
+                            {
+                                "item": "item c6",
+                                "qty": "portion",
+                                "citation_ref": "c6",
+                                "line_cost_nzd": "0.43"
+                            },
+                            {
+                                "item": "item c7",
+                                "qty": "portion",
+                                "citation_ref": "c7",
+                                "line_cost_nzd": "0.52"
+                            },
+                            {
+                                "item": "item c8",
+                                "qty": "portion",
+                                "citation_ref": "c8",
+                                "line_cost_nzd": "0.82"
+                            }
+                        ],
+                        "subtotal_nzd": "2.52"
+                    },
+                    {
+                        "name": "Scripted Dinner 4",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "item c7",
+                                "qty": "portion",
+                                "citation_ref": "c7",
+                                "line_cost_nzd": "0.52"
+                            },
+                            {
+                                "item": "item c8",
+                                "qty": "portion",
+                                "citation_ref": "c8",
+                                "line_cost_nzd": "0.82"
+                            },
+                            {
+                                "item": "item c9",
+                                "qty": "portion",
+                                "citation_ref": "c9",
+                                "line_cost_nzd": "1.43"
+                            },
+                            {
+                                "item": "item c10",
+                                "qty": "portion",
+                                "citation_ref": "c10",
+                                "line_cost_nzd": "1.53"
+                            }
+                        ],
+                        "subtotal_nzd": "4.30"
+                    },
+                    {
+                        "name": "Scripted Dinner 5",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "item c9",
+                                "qty": "portion",
+                                "citation_ref": "c9",
+                                "line_cost_nzd": "1.43"
+                            },
+                            {
+                                "item": "item c10",
+                                "qty": "portion",
+                                "citation_ref": "c10",
+                                "line_cost_nzd": "1.53"
+                            },
+                            {
+                                "item": "item c11",
+                                "qty": "portion",
+                                "citation_ref": "c11",
+                                "line_cost_nzd": "0.17"
+                            },
+                            {
+                                "item": "item c12",
+                                "qty": "portion",
+                                "citation_ref": "c12",
+                                "line_cost_nzd": "0.17"
+                            }
+                        ],
+                        "subtotal_nzd": "3.30"
+                    },
+                    {
+                        "name": "Scripted Dinner 6",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "item c11",
+                                "qty": "portion",
+                                "citation_ref": "c11",
+                                "line_cost_nzd": "0.17"
+                            },
+                            {
+                                "item": "item c12",
+                                "qty": "portion",
+                                "citation_ref": "c12",
+                                "line_cost_nzd": "0.17"
+                            },
+                            {
+                                "item": "item c13",
+                                "qty": "portion",
+                                "citation_ref": "c13",
+                                "line_cost_nzd": "0.24"
+                            },
+                            {
+                                "item": "item c14",
+                                "qty": "portion",
+                                "citation_ref": "c14",
+                                "line_cost_nzd": "0.30"
+                            }
+                        ],
+                        "subtotal_nzd": "0.88"
+                    },
+                    {
+                        "name": "Scripted Dinner 7",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "item c1",
+                                "qty": "portion",
+                                "citation_ref": "c1",
+                                "line_cost_nzd": "0.33"
+                            },
+                            {
+                                "item": "item c2",
+                                "qty": "portion",
+                                "citation_ref": "c2",
+                                "line_cost_nzd": "1.27"
+                            },
+                            {
+                                "item": "item c3",
+                                "qty": "portion",
+                                "citation_ref": "c3",
+                                "line_cost_nzd": "0.45"
+                            },
+                            {
+                                "item": "item c4",
+                                "qty": "portion",
+                                "citation_ref": "c4",
+                                "line_cost_nzd": "0.63"
+                            }
+                        ],
+                        "subtotal_nzd": "2.68"
+                    }
+                ],
+                "baskets": [
+                    {
+                        "store": "paknsave",
+                        "store_location": "Sylvia Park",
+                        "citation_refs": [
+                            "c1",
+                            "c2",
+                            "c3",
+                            "c4",
+                            "c5",
+                            "c7",
+                            "c8",
+                            "c10",
+                            "c11",
+                            "c12",
+                            "c13",
+                            "c14"
+                        ],
+                        "basket_total_nzd": "47.78"
+                    },
+                    {
+                        "store": "woolworths",
+                        "store_location": "Mt Wellington",
+                        "citation_refs": [
+                            "c6",
+                            "c9"
+                        ],
+                        "basket_total_nzd": "12.36"
+                    }
+                ],
+                "dietary_exclusions_applied": [
+                    "seafood"
+                ]
+            }
+        },
+        {
+            "seq": 22,
+            "type": "done",
+            "usage": {
+                "model_ids": [],
+                "input_tokens": null,
+                "output_tokens": null,
+                "latency_ms": null,
+                "guardrail_intervened": false
+            },
+            "server_time": "2026-08-23T09:44:30.790472Z"
+        }
+    ]
 }

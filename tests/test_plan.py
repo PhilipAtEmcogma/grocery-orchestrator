@@ -53,7 +53,7 @@ def _citation(ref: str, price: str, store: Store = Store.PAKNSAVE) -> Citation:
         unit="1kg",
         on_special=False,
         valid_date=date(2026, 7, 31),
-        source=SourceRef(table="Products", pk="paknsave#pantry", sk=f"p-{ref}"),
+        source=SourceRef(table="grocery-products-dev", pk="paknsave#sylvia-park", sk=f"p-{ref}"),
     )
 
 

@@ -112,6 +112,7 @@ class InMemoryPriceRepository(PriceRepository):
                 valid_date=r["valid_date"],
                 lat=r["lat"],
                 lon=r["lon"],
+                store_key=r["store_key"],
             )
             for r in raw
         ]
@@ -130,6 +131,10 @@ class InMemoryPriceRepository(PriceRepository):
             recs.sort(key=lambda r: (r.price_nzd, r.store.value, r.store_location))
 
     # ------------------------------------------------------------ interface
+
+    @property
+    def table_name(self) -> str:
+        return "grocery-products-dev"
 
     def cheapest_for_product(
         self,

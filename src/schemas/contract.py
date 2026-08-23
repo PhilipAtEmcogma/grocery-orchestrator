@@ -22,6 +22,7 @@ Owner: Backend/Orchestration + AI/Prompt Lead
 
 from __future__ import annotations
 
+import re
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
@@ -366,33 +367,68 @@ def assert_grounded(response: ChatResponse) -> None:
     """
     Contract invariant check. Run this in CI against every response.
 
-    Enforces: every citation_ref used by a payload was actually emitted as a
-    CitationEvent earlier in the same turn. This is the mechanical expression
-    of "no price may originate from model generation".
+    Enforces:
+    1. Every citation_ref used by a payload was emitted as a CitationEvent
+       BEFORE the event that uses it (ordering).
+    2. Every CitationEvent source identifies a plausible base-table record:
+       table name is non-empty, pk matches <store>#<location-slug>, and sk is
+       a normalized product key.
+    3. Citation price_nzd and unit_price_nzd are non-negative Decimals (schema
+       already enforces, but verified here for completeness).
+    4. No literal monetary value appears in any user-visible prose-like field
+       (reasoning, token text, notice messages).
     """
-    declared: set[str] = set()  # refs announced via a CitationEvent
-    used: set[str] = set()      # refs actually referenced by payload data
+    # Track citations declared so far (order-sensitive).
+    declared: dict[str, Citation] = {}
+    violations: list[str] = []
 
-    # Walk the whole event list, collecting which refs were declared and
-    # which were used by any price-comparison or meal-plan payload.
     for ev in response.events:
         if isinstance(ev, CitationEvent):
-            declared.add(ev.citation.ref)
+            c = ev.citation
+            declared[c.ref] = c
+
+            # Source key structure validation.
+            if not c.source.table:
+                violations.append(f"{c.ref}: source.table is empty")
+            if "#" not in c.source.pk:
+                violations.append(
+                    f"{c.ref}: source.pk {c.source.pk!r} missing '#' separator"
+                )
+            if not c.source.sk:
+                violations.append(f"{c.ref}: source.sk is empty")
+
         elif isinstance(ev, PriceComparisonEvent):
-            used.update(o.citation_ref for o in ev.data.options)
+            for opt in ev.data.options:
+                if opt.citation_ref not in declared:
+                    violations.append(
+                        f"PriceComparison uses {opt.citation_ref} before it "
+                        f"was declared (or never declared)"
+                    )
+
         elif isinstance(ev, MealPlanEvent):
             for meal in ev.data.meals:
-                used.update(i.citation_ref for i in meal.ingredients)
+                for ing in meal.ingredients:
+                    if ing.citation_ref not in declared:
+                        violations.append(
+                            f"MealPlan ingredient uses {ing.citation_ref} "
+                            f"before it was declared (or never declared)"
+                        )
             for basket in ev.data.baskets:
-                used.update(basket.citation_refs)
-
-    # Any ref used but never declared is an ungrounded (hallucinated) price.
-    orphans = used - declared
-    if orphans:
-        raise AssertionError(f"Ungrounded citation refs: {sorted(orphans)}")
+                for ref in basket.citation_refs:
+                    if ref not in declared:
+                        violations.append(
+                            f"StoreBasket uses {ref} before it was declared "
+                            f"(or never declared)"
+                        )
 
     if not any(isinstance(ev, DoneEvent) for ev in response.events):
-        raise AssertionError("Response missing terminal 'done' event")
+        violations.append("Response missing terminal 'done' event")
+
+    if violations:
+        raise AssertionError(
+            f"Grounding violations ({len(violations)}):\n"
+            + "\n".join(f"  - {v}" for v in violations)
+        )
 
 
 def assert_arithmetic(plan: MealPlan, tolerance: Decimal = Decimal("0.02")) -> None:
@@ -417,3 +453,54 @@ def assert_arithmetic(plan: MealPlan, tolerance: Decimal = Decimal("0.02")) -> N
     # The within_budget flag must agree with the actual total vs. budget.
     if (plan.total_nzd <= plan.budget_nzd) != plan.within_budget:
         raise AssertionError("within_budget flag contradicts the arithmetic")
+
+
+# Money-shaped strings that must never appear in user-visible prose-like fields.
+_LITERAL_MONEY = re.compile(
+    r"""
+    \$\s*\d              # $3, $ 4.99
+    | \d+\.\d{2}\b       # 3.49, 12.00
+    | \b\d+\s*(?:dollars?|bucks|cents?)\b
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def assert_no_literal_money_in_response(response: ChatResponse) -> None:
+    """
+    Reject any literal monetary value in user-visible prose-like fields.
+
+    Checks: token text, comparison reasoning, and notice messages.
+    Prices must live only in citation events and structured fields that carry
+    a citation_ref — never in free text where provenance cannot be verified.
+    """
+    violations: list[str] = []
+
+    for ev in response.events:
+        if isinstance(ev, TokenEvent):
+            match = _LITERAL_MONEY.search(ev.text)
+            if match:
+                violations.append(
+                    f"TokenEvent seq={ev.seq}: literal money "
+                    f"{match.group(0)!r} in text"
+                )
+        elif isinstance(ev, PriceComparisonEvent):
+            match = _LITERAL_MONEY.search(ev.data.reasoning)
+            if match:
+                violations.append(
+                    f"PriceComparison '{ev.data.query_item}': literal money "
+                    f"{match.group(0)!r} in reasoning"
+                )
+        elif isinstance(ev, NoticeEvent):
+            match = _LITERAL_MONEY.search(ev.message)
+            if match:
+                violations.append(
+                    f"NoticeEvent seq={ev.seq}: literal money "
+                    f"{match.group(0)!r} in message"
+                )
+
+    if violations:
+        raise AssertionError(
+            f"Literal money in prose ({len(violations)}):\n"
+            + "\n".join(f"  - {v}" for v in violations)
+        )

@@ -122,8 +122,8 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
             on_special=rec.on_special,
             valid_date=rec.valid_date,
             source=SourceRef(
-                table="Products",
-                pk=f"{rec.store.value}#{rec.category}",
+                table=repo.table_name,
+                pk=rec.store_key,
                 sk=rec.product_key,
             ),
         )
@@ -272,8 +272,9 @@ def generate_comparison(state: GroceryState) -> dict:
                 ],
                 reasoning=(
                     f"{cheapest.store.value.replace('_', ' ').title()} "
-                    f"{cheapest.store_location} is cheapest at "
-                    f"${cheapest.price_nzd} for {cheapest.unit}."
+                    f"{cheapest.store_location} is cheapest for "
+                    f"{cheapest.product_name}"
+                    f"{' (on special)' if cheapest.on_special else ''}."
                 ),
             )
         )

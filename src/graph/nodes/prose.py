@@ -53,9 +53,9 @@ def store_name(value: str) -> str:
 
 
 def _describe(citation: Citation) -> str:
-    """How a citation reads inside a sentence."""
+    """How a citation reads inside a sentence — non-monetary label only."""
     return (
-        f"${citation.price_nzd} at {store_name(citation.store.value)} "
+        f"{citation.product_name} at {store_name(citation.store.value)} "
         f"{citation.store_location}"
     )
 
@@ -102,8 +102,8 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
     figures: dict[str, str] = {}
 
     if intent == Intent.MEAL_PLAN and plan is not None:
-        figures["total"] = f"${plan.total_nzd}"
-        figures["budget"] = f"${plan.budget_nzd}"
+        figures["total"] = "the plan total"
+        figures["budget"] = "your budget"
 
         used = [i.citation_ref for m in plan.meals for i in m.ingredients]
         reused = sorted(
@@ -129,8 +129,7 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
         )
     elif intent == Intent.PRICE_CHECK:
         cheapest = citations[0]
-        dearest = citations[-1]
-        figures["savings"] = f"${(dearest.price_nzd - cheapest.price_nzd):.2f}"
+        figures["savings"] = "the price difference"
 
         groups = state.get("item_groups") or {}
         items = ", ".join(k.rsplit("-", 1)[0].replace("-", " ") for k in groups) or (
