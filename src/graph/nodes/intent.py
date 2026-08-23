@@ -18,8 +18,7 @@ from decimal import Decimal
 
 from src.graph.dietary import map_exclusions
 from src.graph.state import Constraints, GroceryState
-from src.models.base import ModelClient, ModelError, ModelTier
-from src.models.bedrock import GuardrailBlocked
+from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier
 from src.prompts.intent import (
     SYSTEM_PROMPT,
     IntentResult,

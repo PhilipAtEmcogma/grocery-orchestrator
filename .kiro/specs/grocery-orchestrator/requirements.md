@@ -4,7 +4,10 @@
 **Author:** Philip (Backend/Orchestration, AI/Prompt Lead)
 **Scope:** Whole system. Sections 7–9 cover layers owned by other team members
 and remain integration requirements rather than claims of ownership.
-**Architecture decision:** `docs/adr/0001-deterministic-core-bounded-agent-extensions.md`
+**Architecture decisions:**
+`docs/adr/0001-deterministic-core-bounded-agent-extensions.md` is accepted.
+`docs/adr/0002-staged-agentcore-and-managed-ai-services.md` is proposed and
+requires mentor approval; current locked behavior remains until approval.
 
 Acceptance criteria use EARS notation:
 - **WHEN** `<trigger>` **THE SYSTEM SHALL** `<response>` — event-driven
@@ -22,6 +25,13 @@ The first release target is a reproducible workshop demonstration followed by
 a small anonymous production pilot. The design must preserve a documented path
 to Cognito ownership, streaming transport, controlled live acquisition, and
 commercial scale without building those components prematurely.
+
+A deliberate learning objective is hands-on experience with broad relevant AWS
+services, especially Bedrock and AgentCore. A service is adopted only for a
+named product purpose with bounded scope, acceptance evidence, security/cost
+ownership, and a rollback or removal criterion. Learning breadth never weakens
+grounding, dietary, arithmetic, Guardrail, or honest-failure invariants, and a
+planned or proposed service is never represented as implemented.
 
 ---
 
@@ -165,21 +175,24 @@ prices remain in citation events and structured content with `citation_ref`.
 Non-essential text that violates this rule shall be discarded. Essential
 structured content that violates it shall fail the response rather than
 degrade.
-*Current defect: the prose renderer expands placeholders into figures and
-comparison reasoning contains a literal price. Neither token events nor the
-reasoning field carries its own `citation_ref`, so both violate the target
-wire-level rule. Pilot Task 2 removes literal money from all prose-like fields
-and broadens the assertion accordingly.*
+*Implemented scope after Pilot Task 2: renderer labels and deterministic
+comparison reasoning are money-free, generated samples were regenerated, and
+`assert_no_literal_money_in_response()` covers token text, comparison reasoning,
+and notice messages with negative controls. Whole-response runtime enforcement
+remains a gap because `run_turn()` does not yet call that assertion.*
 
 3.8 **THE SYSTEM SHALL** emit a citation before every event that references it
 and shall reject a response whose event ordering violates this rule.
 
 3.9 **THE SYSTEM SHALL** require every published price citation to include the
 exact source key, store location, and capture date.
-*Current defect: the source partition key is derived from store and category,
-while the products table key is store and location. Documentation describes
-the required key; code and generated samples remain non-conforming until Pilot
-Task 2.*
+*Implemented construction after Pilot Task 2: citations use the configured
+physical table, `store_key` partition key, and normalized `product_key` sort key;
+samples were regenerated and citation-before-use is checked. Current
+`assert_grounded()` validates declaration, order, and basic source shape only.
+It does not receive immutable retrieved-record context and therefore does not
+yet prove exact key/value equality or the full altered-key/value negative
+controls required by 3.5–3.6.*
 
 ---
 
@@ -244,14 +257,18 @@ actually retrieved, not against the model's report of what it applied.
 filter configured to block unsafe food advice, and **IF** no filter is
 configured **THEN THE SYSTEM SHALL** refuse to invoke the model.
 *Partially met. The code-side half is built and tested: the filter policy is
-version-controlled data rather than console state, a validator rejects
-configurations that would silently do nothing, untrusted input is tagged, and
-generation fails closed when no filter is configured. Guardrail
-`b1xezpqe04kx`, version `1`, has basic attached live-invocation evidence. That
-does not prove policy quality or intervention propagation: Pilot Task 3 must
-run the twenty-case must-block/must-allow harness through an accessible model
-path and prove every graph node preserves `GuardrailBlocked` to the single
-service outcome.*
+version-controlled data, a validator rejects inert configurations, untrusted
+input is tagged, and generation fails closed without a filter. Guardrail
+`b1xezpqe04kx`, version `1`, has basic attached live-invocation evidence.
+Pilot Task 3 proved offline that `GuardrailBlocked` propagates through intent,
+plan, and prose nodes to one handler mapping, with three node propagation tests
+and one handler mapping test. The provider-neutral subtype is defined at the
+`src/models/base.py` `ModelError` protocol boundary; concrete providers raise
+it and nodes preserve it. The scripted harness proves 7/7 must-allow
+structure only. Its `--model` option does not yet truly pin the selected model,
+`OUT_OF_SCOPE` may be counted as blocked, and a live must-block failure does not
+make the process exit nonzero. A live 13/13 must-block plus 7/7 must-allow result
+is therefore not qualifying evidence until the harness is repaired and tested.*
 
 5.6 **IF** a stated dietary exclusion cannot be reliably mapped to the
 retrieval filter **THEN THE SYSTEM SHALL** refuse the meal plan and report
@@ -412,6 +429,20 @@ output without an explicit record of why.
 10.5 **WHEN** a prompt is modified **THE SYSTEM SHALL** have its evaluation
 suite re-run, and the score recorded before and after.
 
+10.6 **THE SYSTEM SHALL** treat Bedrock Model Evaluation and AgentCore
+Evaluations as companion evidence only. They shall not replace deterministic
+local tests, golden sets, negative controls, scorecards, or CI floors.
+
+10.7 **WHEN** a managed evaluation runs **THE SYSTEM SHALL** record reproducible
+provenance including service/evaluator and model versions, resolved model id,
+region or inference profile, date, prompt and dataset revisions, rubric,
+per-case outcomes, pass rate, latency, token/cache use, cost, and trace/run ids.
+Datasets and exported results shall be versioned and contain no shopper PII.
+
+10.8 **THE SYSTEM SHALL** evaluate managed Gateway parity and reviewer citation,
+schema, cap, false-positive/negative, and human-acceptance behavior without
+granting either service shopper-path or publication authority.
+
 ---
 
 ## 11. Security and privacy
@@ -441,6 +472,15 @@ on all stored data.
 
 11.8 **THE SYSTEM SHALL** apply security controls as each component is built,
 not as a final phase.
+
+11.9 **THE SYSTEM SHALL** give every MCP, Gateway, Runtime, evaluation,
+trigger, queue, topic, and artefact store a separate least-privilege identity
+and named-resource policy; no managed component shall gain shopper PII,
+production writes, or price-publication authority by default.
+
+11.10 **THE SYSTEM SHALL** define retention, deletion, encryption, access,
+privacy-safe audit, timeout, rate, row/call/token, and cost controls before any
+managed evaluation, reviewer, artefact, or memory service receives data.
 
 ---
 
@@ -505,33 +545,75 @@ interventions, throttling, stale data, idempotency failures, and silent turns.
 
 ## 13. MCP and bounded agentic workflows
 
-13.1 **[GAP]** **THE SYSTEM SHALL** provide a local read-only MCP façade for an
-approved client, initially Kiro, whose coarse tools invoke the complete
+13.1 **[GAP]** **THE SYSTEM SHALL** provide a local read-only MCP façade first,
+for an approved client initially Kiro, whose coarse tools invoke the complete
 deterministic application service.
 
 13.2 **THE MCP FAÇADE SHALL NOT** expose raw DynamoDB operations, AWS SDK calls,
 filesystem access, arbitrary network access, retailer acquisition, production
 writes, citation creation, or unguarded model generation.
 
-13.3 **WHEN** an MCP tool is called **THE SYSTEM SHALL** validate its input and
-output schemas, enforce row/call/time limits, sanitize results, and record a
-privacy-safe audit event.
+13.3 **WHEN** an MCP tool is called **THE SYSTEM SHALL** validate input and
+output schemas, enforce row/call/time/rate limits, sanitise results, and record
+a privacy-safe operation audit without personal arguments.
 
 13.4 **THE SYSTEM SHALL** preserve the same grounding, dietary, arithmetic,
-Guardrail, idempotency, and contract assertions whether the application service
-is invoked through REST, local code, or MCP.
+Guardrail, idempotency, honest-failure, and contract assertions whether the
+service is invoked through REST, local code, MCP, or an approved Gateway.
 
-13.5 **[GAP]** **THE SYSTEM SHALL** permit a bounded data-quality agent to
-review only a capped ingestion snapshot with read-only tools and produce cited
-findings for human approval.
+13.5 **[PROPOSED — MENTOR APPROVAL REQUIRED]** **THE SYSTEM MAY** expose the
+same coarse operations through AgentCore Gateway with AgentCore Identity and
+Policy for managed authentication, authorization, policy, and mediation.
+Gateway shall never call internal graph nodes or bypass the deterministic
+Lambda service. Local MCP behavior and parity evidence shall exist first.
 
-13.6 **THE DATA-QUALITY AGENT SHALL NOT** publish prices, mutate production
-data, act on a finding without deterministic reference validation, or receive
-raw user messages, locations, or dietary data.
+13.6 **BEFORE** an owned or public managed surface is enabled **THE SYSTEM
+SHALL** deploy approved identity, least-privilege policies, WAF, Cognito or an
+approved workload identity, target allowlists, quotas, timeouts, schema checks,
+privacy-safe audit, cost controls, and a tested disable/fallback path.
 
-13.7 **THE SYSTEM SHALL NOT** use Bedrock Agents Classic. **THE SYSTEM SHALL
-NOT** use AgentCore unless measured p99 meal-plan latency exceeds approximately
-25 seconds after the documented mitigations and a mentor approves the change.
+13.7 **[PROPOSED — MENTOR APPROVAL REQUIRED]** **THE SYSTEM MAY** deploy a
+bounded data-quality reviewer in a separate AgentCore Runtime. It shall receive
+only capped sanitised ingestion snapshots through read-only allowlisted tools
+and produce cited schema-checked findings for deterministic post-validation and
+human approval.
+
+13.8 **THE DATA-QUALITY REVIEWER SHALL NOT** receive shopper messages,
+locations, dietary data, sessions, or credentials; treat candidate price fields
+in its sanitised snapshot as publication authority; publish prices; mutate
+production; invoke the shopper path; or act on a finding without deterministic
+reference validation and human approval. Candidate price records are untrusted
+review inputs, not a second source of truth.
+
+13.9 **THE SYSTEM SHALL** treat Bedrock Model Evaluation and AgentCore
+Evaluations as companion evidence alongside local deterministic evals. Managed
+results shall not override a failed invariant or qualify an unscored route.
+
+13.10 **THE SYSTEM MAY** stage companion AWS services only for these bounded
+purposes and only with evidence and removal criteria: cross-Region inference
+profiles for measured model availability/latency; Knowledge Bases for cited
+recipe/catalogue knowledge and never prices; Automated Reasoning as advisory
+verification where supported; S3 for versioned datasets/eval/review artefacts;
+DynamoDB Streams plus SQS/DLQ for review triggers; SNS for operator/approval
+notifications; and CloudWatch, X-Ray, and Budgets for operations.
+
+13.11 **THE SYSTEM SHALL NOT** adopt AgentCore Memory until Cognito ownership,
+consent, purpose limitation, TTL, deletion/export, revocation, and Privacy Act
+review are designed and tested. Memory shall never provide authoritative price
+data.
+
+13.12 **THE SYSTEM SHALL NOT** use Bedrock Agents Classic, `CreateAgent`, or
+`InvokeInlineAgent`.
+
+13.13 **IF** measured shopper meal-plan p99 exceeds approximately 25 seconds
+after the documented mitigations **THEN THE SYSTEM MAY** evaluate moving that
+path to AgentCore Runtime only after separate mentor approval. Approval of
+Gateway, the reviewer, or managed evaluations does not approve this contingency.
+
+13.14 **BEFORE** any staged managed service is retained **THE SYSTEM SHALL**
+record its product purpose, bounded scope, acceptance evidence, security and
+cost controls, owner, and rollback/removal criterion. Failure to demonstrate
+value or preserve invariants requires disabling and removing it.
 
 ---
 
@@ -557,3 +639,12 @@ values, credentials, or model prompts in logs or traces.
 
 14.6 **THE SYSTEM SHALL NOT** publish a price unless its exact source key,
 store location, and capture date have been validated.
+
+14.7 **THE SYSTEM SHALL NOT** count a proposed managed service as accepted
+until its local parity or quality baseline, security controls, operational and
+cost evidence, rollback/removal drill, and mentor approval where required are
+recorded.
+
+14.8 **THE SYSTEM SHALL** keep all resources in `ap-southeast-2`. Any approved
+cross-Region inference profile shall have explicit residency, route-quality,
+latency, and cost evidence and shall not change the resource-home region.

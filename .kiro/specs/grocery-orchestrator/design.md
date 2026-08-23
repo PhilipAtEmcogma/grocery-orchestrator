@@ -11,96 +11,99 @@ a reviewer to re-propose the options that were already ruled out.
 
 ## 1. Architecture and delivery status
 
-This document distinguishes four states:
+This document uses four states: **implemented**, **live verified**, **planned**,
+and **proposed — mentor approval required**. A planned or proposed service is
+not a current capability.
 
-- **Implemented:** present in the workspace and covered by offline tests.
-- **Live verified:** observed against AWS in `ap-southeast-2`; the exact scope
-  of verification is stated.
-- **Planned:** approved target behavior with an unchecked Pilot Task.
-- **Blocked:** cannot be completed until a named external condition clears.
-
-The production-pilot target is:
+The authoritative production-pilot target remains:
 
 ```text
-Browser
-   | HTTPS
-Static site (S3 + CloudFront)
-   | POST /chat
-API Gateway REST (strict CORS, throttling, usage plan; Cognito seam)
-   |
-Published Lambda alias (Python 3.13 zip + SnapStart)
-   |
-Deterministic LangGraph workflow
-   |-- Price and recipe repositories (DynamoDB)
-   |-- Model plane (Bedrock Converse + numbered Guardrail)
-   |-- Grounding, dietary and arithmetic assertions
-   |
-Ordered contract events
+Browser -> API Gateway REST (strict CORS, throttling, usage plan)
+        -> published Python 3.13 zip Lambda alias + SnapStart
+        -> deterministic LangGraph
+           |-> DynamoDB price/recipe records
+           |-> Bedrock Converse + numbered Guardrail
+           `-> grounding, dietary, arithmetic, repair and honest-failure checks
+        -> ordered contract events
 ```
 
-Separately, for controlled ingestion:
+Controlled ingestion remains separate:
 
 ```text
 EventBridge -> Step Functions Inline Map -> per-source adapters
             -> provenance/normalisation validation -> DynamoDB
-                                      `-> bounded data-quality review -> human queue
 ```
 
-The approved agentic extension is outside the safety-critical control path:
+The AWS-learning roadmap is deliberately broad but purpose-driven. Every
+service needs a product purpose, bounded scope, acceptance evidence, security
+and cost controls, and rollback/removal criteria. It must not weaken the core
+invariants. The stages are:
+
+| Stage | Status | Boundary |
+|---|---|---|
+| Deterministic shopper workflow | Implemented reference workflow/handler; deployment planned | Authoritative target is API Gateway REST -> Lambda/SnapStart -> LangGraph |
+| Local read-only MCP | Planned first, Pilot Task 8 | Coarse complete-application operations only |
+| AgentCore Gateway hybrid | Proposed; ADR 0002 mentor approval required | Identity/policy/mediation over the same coarse tools; never around the graph |
+| AgentCore Runtime reviewer | Proposed; ADR 0002 mentor approval required | Separate capped sanitised ingestion review; no shopper/write/publication authority |
+| Managed evaluations | Proposed companions | Bedrock Model Evaluation and AgentCore Evaluations alongside local gates |
+| Companion AWS services | Planned or gated | Purpose/evidence matrix in ADR 0002 and §17 |
 
 ```text
-Kiro or approved MCP client -> local read-only MCP facade
-                            -> coarse application tools
-                            -> complete deterministic application service
+Approved local client -> local read-only MCP -> coarse operations
+                                             -> deterministic Lambda service
+
+Proposed managed client -> WAF/Cognito or workload identity
+                        -> AgentCore Gateway + Identity + Policy
+                        -> same coarse operations
+                        -> deterministic Lambda service
+
+Validated ingestion -> Streams -> SQS/DLQ -> capped sanitised snapshot
+                                            -> isolated reviewer Runtime
+                                            -> cited S3 review artefact
+                                            -> deterministic validation -> human
 ```
 
-The MCP façade does not expose raw DynamoDB, AWS SDK, filesystem, arbitrary
-network, retailer scraping, production writes, or unguarded generation. The
-bounded data-quality agent can report cited anomalies over a capped snapshot,
-but deterministic code and a human remain the publication authority. See
-`docs/adr/0001-deterministic-core-bounded-agent-extensions.md`.
-
-**Region:** `ap-southeast-2` (Sydney) for every AWS resource. The orchestrator
-remains a zip Lambda; containerising it would forfeit SnapStart. API Gateway
-REST is the first transport. WebSocket delivery, Cognito ownership, remote MCP,
-and persistent preferences are later phases with explicit gates.
+All resources remain in `ap-southeast-2`. The orchestrator remains a zip
+Lambda; containerising it would forfeit SnapStart. API Gateway REST is the first
+transport. See accepted ADR 0001 and proposed ADR 0002. Until ADR 0002 receives
+mentor approval, the local-first ADR 0001 position remains controlling.
 
 ### 1.1 Current release blockers
 
-The reference implementation is not yet a deployable pilot. The following are
-known defects or missing controls, not accepted design trade-offs:
+The reference implementation is not yet a deployable pilot. Pilot Tasks 2–3
+corrected citation construction, citation-before-use ordering, money-free
+comparison reasoning/prose labels, regenerated samples, and offline
+`GuardrailBlocked` propagation. Remaining blockers include:
 
-1. Citation source partition keys are currently derived from store and category
-   rather than the products table's store-and-location key.
-2. Comparison reasoning currently contains a literal price despite the
-   citation-only wire rule, and final assertions do not yet validate exact
-   source keys, citation ordering, source equality, or every prose-like field.
-3. `GuardrailBlocked` is a `ModelError` and can be swallowed by graph-node
-   fallback handling instead of reaching the handler's `GUARDRAIL_BLOCKED`
-   mapping.
-4. Location is accepted but not enforced by the repository, and capture dates
-   are surfaced but not evaluated against a freshness policy.
-5. Meal-plan totals do not yet distinguish consumed ingredient cost from the
-   full-pack amount payable at checkout strongly enough for every multipack and
-   reuse case.
-6. Production dependency selection can fall back to fixture/scripted adapters
-   when environment settings are absent.
-7. CDK resource adoption, least-privilege IAM, API controls, the published
-   SnapStart alias, dashboards, budgets, and deployment verification are not
-   implemented.
-8. Active model routing and enabled-model scorecards do not yet satisfy the
-   approved 90% production threshold for every task.
+1. Final grounding lacks immutable retrieved-record context, exact key/value
+   equality proof, and wrong-key/altered-value controls; `run_turn()` does not
+   call the whole-response literal-money assertion.
+2. The live Guardrail harness is experimental: `--model` does not pin the
+   requested model, `OUT_OF_SCOPE` can count as blocked, and live must-block
+   misses do not fail the process. No qualifying 13/13 plus 7/7 live result
+   exists.
+3. Location/freshness, payable totals, production fail-closed selection,
+   idempotency ownership/candidate access, and complete model qualification
+   remain open.
+4. CDK adoption, least-privilege IAM, API controls, published SnapStart alias,
+   dashboards, budgets, and deployment verification are not implemented.
+5. MCP, AgentCore, managed evaluations, ingestion, and companion services are
+   planned/proposed only as labelled; none is a deployed capability.
 
-Pilot Tasks 2–12 close these blockers before public traffic.
+Mandatory correctness and service-plane Pilot Tasks close before public traffic.
+Local MCP remains the planned first learning stage; proposed or gated managed
+services are not pilot-release prerequisites unless approved and adopted. Any
+adopted optional stage must pass its component-specific acceptance and rollback
+gates before exposure.
 
 ---
 
 ## 2. The grounding mechanism (Req 3)
 
-Three independent barriers over structured output, in order of strength. Each
-would be sufficient on its own; together they mean a hallucinated price
-requires all three to fail. A fourth (§2.4) covers free text, where the first
-three do not apply.
+Three independent barriers protect structured output, and a fourth protects
+free text. Topology and schema prevent model-originated prices by construction;
+final assertions are still required to prove the response matches the immutable
+retrieval snapshot.
 
 ### 2.1 Topology (Req 3.3)
 
@@ -120,9 +123,16 @@ nowhere to put one.
 
 ### 2.3 Assertion (Req 3.5, 3.6)
 
-Before delivery, every referenced identifier is checked against the identifiers
-actually retrieved. An unresolved reference fails the response rather than
-silently dropping the line. A negative test in CI proves the check fires.
+Pilot Task 2 strengthened `assert_grounded()` to require a declaration before
+use and basic source shape using the configured physical table, `store_key`,
+and normalized `product_key`. Unknown references, ordering violations, and
+malformed source keys fail.
+
+This is not full Req 3.5–3.6 proof. The assertion does not receive immutable
+retrieved-record context, so it cannot independently prove that citation keys
+and monetary values equal the actual retrieved record. Wrong-key and
+altered-value negative controls remain an explicit follow-up. Response
+self-consistency is necessary but not sufficient for exact provenance.
 
 ### 2.4 Free text (Req 3.7)
 
@@ -147,9 +157,12 @@ before text is delivered:
    silently. A dropped placeholder produces a sentence missing its subject; a
    visible one shows the user a defect.
 
-**Current gap:** the implemented renderer expands placeholders into monetary
-figures. Pilot Task 2 changes rendering and validates every prose-like field;
-until then, generated token text is not evidence of the target wire invariant.
+**Implemented scope:** Pilot Task 2 changed rendering to non-monetary labels,
+removed literal money from comparison reasoning, regenerated samples, and added
+`assert_no_literal_money_in_response()` over token text, reasoning, and notice
+messages with three negative controls. The remaining gap is runtime integration:
+`run_turn()` does not yet call the whole-response assertion, and the field
+inventory must stay complete as the contract evolves.
 
 **Failure degrades rather than propagating.** All three checks discard the
 prose and let the turn deliver its structured payload. A comparison table with
@@ -303,9 +316,9 @@ transport the same events arrive one at a time. A client written as an event
 handler needs no change.
 
 **Prices appear only in reference events.** Content events cite them by
-identifier. This is the wire-level expression of section 2.2 — and it means the
-grounding invariant is checkable from the response alone, without access to
-internals.
+identifier. This makes declaration/order/basic-source consistency checkable
+from the response. Exact record and value equality still requires immutable
+retrieved-record context; the response alone cannot prove it.
 
 ### 6.1 Idempotent turns (Req 12.3)
 
@@ -432,10 +445,12 @@ because it is indistinguishable from a genuine no-data outcome.
 
 Recording these prevents them being re-proposed.
 
-**Managed agent frameworks.** Rejected. An agent that decides for itself
-whether to consult the price store can offer only a behavioural guarantee. The
-requirement (Req 3.3) is structural. Also: the previous-generation service
-entered maintenance mode and is closed to new accounts.
+**Managed agents controlling the shopper path.** Rejected. An agent that
+decides whether to consult the price store or run validation offers only a
+behavioural guarantee where Req 3.3 requires structure. This does not reject the
+proposed AgentCore Gateway mediation layer or isolated Runtime reviewer in ADR
+0002; neither controls shopper workflow decisions. Bedrock Agents Classic
+remains prohibited.
 
 **Autonomous tool-calling loop.** Rejected for the same reason. The model makes
 bounded judgements at fixed points; control flow is code. Knowing when not to
@@ -521,7 +536,7 @@ default.
 | 12.3 Exactly-once turns | Atomic claim on a session-scoped key (§6.1) |
 | 5.5 Content safety (policy) | Guardrail policy as version-controlled data, validated in CI |
 | 5.5 Content safety (enforcement) | Attached to every generation call; call refuses to run without one |
-| 5.5 Content safety (verification) | **Partially verified** — numbered Guardrail creation and basic attached invocation are live; intervention propagation and the 20-case must-block/must-allow harness remain unmet |
+| 5.5 Content safety (verification) | **Partially verified** — numbered Guardrail/basic invocation live; offline propagation and 7/7 scripted must-allow structure pass; qualifying live 13/13 + 7/7 remains open |
 | 6.5 Untrusted input | User text delimited; system instruction declares it data |
 | 6.5 Untrusted input (filter) | Per-request input tagging, so the prompt-attack filter evaluates it |
 
@@ -609,23 +624,23 @@ basic attached Bedrock invocation in `ap-southeast-2`. That verifies the live
 resource, numbered attachment, and basic request shape; it does **not** verify
 policy quality or graph-level intervention behavior.
 
-A twenty-case red-team set defines the missing evidence — thirteen cases that
-must be blocked across prompt injection, unsafe preparation, disordered eating,
-medical advice, age-restricted goods and payment data, and seven ordinary
-grocery questions that must be *allowed*. Pilot Task 3 builds the harness,
-runs every case through an accessible model path, and proves that an
-intervention crosses every graph node unchanged to the single
-`GUARDRAIL_BLOCKED` service outcome.
+The twenty-case dataset contains thirteen must-block attacks and seven ordinary
+grocery questions that must be allowed. Pilot Task 3 added
+`evals/run_guardrail.py` and proved specialized `GuardrailBlocked` propagation
+through intent, plan, and prose nodes, plus 7/7 scripted must-allow structural
+evidence.
 
-The must-allow half is not padding. Over-blocking is the usual failure mode of
-an aggressive policy, and a filter that refuses legitimate grocery questions
-has produced a broken product rather than a safe one. A verification set
-containing only attacks cannot detect that.
+That is not live policy qualification. The current `--model` path does not
+truly pin the selected model, an `OUT_OF_SCOPE` outcome can be counted as a
+block, and a live must-block miss does not force a nonzero process exit. Until
+those controls and their tests land, no live 13/13 must-block plus 7/7
+must-allow claim is valid. The must-allow half remains essential because an
+over-blocking filter is a broken product, not a safe one.
 
-The first diagnostic on a failed prompt-attack case is the live evaluation
-metadata for the tagged untrusted region. Basic invocation evidence does not
-prove that each attack class is evaluated or that the policy blocks and allows
-the intended cases.
+`GuardrailBlocked` is now a provider-neutral `ModelError` subtype defined at
+`src/models/base.py`; concrete providers raise it and every node preserves it
+to the single service mapping. This keeps provider details outside graph control
+flow.
 
 ---
 
@@ -807,10 +822,11 @@ scale; Pilot Task 6 selects either a category/location/freshness index or a
 materialized candidate view. Stale-only results route to a contract-valid
 honest outcome rather than being labelled current.
 
-Every citation identifies the exact base-table record using
-`store_key = <chain>#<location-slug>` and `product_key`. The current
-store/category source key is a release-blocking implementation defect, not an
-alternative schema.
+Every citation is now constructed with the configured physical table,
+`store_key = <chain>#<location-slug>`, and normalized `product_key`. Pilot Task
+2 also checks citation-before-use and basic source shape. Final validation still
+needs immutable retrieved-record context to prove exact key and value equality;
+that is the release-blocking follow-up, not citation construction.
 
 ## 14. Payable meal-plan arithmetic (planned)
 
@@ -828,72 +844,124 @@ Both figures are derived from citations in Python; neither is accepted from a
 model. The current arithmetic does not prove every reuse/multipack case and is
 not pilot-ready until Pilot Task 4 closes that gap.
 
-## 15. Guardrail intervention semantics (planned correction)
+## 15. Guardrail intervention semantics
 
 A Guardrail intervention is a safety outcome, not an ordinary model failure.
-`GuardrailBlocked` must cross every graph-node boundary unchanged and be mapped
-once to `GUARDRAIL_BLOCKED` at the service boundary. Intent heuristics, repair
-cycles, and optional-prose degradation remain valid for ordinary model errors
-only. The current shared `ModelError` catches can swallow the specialized
-exception; Pilot Task 3 corrects this and adds node-by-node negative tests plus
-the live must-block/must-allow harness.
+Pilot Task 3 proved offline that intent, plan, and prose nodes preserve
+`GuardrailBlocked` to the handler's single `GUARDRAIL_BLOCKED` mapping; ordinary
+model errors may still use heuristics, repair, or optional-prose degradation.
+Three node propagation tests and one handler mapping test cover this boundary.
 
-The live Guardrail resource exists (`b1xezpqe04kx`, version `1`) in the Sydney
-workshop account. That proves creation and basic invocation, not full policy
-quality: the twenty-case red-team harness remains planned.
+The provider-neutral subtype is defined at the `src/models/base.py`
+`ModelError` protocol boundary. Concrete providers raise it and nodes preserve
+it; graph code does not depend on provider exception types. The live Guardrail resource has only basic attached-invocation evidence.
+The harness is experimental for the reasons in §10.4, so qualifying live
+13/13 must-block plus 7/7 must-allow evidence remains open.
 
 ## 16. Production configuration and CDK adoption (planned)
 
 Local development may select fixtures and the scripted model explicitly.
-Production mode must instead validate at startup that DynamoDB, Bedrock, a
-numbered Guardrail version, strict CORS, and the stored idempotency adapter are
-configured. Missing production dependencies must fail closed; absence of an
-environment flag must never select a demo implementation.
+Production startup requires DynamoDB, Bedrock, a numbered Guardrail version,
+strict CORS, stored idempotency, and named resources; missing dependencies fail
+closed.
 
-The TypeScript CDK application is split by deployment lifecycle:
+The TypeScript CDK application is split by lifecycle:
 
-1. **Stateful construct/stack:** adopted products and idempotency tables, later
-   meals/recipes, encryption, PITR, TTL, retention and deletion protection.
-2. **Service construct/stack:** Python 3.13 zip Lambda, published version,
-   SnapStart alias, REST API, throttling, usage plan, strict CORS, log
-   retention, alarms, budgets, SSM model catalogue and least-privilege IAM.
+1. **Stateful:** adopted products/idempotency tables; later meals, encrypted
+   versioned S3 artefacts, PITR, TTL, retention, and deletion protection.
+2. **Service:** Python 3.13 zip Lambda, published SnapStart alias, REST API,
+   throttling, usage plan, strict CORS, logs, alarms, budgets, SSM catalogue,
+   and least-privilege IAM.
+3. **Ingestion/review:** EventBridge, Step Functions, optional filtered
+   DynamoDB Streams -> SQS/DLQ, SNS notifications, and—only after ADR 0002
+   approval—the isolated reviewer Runtime.
+4. **Managed exposure/evaluation:** separate proposed stacks for AgentCore
+   Gateway/Identity/Policy and managed evaluation resources, so each can be
+   disabled or deleted without changing the shopper service.
 
-Existing tables are adopted/imported before service deployment and must not be
-recreated. Synthesis is deterministic, performs no account lookup or mutation,
-and is covered by CDK assertions. Resource adoption and deployment are
-separate reviewed operations.
+Existing tables are adopted before service deployment and never recreated.
+Synthesis is deterministic and covered by assertions. Adoption, deployment,
+managed exposure, and public access are separate reviews.
 
-## 17. MCP and bounded agentic extensions (planned)
+## 17. Purpose-driven MCP, AgentCore, and companion services
 
-Pilot Task 8 delivers a local, read-only MCP façade for Kiro or another approved
-client. Tools are coarse application capabilities—grounded comparison,
-grounded plan request, and provenance inspection—and call the complete
-application service. The MCP layer cannot manufacture citations or invoke an
-internal generation node directly.
+The service-adoption rule is uniform: named product purpose, bounded scope,
+acceptance evidence, security/cost owner, and tested rollback/removal. AWS
+learning is deliberate, but service breadth never overrides the deterministic
+shopper invariants.
 
-Pilot Task 14 adds a bounded data-quality reviewer over a capped ingestion
-snapshot. It has read-only tools, call/time limits, Guardrails, schema-checked
-outputs, deterministic record-reference validation, and no publication role.
-Findings enter a human review queue. See ADR 0001 for the accepted boundaries
-and rejected alternatives.
+### 17.1 Planned local MCP first
+
+Pilot Task 8 exposes grounded comparison, grounded plan request, and provenance
+inspection as coarse read-only operations that call the complete application
+service. It exposes no raw DynamoDB, AWS SDK, filesystem, network, acquisition,
+write, citation, or generation primitive. Schema, cap, audit, and direct-call
+parity tests are prerequisites for managed exposure.
+
+### 17.2 Proposed AgentCore Gateway hybrid
+
+After local proof and ADR 0002 mentor approval, Gateway may provide managed
+authentication, authorization, policy, and mediation over the same coarse
+operations. AgentCore Identity and Policy, WAF, Cognito or an approved workload
+identity, least privilege, quotas, timeouts, privacy-safe audit, cost/latency
+measurement, and a disable/fallback drill are required. Gateway never invokes
+an internal node or bypasses the Lambda graph.
+
+### 17.3 Proposed isolated AgentCore Runtime reviewer
+
+Pilot Task 14 may deploy a separate Runtime over capped sanitised ingestion
+snapshots. Read-only allowlisted tools and row/call/token/time/cost/egress caps
+produce cited schema-checked findings in a versioned S3 review artefact.
+Deterministic reference validation and human approval follow. The Runtime gets
+no shopper PII, production write, publication, or shopper-path permission.
+DynamoDB Streams plus SQS/DLQ may decouple review triggers; SNS may carry
+non-sensitive operator/approval notices.
+
+### 17.4 Complementary managed evaluation and knowledge services
+
+Bedrock Model Evaluation and AgentCore Evaluations supplement local tests,
+golden sets, negative controls, and scorecards. Runs record versioned dataset,
+prompt, model/profile, evaluator, per-case, trace, latency, token, and cost
+provenance. Managed scores cannot override a failed local invariant or qualify
+another task.
+
+Cross-Region inference profiles require measured availability/latency purpose
+and residency/quality/cost evidence. Knowledge Bases are limited to cited
+recipe/catalogue knowledge and have no price authority. Automated Reasoning is
+advisory where supported. AgentCore Memory is later-only after Cognito,
+consent, TTL, export/deletion, revocation, and privacy review, and never stores
+or supplies authoritative prices. CloudWatch, X-Ray, and Budgets accompany each
+deployed stage and provide evidence for retaining or removing it.
+
+Moving the shopper meal-plan path to AgentCore Runtime is a separate contingency
+only: p99 above approximately 25 seconds after mitigations plus separate mentor
+approval. Gateway/reviewer approval does not trigger it.
 
 ## 18. Production-pilot acceptance gates
 
-A release candidate requires all of the following evidence:
+A release candidate requires:
 
-- 100% pass for grounding, literal-money, arithmetic, dietary fail-closed and
-  Guardrail-propagation controls, including negative tests.
-- A scorecard for every enabled model and at least 90% on each active route's
-  applicable golden set.
-- Measured targets of p95 under 5 seconds for price checks, p95 under 20 seconds
-  for meal plans, and p99 under the approximately 25-second escalation trigger.
-- At least 99% successful service responses during the pilot, excluding
-  intentional contract-valid refusals, with unhandled 5xx below 1%.
-- No message, raw location, dietary value, credential, or model prompt in logs
-  or traces.
-- Exact source key, store location, and capture date for every published price.
+- 100% pass for grounding, literal-money, arithmetic, dietary fail-closed, and
+  Guardrail propagation controls, including negative tests. Exact immutable
+  retrieved-record/value proof and whole-response runtime money enforcement
+  remain explicit Task 2 follow-ups.
+- Repaired live Guardrail evaluation controls and qualifying 13/13 must-block
+  plus 7/7 must-allow evidence; the current scripted 7/7 is structural only.
+- A scorecard for every enabled model and at least 90% on every active route's
+  applicable golden set; managed evals are additional evidence only.
+- p95 under 5 seconds for price checks, p95 under 20 seconds for meal plans,
+  and p99 under the approximately 25-second escalation trigger.
+- At least 99% successful service responses excluding contract-valid refusals,
+  with unhandled 5xx below 1%.
+- No message, raw location, dietary value, credential, or model prompt in logs,
+  traces, snapshots, managed datasets, review artefacts, or notifications.
+- Exact source key, location, and capture date for every price, independently
+  compared with immutable retrieved context before publication.
 - Cost per successful task, budget alerts at 50/80/100%, and review of unit-cost
   regressions above 20%.
+- For each staged managed service: product-purpose evidence, least privilege,
+  parity or quality evidence, retention/deletion controls, mentor approval where
+  required, and a successful disable/teardown/fallback drill.
 
-These are targets subject to deployment measurement, not claims about the
-current reference implementation.
+These are targets and proposals subject to evidence, not claims about current
+deployment.

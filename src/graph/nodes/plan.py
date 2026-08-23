@@ -15,8 +15,7 @@ from __future__ import annotations
 from decimal import ROUND_HALF_UP, Decimal
 
 from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState
-from src.models.base import ModelClient, ModelError, ModelTier
-from src.models.bedrock import GuardrailBlocked
+from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier
 from src.prompts.meal_plan import (
     SYSTEM_PROMPT,
     PlanDraft,

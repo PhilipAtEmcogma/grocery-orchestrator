@@ -5,18 +5,19 @@ Owner: Backend/Orchestration + AI/Prompt Lead
 Status: **Published shape; frontend review and pilot-hardening gaps remain**
 Region: `ap-southeast-2` (Sydney)
 
-The v1 event shapes remain the compatibility baseline. Documentation now
-records several release blockers without pretending they are implemented:
-exact DynamoDB source-key verification, citation-before-use enforcement,
-location/radius filtering, stale-data policy, missing-constraint clarification,
-and authoritative full-pack payable totals. Those changes must remain additive
-within v1 where possible; any breaking schema change requires v2 and a
-transition period.
+The v1 event shapes remain the compatibility baseline. Pilot Tasks 2–3
+corrected citation construction, citation-before-use ordering, money-free comparison/prose labels, regenerated samples, and offline
+GuardrailBlocked propagation. Remaining release blockers include immutable
+retrieved-record/value equality, whole-response runtime literal-money
+integration, and qualifying live Guardrail policy evidence. Those changes stay
+additive within v1 where possible; breaking schema changes require v2.
 
-The current generated samples still reflect the reference implementation and
-therefore do not yet prove exact source-key integrity. Pilot Task 2 updates the
-implementation and regenerates samples together; documentation alignment alone
-does not rewrite executable fixtures.
+The generated samples now use configured table/`store_key`/normalized
+`product_key` citations and money-free prose labels. They prove contract shape,
+declaration/order, and basic source shape only. Neither sample validation nor
+current `assert_grounded()` independently compares citation keys or values with
+an immutable retrieved record; Req 3.5–3.6 equality and altered-value controls
+remain a Pilot Task 2 follow-up.
 
 ---
 
@@ -31,6 +32,13 @@ The response is a **list of events**, not a single object. This is deliberate:
 
 If you write your client as an **event handler** rather than a response parser,
 the transport upgrade costs you almost nothing. Please do that.
+
+The authoritative shopper transport remains REST to the deterministic Lambda
+service. Planned local MCP and the proposed AgentCore Gateway hybrid may expose
+only coarse complete-application operations returning this same validated
+contract; neither is a new path around LangGraph. Gateway is proposed under ADR
+0002 and requires mentor approval. The separate proposed Runtime reviewer never
+serves this frontend contract.
 
 ---
 
@@ -170,13 +178,14 @@ environment, `grocery-products-dev`), `pk` is
 ref, and final validation must compare citation values with the retrieved
 record.
 
-**Current implementation gap:** generated samples and the running reference
-implementation still use the logical table label `Products`, derive `pk` from
-store and category, and may emit a non-normalized `sk`; deterministic
-comparison reasoning and rendered token text contain literal prices. They are
-not evidence of exact provenance until Pilot Task 2 fixes code, assertions, and
-samples together. Frontend code should continue resolving structured option
-prices through `citation_ref` and must not parse prose for money.
+**Implemented construction, incomplete final proof:** generated samples and the
+reference workflow now use the configured physical table, `store_key`, and
+normalized `product_key`; citation-before-use is checked and comparison/prose
+labels are money-free. Current final validation checks declaration, order, and
+basic source shape but lacks immutable retrieved-record context, so it does not
+independently prove key/value equality or altered-value negative controls.
+Frontend code must resolve structured prices through `citation_ref` and never
+parse prose for money.
 
 **Please surface `valid_date` and `on_special` in the UI.** Location/radius and
 stale-data enforcement are planned in Pilot Task 5. Until that lands, the
@@ -260,7 +269,7 @@ before considering a quota trade-off or the AgentCore contingency.
 | `src/schemas/contract.py` | Pydantic v2 models — **source of truth** |
 | `samples/request_*.json` | Example requests |
 | `samples/response_*.json` | Example responses, incl. failure cases |
-| `validate.py` | CI check: schema + grounding + arithmetic invariants |
+| `validate.py` | CI check: schema, citation declaration/order/basic source shape, arithmetic; not independent retrieved-record equality |
 
 Build against the samples. They're validated in CI, so if the samples and the
 implementation ever diverge, the build breaks.

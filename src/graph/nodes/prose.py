@@ -1,7 +1,7 @@
 """
 Prose node.
 
-Generates the explanatory text, renders placeholders into real figures from
+Generates explanatory text, renders placeholders into non-monetary labels from
 retrieved records, and validates that no literal money survived.
 
 DEGRADATION: prose is a nicety. If generation or validation fails, the turn
@@ -15,8 +15,7 @@ from __future__ import annotations
 import re
 
 from src.graph.state import GroceryState
-from src.models.base import ModelClient, ModelError, ModelTier
-from src.models.bedrock import GuardrailBlocked
+from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier
 from src.prompts.prose import (
     MEAL_PLAN_SYSTEM,
     PRICE_CHECK_SYSTEM,
@@ -72,7 +71,7 @@ def _placeholder_list(citations: list[Citation]) -> str:
 
 def render(text: str, citations: dict[str, Citation], figures: dict[str, str]) -> str:
     """
-    Expand placeholders into real figures.
+    Expand placeholders into verified non-monetary labels.
 
     An unknown placeholder raises rather than being left visible or silently
     dropped: a shopper reading "cheapest at [[c9]]" has been shown a defect,

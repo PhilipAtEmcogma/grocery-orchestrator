@@ -1,9 +1,10 @@
 """
 Bedrock-backed ModelClient.
 
-UNTESTED until the AWS account lands — it cannot be exercised without
-credentials. Everything above it is already proven by the scripted client, so
-when the account arrives the only new surface is this file.
+The adapter has limited live verification against Nova Lite and Nova Pro in
+`ap-southeast-2`. That proves the provider boundary and request shape, not
+production model qualification or the full live Guardrail red-team scorecard.
+Everything above it remains testable through the scripted client without AWS.
 
 Model ids are resolved from environment variables rather than hardcoded,
 because Sydney (ap-southeast-2) often requires cross-region inference
@@ -25,7 +26,7 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 from pydantic import ValidationError
 
-from src.models.base import ModelClient, ModelError, ModelTier, T
+from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier, T
 from src.models.guardrail import guard_content_block
 from src.models.registry import ModelRegistry, ModelSpec, RoutingPolicy
 
@@ -283,10 +284,6 @@ class BedrockModelClient(ModelClient):
             raise GuardrailBlocked("Request blocked by Bedrock Guardrail")
 
         return response
-
-
-class GuardrailBlocked(ModelError):
-    """Raised when a Guardrail intervenes. Maps to ErrorCode.GUARDRAIL_BLOCKED."""
 
 
 def describe_configuration() -> str:

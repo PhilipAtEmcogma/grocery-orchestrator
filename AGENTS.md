@@ -8,6 +8,12 @@ A conversational assistant for budget-conscious New Zealand shoppers: compare
 grocery prices across Pak'nSave, Woolworths and New World, and generate meal
 plans that provably fit a budget.
 
+A second, subordinate objective is broad hands-on AWS learning, especially
+Bedrock and AgentCore. Every service needs a product purpose, bounded scope,
+acceptance evidence, security/cost controls, and rollback/removal criterion.
+No learning objective may weaken the shopper invariants or turn a proposed
+service into an implementation claim.
+
 ---
 
 ## Read these first
@@ -34,16 +40,17 @@ Enforced three ways, any one of which would suffice:
   `retrieve_prices`. No edge skips it.
 - *Schema*: `PlanDraft` has no price field. The model returns citation refs
   and pack multipliers; every dollar figure is computed in Python.
-- *Assertion today*: `assert_grounded()` fails a response whose structured
-  payload cites a ref that was never declared. Pilot Task 2 must extend it to
-  prove citation order, exact table/PK/SK, value equality, and every prose-like
-  field; do not describe those stronger target checks as implemented.
+- *Assertion today*: Pilot Task 2 added declaration-before-use and basic source
+  checks using configured table, `store_key`, and normalized `product_key`.
+  `assert_grounded()` still has no immutable retrieved-record context, so it
+  does not independently prove exact key/value equality or satisfy all Req
+  3.5–3.6 negative controls.
 
-For prose, the model writes `[[c1]]` placeholders and
-`assert_no_literal_money()` rejects model-supplied money. The current renderer
-then expands placeholders into figures, which is a known wire-level defect;
-the target renderer emits only non-monetary labels and keeps prices in
-citation-linked structured fields.
+For prose, the model writes `[[c1]]` placeholders and rejects model-supplied
+money. Pilot Task 2 changed rendering to non-monetary product/store labels,
+removed literal money from comparison reasoning, and regenerated samples.
+`assert_no_literal_money_in_response()` covers token, reasoning, and notice
+fields, but `run_turn()` does not yet call the whole-response assertion.
 
 **2. Honest failure over plausible answers (Req 4).**
 - No confident match → return nothing, never the nearest match. Substring
@@ -100,19 +107,25 @@ validate_input -> classify_intent
 - `src/observability/base.py` — `Telemetry`; no-op locally and Powertools at
   the handler boundary.
 
-### MCP and bounded agents
+### MCP, AgentCore, and bounded agents
 
-The approved early MCP demonstration is a separate local, read-only façade for
-Kiro or another approved client. Its coarse tools invoke the complete
-application service; they do not expose raw DynamoDB, AWS SDK, filesystem,
-network, scraping, writes, or unguarded generation. It is planned under Pilot
-Task 8 and is not implemented yet.
+Pilot Task 8 delivers local read-only MCP first. Its coarse tools invoke the
+complete deterministic service and expose no raw DynamoDB, AWS SDK, filesystem,
+network, scraping, write, citation, or unguarded-generation primitive.
 
-The later data-quality agent is similarly bounded: read-only tools, capped
-snapshots, deterministic reference validation, and human approval. It cannot
-publish prices. AgentCore is not approved for this work unless the documented
-p99 meal-path contingency is triggered and a mentor signs off. See
-`docs/adr/0001-deterministic-core-bounded-agent-extensions.md`.
+Proposed ADR 0002 would permit two separately approved stages if a mentor
+approves it. AgentCore Gateway with Identity and Policy could mediate the same coarse tools after local parity,
+identity/WAF/Cognito, cap, audit, cost, and rollback evidence; it is never a
+bypass around LangGraph. A separately deployed AgentCore Runtime reviewer may
+read only capped sanitised ingestion snapshots and emit cited schema-checked
+findings for deterministic validation and human approval. It receives no
+shopper PII and has no write, publication, or shopper-path authority.
+
+Bedrock Model Evaluation and AgentCore Evaluations may accompany local evals,
+not replace them. Companion services follow ADR 0002's purpose/evidence/removal
+matrix. ADR 0002 is proposed and mentor approval is required; ADR 0001 remains
+controlling until then. Moving the shopper meal path to AgentCore Runtime is a
+separate p99 contingency and approval.
 
 **Observability stops at the handler.** Powertools' Logger, Tracer and Metrics
 are wired in `src/handler.py`, and `src/observability/powertools.py` is the
@@ -126,12 +139,14 @@ every active task reaches the 90% threshold.
 
 ### Current pilot blockers
 
-Do not describe the current reference implementation as pilot-ready. Known
-open work includes exact Dynamo source keys, removal of literal prices from
-comparison reasoning, stronger final grounding checks, Guardrail intervention
-propagation, missing-constraint clarification, payable basket totals,
-location/freshness enforcement, idempotency ownership, production fail-closed
-configuration, CDK adoption, API controls, and deployed SLO evidence.
+Do not describe the current reference implementation as pilot-ready. Task 2–3
+construction/rendering/propagation work is implemented, but exact immutable
+retrieved-record/value proof, `run_turn()` whole-response money enforcement,
+and a qualifying live Guardrail result remain open. Other blockers include
+clarification/payable totals, location/freshness, idempotency ownership,
+production fail-closed configuration, model qualification, CDK/API controls,
+published SnapStart alias, and deployed SLO/cost evidence. MCP, AgentCore, and
+managed-evaluation stages are planned or proposed, not built.
 
 ---
 
@@ -152,7 +167,7 @@ configuration, CDK adoption, API controls, and deployed SLO evidence.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 304 tests, ~5s, no AWS
+python -m pytest -q                              # 308 passed, 31 skipped, no AWS
 ruff check .                                     # must be clean
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -162,7 +177,8 @@ python evals/run_intent.py --model nova-lite     # 83.3% live (Nova Lite)
 python evals/run_intent.py --model nova-pro      # 100% live (Nova Pro)
 python evals/run_meal_plan.py                    # 91% invariants baseline
 python evals/run_guardrail.py                    # must_allow structural (scripted)
-python evals/run_guardrail.py --model nova-lite  # full must-block/must-allow (live)
+# EXPERIMENTAL/non-qualifying: --model does not yet pin the requested model
+python evals/run_guardrail.py --model nova-lite
 python scripts/generate_fixtures.py              # regenerate seed data
 python scripts/dev_server.py                     # localhost:8000 for frontend
 python scripts/apply_guardrail.py --dry-run      # validate guardrail policy
@@ -300,6 +316,10 @@ before and after in the commit message.
   genuinely improves.
 - The meal-plan budget check is **two-sided**: `min_budget_used` catches
   under-feeding, which `within_budget` alone would pass.
+- Bedrock Model Evaluation and AgentCore Evaluations are complementary evidence,
+  never replacements for local tests, golden sets, negative controls, or the
+  90% task floor. Record model/profile, region, prompt, dataset, evaluator,
+  per-case, trace, latency, token, cost, and S3 object-version provenance.
 
 ---
 
@@ -339,35 +359,39 @@ before and after in the commit message.
 
 ## Current state
 
-**Implemented and tested offline:** contract v1 shape; deterministic LangGraph
-orchestrator; bounded repair; fail-closed dietary mapping; placeholder prose;
-multi-item queries; task-based model registry; Guardrail policy/tagging;
-idempotency; Powertools observability; eval harnesses; handler; local server;
-CI; Lambda zip build; specifications, steering, hooks, and acquisition-risk
-assessment.
+**Implemented and tested offline:** contract v1 shape; deterministic LangGraph;
+bounded repair; fail-closed dietary mapping; Task 2 configured citation
+construction, citation-before-use/basic-source checks, money-free labels and
+regenerated samples; Task 3 Guardrail intervention propagation and experimental
+harness; multi-item queries; model registry; Guardrail policy/tagging;
+idempotency; Powertools observability; handler; local server; CI; zip build.
 
 **Live verified in `ap-southeast-2`:** products and idempotency DynamoDB tables;
-152 seeded records; Dynamo price repository contract; the five current stored
-idempotency outcomes; Nova Lite/Pro Bedrock invocation; and Guardrail
-`b1xezpqe04kx` version `1` for basic attached invocation. This does not prove
-the pending exact-source, stale-owner, or full red-team controls.
+152 seeded records; Dynamo price repository contract; five current stored
+idempotency outcomes; Nova Lite/Pro invocation; and Guardrail
+`b1xezpqe04kx` version `1` basic attachment. This does not prove exact retrieved
+record/value equality, stale ownership, or live red-team quality.
 
-**External access block:** Claude model access remains under Anthropic account
-verification. Claude models are not qualified for routing until access exists
-and task-specific scorecards pass. Current evidence is Nova Lite intent 83.3%,
-Nova Pro intent 100%, and Nova Pro meal-plan invariants 64%; the last result is
-below the 90% pilot requirement.
+**External access block:** Claude access remains under Anthropic account
+verification. Claude routes are unqualified until task scorecards pass. Current
+evidence remains Nova Lite intent 83.3%, Nova Pro intent 100%, and Nova Pro
+meal-plan invariants 64%, below the 90% pilot floor. Local scripted baselines
+are 76.7% intent, 91% meal-plan, and 7/7 Guardrail must-allow structure.
 
-**Known pilot blockers:** Pilot Tasks 2–12—exact provenance and literal-money
-checks; Guardrail propagation/harness; clarification and payable totals;
-location/freshness; canonical idempotency fingerprints, stale-owner fencing,
-and candidate-query scale; model plane alignment/scorecards; CDK adoption; service deployment; API controls;
-SnapStart alias; dashboards, budgets, quotas, and measured SLOs.
+**Known pilot blockers:** Task 2 exact record/value and runtime money follow-up;
+Task 3 qualifying live Guardrail follow-up; clarification/payable totals;
+location/freshness; idempotency fencing/candidate scale; model qualification;
+CDK/service/API/SnapStart adoption; and deployed security, SLO, cost, recovery,
+and operations evidence.
 
-**Planned agentic work:** local read-only MCP façade (Pilot Task 8) and bounded
-data-quality reviewer (Pilot Task 14). Neither is implemented. Remote MCP,
-Cognito, WebSocket, persistent preferences, live acquisition, and AgentCore are
-later or gated work.
+**Planned/proposed AWS learning:** local read-only MCP first. AgentCore Gateway
+with Identity/Policy and the isolated Runtime reviewer require proposed ADR 0002
+mentor approval. Bedrock Model Evaluation, AgentCore Evaluations, inference
+profiles, recipe/catalogue Knowledge Bases, advisory Automated Reasoning, S3
+artefacts, Streams/SQS/DLQ, SNS, WAF/Cognito, and CloudWatch/X-Ray/Budgets are
+companions gated by product purpose and evidence. None is claimed built.
+AgentCore Memory remains later-only after identity, consent, TTL, deletion, and
+privacy design. Shopper-path Runtime remains the separate p99 contingency.
 
 ---
 

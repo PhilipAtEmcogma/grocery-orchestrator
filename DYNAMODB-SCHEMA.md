@@ -89,11 +89,16 @@ sk    = product_key            # e.g. butter-500g
 ```
 
 `category` is an attribute and must never be substituted into `pk`. GSI1 can
-find the record, but the citation still carries the configured physical table
-name and its base PK/SK so the stored item can be retrieved and audited exactly.
-The current reference node emits the logical table label `Products` and
-`<store>#<category>`; generated examples may also use non-normalized SK values.
-Those outputs are non-conforming until Pilot Task 2.
+find the record, but the citation carries the configured physical table name
+and base PK/SK. Pilot Task 2 corrected reference-node construction to those
+keys, normalized product sort keys, regenerated samples, and added
+citation-before-use/basic-source checks.
+
+That is not yet independent exact-record proof. Current final validation has no
+immutable retrieved-record context, so it cannot compare citation keys and
+monetary values with the retrieved item or exercise the full wrong-key and
+altered-value controls required by Req 3.5–3.6. The citation-construction defect
+is closed; the retrieval-context equality follow-up remains open.
 
 ### Location, freshness and meal-candidate access patterns
 
@@ -115,6 +120,17 @@ The decision is made from real access patterns and load evidence. Production
 meal candidate retrieval must use `Query`, not a table scan. Every record keeps
 `valid_date`; Pilot Task 5 defines the freshness threshold and stale-only
 outcome.
+
+### Proposed review-trigger path
+
+Pilot Task 13 may use filtered DynamoDB Streams -> SQS/DLQ to decouple bounded
+data-quality review from publication. The stream is a trigger, not a new price
+source. Messages carry record identifiers and non-sensitive review metadata;
+the reviewer receives a capped sanitised snapshot, writes a versioned S3 review
+artefact, and has no table-write or publication permission. Retry, DLQ/redrive,
+backlog, duplication, and disable/drain evidence are required before enabling
+the mapping. The AgentCore Runtime consumer is proposed under ADR 0002 and
+requires mentor approval; deterministic ingestion remains authoritative.
 
 ### Attributes
 

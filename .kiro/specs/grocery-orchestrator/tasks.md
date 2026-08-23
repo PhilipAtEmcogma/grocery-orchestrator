@@ -21,71 +21,106 @@ the reference-implementation ledger retained below. New work uses the
 
 ## Approved production-pilot roadmap
 
-Documentation alignment is a hard execution gate: Pilot Task 2 must not begin
-until Pilot Task 1 is complete and the offline consistency checks pass. An
-unchecked task is planned, not implemented.
+Documentation alignment is a hard execution gate. An unchecked task is planned,
+proposed, or gated as labelled; it is not implemented.
 
 - [x] **Pilot Task 1 — Align documentation and design before code changes.**
   Reconciled requirements, design, task status, contract/schema guidance,
   README/AGENTS, steering, and ADRs; cross-document review and offline gates
   passed on 2026-08-23.
-- [x] **Pilot Task 2 — Repair and prove the grounding boundary.** Corrected
-  exact source keys (`store_key` base PK, configured physical table name),
-  removed uncited literal prices from comparison reasoning and rendered prose,
-  strengthened `assert_grounded` with citation-before-use ordering and source
-  key structure checks, added `assert_no_literal_money_in_response` covering
-  token text, reasoning, and notice messages with three negative controls.
-  All offline gates passed on 2026-08-23.
-- [x] **Pilot Task 3 — Make Guardrail behavior explicit and testable.**
-  GuardrailBlocked now propagates unchanged through every model node (intent,
-  plan, prose) to the handler's single GUARDRAIL_BLOCKED mapping. Four
-  per-node negative tests prove the exception is never swallowed. Red-team
-  eval harness (`evals/run_guardrail.py`) runs the 20-case must-block/must-allow
-  set; structural verification passes offline. All gates passed on 2026-08-23.
+- [x] **Pilot Task 2 — Correct citation construction and money-free rendering;
+  partially strengthen grounding evidence.** Citations now use configured table,
+  `store_key`, and normalized `product_key`; citation-before-use and basic source
+  shape are checked; reasoning and prose labels contain no literal money; samples
+  were regenerated. `assert_no_literal_money_in_response()` covers token,
+  reasoning, and notice fields with three negative controls. Offline gates passed
+  on 2026-08-23.
+  - [ ] **Pilot Task 2 follow-up — Complete Req 3.5–3.7 enforcement.** Give final
+    validation immutable retrieved-record context; prove exact PK/SK and value
+    equality with wrong-key and altered-value controls; inventory every
+    prose-like field; and call whole-response literal-money validation from
+    `run_turn()`.
+- [x] **Pilot Task 3 — Prove offline GuardrailBlocked propagation and add an
+  experimental harness.** Intent, plan, and prose nodes preserve the specialized
+  exception to one handler mapping; three node propagation tests and one handler
+  mapping test pass. The scripted harness gives 7/7 must-allow structural evidence. Offline gates
+  passed on 2026-08-23.
+  - [ ] **Pilot Task 3 follow-up — Make live Guardrail evaluation qualifying.**
+    Make `--model` pin the requested route; stop counting `OUT_OF_SCOPE` as a
+    block; fail the process on any live must-block/must-allow miss; test those
+    controls; then record live 13/13 must-block and 7/7 must-allow evidence.
 - [ ] **Pilot Task 4 — Correct request semantics and payable arithmetic.** Ask
   for missing required constraints and define verified consumption and
   full-pack payable totals.
 - [ ] **Pilot Task 5 — Enforce location, store scope, and freshness.** Extend
   repository contracts and route stale-only data to an honest outcome.
 - [ ] **Pilot Task 6 — Harden DynamoDB access and idempotency.** Hash the
-  canonical validated request; return and rotate a claim owner token/version on
-  every acquire/takeover; require owner-conditional `complete()` and
-  `release()`; add shared contract and race tests, pagination coverage, all-table
-  PITR evidence, and a queryable candidate access pattern for scale.
-- [ ] **Pilot Task 7 — Reconcile and qualify the model plane.** Align the
-  adapter with `langchain-aws`, move routing toward SSM, disable unscored
-  models, and publish scorecards for every enabled route.
-- [ ] **Pilot Task 8 — Deliver the early read-only MCP demonstration.** Expose
-  coarse local tools that invoke the complete deterministic service; no raw
-  infrastructure, arbitrary I/O, writes, scraping, or unguarded generation.
+  canonical validated request; owner-fence acquire/takeover/complete/release;
+  add shared contract/race/pagination tests, all-table PITR evidence, and a
+  queryable candidate pattern.
+- [ ] **Pilot Task 7 — Reconcile, qualify, and evaluate the model plane.** Align
+  the adapter with `langchain-aws`, move routing toward SSM, disable unscored
+  models, publish task scorecards, and preserve local evals as release gates.
+  Evaluate Bedrock cross-Region inference profiles only for a measured purpose;
+  stage Bedrock Model Evaluation as companion evidence with reproducible
+  dataset/model/prompt provenance. Knowledge Bases are gated to cited recipe or
+  catalogue knowledge with no price authority; Automated Reasoning is advisory
+  only where supported.
+- [ ] **Pilot Task 8 — Deliver local read-only MCP first.** Expose coarse local
+  complete-application operations only; validate schemas and enforce operation,
+  row, call, time, and rate allowlists. Prove direct-service parity and a disable
+  path before any managed exposure.
+  - [ ] **Pilot Task 8 proposed extension — AgentCore Gateway hybrid.** After
+    local MCP proof and ADR 0002 mentor approval, expose the same operations via
+    AgentCore Gateway with Identity, Policy, WAF/Cognito or approved workload
+    identity, privacy-safe audit, quotas, cost evidence, and rollback drill.
+    Gateway must never bypass the deterministic Lambda graph.
 - [ ] **Pilot Task 9 — Establish CDK and adopt existing data resources.** Build
-  the TypeScript CDK app scaffold and stateful construct/stack; import existing
-  tables with no-replacement assertions and reviewed adoption evidence.
-- [ ] **Pilot Task 10 — Define the deployable service plane.** Codify the
-  Python 3.13 zip Lambda, published SnapStart alias, REST API, Guardrail,
-  strict CORS, throttling, usage plan, SSM configuration, log retention, and
-  scoped IAM.
+  the TypeScript CDK app and stateful stack; import existing tables without
+  replacement and record reviewed adoption evidence.
+- [ ] **Pilot Task 10 — Define the deployable service plane.** Codify the Python
+  3.13 zip Lambda, published SnapStart alias, REST API, Guardrail, strict CORS,
+  throttling, usage plan, SSM configuration, log retention, and scoped IAM.
 - [ ] **Pilot Task 11 — Deploy and verify the anonymous pilot safely.** Treat
-  resource adoption and deployment as separately reviewed operations in
-  account `097087133897`, region `ap-southeast-2`.
-- [ ] **Pilot Task 12 — Add operational acceptance gates.** Build dashboards,
-  alarms, budgets, quota review, latency/cost baselines, and alarm drills.
-- [ ] **Pilot Task 13 — Build controlled ingestion.** Use EventBridge and Step
-  Functions Inline Map with fixture/recorded adapters, provenance,
-  normalization, partial failure, retry, and dead-letter behavior; no live
+  resource adoption and deployment as separate reviewed operations in account
+  `097087133897`, region `ap-southeast-2`.
+- [ ] **Pilot Task 12 — Add operational acceptance gates and artefact storage.**
+  Build CloudWatch dashboards/alarms, X-Ray evidence, Budgets, quota review,
+  latency/cost baselines, and alarm drills. Use encrypted versioned S3 with
+  scoped prefixes, lifecycle, restore, and deletion tests for approved
+  datasets, evaluation results, and review artefacts; use SNS for non-sensitive
+  operator and approval notifications.
+- [ ] **Pilot Task 13 — Build controlled ingestion and decoupled review
+  triggers.** Use EventBridge and Step Functions Inline Map with fixture or
+  recorded adapters, provenance, normalization, partial failure, retry, and
+  dead-letter behavior. Where review decoupling is justified, add filtered
+  DynamoDB Streams -> SQS/DLQ with retry/redrive/backlog evidence. No live
   retailer traffic.
-- [ ] **Pilot Task 14 — Add a bounded data-quality agent.** Review capped
-  snapshots with read-only tools and human approval; no publication authority.
+- [ ] **Pilot Task 14 — Add the bounded data-quality reviewer.** After ADR 0002
+  mentor approval, deploy it separately in AgentCore Runtime over capped
+  sanitised ingestion snapshots with an isolated least-privilege identity,
+  read-only allowlisted tools, row/call/token/time/cost/egress caps, cited
+  schema-checked findings, deterministic post-validation, human approval, and
+  teardown evidence. It receives no shopper PII and has no production write,
+  publication, or shopper-path authority. AgentCore Evaluations may supplement
+  local labelled anomaly tests with reproducible provenance.
 - [ ] **Pilot Task 15 — Introduce the curated recipe catalogue.** Models select
   recipe ids and product citations; code owns scaling, safety, and totals.
+  A Knowledge Base may be evaluated only for cited recipe/catalogue retrieval
+  and never for authoritative prices.
 - [ ] **Pilot Task 16 — Wire and release the complete pilot increment.** Run
-  offline, live-adapter, infrastructure, security, evaluation, load, privacy,
-  recovery, MCP, and cost gates before declaring the pilot releasable.
+  mandatory offline, live-adapter, infrastructure, security, evaluation, load,
+  privacy, recovery, and cost gates. Local MCP has its own planned demonstration
+  gate. For each optional managed service actually approved and adopted, also
+  run parity, privacy, cost, and rollback/removal gates; an unapproved optional
+  service is not a release prerequisite and is not marked complete.
 
 ### Pilot acceptance targets
 
 - 100% pass for grounding, literal-money rejection, arithmetic, dietary
-  fail-closed, Guardrail propagation, and their negative controls.
+  fail-closed, Guardrail propagation, and their negative controls. Task 2's
+  exact retrieved-record/value controls and Task 3's qualifying live Guardrail
+  controls remain explicitly open.
 - Every enabled model has a published scorecard; every active route scores at
   least 90% on its applicable golden set.
 - Measurement targets: p95 price checks under 5 seconds, p95 meal plans under
@@ -93,20 +128,36 @@ unchecked task is planned, not implemented.
   trigger.
 - At least 99% successful service responses during the pilot, excluding
   intentional contract-valid refusals; unhandled 5xx below 1%.
-- No message, raw location, dietary value, credential, or model prompt in logs
-  or traces.
+- No message, raw location, dietary value, credential, or model prompt in logs,
+  traces, managed evaluations, review snapshots, or notifications.
 - Every published price has an exact source key, store location, and capture
-  date.
+  date; final validation independently compares it with immutable retrieved
+  context before release.
 - Record cost per successful task; alert at 50%, 80%, and 100% of the approved
-  monthly pilot budget and review unit-cost regressions over 20%.
+  budget and review unit-cost regressions over 20%.
 
-### Later roadmap
+### Staged AWS-learning roadmap
 
-After measured pilot stability: Cognito ownership, WebSocket delivery,
-consented preference persistence with TTL, remote MCP with OAuth 2.1, gated
-live retailer acquisition, and separate development/staging/production
-environments. AgentCore remains contingent on the documented p99 trigger and
-mentor approval.
+The learning objective is broad AWS experience with product discipline. Each
+service must state purpose, scope, evidence, security/cost controls, owner, and
+rollback/removal criterion, and cannot weaken the deterministic invariants.
+
+1. **Implemented:** deterministic Lambda/LangGraph reference core.
+2. **Planned first:** local read-only MCP over coarse complete-app operations.
+3. **Proposed, mentor approval required:** AgentCore Gateway + Identity + Policy
+   over the same tools, never around the graph.
+4. **Proposed, mentor approval required:** isolated AgentCore Runtime reviewer.
+5. **Proposed companions:** Bedrock Model Evaluation and AgentCore Evaluations,
+   alongside local tests/evals rather than replacing them.
+6. **Gated companions:** inference profiles, recipe/catalogue Knowledge Bases,
+   advisory Automated Reasoning, S3 artefacts, Streams/SQS/DLQ triggers, SNS,
+   WAF/Cognito, and CloudWatch/X-Ray/Budgets under Tasks 7–16.
+
+After measured pilot stability: Cognito-owned preferences, WebSocket delivery,
+remote MCP, gated live acquisition, and separate environments. AgentCore Memory
+requires Cognito, consent, TTL, deletion/export, privacy review, and no price
+authority. Moving the shopper meal path to AgentCore Runtime remains a distinct
+p99 contingency after mitigations and separate mentor approval.
 
 ---
 
@@ -270,12 +321,12 @@ that a plan for a user with a stated allergy was being regenerated with no
 knowledge of the allergy. Unit tests did not catch it; only end-to-end
 evaluation against realistic constraint combinations did.*
 
-*4.7 delivered a prompt, placeholder-only model output, a graph node, a
-renderer, a rejection check for model-supplied money, and an optional-prose
-degradation path. The current renderer expands placeholders into figures; that
-is now explicitly non-conforming because token events have no field-level
-`citation_ref`. Pilot Task 2 changes rendered prose to money-free labels and
-adds whole-response checks. The node also covers price checks, not only plans.*
+*4.7 delivered a prompt, placeholder-only model output, graph node, renderer,
+rejection check for model-supplied money, and optional-prose degradation. It
+historically expanded placeholders into figures. Pilot Task 2 changed rendering
+to money-free labels, removed literal prices from comparison reasoning,
+regenerated samples, and added response-field checks. Whole-response runtime
+enforcement from `run_turn()` remains the explicit Task 2 follow-up.*
 
 ---
 
@@ -307,10 +358,12 @@ must-block half — over-blocking is the usual failure mode of an aggressive
 policy, and a filter that refuses ordinary grocery questions is a broken
 product rather than a safe one.*
 
-*5.9 does not exist. The case set is currently data that nothing consumes. The
-Guardrail and accessible Nova endpoints now exist, so AWS account availability
-is no longer the blocker. Pilot Task 3 builds the harness and verifies both
-policy outcomes and graph-level intervention propagation.*
+*5.9's historical live-policy evidence remains incomplete. Pilot Task 3 added
+the harness and proved 7/7 scripted must-allow structure plus node-level
+exception propagation, but did not produce qualifying live 13/13 must-block and
+7/7 must-allow evidence. `--model` does not yet truly pin the requested model,
+`OUT_OF_SCOPE` can count as blocked, and a live must-block miss does not drive a
+nonzero exit. The Pilot Task 3 follow-up owns those repairs and the live result.*
 
 ---
 
@@ -432,8 +485,9 @@ It gates 6.8.*
 - [x] **8.9** Define the content safety policy as version-controlled data and
   validate it offline — *Req 5.5*
 - [ ] **8.10** Verify the content safety policy against the numbered live
-  Guardrail using the red-team set from 5.8 — *Req 5.5*; superseded by Pilot
-  Task 3
+  Guardrail using the red-team set from 5.8 — *Req 5.5*; harness construction
+  and propagation moved to Pilot Task 3, qualifying live policy evidence remains
+  in its unchecked follow-up
 - [x] **8.11** Tag untrusted input so the prompt-attack filter evaluates it
   — *Req 6.5*
 - [x] **8.12** Fail closed when no content safety filter is configured
@@ -477,12 +531,12 @@ location. A test asserting that property would be worth adding, since the
 failure mode is a single careless log line added later.*
 
 *8.9 and 8.10 were split to distinguish policy-as-code from behavioral
-evidence. The offline half is finished: the policy is reviewable configuration,
-the validator catches inert settings, and tests cover policy content. Since
-then, Guardrail `b1xezpqe04kx` version `1` and Nova invocation have been live
-verified at a basic level. What remains is no longer blocked on AWS access:
-Pilot Task 3 must build and run the twenty-case must-block/must-allow harness
-and prove interventions survive every graph-node boundary.*
+evidence. The offline policy is reviewable and validated. Guardrail
+`b1xezpqe04kx` version `1` and Nova invocation have basic live evidence. Pilot
+Task 3 then proved provider-neutral intervention propagation through intent,
+plan, and prose and added the experimental harness. The live policy result is
+still open because model selection, outcome classification, and failing-exit
+semantics are not yet qualifying controls.*
 
 *8.11 was built but never specified, and it is the step most easily missed. The
 prompt-attack filter evaluates nothing unless untrusted regions of the prompt
@@ -498,8 +552,9 @@ content safety filter is configured. Opting out is possible for local work but
 must be an explicit, visible configuration choice, never the accidental result
 of forgetting to set an identifier.*
 
-*Legacy 8.10 is superseded by the unblocked Pilot Task 3 and remains a
-release blocker until the harness and propagation evidence pass.*
+*Legacy 8.10 remains unchecked for qualifying live policy evidence. Pilot Task
+3 completed harness construction and propagation evidence only; its explicit
+follow-up owns the live 13/13 must-block plus 7/7 must-allow gate.*
 
 ---
 
@@ -630,7 +685,8 @@ BLOCKED ON ANTHROPIC ACCOUNT VERIFICATION
 AVAILABLE NOW; EVIDENCE STILL MISSING
   3.9  cache utilisation             -> run per accessible candidate model
   5.7  task-specific scorecards      -> required for every enabled route
-  5.9/8.10 Guardrail harness         -> existing Guardrail + Nova can execute it
+  5.9/8.10 live Guardrail result     -> repair harness controls, then run 20 cases
+  Pilot 2 exact record/value proof   -> immutable retrieval context + negatives
 
 COMPLETED LIVE BASE RESOURCES
   7.1  products table created          ✓

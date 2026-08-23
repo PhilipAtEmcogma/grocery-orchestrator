@@ -458,7 +458,7 @@ def _turn_guardrail_blocked(monkeypatch) -> None:
     the process to log — and the reason the handler's guardrail branch logs a
     bare event name with no fields at all.
     """
-    from src.models.bedrock import GuardrailBlocked
+    from src.models.base import GuardrailBlocked
 
     def blocked(*_args, **_kwargs):
         raise GuardrailBlocked(f"blocked input: {PERSONAL_MESSAGE}")
@@ -1014,7 +1014,7 @@ def test_idempotent_replay_is_counted(captured):
 
 def test_guardrail_intervention_is_counted(captured, monkeypatch):
     from src.handler import handle_turn
-    from src.models.bedrock import GuardrailBlocked
+    from src.models.base import GuardrailBlocked
 
     def blocked(*_args, **_kwargs):
         raise GuardrailBlocked("Request blocked by Bedrock Guardrail")

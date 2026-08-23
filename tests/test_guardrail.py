@@ -14,8 +14,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from src.models.base import ModelError, ModelTier
-from src.models.bedrock import GuardrailBlocked
+from src.models.base import GuardrailBlocked, ModelError, ModelTier
 from src.models.guardrail import TAG_PREFIX, guard_content_block, new_tags
 from src.models.registry import ModelRegistry
 from src.prompts.intent import IntentResult

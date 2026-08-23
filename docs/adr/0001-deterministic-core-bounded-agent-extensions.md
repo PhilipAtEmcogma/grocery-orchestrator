@@ -1,9 +1,13 @@
 # ADR 0001: Preserve the deterministic core and add bounded agentic extensions
 
-- **Status:** Accepted
+- **Status:** Accepted; superseded in part only if proposed ADR 0002 is approved
 - **Decision date:** 2026-08-23
 - **Scope:** Orchestrator, MCP integration, specialist agents, and production-pilot evolution
 - **Related requirements:** 3, 5, 9, 11, 12, 13, 14
+- **Supersession note:** Proposed ADR 0002 would supersede only this ADR's
+  AgentCore Gateway staging, isolated Runtime reviewer, and companion managed
+  evaluation position. It does not rewrite this historical decision. Until
+  mentor approval, this ADR remains controlling.
 
 ## Context
 

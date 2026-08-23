@@ -81,3 +81,7 @@ class ModelClient(Protocol):
 
 class ModelError(RuntimeError):
     """Raised when the model call fails or the reply cannot be parsed."""
+
+
+class GuardrailBlocked(ModelError):
+    """Raised when a configured model safety guardrail blocks a request."""

@@ -6,25 +6,32 @@ questions by grounding every answer in real, retrieved supermarket price
 data. Built for the AWS AI Innovation Mentorship Workshop as a reference
 implementation of the **retrieve-then-generate** pattern on Amazon Bedrock.
 
-This repository is the **orchestrator and AI application layer**. The existing
-reference implementation takes a chat turn, classifies it, retrieves prices,
-invokes Bedrock through a task-based model plane, and returns a validated event
-response. DynamoDB adapters, the products/idempotency tables, Nova model calls,
-and a numbered Bedrock Guardrail have been verified live in
-`ap-southeast-2`.
+This repository is the **orchestrator and AI application layer**. The reference
+workflow classifies a turn, retrieves prices, invokes Bedrock through a
+task-based model plane, and returns validated events. DynamoDB adapters,
+products/idempotency tables, Nova calls, and a numbered Guardrail have limited
+live evidence in `ap-southeast-2`.
 
-It is **not yet a deployable production pilot**. Exact source provenance,
-literal-money enforcement, Guardrail exception propagation, location and
-freshness semantics, payable-total semantics, production fail-closed startup,
-CDK adoption, API controls, and deployment SLO evidence remain open. Planned
-MCP and agentic components are described in the approved Pilot Tasks and
-`docs/adr/0001-deterministic-core-bounded-agent-extensions.md`; they are not
-implemented yet.
+It is **not yet a deployable production pilot**. Pilot Tasks 2–3 corrected
+citation construction, citation ordering, money-free comparison/prose labels,
+samples, and offline Guardrail intervention propagation. Exact retrieved-record
+and value equality, whole-response runtime money enforcement, qualifying live
+Guardrail evaluation, location/freshness, payable totals, production fail-closed
+startup, CDK/API controls, and deployed SLOs remain open.
 
-The approved direction preserves the deterministic LangGraph workflow and adds
-one early local, read-only MCP façade whose coarse tools invoke the complete
-application service. A later bounded data-quality agent may produce a human
-review queue but has no price-publication or production-write authority.
+The project also has an explicit learning objective: gain hands-on experience
+with broad relevant AWS services, especially Bedrock and AgentCore, without
+collecting services for their own sake. Every service needs a product purpose,
+bounded scope, acceptance evidence, security/cost controls, and a
+rollback/removal criterion. It cannot weaken grounding, dietary, arithmetic,
+Guardrail, or honest-failure invariants.
+
+Stages are explicit: the deterministic Lambda shopper workflow is implemented;
+local read-only MCP is planned first; AgentCore Gateway over the same coarse
+complete-application operations and a separately deployed Runtime data-quality
+reviewer are proposed and require ADR 0002 mentor approval. Bedrock Model
+Evaluation and AgentCore Evaluations are proposed companions to local tests,
+not replacements. No proposed managed service is a current capability.
 
 ## The core idea
 
@@ -39,11 +46,12 @@ ignore:
 - The meal-planning model never writes a number. It selects product
   references and pack quantities; every price, subtotal and total is
   computed afterwards in plain Python from the retrieved records.
-- Every structured priced item carries a `citation_ref` to a `Citation` in the
-  same response. The current `assert_grounded()` checks only that referenced
-  ids were declared somewhere and that a terminal event exists; it does **not**
-  yet prove citation order, exact table/PK/SK, or value equality. Pilot Task 2
-  adds those checks and their negative controls.
+- Every structured priced item carries a `citation_ref` to a declared
+  `Citation`. Pilot Task 2 added citation-before-use and basic source-shape
+  checks using configured table, `store_key`, and normalized `product_key`.
+  `assert_grounded()` still lacks immutable retrieved-record context and cannot
+  independently prove exact key/value equality; wrong-key and altered-value
+  controls remain open.
 - If a product genuinely can't be found, the assistant says so
   (`no_data` / `budget_infeasible`) instead of guessing. Honest failure is a
   first-class outcome, not an error to paper over.
@@ -116,8 +124,8 @@ src/
       __init__.py          Retrieval, validation, repair-loop bookkeeping, routing, finalise
       intent.py            Intent classification + constraint extraction node
       plan.py              Meal-plan generation + deterministic cost assembly node
-      prose.py             Placeholder-based explanatory text; current renderer
-                            expands figures and must become money-free in Pilot Task 2
+      prose.py             Placeholder-based explanatory text; renderer emits
+                            money-free product/store labels after Pilot Task 2
   models/
     base.py                ModelClient protocol + ModelTier policy
     registry.py              Reads config/models.json; routes a task to a concrete
@@ -211,12 +219,12 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   without any AWS account or network access.
 - ✅ Multi-model routing (`src/models/registry.py`, `config/models.json`) —
   see Design principles above for why this exists.
-- 🚧 Prose generation node (`src/graph/nodes/prose.py`): the model emits
-  `[[c1]]`-style placeholders and model-supplied money is rejected. The current
-  renderer expands placeholders into real figures, so token text is not yet
-  compliant with the target money-free wire rule. Pilot Task 2 changes the
-  renderer and validates every prose-like field; optional prose still degrades
-  safely when generation or rendering fails.
+- ✅ Prose generation node (`src/graph/nodes/prose.py`): the model emits
+  `[[c1]]` placeholders, model-supplied money is rejected, and Pilot Task 2
+  changed rendering to money-free product/store labels. Comparison reasoning is
+  money-free and samples were regenerated. The whole-response
+  `assert_no_literal_money_in_response()` covers token, reasoning, and notice
+  fields with negative controls, but `run_turn()` does not yet call it.
 - ✅ Multi-item price queries: "cheapest for butter, milk and eggs" resolves
   and compares every item asked about, with partial resolution (`no_data` per
   unresolved item) rather than silently answering about only the first one.
@@ -226,36 +234,36 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   Canonical validated-request hashing and stale-owner fencing are not yet
   implemented; Pilot Task 6 is required before the exactly-once production
   claim is valid.
-- ✅ Guardrail configuration, input tagging, and fail-closed attachment are
-  implemented. The live resource `grocery-assistant-guardrail-dev`
-  (`b1xezpqe04kx`, version `1`) has been created and basic invocation verified.
-  The complete twenty-case must-block/must-allow harness is still planned;
-  creation alone is not policy-quality evidence.
-- 🚧 Lambda handler (`src/handler.py`): API Gateway proxy integration maps
-  bad input, model errors, grounding violations, and escaped exceptions to
-  contract-valid bodies. A `GUARDRAIL_BLOCKED` boundary mapping exists, but
-  graph-node `ModelError` catches can swallow the specialized intervention;
-  end-to-end Guardrail outcome mapping remains Pilot Task 3 work.
+- 🚧 Guardrail policy/tagging and fail-closed attachment are implemented. The
+  numbered resource has basic live-invocation evidence. Pilot Task 3 proved
+  offline propagation through intent, plan, and prose and the single handler
+  mapping. `GuardrailBlocked` is now a provider-neutral subtype at
+  `src/models/base.py`; providers raise it and nodes preserve it.
+- 🚧 `evals/run_guardrail.py` provides 7/7 scripted must-allow structural
+  evidence, not live policy qualification. `--model` does not yet pin the
+  requested model, `OUT_OF_SCOPE` can count as blocked, and live must-block
+  misses do not make the process fail. Live 13/13 must-block plus 7/7
+  must-allow evidence remains open.
+- ✅ Lambda handler (`src/handler.py`) maps propagated Guardrail intervention,
+  bad input, ordinary model errors, grounding violations, and escaped failures
+  to contract-valid bodies.
 - ✅ Local dev server (`scripts/dev_server.py`): stdlib-only HTTP wrapper
   around the same `lambda_handler`, so the frontend team can integrate
   against real, contract-valid responses before the AWS account exists.
-- ✅ 304 passing tests covering classification, extraction, arithmetic,
-  grounding, injection resistance, the repair loop's bounds, multi-model
-  routing/capability branching, multi-item queries, idempotency, guardrail
-  tagging, dietary exclusion mapping with fail-closed refusal, and the Lambda
-  handler's error mapping.
-- ✅ `validate.py` / sample payloads wired up as a CI-style contract check,
-  including a negative test that an ungrounded price is rejected.
-- ✅ Eval harnesses (`evals/run_intent.py`, `evals/run_meal_plan.py`) —
-  separate from the unit tests on purpose: unit tests check the code is
-  correct given fixed input, evals check a *model* is good enough, and let
-  you compare models on accuracy, latency and cost before picking one for
-  production. Run against the scripted client without AWS, or compare
-  accessible Bedrock candidates explicitly. Claude comparisons remain blocked
-  on Anthropic account verification.
-  Baselines against the scripted client: 76.7% intent accuracy, 91% meal-plan
-  invariant pass rate — floors enforced in CI, not targets to read as model
-  quality.
+- ✅ 308 passing, 31 skipped tests covering classification, extraction,
+  arithmetic, grounding, injection resistance, bounded repair, model routing,
+  multi-item queries, idempotency, Guardrail propagation/tagging, dietary
+  fail-closed behavior, and handler mappings.
+- ✅ `validate.py` and regenerated samples check contract shape, declaration,
+  citation order, basic source shape, and arithmetic. They do not independently
+  compare citation keys/values with immutable retrieved records.
+- ✅ Local eval harnesses remain separate from unit tests. Scripted baselines:
+  76.7% intent accuracy, 91% meal-plan invariant pass rate, and 7/7 Guardrail
+  must-allow structural cases. The Guardrail live path is experimental as noted
+  above. Claude comparisons remain blocked on Anthropic account verification.
+  Proposed Bedrock Model Evaluation and AgentCore Evaluations may add deployed
+  evidence with reproducible provenance, but cannot replace these local gates
+  or the 90% task floor.
 - ✅ CI (`.github/workflows/ci.yml`): lint, tests, contract/grounding
   validation, dependency and secret scanning, guardrail policy validation,
   eval regression floors, and the Lambda package build — five jobs, all
@@ -298,31 +306,44 @@ ingestion/                   Step Functions price-scraping pipeline — not star
 
 ## Not yet built
 
-The following list is intentionally limited to approved future components and
-known pilot hardening. Planned items are not current capabilities.
+Planned/proposed items are not current capabilities:
 
-- **Core correctness hardening (Pilot Tasks 2–7):** exact source keys and
-  literal-money assertions; Guardrail propagation/red-team harness;
-  clarification and payable totals; location/freshness; idempotency ownership
-  and candidate-query access; qualified model routing and SSM configuration.
-- **Local read-only MCP façade** (Pilot Task 8) and **bounded data-quality
-  reviewer** (Pilot Task 14).
-- **DynamoDB meals table** and curated recipe catalogue (Pilot Task 15).
-- **Controlled ingestion pipeline** using EventBridge and Step Functions
-  Inline Map over fixtures/recorded responses (Pilot Task 13). Live retailer
-  traffic remains gated by `ACQUISITION-RISK.md` §8.
-- **TypeScript CDK and service deployment** (Pilot Tasks 9–11): adoption of
-  existing stateful resources, Lambda/API Gateway, strict CORS, scoped IAM,
-  SSM routing, published SnapStart alias, throttling, and usage plan.
-- **Operational release evidence** (Pilot Task 12): dashboards, deployed
-  alarms, budgets, quota review, load/cost tests, and measured SLOs.
-- **Later roadmap:** Cognito ownership, WebSocket transport, consented
-  preferences with TTL, remote MCP with OAuth 2.1, gated live acquisition,
-  and separate environments. AgentCore remains contingency-only.
+- **Core follow-ups (Pilot Tasks 2–7):** immutable retrieved-record/key/value
+  proof and runtime whole-response money enforcement; qualifying live Guardrail
+  harness semantics/result; clarification/payable totals; location/freshness;
+  idempotency ownership/candidate access; qualified SSM model routing.
+- **Local read-only MCP first** (Pilot Task 8), proving coarse operation
+  schemas, caps, audit, direct-service parity, and disable behavior.
+- **Proposed AgentCore Gateway hybrid** (Task 8 extension; ADR 0002 mentor
+  approval required): AgentCore Identity/Policy plus WAF and Cognito or approved
+  workload identity over the same coarse tools, never around LangGraph.
+- **Proposed isolated AgentCore Runtime reviewer** (Pilot Task 14; ADR 0002
+  mentor approval required): capped sanitised ingestion snapshots, cited
+  schema-checked findings, deterministic post-validation, human approval, no
+  shopper PII, writes, publication, or shopper-path authority.
+- **Proposed managed evaluation companions:** Bedrock Model Evaluation and
+  AgentCore Evaluations with versioned S3 datasets/results and reproducible
+  model/prompt/evaluator/trace/cost provenance; local tests/evals remain gates.
+- **Controlled ingestion** (Pilot Task 13): EventBridge/Step Functions and,
+  where justified, filtered DynamoDB Streams -> SQS/DLQ review triggers plus
+  SNS operator/approval notifications. No live retailer traffic.
+- **CDK/service/operations** (Pilot Tasks 9–12): adopted DynamoDB resources,
+  zip Lambda/SnapStart alias, REST controls, SSM, strict IAM/CORS, CloudWatch,
+  X-Ray, Budgets, alarms, WAF/Cognito before owned/public managed surfaces, and
+  encrypted versioned S3 artefacts.
+- **Catalogue** (Pilot Task 15): meals table and curated recipes. A Knowledge
+  Base may be evaluated for cited recipe/catalogue knowledge only, never price
+  authority; Automated Reasoning is advisory where supported.
+- **Gated later:** cross-Region inference profiles only with measured purpose
+  and residency/quality/cost evidence; AgentCore Memory only after Cognito,
+  consent, TTL, export/deletion, privacy review, and never for prices;
+  WebSocket, remote MCP, live acquisition, and separate environments.
 
-The Guardrail resource itself is not in this list: version `1` exists and basic
-invocation was verified. What remains is the full policy-quality harness and
-CDK adoption.
+Moving the shopper meal path to AgentCore Runtime remains a separate p99 above
+approximately 25 seconds contingency after mitigations and separate mentor
+approval. Gateway or reviewer approval does not approve it. Guardrail version
+`1` exists only with basic invocation evidence; qualifying live policy results
+and CDK adoption remain open.
 
 ## Running it locally
 
@@ -339,8 +360,10 @@ pytest                        # run the test suite (fast, deterministic)
 python validate.py            # validate samples/*.json against the contract
 python scripts/generate_fixtures.py   # regenerate fixtures/products.json
 ruff check .                  # lint (see pyproject.toml for the enabled rule set)
-python evals/run_intent.py            # eval harness, scripted client (see Progress to date)
-python evals/run_meal_plan.py
+python evals/run_intent.py            # 76.7% scripted baseline
+python evals/run_meal_plan.py         # 91% scripted invariant baseline
+python evals/run_guardrail.py         # 7/7 scripted must-allow structure only
+# --model is experimental and not qualifying live evidence until Pilot Task 3 follow-up
 python scripts/build_lambda.py        # build build/lambda.zip; see Progress to date
 ```
 

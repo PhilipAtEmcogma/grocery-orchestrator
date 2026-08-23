@@ -3,55 +3,96 @@
 ## Locked decisions (30 Jul 2026)
 
 These are target constraints for implementation and deployment, not claims that
-the service plane, CDK application, ingestion pipeline, MCP façade, or agents
-already exist. Current live evidence is limited to the resources and adapters
-listed in `AGENTS.md`.
+any planned service already exists. Current live evidence is limited to the
+resources and adapters listed in `AGENTS.md`.
 
 - **Language:** Python 3.13. **Region:** `ap-southeast-2` (Sydney), ALL resources.
-- **Orchestration:** LangGraph inside the orchestrator **Lambda**.
-  This matches the mentor's specified pattern: receive question -> retrieve
-  price data from DynamoDB -> construct grounded prompt -> call Bedrock ->
-  return to frontend. LangGraph makes retrieval-before-generation a graph
-  invariant rather than a convention.
-- **Packaging:** Lambda **zip**, not container. Measured at ~47 MB with
-  `numpy` and `zstandard` excluded (transitive, unused at import) and
-  boto3/botocore taken from the Lambda runtime. Well under the 250 MB limit.
-- **SnapStart:** must be enabled on a published alias. Requires zip — container
-  images are NOT SnapStart-eligible. This is why we are not containerising.
-- **Model access:** Bedrock Converse API via `langchain-aws`. Haiku is the
-  intended classification/repair candidate and Sonnet the intended meal-plan
-  candidate, but neither is qualified until account access and task-specific
-  scorecards meet the 90% floor. The development catalogue currently marks all
-  Claude and Nova candidates `enabled`; this is a known non-production state
-  that Pilot Task 7 must reconcile by disabling every unqualified active route.
-  Current Nova evidence does not qualify every route.
+- **Orchestration:** LangGraph inside the orchestrator **Lambda**. The shopper
+  path remains API Gateway REST -> published zip Lambda/SnapStart alias ->
+  deterministic LangGraph -> DynamoDB/Bedrock Guardrail. Retrieval before
+  generation is a graph invariant, not an agent decision.
+- **Packaging:** Lambda **zip**, not container. Measured at ~47 MB with `numpy`
+  and `zstandard` excluded and boto3/botocore taken from the Lambda runtime.
+- **SnapStart:** enabled on a published alias. Container images are not
+  SnapStart-eligible.
+- **Model access:** Bedrock Converse API via `langchain-aws`. Nodes request a
+  task and the registry routes from `config/models.json`; no node hardcodes a
+  model id. Haiku and Sonnet remain intended candidates, not qualified routes,
+  until account access and task-specific scorecards meet the 90% floor.
 - **Transport:** API Gateway REST synchronous for the initial pilot. API Gateway
-  **WebSocket** streaming is a later approved upgrade; the contract is
-  event-shaped so the swap does not change the interface.
-- **Ingestion:** **Step Functions** state machine (Inline Map, per-store error
-  handling) triggered by EventBridge -> source-adapter Lambdas -> DynamoDB.
-  NOT a single monolithic scraper Lambda. Fixture/recorded adapters come first;
-  live acquisition remains separately gated.
+  WebSocket streaming is a later approved upgrade; the event contract remains
+  unchanged.
+- **Ingestion:** EventBridge -> Step Functions Inline Map -> source-adapter
+  Lambdas -> DynamoDB, with per-store errors. Fixture/recorded adapters come
+  first; live acquisition remains separately gated.
 - **IaC:** AWS CDK (TypeScript) in `infra/`; planned under Pilot Tasks 9–10.
-- **Contract:** `src/schemas/contract.py` is the single source of truth. Changes
-  there require regenerating samples and passing `validate.py`.
+- **Contract:** `src/schemas/contract.py` is the source of truth. Changes require
+  regenerated samples and `validate.py`.
+
+## Purpose-driven AWS learning
+
+The project deliberately seeks hands-on experience with broad relevant AWS
+services, especially Bedrock and AgentCore. Breadth is not a reason to add a
+service. Every adoption must state its product purpose, bounded scope,
+acceptance evidence, cost/security owner, and rollback or removal criterion.
+No service may weaken grounding, dietary, arithmetic, Guardrail, or
+honest-failure invariants. Planned and proposed services must never be
+presented as implemented.
+
+The approved/proposed sequence is:
+
+1. **Implemented reference core:** deterministic Lambda shopper workflow.
+2. **Planned first:** local read-only MCP over coarse complete-application
+   operations.
+3. **Proposed, mentor approval required:** AgentCore Gateway with Identity and
+   Policy as a governed exposure/auth/policy/mediation layer over those same
+   coarse operations. Gateway is never a path around LangGraph.
+4. **Proposed, mentor approval required:** a separately deployed AgentCore
+   Runtime data-quality reviewer over capped sanitized ingestion snapshots.
+   It emits cited, schema-checked review artefacts, then deterministic checks
+   and a human decide; it has no shopper-path, publication, or write authority.
+5. **Proposed companion evidence:** Bedrock Model Evaluation and AgentCore
+   Evaluations supplement version-controlled local deterministic tests and
+   evals; they never replace them.
+
+ADR 0002 is proposed. Until mentor approval, ADR 0001 and the current local-first
+behavior remain controlling.
+
+## Staged companion services
+
+All remain planned or proposed until their own task and evidence say otherwise:
+
+- Bedrock cross-Region inference profiles only for a measured availability or
+  latency purpose and only where the approved profile keeps use in Sydney;
+  local task scorecards still qualify every route.
+- Knowledge Bases only for cited recipe/catalogue knowledge, never authoritative
+  price data. Automated Reasoning may provide advisory verification where
+  supported, never the final grounding/dietary/arithmetic decision.
+- AgentCore Memory only after Cognito ownership, consent, TTL, deletion, and
+  Privacy Act design; memory never stores or supplies authoritative prices.
+- S3 for versioned datasets, evaluation results, and review artefacts;
+  DynamoDB Streams plus SQS/DLQ for decoupled review triggers; SNS for operator
+  alerts and approval notifications.
+- WAF and Cognito before user-owned or public managed surfaces. CloudWatch,
+  X-Ray, and Budgets accompany deployed components and provide removal evidence
+  where cost, latency, or reliability value is not demonstrated.
 
 ## MCP and agentic boundaries
 
-- The safety-critical shopper path remains the deterministic LangGraph
-  workflow. An agent never decides whether retrieval, arithmetic, dietary
-  validation, or final grounding checks run.
-- The first MCP server is local and read-only. It exposes coarse application
-  operations that invoke the complete service; never raw DynamoDB, AWS SDK,
-  filesystem, arbitrary network, retailer acquisition, writes, or unguarded
-  generation.
-- A bounded data-quality agent may review a capped ingestion snapshot and
-  produce a human review artefact. It has no publication authority.
-- Remote MCP, persistent agent memory, and additional agent runtimes are later
-  decisions requiring identity, retention, rate-limit, timeout, audit, and cost
+- The shopper path remains deterministic. An agent never decides whether
+  retrieval, arithmetic, dietary validation, or final grounding checks run.
+- Local MCP comes first and exposes no raw DynamoDB, AWS SDK, filesystem,
+  arbitrary network, retailer acquisition, writes, or unguarded generation.
+- A proposed AgentCore Gateway may mediate the same coarse tools only after ADR
+  0002 approval, identity/policy design, contract parity evidence, rate limits,
+  privacy-safe audit, and a tested disable/fallback path.
+- A proposed AgentCore Runtime reviewer is isolated from shopper traffic and
+  shopper PII. Its capped read-only snapshot and artefact output are the only
+  permitted data paths; deterministic post-validation and human approval are
+  mandatory.
+- Remote MCP, persistent memory, and additional runtimes require explicit
+  identity, retention, deletion, rate-limit, timeout, audit, cost, and rollback
   controls.
-- AgentCore remains subject to the meal-path p99 contingency and mentor
-  sign-off below; MCP interest is not a separate approval to use it.
 
 ## Production mode
 
@@ -63,47 +104,30 @@ settings must never silently select demo adapters.
 ## Dependency rules
 
 - Use `langgraph`, `langchain-core`, `langchain-aws`. Do NOT add the umbrella
-  `langchain` package — it adds weight without benefit here.
-- Exclude `numpy` and `zstandard` from the deployment package. Neither is
-  imported by our code; both are transitive pulls (`langchain-aws`,
-  `langsmith`).
-- Do not bundle boto3/botocore unless a specific new Bedrock feature requires
-  a newer version than the runtime provides. Document it if you do. `s3transfer`
-  goes with them — it exists only to support boto3, and the runtime brings its
-  own copy.
-- **Bundle everything our dependency tree declares, except what the runtime
-  provides.** `jmespath` was excluded on the reasoning that it only ever served
-  boto3; that stopped being true when Powertools arrived, because
-  `aws_lambda_powertools.logging.logger` imports it unguarded. A transitive of
-  a runtime-provided package may also be a *direct* dependency of one we
-  bundle, and then it is ours. It is ~50 KB.
-- `scripts/build_lambda.py` is the source of truth for this list
-  (`UNUSED_TRANSITIVE` / `RUNTIME_PROVIDED`) and checks the "never imported"
-  half of it against `src/` on every build rather than trusting this file.
-  That check only reads `src/`, so it cannot see what a bundled third-party
-  package imports — which is exactly how the `jmespath` exclusion survived
-  until the archive failed to import in CI. `verify_import()` is what covers
-  that half, and it now runs the handler against the archive plus *only* the
-  packages `RUNTIME_PROVIDED` names, so the runtime claim is itself tested
-  rather than assumed.
+  `langchain` package.
+- Exclude `numpy` and `zstandard`; neither is imported by our code.
+- Do not bundle boto3/botocore unless a required Bedrock feature needs a newer
+  version than the runtime provides. Document it. `s3transfer` goes with them.
+- Bundle everything our dependency tree declares except runtime-provided
+  packages. `jmespath` stays because Powertools imports it directly.
+- `scripts/build_lambda.py` is the source of truth for `UNUSED_TRANSITIVE` and
+  `RUNTIME_PROVIDED`. Its source scan proves only our imports; `verify_import()`
+  tests the archive against only the named runtime-provided packages.
 
 ## Forbidden
 
 - DO NOT use Bedrock Agents Classic, `CreateAgent`, or `InvokeInlineAgent`.
-  It entered maintenance mode 30 July 2026 and is closed to new accounts.
-- DO NOT suggest `ap-southeast-6` (Auckland). Neither AgentCore nor SnapStart
-  are available there.
-- DO NOT containerise the orchestrator Lambda. It forfeits SnapStart.
-- DO NOT use Lambda Function URLs to get streaming. It bypasses API Gateway
-  and costs us throttling, usage plans, and the Cognito authoriser.
-- DO NOT use `float` for money anywhere. `Decimal` in Python, strings on the
-  wire.
+- DO NOT suggest `ap-southeast-6` (Auckland).
+- DO NOT containerise the orchestrator Lambda; it forfeits SnapStart.
+- DO NOT use Lambda Function URLs for streaming; they bypass API Gateway
+  throttling, usage plans, and the Cognito authoriser.
+- DO NOT use `float` for money. Use `Decimal` in Python and strings on the wire.
 
-## Contingency (not built — requires mentor sign-off)
+## Shopper-path Runtime contingency (not built — separate mentor approval)
 
-AgentCore Runtime is documented as a fallback for the meal-plan path only.
-**Trigger:** measured p99 latency on the meal-plan path exceeding ~25s after
-the mitigations below are exhausted.
-Mitigations to try first, in order: repair pass on Haiku not Sonnet; constrain
-plan size; pre-filter the candidate basket to affordable items before
-generation; split JSON generation from prose generation.
+Moving the meal-plan shopper path to AgentCore Runtime remains a distinct
+fallback, not an approval implied by Gateway or reviewer work. Trigger: measured
+meal-plan p99 above approximately 25 seconds after, in order, Haiku repair,
+constrained plan size, affordable-candidate prefiltering, and split JSON/prose
+generation are exhausted. It requires separate mentor approval and must preserve
+the same deterministic graph and contract.
