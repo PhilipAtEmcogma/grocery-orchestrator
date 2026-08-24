@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5345931-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5345931-EA-000"
+          },
+          "product_name": {
+            "S": "Strawberry Tomatoes"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "6.99"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5040814-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5040814-EA-000"
+          },
+          "product_name": {
+            "S": "King Sweeties Capsicums"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "10.99"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5002082-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5002082-EA-000"
+          },
+          "product_name": {
+            "S": "Spaghetti In Tomato Sauce"
+          },
+          "brand": {
+            "S": "Wattie's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "2.79"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5011693-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5011693-EA-000"
+          },
+          "product_name": {
+            "S": "Crushed Italian Tomatoes In Thick Tomato Juice"
+          },
+          "brand": {
+            "S": "Delmaine"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "2.39"
+          },
+          "category": {
+            "S": "Juice & Smoothies"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5003893-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5003893-EA-000"
+          },
+          "product_name": {
+            "S": "Italian Whole Peeled Tomatoes In Juice"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "1.39"
+          },
+          "category": {
+            "S": "Juice & Smoothies"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5016686-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5016686-EA-000"
+          },
+          "product_name": {
+            "S": "Organic Chopped Tomatoes Peeled In Tomato Juice"
+          },
+          "brand": {
+            "S": "Chantal Organics"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "3.29"
+          },
+          "category": {
+            "S": "Juice & Smoothies"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5256340-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5256340-EA-000"
+          },
+          "product_name": {
+            "S": "Organic Tomato Fiddlesticks 12+ Months"
+          },
+          "brand": {
+            "S": "Little Bellies"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "2.49"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5014411-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5014411-EA-000"
+          },
+          "product_name": {
+            "S": "Tomato Relish"
+          },
+          "brand": {
+            "S": "Maison Therese"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "6.49"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5016746-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5016746-EA-000"
+          },
+          "product_name": {
+            "S": "Baby Roma Tomatoes"
+          },
+          "brand": {
+            "S": "Mutti"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "3.74"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5286672-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5286672-EA-000"
+          },
+          "product_name": {
+            "S": "Tomato Sauce"
+          },
+          "brand": {
+            "S": "Gregg's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.94"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5091686-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5091686-EA-000"
+          },
+          "product_name": {
+            "S": "Mexican Sundried Tomato Almond Crackers"
+          },
+          "brand": {
+            "S": "Little Bird Organics"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "11.49"
+          },
+          "category": {
+            "S": "Chips, Nuts & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5005781-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5005781-EA-000"
+          },
+          "product_name": {
+            "S": "Chicken Flavoured Potato Chips"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "1.99"
+          },
+          "category": {
+            "S": "Chips, Nuts & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5036653-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5036653-EA-000"
+          },
+          "product_name": {
+            "S": "Morsomes Chicken & Sweet Potato Dog Treats"
+          },
+          "brand": {
+            "S": "VitaPet"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "17.99"
+          },
+          "category": {
+            "S": "Pet Food"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5300126-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5300126-EA-000"
+          },
+          "product_name": {
+            "S": "Extreme Crunch Southern Sea Salt Kettle Waves Potato Chips"
+          },
+          "brand": {
+            "S": "Heartland"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.79"
+          },
+          "category": {
+            "S": "Chips, Nuts & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5299519-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5299519-EA-000"
+          },
+          "product_name": {
+            "S": "Originals Chicken Potato Chips Multipack"
+          },
+          "brand": {
+            "S": "Bluebird"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.39"
+          },
+          "category": {
+            "S": "Chips, Nuts & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5237849-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5237849-EA-000"
+          },
+          "product_name": {
+            "S": "Slow-Cooked Beef With Caramelised Onion & Cabernet Sauvignon Pies"
+          },
+          "brand": {
+            "S": "Herbert Adams"
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "9.99"
+          },
+          "category": {
+            "S": "Beef"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5291943-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5291943-EA-000"
+          },
+          "product_name": {
+            "S": "Baby Carrot Medley"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "3.99"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5033924-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5033924-EA-000"
+          },
+          "product_name": {
+            "S": "Steam Fresh Broccoli, Carrots & Baby Peas Vege Mix"
+          },
+          "brand": {
+            "S": "Wattie's"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "4.39"
+          },
+          "category": {
+            "S": "Frozen Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5336410-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5336410-EA-000"
+          },
+          "product_name": {
+            "S": "Family Range Cheesy Broccoli & Corn Gourmet Poppers"
+          },
+          "brand": {
+            "S": "Posh Poppas"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "8.49"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5332521-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5332521-EA-000"
+          },
+          "product_name": {
+            "S": "Broccoli Veggie Crisps"
+          },
+          "brand": {
+            "S": "Shary"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.69"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5233869-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5233869-EA-000"
+          },
+          "product_name": {
+            "S": "Mocha Coffee Sachets Value Pack"
+          },
+          "brand": {
+            "S": "Nescafe"
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "17.59"
+          },
+          "category": {
+            "S": "Coffee"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5227962-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5227962-EA-000"
+          },
+          "product_name": {
+            "S": "Double Shot Fix Iced Strong Coffee Flavoured Milk"
+          },
+          "brand": {
+            "S": "Mammoth Supply Co."
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "5.99"
+          },
+          "category": {
+            "S": "Coffee"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5256282-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5256282-EA-000"
+          },
+          "product_name": {
+            "S": "Brazil Whole Beans Coffee"
+          },
+          "brand": {
+            "S": "Coffee Supreme"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "12.99"
+          },
+          "category": {
+            "S": "Coffee"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5266655-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5266655-EA-000"
+          },
+          "product_name": {
+            "S": "5 Extra Strong Coffee Capsules"
+          },
+          "brand": {
+            "S": "Jed's Coffee Co."
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "9.99"
+          },
+          "category": {
+            "S": "Coffee"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5245242-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5245242-EA-000"
+          },
+          "product_name": {
+            "S": "Classic Medium Roast Instant Coffee Jar"
+          },
+          "brand": {
+            "S": "Moccona"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "47.99"
+          },
+          "category": {
+            "S": "Coffee"
+          }
+        }
+      }
+    }
+  ]
+}

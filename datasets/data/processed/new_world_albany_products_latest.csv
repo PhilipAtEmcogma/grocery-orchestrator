@@ -1,0 +1,301 @@
+primary_key,store_id,store_name,product_id,product_name,brand,size,price,category
+new_world_5337881-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5337881-EA-000,Zero Lacto Blue Milk,Anchor,1L,8.4,Milk
+new_world_5255602-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5255602-EA-000,Homogenised Jersey Milk,Lewis Road Creamery,1L,7.15,Milk
+new_world_5227982-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5227982-EA-000,Chocolate Supremo Flavoured Milk,Primo,1L,7.29,Milk
+new_world_5008663-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5008663-EA-000,Instant Whole Milk Powder,Eclipse Premium,100g,15.59,Milk
+new_world_5335772-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5335772-EA-000,High Fibre + Low Fat Oat Milk,Otis Oat Milk,1L,4.69,Dairy Free & Meat Free
+new_world_5026067-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5026067-EA-000,White Toast Bread,Nature's Fresh,100g,4.21,Sliced & Packaged Bread
+new_world_5008057-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5008057-EA-000,Superb Soy & Linseed Toast Bread,Burgen,100g,5.19,Sliced & Packaged Bread
+new_world_5204608-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5204608-EA-000,Good Seed Sprouted Bread,Home St.,100g,9.99,Sliced & Packaged Bread
+new_world_5080489-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5080489-EA-000,Pure Foodie Paleo Super Seeded Bread,Venerdi,100g,14.99,Sliced & Packaged Bread
+new_world_5108736-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5108736-EA-000,Pumpernickel Bread,Mestemacher,100g,7.49,Sliced & Packaged Bread
+new_world_5045591-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5045591-EA-000,Ciabatta Pizza,,1pk,5.19,Frozen Meals & Snacks
+new_world_5127802-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5127802-EA-000,Turkish Pockets,,ea,5.19,"Wraps, Pita & Flat Bread"
+new_world_5102364-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5102364-EA-000,Plain Hamburger Buns,,ea,4.39,"Wraps, Pita & Flat Bread"
+new_world_5025358-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5025358-EA-000,Honey & Olive Oil Pizza Bases,Romano's,100g,3.99,Frozen Meals & Snacks
+new_world_5027047-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5027047-EA-000,Buttery Spread,Meadowlea,100g,4.19,Butter & Margarine
+new_world_5002842-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5002842-EA-000,Salted Butter,Mainland,100g,9.79,Butter & Margarine
+new_world_5026296-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5026296-EA-000,Lite Spread,Meadowlea,100g,4.19,Butter & Margarine
+new_world_5045683-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5045683-EA-000,Avocado Olive Oil Spread,Olivani,100g,6.79,Butter & Margarine
+new_world_5001057-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5001057-EA-000,Mild & Creamy Edam Cheese,Mainland,100g,7.99,Cheese
+new_world_5013740-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5013740-EA-000,Smooth & Creamy Colby Cheese,Mainland,100g,7.99,Cheese
+new_world_5026180-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5026180-EA-000,Mild & Creamy Edam Cheese,Mainland,100g,10.49,Cheese
+new_world_5012553-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5012553-EA-000,Feta Cheese,Bouton d'or,100g,5.99,Cheese
+new_world_5008626-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5008626-EA-000,Spreadable Cream Cheese,Anchor,100g,5.69,Cheese
+new_world_5005482-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5005482-EA-000,Colby Flavoured Processed Cheese Slices,Pams,100g,4.49,Cheese
+new_world_5015758-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5015758-EA-000,Edam Grated Cheese,Rolling Meadow,100g,11.32,Cheese
+new_world_5013063-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5013063-EA-000,Light Spreadable Cream Cheese,Philadelphia,100g,5.99,Cheese
+new_world_5090711-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5090711-EA-000,Noble Grated Tasty Light Aged Cheddar Cheese,Mainland,100g,9.99,Cheese
+new_world_5001056-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5001056-EA-000,Special Reserve Double Cream Brie Cheese,Mainland,100g,7.69,Cheese
+new_world_5011206-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5011206-EA-000,Apricot & Almond Cream Cheese,Moondarra Cheese,100g,7.27,Cheese
+new_world_5268693-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5268693-EA-000,Edam Natural Cheese Sticks,Pams,100g,15.04,Cheese
+new_world_5033382-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5033382-EA-000,Creamy Blue Cheese,Food Snob,100g,7.31,Cheese
+new_world_5023573-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5023573-EA-000,Free Range Size 7 Eggs,Woodland,ea,11.09,Eggs
+new_world_5006357-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5006357-EA-000,Free Range Mixed Grade Eggs,New Day,ea,9.29,Eggs
+new_world_5271190-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5271190-EA-000,Traditional Egg Lasagne Sheets,Rana,100g,7.08,Eggs
+new_world_5115870-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5115870-EA-000,Cooked Salted Duck Eggs,Hua Shun,1kg,7.49,Eggs
+new_world_5019202-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5019202-EA-000,Udon Noodles Twin Pack,Pams,100g,3.09,"Pasta, Rice & Noodles"
+new_world_5001572-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5001572-EA-000,Udon Noodles,Sanuki,100g,1.29,"Pasta, Rice & Noodles"
+new_world_5121654-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5121654-EA-000,Ramen Wide Noodles,Lucky Pearl,100g,5.79,"Pasta, Rice & Noodles"
+new_world_5225829-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5225829-EA-000,Natural Kefir Pourable Probiotic Yoghurt,The Collective,100ml,7.19,Yoghurt
+new_world_5341532-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5341532-EA-000,Kalo Authentic Greek Blackcurrant Yoghurt,Meadow Fresh,100g,9.29,Yoghurt
+new_world_5338723-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5338723-EA-000,Protein+ Mixed Berry Greek Style Yoghurt,Anchor,100g,2.99,Yoghurt
+new_world_5087177-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5087177-EA-000,Nelson Boysenberries Yoghurt,Puhoi Valley,100g,6.59,Yoghurt
+new_world_5281814-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5281814-EA-000,Protein+ Coconut Greek Style Yoghurt,Anchor,100g,9.89,Yoghurt
+new_world_5334309-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5334309-EA-000,Simply Good Natural Dairy-Free Yoghurt,Plant Culture,100g,6.59,Dairy Free & Meat Free
+new_world_5304866-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5304866-EA-000,Splitz Choc Berry Greek Yoghurt,The Collective,100g,3.59,Yoghurt
+new_world_5301016-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5301016-EA-000,Caramel Toffee Yoghurt,Kapiti,100g,7.19,Yoghurt
+new_world_5026817-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5026817-EA-000,Whole Chicken Medium,Pams Fresh,1kg,14.99,Chicken & Poultry
+new_world_5100208-KGM-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5100208-KGM-000,Chicken Nibbles,,1kg,9.99,Chicken & Poultry
+new_world_5342764-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5342764-EA-000,Satay Chicken Kebabs,Pams,1kg,7.49,Chicken & Poultry
+new_world_5112344-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5112344-EA-000,Manuka Smoked Chicken Kranskys,Turk's,ea,8.69,Chicken & Poultry
+new_world_5230824-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5230824-EA-000,Fresh New Zealand Duck Breast,Pams Finest,1kg,20.99,Chicken & Poultry
+new_world_5021100-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5021100-EA-000,Original Free Range Chicken Tenders,Waitoa,1kg,12.59,Chicken & Poultry
+new_world_5335277-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5335277-EA-000,Chicken Tenders,Ingham's,1kg,16.39,Chicken & Poultry
+new_world_5314935-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5314935-EA-000,Free Range Crunchy Chicken Burgers,Tegel,1kg,15.99,Chicken & Poultry
+new_world_5242822-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5242822-EA-000,Classic Beef Sausages,Harmony,1kg,11.99,"Mince, Sausages & Meatballs"
+new_world_5263887-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5263887-EA-000,New Zealand Grass-Fed Beef Flat-Iron Steaks,Silver Fern Farms,1kg,16.99,Beef
+new_world_5005864-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5005864-EA-000,Chunky Cheese Sausages,Hellers,1kg,13.49,"Mince, Sausages & Meatballs"
+new_world_5262773-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5262773-EA-000,Precooked Sausages,Pams,1kg,8.99,"Mince, Sausages & Meatballs"
+new_world_5252913-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5252913-EA-000,Mini Cheese Kransky Sausages,Beehive,1kg,12.79,"Mince, Sausages & Meatballs"
+new_world_5092474-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5092474-EA-000,Family Franks,Hellers,1kg,13.99,"Mince, Sausages & Meatballs"
+new_world_5345599-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5345599-EA-000,Street Eats Jalapeno & Cheese Loaded Dogs,Hellers,ea,9.49,"Mince, Sausages & Meatballs"
+new_world_5306815-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5306815-EA-000,Sweet & Smokey Champagne Shaved Ham,Beehive,1kg,5.19,Deli Meats & Smoked Fish
+new_world_5220973-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5220973-EA-000,Premium Cooked Jumbo Prawn Cutlets,Pams Finest,1kg,19.99,Seafood
+new_world_5081097-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5081097-EA-000,Thrive Natural Fish & Seaweed Plant Food,Yates,500ml,18.19,Garden & Outdoor
+new_world_5303240-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5303240-EA-000,Medium Grain Rice,Fortune,100g,14.79,"Pasta, Rice & Noodles"
+new_world_5303239-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5303239-EA-000,Medium Grain Rice,Fortune,100g,3.69,"Pasta, Rice & Noodles"
+new_world_5206566-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5206566-EA-000,Chicken Instant Noodles,Yum Yum,100g,2.99,"Pasta, Rice & Noodles"
+new_world_5016267-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5016267-EA-000,Mi Goreng Barbeque Chicken Instant Cup Noodles,Indomie,100g,2.59,"Pasta, Rice & Noodles"
+new_world_5012842-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5012842-EA-000,La Pasta Creamy Bacon Pasta & Sauce Single Snack,San Remo,100g,1.39,Deli Meats & Smoked Fish
+new_world_5016265-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5016265-EA-000,Mi Goreng Instant Cup Noodles,Indomie,100g,2.59,"Pasta, Rice & Noodles"
+new_world_5305408-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5305408-EA-000,Ricotta Tomato & Pesto Ravioli Pasta Meal,Wattie's,100g,4.99,"Cooking Sauces, Stocks & Marinades"
+new_world_5001524-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5001524-EA-000,Spirals Pasta,Diamond,100g,2.99,"Pasta, Rice & Noodles"
+new_world_5238248-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5238248-EA-000,Lasagne Sheets,Diamond,100g,4.09,"Pasta, Rice & Noodles"
+new_world_5006232-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5006232-EA-000,Tricolour Fettuccine,Pams,100g,4.19,"Pasta, Rice & Noodles"
+new_world_5036564-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5036564-EA-000,Gluten Free Spaghetti Pasta,Barilla,100g,6.19,"Pasta, Rice & Noodles"
+new_world_5019548-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5019548-EA-000,Spaghetti,Garofalo,100g,6.39,"Pasta, Rice & Noodles"
+new_world_5341107-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5341107-EA-000,Mushroom & Bacon Pasta & Sauce,Continental,100g,3.99,Deli Meats & Smoked Fish
+new_world_5271171-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5271171-EA-000,Traditional Potato Gnocchi,Rana,100g,9.92,"Pasta, Rice & Noodles"
+new_world_5258728-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5258728-EA-000,White Spelt Organic Flour,Ceres Organics,100g,9.99,Baking Supplies & Sugar
+new_world_5107806-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5107806-EA-000,Organic Oat Bran,Ceres Organics,100g,8.69,Breakfast Cereals
+new_world_5002752-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5002752-EA-000,White Sugar,Chelsea,100g,2.49,Baking Supplies & Sugar
+new_world_5006947-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5006947-EA-000,Palm Sugar,Jeeny's,100g,3.39,Baking Supplies & Sugar
+new_world_5318761-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5318761-EA-000,White Sugar Cubes,Chelsea,100g,5.89,Baking Supplies & Sugar
+new_world_5271924-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5271924-EA-000,Baker's Secret Ultimate Sugar Replacement,Whole Earth,100g,13.99,Baking Supplies & Sugar
+new_world_5026866-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5026866-EA-000,Naturals Coarse Himalayan Pink Salt,Mrs Rogers,10g,3.39,"Spices, Seasoning & Coatings"
+new_world_5030864-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5030864-EA-000,Sea Salt Flakes,Maldon,10g,8.34,"Spices, Seasoning & Coatings"
+new_world_5006066-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5006066-EA-000,Coarse Sea Salt Grinder,Pams,10g,4.49,"Spices, Seasoning & Coatings"
+new_world_5006164-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5006164-EA-000,Whole Black Peppercorns Grinder,Pams,10g,4.49,"Spices, Seasoning & Coatings"
+new_world_5115081-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5115081-EA-000,Mixed - Up Salt,Jane's Krazy,10g,8.79,"Spices, Seasoning & Coatings"
+new_world_5003828-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5003828-EA-000,Pure Olive Oil,Pams,100ml,9.69,Oil & Vinegar
+new_world_5003745-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5003745-EA-000,Extra Virgin Olive Oil,Pams,100ml,12.99,Oil & Vinegar
+new_world_5012158-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5012158-EA-000,Canola Oil,Sunfield,100ml,4.99,Oil & Vinegar
+new_world_5292362-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5292362-EA-000,Cold Pressed Extra Virgin High Oleic Sunflower Oil,The Good Oil,100ml,12.49,Oil & Vinegar
+new_world_5003742-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5003742-EA-000,Extra Light Olive Oil,Pams,100ml,15.09,Oil & Vinegar
+new_world_5344471-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5344471-EA-000,Pupple Mango Lime Flavored Drink & Blueberry Flavored Fruit Balls Bubble Tea,Bobajoy,1L,4.49,Tea
+new_world_5002382-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5002382-EA-000,Italian Red Wine Vinegar,Delmaine,100ml,5.09,Oil & Vinegar
+new_world_5010036-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5010036-EA-000,Lemon Pepper Flavour In Olive Oil Salmon,Sealord,1kg,3.49,Seafood
+new_world_5039837-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5039837-EA-000,Sesame Oil,Nissin,100g,6.39,Oil & Vinegar
+new_world_5317326-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5317326-EA-000,Basil & Olive Oil Crackers,Pams,100g,2.79,"Chips, Nuts & Snacks"
+new_world_5105417-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5105417-EA-000,Aceto Red Balsamic,Giusti,100ml,23.19,Oil & Vinegar
+new_world_5035357-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5035357-EA-000,Smooth & Shine Macadamia Oil Conditioner,Palmolive Naturals,100ml,7.39,Personal Care
+new_world_5241617-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5241617-EA-000,Variety Pack Assorted Breakfast Cereal,Kellogg's,100g,8.29,Breakfast Cereals
+new_world_5019144-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5019144-EA-000,Natural Brown Rice Flakes,Real Foods,100g,8.49,"Pasta, Rice & Noodles"
+new_world_5335191-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5335191-EA-000,Vanilla & Almond Clusters & Crispy Flakes,Hubbards,100g,8.07,Baking Supplies & Sugar
+new_world_5305817-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5305817-EA-000,Organic Blueberry Cashew Gluten Free Muesli,Ceres Organics,100g,13.49,Breakfast Cereals
+new_world_5019518-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5019518-EA-000,Protein Energize Choc Hit Flavour Liquid Breakfast,Sanitarium Up & Go,1L,12.99,Breakfast Cereals
+new_world_5012016-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5012016-EA-000,Vanilla Ice Flavour Liquid Breakfast,Sanitarium Up & Go,1L,11.99,Baking Supplies & Sugar
+new_world_5010920-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5010920-EA-000,Vanilla Ice Flavour Liquid Breakfast,Sanitarium Up & Go,1L,3.19,Baking Supplies & Sugar
+new_world_5013610-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5013610-EA-000,Cafe-Style Toasted Original Muesli,Vogel's,100g,9.49,Breakfast Cereals
+new_world_5348787-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5348787-EA-000,Chocolate Max Protein,Hubbards,100g,10.09,"Chocolate, Sweets & Chewing Gum"
+new_world_5272645-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5272645-EA-000,Crisp Apple Burst Multipurpose Cleaner Antibacterial Spray,Dettol,100ml,6.69,Household Cleaning & Paper
+new_world_5287631-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5287631-EA-000,Anti Dandruff Apple Fresh Conditioner,Head & Shoulders,100ml,14.99,Personal Care
+new_world_5334074-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5334074-EA-000,Blackcurrant Apple Pre + Probiotic Soda Drink,Moodi,1L,4.99,"Soft Drinks, Water & Juice"
+new_world_5040730-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5040730-EA-000,Fairtrade Bananas,,1pk,5.29,Fruit
+new_world_5341072-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5341072-EA-000,Strawberry & Banana Yoghurt Melts 12+ Months,Little Bellies,100g,6.49,Yoghurt
+new_world_5023479-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5023479-EA-000,100% Orange Juice,The Homegrown Juice Company,1L,7.29,Juice & Smoothies
+new_world_5006676-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5006676-EA-000,Juice Kitchen Premium Orange Juice,Keri,1L,3.99,Juice & Smoothies
+new_world_5239963-KGM-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5239963-KGM-000,Grapefruit,,1kg,5.79,Fruit
+new_world_5018203-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5018203-EA-000,Antibacterial 2 Hour Defence Orange Liquid Hand Wash Refill,Palmolive,100ml,5.19,Personal Care
+new_world_5002153-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5002153-EA-000,NZ Grapefruit & Orange Marmalade,Barker's,100g,6.49,"Jams, Honey & Spreads"
+new_world_5014937-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5014937-EA-000,Orange Flavour Sore Throat Relief Lozenges,Strepsils,ea,14.99,Health Care
+new_world_5025838-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5025838-EA-000,Low Calorie Orange Marmalade,Joknal,100g,6.29,"Jams, Honey & Spreads"
+new_world_5025756-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5025756-EA-000,Vitamin C 500 + Echinacea Orange Flavour Tablets,Healtheries,100,13.99,Health Care
+new_world_5329506-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5329506-EA-000,Pulpy Orange Fruit Drink,Keri,1L,5.99,"Soft Drinks, Water & Juice"
+new_world_5309314-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5309314-EA-000,Bubbles Orange Mango Lemonade Carbonated Fruit Drink,Just Juice,1L,9.99,Juice & Smoothies
+new_world_5345931-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5345931-EA-000,Strawberry Tomatoes,,1kg,6.99,Vegetables
+new_world_5040814-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5040814-EA-000,King Sweeties Capsicums,,ea,10.99,Vegetables
+new_world_5002082-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5002082-EA-000,Spaghetti In Tomato Sauce,Wattie's,100g,2.79,"Cooking Sauces, Stocks & Marinades"
+new_world_5011693-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5011693-EA-000,Crushed Italian Tomatoes In Thick Tomato Juice,Delmaine,1kg,2.39,Juice & Smoothies
+new_world_5003893-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5003893-EA-000,Italian Whole Peeled Tomatoes In Juice,Pams,1kg,1.39,Juice & Smoothies
+new_world_5016686-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5016686-EA-000,Organic Chopped Tomatoes Peeled In Tomato Juice,Chantal Organics,1kg,3.29,Juice & Smoothies
+new_world_5256340-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5256340-EA-000,Organic Tomato Fiddlesticks 12+ Months,Little Bellies,100g,2.49,Canned Foods & Packets
+new_world_5014411-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5014411-EA-000,Tomato Relish,Maison Therese,100g,6.49,"Cooking Sauces, Stocks & Marinades"
+new_world_5016746-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5016746-EA-000,Baby Roma Tomatoes,Mutti,1kg,3.74,Vegetables
+new_world_5286672-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5286672-EA-000,Tomato Sauce,Gregg's,100g,4.94,"Cooking Sauces, Stocks & Marinades"
+new_world_5091686-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5091686-EA-000,Mexican Sundried Tomato Almond Crackers,Little Bird Organics,100g,11.49,"Chips, Nuts & Snacks"
+new_world_5005781-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5005781-EA-000,Chicken Flavoured Potato Chips,Pams,100g,1.99,"Chips, Nuts & Snacks"
+new_world_5036653-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5036653-EA-000,Morsomes Chicken & Sweet Potato Dog Treats,VitaPet,100g,17.99,Pet Food
+new_world_5300126-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5300126-EA-000,Extreme Crunch Southern Sea Salt Kettle Waves Potato Chips,Heartland,100g,4.79,"Chips, Nuts & Snacks"
+new_world_5299519-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5299519-EA-000,Originals Chicken Potato Chips Multipack,Bluebird,100g,4.39,"Chips, Nuts & Snacks"
+new_world_5237849-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5237849-EA-000,Slow-Cooked Beef With Caramelised Onion & Cabernet Sauvignon Pies,Herbert Adams,ea,9.99,Beef
+new_world_5291943-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5291943-EA-000,Baby Carrot Medley,Pams,1kg,3.99,Vegetables
+new_world_5033924-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5033924-EA-000,"Steam Fresh Broccoli, Carrots & Baby Peas Vege Mix",Wattie's,1kg,4.39,Frozen Vegetables
+new_world_5336410-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5336410-EA-000,Family Range Cheesy Broccoli & Corn Gourmet Poppers,Posh Poppas,100g,8.49,Vegetables
+new_world_5332521-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5332521-EA-000,Broccoli Veggie Crisps,Shary,100g,4.69,Vegetables
+new_world_5233869-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5233869-EA-000,Mocha Coffee Sachets Value Pack,Nescafe,ea,17.59,Coffee
+new_world_5227962-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5227962-EA-000,Double Shot Fix Iced Strong Coffee Flavoured Milk,Mammoth Supply Co.,1L,5.99,Coffee
+new_world_5256282-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5256282-EA-000,Brazil Whole Beans Coffee,Coffee Supreme,100g,12.99,Coffee
+new_world_5266655-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5266655-EA-000,5 Extra Strong Coffee Capsules,Jed's Coffee Co.,ea,9.99,Coffee
+new_world_5245242-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5245242-EA-000,Classic Medium Roast Instant Coffee Jar,Moccona,100g,47.99,Coffee
+new_world_5018355-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5018355-EA-000,4 Very Strong Coffee Beans,Jed's Coffee Co.,100g,10.69,Coffee
+new_world_5014012-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5014012-EA-000,Decaf Organic Fair Trade Plunger Coffee,Hummingbird,100g,12.59,Coffee
+new_world_5236654-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5236654-EA-000,Cafe Style Hazelnut Latte Coffee Sticks,Avalanche,ea,6.99,Coffee
+new_world_5029035-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5029035-EA-000,5 Extra Strong Coffee Bags,Jed's Coffee Co.,ea,10.79,Coffee
+new_world_5044786-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5044786-EA-000,Organic Plunger Coffee,Karajoz,100g,10.49,Coffee
+new_world_5139207-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5139207-EA-000,Crave Organic Fair Trade Coffee Beans,Hummingbird,100g,53.79,Coffee
+new_world_5013131-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5013131-EA-000,Sweet Dreams Tea Bags,Red Seal,ea,3.59,Tea
+new_world_5038233-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5038233-EA-000,Raspberry & Strawberry Tea Bags,Red Seal,ea,3.99,Tea
+new_world_5011100-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5011100-EA-000,Raspberry Ice Tea,Lipton,1L,5.49,Tea
+new_world_5218279-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5218279-EA-000,Superfruits Tea Bags,Red Seal,ea,3.99,Tea
+new_world_5005162-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5005162-EA-000,Green Tea Bags,Red Seal,100,5.39,Tea
+new_world_5045168-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5045168-EA-000,Genmai Green Tea Bags,Genmaicha,100g,5.09,Tea
+new_world_5329119-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5329119-EA-000,Dilmah Green Teabags Cinnamon & Turmeric 20s 30g,Dilmah,ea,4.29,Tea
+new_world_5310260-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5310260-EA-000,No Sugar Lemon Iced Tea,Lipton,1L,5.49,Tea
+new_world_5289765-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5289765-EA-000,Pure Green Tea Bags,Healtheries,ea,4.79,Health Care
+new_world_5003553-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5003553-EA-000,Tealight Candles,National Candle,10pk,7.39,Household Cleaning & Paper
+new_world_5274302-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5274302-EA-000,SkinActive Green Tea + Hyaluronic Acid Hydra Bomb Tissue Mask,Garnier,100g,7.49,Personal Care
+new_world_5329511-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5329511-EA-000,Cranberry Fruit Drink,Thexton's,1L,4.99,"Soft Drinks, Water & Juice"
+new_world_5093874-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5093874-EA-000,Sparkling White Grape Juice Drink,Phoenix,1L,4.99,Juice & Smoothies
+new_world_5019233-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5019233-EA-000,Chilled Quench Peach & Passion 1.5l,Charlie's,1L,7.39,"Soft Drinks, Water & Juice"
+new_world_5208413-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5208413-EA-000,Berry Smoothie,The Homegrown Juice Company,1L,2.19,Juice & Smoothies
+new_world_5336368-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5336368-EA-000,Double Espresso Protein Smoothie,Rokeby,1L,5.49,Juice & Smoothies
+new_world_5002270-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5002270-EA-000,Pineapple Chunks In Juice,Dole,1kg,2.19,Juice & Smoothies
+new_world_5020907-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5020907-EA-000,Natural Spring Water,Tongariro,1L,4.99,"Soft Drinks, Water & Juice"
+new_world_5023643-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5023643-EA-000,Lemon Light Sparkling Spring Water,Kiwi Blue,1L,2.39,"Soft Drinks, Water & Juice"
+new_world_5006781-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5006781-EA-000,Sparkling Water,Antipodes,1L,6.49,"Soft Drinks, Water & Juice"
+new_world_5348648-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5348648-EA-000,Coconut Twist Chocolate Flavour Coconut Water,UFC,1L,5.99,"Soft Drinks, Water & Juice"
+new_world_5339480-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5339480-EA-000,Coffee Coconut Water,Cocobella,1L,5.49,Coffee
+new_world_5002411-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5002411-EA-000,Lime Soft Drink,Sparkling Duet,1L,2.49,"Soft Drinks, Water & Juice"
+new_world_5094826-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5094826-EA-000,Cola Flavour 99% Sugar Free Soft Drink,Value,1L,1.29,"Soft Drinks, Water & Juice"
+new_world_5001901-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5001901-EA-000,Soft Drink,L&P,1L,5.49,"Soft Drinks, Water & Juice"
+new_world_5005357-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5005357-EA-000,Soft Drink,Pepsi,1L,4.49,"Soft Drinks, Water & Juice"
+new_world_5325105-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5325105-EA-000,Zero Sugar Soft Drink Cans,Pepsi Max,1L,15.99,"Soft Drinks, Water & Juice"
+new_world_5324090-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5324090-EA-000,Melon Sparkling Soft Drink,Ramune,1L,3.49,"Soft Drinks, Water & Juice"
+new_world_5032315-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5032315-EA-000,Classic Soda Water Cans,Schweppes,1L,6.69,"Soft Drinks, Water & Juice"
+new_world_5347732-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5347732-EA-000,Pre+ Pro+ Postbiotic Grape Soda,Good Juju,1L,4.0,"Soft Drinks, Water & Juice"
+new_world_5342695-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5342695-EA-000,Creamy Cheese Bruschetta Chips,Krambals,100g,3.49,"Chips, Nuts & Snacks"
+new_world_5313491-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5313491-EA-000,Munchos Spicy Tomato Cereal Snacks,Griffin's,100g,4.19,Canned Foods & Packets
+new_world_5267629-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5267629-EA-000,Lightly Salted Cantina Style Tortilla Chips,Tostitos,100g,3.89,"Chips, Nuts & Snacks"
+new_world_5020744-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5020744-EA-000,Lightly Salted Corn Chips,Mexicano,100g,4.99,"Chips, Nuts & Snacks"
+new_world_5212929-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5212929-EA-000,Double Cheese Flavoured Corn Chips,Pams,100g,2.59,"Chips, Nuts & Snacks"
+new_world_5036438-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5036438-EA-000,Original Salted Corn Chips,Doritos,100g,3.89,"Chips, Nuts & Snacks"
+new_world_5328664-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5328664-EA-000,Dip Sensations Kumara Dip,Continental,100g,2.19,"Dips, Hummus & Antipasti"
+new_world_5009660-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5009660-EA-000,Berry And Biscuit 33% Cocoa Milk Chocolate Block,Whittaker's,100g,8.49,Biscuits & Crackers
+new_world_5287053-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5287053-EA-000,Hokey Pokey Crunch 33% Cocoa Milk Chocolate Block,Whittaker's,100g,8.49,"Chocolate, Sweets & Chewing Gum"
+new_world_5307536-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5307536-EA-000,Hazella Creamy Milk Chocolate Block,Whittaker's,100g,8.49,"Chocolate, Sweets & Chewing Gum"
+new_world_5215070-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5215070-EA-000,Caramilk Chocolate Block,Cadbury,100g,6.99,"Chocolate, Sweets & Chewing Gum"
+new_world_5249665-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5249665-EA-000,Marvelous Creations Jelly Popping Candy Beanies Chocolate Block,Cadbury Dairy Milk,100g,6.99,"Chocolate, Sweets & Chewing Gum"
+new_world_5277054-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5277054-EA-000,Caramel Sea Salt Milk Chocolate Bar,Tony's Chocolonely,100g,11.99,"Chocolate, Sweets & Chewing Gum"
+new_world_5244770-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5244770-EA-000,Lindor Pistachio Chocolates Pouch,Lindt,100g,15.49,"Chocolate, Sweets & Chewing Gum"
+new_world_5020911-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5020911-EA-000,Chocolate Coated Coffee Beans,L'affare,100g,7.79,"Chocolate, Sweets & Chewing Gum"
+new_world_5014475-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5014475-EA-000,Raspberry Choc Logs,RJ's,100g,3.09,"Chocolate, Sweets & Chewing Gum"
+new_world_5027292-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5027292-EA-000,Hokey Pokey Chocolate Biscuits,Griffin's Squiggles,100g,5.99,Biscuits & Crackers
+new_world_5008240-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5008240-EA-000,Chocolate Sandwiches Biscuits,Pams,100g,3.49,Biscuits & Crackers
+new_world_5011523-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5011523-EA-000,The Original Chocolate Chunk Bite Size Cookies,Cookie Time,100g,6.97,Biscuits & Crackers
+new_world_5349757-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5349757-EA-000,Chockie Chippies Minis Biscuits,Griffin's,100g,2.49,Biscuits & Crackers
+new_world_5335155-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5335155-EA-000,Secret Centre Biscuits,Bounty,100g,5.29,Biscuits & Crackers
+new_world_5328226-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5328226-EA-000,40% Chocolate Triple Chocolate Chunk Cookies,Higgins,100g,5.49,Biscuits & Crackers
+new_world_5010904-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5010904-EA-000,Bites,Griffin's Toffee Pops,100g,4.99,Biscuits & Crackers
+new_world_5003075-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5003075-EA-000,Milk Arrowroot Biscuits,Arnott's,100g,3.59,Biscuits & Crackers
+new_world_5249287-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5249287-EA-000,Coconut Macaroon Cookies,Pams Gluten Free,100g,4.19,Biscuits & Crackers
+new_world_5017290-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5017290-EA-000,Gluten Free Vegan Delicious Homestyle Almond Cookies,Kea Cookies,100g,7.19,Biscuits & Crackers
+new_world_5017291-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5017291-EA-000,Gluten Free Vegan Delicious Homestyle Peanut Brownies Cookies,Kea Cookies,100g,7.19,Biscuits & Crackers
+new_world_5012814-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5012814-EA-000,Pub Style Chunky Beer Batter Chips,McCain,1kg,5.99,Frozen Chips & Hash Browns
+new_world_5021887-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5021887-EA-000,Golden Crunch Chunky Cut Chips,Birds Eye,1kg,6.04,Frozen Chips & Hash Browns
+new_world_5022679-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5022679-EA-000,Sea Salt & Rosemary Chips,Birds Eye Deli,1kg,6.34,Frozen Chips & Hash Browns
+new_world_5263298-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5263298-EA-000,Golden Ale Beer Batter Seasoned Chips,Birds Eye Deli,1kg,6.34,Frozen Chips & Hash Browns
+new_world_5003748-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5003748-EA-000,Frozen Garden Peas,Pams,1kg,3.49,Frozen Vegetables
+new_world_5207147-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5207147-EA-000,Beef Casserole Frozen Meal,Tomorrow's Meals,100g,11.89,Frozen Meals & Snacks
+new_world_5295266-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5295266-EA-000,Frozen Dough Pizza,Organic Dough Co,ea,13.49,Frozen Meals & Snacks
+new_world_5004964-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5004964-EA-000,Classic Mixed Savouries,Pams,ea,6.99,Frozen Meals & Snacks
+new_world_5261984-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5261984-EA-000,Marvels Wildberry Ambrosia Yoghurt Ice Cream,Much Moore,100ml,6.29,Ice Cream & Desserts
+new_world_5328633-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5328633-EA-000,Rocky Road Caramel Ice Cream,Tip Top,100ml,8.99,Ice Cream & Desserts
+new_world_5034048-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5034048-EA-000,Peppermint Ice Cream,Magnum,100ml,11.79,Ice Cream & Desserts
+new_world_5015103-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5015103-EA-000,Vanilla Slices Ice Cream,Tip Top,100ml,10.99,Ice Cream & Desserts
+new_world_5328830-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5328830-EA-000,Double Caramel Ego Ice Cream,Magnum,100ml,9.99,Ice Cream & Desserts
+new_world_5295460-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5295460-EA-000,Cheeky Chocolate Mochi Bites,NOM,100g,7.99,Ice Cream & Desserts
+new_world_5034239-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5034239-EA-000,BBQ Chicken Pizza,Romano's,100g,4.99,Frozen Meals & Snacks
+new_world_5085792-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5085792-EA-000,Meatlovers Pizza Slices,McCain,100g,9.79,Frozen Meals & Snacks
+new_world_5085212-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5085212-EA-000,Ready To Bake Pizza Bases,Paneton,100g,7.49,Frozen Meals & Snacks
+new_world_5091105-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5091105-EA-000,Smokey Chipotle Chilli Shredded Beef Burrito,Cartel Food Co,100g,6.49,Frozen Meals & Snacks
+new_world_5319790-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5319790-EA-000,Entree Cottage Pie,On The Menu,100g,5.19,Frozen Meals & Snacks
+new_world_5337196-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5337196-EA-000,Ham & Cheese Mini Pizza,Posh Poppas,100g,8.49,Frozen Meals & Snacks
+new_world_5012488-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5012488-EA-000,Basil Pesto Cashews & Parmesan Chunky Dip,Mediterranean,100g,5.29,"Dips, Hummus & Antipasti"
+new_world_5009958-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5009958-EA-000,Garlic Pasta Sauce,Wattie's,100g,3.99,"Cooking Sauces, Stocks & Marinades"
+new_world_5021338-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5021338-EA-000,Red Wine & Italian Herbs Pasta Sauce Jar,Dolmio,100g,5.29,"Cooking Sauces, Stocks & Marinades"
+new_world_5286097-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5286097-EA-000,Homestyle Country Chicken Soup,The Good Taste Co.,100g,5.29,Chicken & Poultry
+new_world_5021241-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5021241-EA-000,Soup Of The Day Homestyle Creamy Chicken,Wattie's,100g,4.99,Chicken & Poultry
+new_world_5321109-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5321109-EA-000,Rich Tomato Soup With Basil And Cream,Naked,100g,6.99,Canned Foods & Packets
+new_world_5335226-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5335226-EA-000,Chicken Laksa Soup,Pams,100g,4.99,Chicken & Poultry
+new_world_5209791-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5209791-EA-000,Butter Chicken Meal,,1pk,9.99,Frozen Meals & Snacks
+new_world_5268623-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5268623-EA-000,Macaroni Cheese Meal,Artisano,100g,13.49,Cheese
+new_world_5039311-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5039311-EA-000,Butter Chicken Pie,Dad's Pies,100g,5.49,Frozen Meals & Snacks
+new_world_5318223-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5318223-EA-000,Mince & Cheese Pie,Great Southern Pies,100g,5.49,Frozen Meals & Snacks
+new_world_5019285-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5019285-EA-000,Very Special Creamy Mushroom Soup,Wattie's,100g,5.19,Canned Foods & Packets
+new_world_5040789-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5040789-EA-000,Sweetcorn,,1pk,5.69,Vegetables
+new_world_5001754-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5001754-EA-000,Refried Beans,Old El Paso,100g,4.89,Canned Foods & Packets
+new_world_5039611-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5039611-EA-000,Borlotti Beans,Ceres Organics,1kg,2.99,Canned Foods & Packets
+new_world_5286976-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5286976-EA-000,Killer Beans In Fuego Chilli Sauce,F.Whitlock & Sons,100g,3.69,Canned Foods & Packets
+new_world_5018085-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5018085-EA-000,Vanilla Bean Custard 6+ Months,Only Organic,100g,2.29,Baking Supplies & Sugar
+new_world_5089106-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5089106-EA-000,Madagascan Vanilla Bean Extract,Queen,10ml,7.79,Baking Supplies & Sugar
+new_world_5038971-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5038971-EA-000,Pure Vanilla Beans,Heilala,ea,15.99,Baking Supplies & Sugar
+new_world_5327946-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5327946-EA-000,Soothing Oat Milk Tonka Bean & Vanilla Body Wash,Glow Lab,100ml,19.23,Personal Care
+new_world_5009786-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5009786-EA-000,Chunky Style Tuna In Spring Water,Sealord,1kg,9.29,"Soft Drinks, Water & Juice"
+new_world_5001019-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5001019-EA-000,Lemon Pepper Flavour Tuna With Crackers,Sealord,100g,3.49,"Chips, Nuts & Snacks"
+new_world_5027799-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5027799-EA-000,Chunk Style Tuna In Springwater,John West,1kg,8.02,"Soft Drinks, Water & Juice"
+new_world_5307233-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5307233-EA-000,Protein+ Brown & Red Rice Lime Lemongrass & Chickpeas Tuna Bowl,John West,100g,5.0,Seafood
+new_world_5025497-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5025497-EA-000,Streaky Bacon,Beehive,1kg,9.19,Deli Meats & Smoked Fish
+new_world_5014189-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5014189-EA-000,Crafty Cooks Bacon Strips,Hellers,1kg,7.0,Deli Meats & Smoked Fish
+new_world_5014492-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5014492-EA-000,Rindless Eye Bacon,Beehive,1kg,8.99,Deli Meats & Smoked Fish
+new_world_5018448-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5018448-EA-000,Middle Bacon,Medallion,1kg,14.99,Deli Meats & Smoked Fish
+new_world_5276267-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5276267-EA-000,Old School Venison Sausages,Beard Brothers,1kg,12.69,"Mince, Sausages & Meatballs"
+new_world_5031176-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5031176-EA-000,Hypo-Allergenic 3 Ply Long Toilet Rolls,Sorbent,100 sheets,11.99,Household Cleaning & Paper
+new_world_5263775-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5263775-EA-000,Recycled 2ply Long Toilet Rolls,Earthsmart,100 sheets,7.49,Household Cleaning & Paper
+new_world_5326473-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5326473-EA-000,Soft & Strong Every Day 3 Ply White Tissues,Paseo,100,3.09,Household Cleaning & Paper
+new_world_5347425-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5347425-EA-000,Rapid Lime Dishwash Tablets,Active,100,26.99,Household Cleaning & Paper
+new_world_5340458-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5340458-EA-000,Citrus Dishwash Liquid,Pams Value,100ml,3.39,Household Cleaning & Paper
+new_world_5016409-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5016409-EA-000,Lime With Baking Soda Dishwasher Cleaner,Active,100ml,9.29,Household Cleaning & Paper
+new_world_5340686-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5340686-EA-000,Lemon Plant Powered Dishwasher Tablets,Earthwise,ea,15.99,Household Cleaning & Paper
+new_world_5335527-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5335527-EA-000,Super Dish Brush,Pams,1pk,2.99,Household Cleaning & Paper
+new_world_5320882-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5320882-EA-000,Cloud Nine Laundry In-Wash Scent Booster,Fluffy,100g,27.99,Household Cleaning & Paper
+new_world_5313393-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5313393-EA-000,Sensitive 3 In 1 Laundry Capsules,Persil,100,44.99,Household Cleaning & Paper
+new_world_5304194-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5304194-EA-000,Sensitive 3 In 1 Laundry Capsules,Persil,ea,26.49,Household Cleaning & Paper
+new_world_5335839-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5335839-EA-000,Refresh Rinse Ocean Fresh Fabric Conditioner,Cuddly,100ml,14.99,Personal Care
+new_world_5321537-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5321537-EA-000,Fresh Ocean Scent Dryer Sheets,Resolv,ea,7.99,Household Cleaning & Paper
+new_world_5287218-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5287218-EA-000,Bam Eucalyptus Washing Machine Cleaner,Easy-Off,100ml,8.49,Household Cleaning & Paper
+new_world_5248181-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5248181-EA-000,Napisan Stain Remover Gold White Powder,Vanish,100g,17.49,Household Cleaning & Paper
+new_world_5012788-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5012788-EA-000,Aromatherapy Relaxing Fabric Softener,Cuddly,100ml,5.39,Household Cleaning & Paper
+new_world_5286365-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5286365-EA-000,Push Up Volume Lifting Shampoo,Schwarzkopf Extra Care,100ml,9.99,Personal Care
+new_world_5335711-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5335711-EA-000,Moisture Rich Shampoo,Tresemme,100ml,9.99,Personal Care
+new_world_5274940-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5274940-EA-000,Original Dry Shampoo,Batiste,100ml,14.99,Personal Care
+new_world_5315299-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5315299-EA-000,Kids Bluey 3 in1 Shampoo Conditioner & Body Wash,Palmolive,100ml,12.69,Personal Care
+new_world_5242612-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5242612-EA-000,Coconut & Sandalwood Body Wash,Glow Lab,100ml,19.23,Personal Care
+new_world_5019770-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5019770-EA-000,Dreamy Skin Body Wash,Johnson's Body Care,100ml,11.99,Personal Care
+new_world_5285617-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5285617-EA-000,Men+Care Clean Comfort Body And Face Wash,Dove,100ml,19.99,Personal Care
+new_world_5282380-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5282380-EA-000,Redberry Toothbrush Holder,Korbond,1pk,2.99,Personal Care
+new_world_5015755-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5015755-EA-000,Stress Relief Body Wash,Aveeno,100ml,17.99,Personal Care
+new_world_5335649-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5335649-EA-000,Fruity Nourish Body Wash,Dove,100ml,8.99,Personal Care
+new_world_5247338-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5247338-EA-000,Total Active Prevention Original Toothpaste,Colgate,100g,9.29,Personal Care
+new_world_5282592-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5282592-EA-000,Kids Minions Mild Mint Gel Toothpaste 6+ Years,Colgate,100g,3.59,Personal Care
+new_world_5023681-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5023681-EA-000,Baking Soda Toothpaste,Red Seal,100g,4.79,Personal Care
+new_world_5083512-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5083512-EA-000,Maximum Cavity Protection Toothpaste,Colgate,100g,5.89,Personal Care
+new_world_5246459-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5246459-EA-000,Total Active Prevention Original Toothpaste,Colgate,100g,5.79,Personal Care
+new_world_5300003-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5300003-EA-000,Advanced Whitening Tartar Control Toothpaste,Colgate,100g,6.49,Personal Care
+new_world_5247339-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5247339-EA-000,Total Active Prevention Whitening Toothpaste,Colgate,100g,6.69,Personal Care
+new_world_5286134-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5286134-EA-000,Sensitivity & Gum All Day Protection Soft Mint Toothpaste,Oral-B,100g,9.99,Personal Care
+new_world_5342964-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5342964-EA-000,Harry Potter Bubbling Cauldron Kids & Adult Toothpaste,Colgate,100g,8.49,Personal Care
+new_world_5324099-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5324099-EA-000,Fresh Mint Toothpaste,Solid,100g,12.99,Personal Care
+new_world_5314145-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5314145-EA-000,Kids 6+ Years Mild Mint Flavour Toothpaste,Oral-B,100g,3.49,Personal Care
+new_world_5300006-EA-000,c8998066-d39b-401c-aa6b-d6d18f8d122f,New World Albany,5300006-EA-000,Advanced Whitening Toothpaste,Colgate,100g,6.49,Personal Care

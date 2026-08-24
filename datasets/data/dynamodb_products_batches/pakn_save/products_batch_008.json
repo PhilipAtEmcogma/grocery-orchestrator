@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5089918-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5089918-EA-000"
+          },
+          "product_name": {
+            "S": "Frozen Blanched Spinach"
+          },
+          "brand": {
+            "S": "SB"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "5.54"
+          },
+          "category": {
+            "S": "Frozen Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5008137-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5008137-EA-000"
+          },
+          "product_name": {
+            "S": "Premium Spinach"
+          },
+          "brand": {
+            "S": "Fruzio"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "5.99"
+          },
+          "category": {
+            "S": "Frozen Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5040098-KGM-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5040098-KGM-000"
+          },
+          "product_name": {
+            "S": "Loose Red Tomatoes"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "kg"
+          },
+          "price": {
+            "N": "8.69"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5028889-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5028889-EA-000"
+          },
+          "product_name": {
+            "S": "Telegraph Cucumber"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "4.99"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5046505-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5046505-EA-000"
+          },
+          "product_name": {
+            "S": "Green Capsicum"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "3.49"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5028604-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5028604-EA-000"
+          },
+          "product_name": {
+            "S": "Greek Yoghurt & Cucumber With Fresh Mint Dip"
+          },
+          "brand": {
+            "S": "Turkish Kitchen"
+          },
+          "size": {
+            "S": "180g"
+          },
+          "price": {
+            "N": "4.29"
+          },
+          "category": {
+            "S": "Dips, Hummus & Antipasti"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5345926-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5345926-EA-000"
+          },
+          "product_name": {
+            "S": "Cherry Tomatoes"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "180g"
+          },
+          "price": {
+            "N": "5.99"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5046533-KGM-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5046533-KGM-000"
+          },
+          "product_name": {
+            "S": "White Button Mushrooms"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "kg"
+          },
+          "price": {
+            "N": "7.99"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5326590-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5326590-EA-000"
+          },
+          "product_name": {
+            "S": "White Button Mushrooms"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "5.99"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5294812-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5294812-EA-000"
+          },
+          "product_name": {
+            "S": "White Button Mushrooms"
+          },
+          "brand": {
+            "S": "Meadow Mushrooms"
+          },
+          "size": {
+            "S": "200g"
+          },
+          "price": {
+            "N": "4.29"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5040006-KGM-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5040006-KGM-000"
+          },
+          "product_name": {
+            "S": "Portabello Flat Mushrooms"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "kg"
+          },
+          "price": {
+            "N": "14.99"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5009709-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5009709-EA-000"
+          },
+          "product_name": {
+            "S": "Creamy Mushroom Soup Mix Sachet"
+          },
+          "brand": {
+            "S": "Maggi"
+          },
+          "size": {
+            "S": "37g"
+          },
+          "price": {
+            "N": "1.39"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5025801-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5025801-EA-000"
+          },
+          "product_name": {
+            "S": "Roasted Red Peppers In Oil"
+          },
+          "brand": {
+            "S": "Golden Sun"
+          },
+          "size": {
+            "S": "680g"
+          },
+          "price": {
+            "N": "6.59"
+          },
+          "category": {
+            "S": "Table Sauces, Dressings & Condiments"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5005954-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5005954-EA-000"
+          },
+          "product_name": {
+            "S": "Diced Tomatoes With Capsicum And Onion"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "1.29"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5046525-KGM-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5046525-KGM-000"
+          },
+          "product_name": {
+            "S": "Royal Gala Apples"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "kg"
+          },
+          "price": {
+            "N": "3.99"
+          },
+          "category": {
+            "S": "Fruit"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5040702-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5040702-EA-000"
+          },
+          "product_name": {
+            "S": "Royal Gala Apples"
+          },
+          "brand": {
+            "S": "Yummy Fruit"
+          },
+          "size": {
+            "S": "1.5kg"
+          },
+          "price": {
+            "N": "6.99"
+          },
+          "category": {
+            "S": "Fruit"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5039945-KGM-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5039945-KGM-000"
+          },
+          "product_name": {
+            "S": "Granny Smith Apples"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "kg"
+          },
+          "price": {
+            "N": "4.69"
+          },
+          "category": {
+            "S": "Fruit"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5046462-KGM-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5046462-KGM-000"
+          },
+          "product_name": {
+            "S": "Ambrosia Apples"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "kg"
+          },
+          "price": {
+            "N": "5.99"
+          },
+          "category": {
+            "S": "Fruit"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5045864-KGM-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5045864-KGM-000"
+          },
+          "product_name": {
+            "S": "Rose Apples"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "kg"
+          },
+          "price": {
+            "N": "5.29"
+          },
+          "category": {
+            "S": "Fruit"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5046542-KGM-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5046542-KGM-000"
+          },
+          "product_name": {
+            "S": "Bananas"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "kg"
+          },
+          "price": {
+            "N": "3.49"
+          },
+          "category": {
+            "S": "Fruit"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5007770-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5007770-EA-000"
+          },
+          "product_name": {
+            "S": "Bobby Bananas"
+          },
+          "brand": {
+            "S": "Dole"
+          },
+          "size": {
+            "S": "1pk"
+          },
+          "price": {
+            "N": "3.49"
+          },
+          "category": {
+            "S": "Fruit"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5205142-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5205142-EA-000"
+          },
+          "product_name": {
+            "S": "Spinach Apple Blueberry & Banana Vege Fruit Sticks"
+          },
+          "brand": {
+            "S": "Mother Earth"
+          },
+          "size": {
+            "S": "152g"
+          },
+          "price": {
+            "N": "3.49"
+          },
+          "category": {
+            "S": "Chips, Nuts & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5336975-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5336975-EA-000"
+          },
+          "product_name": {
+            "S": "Banana Caramel Milk Chocolate Block"
+          },
+          "brand": {
+            "S": "Whittaker's"
+          },
+          "size": {
+            "S": "250g"
+          },
+          "price": {
+            "N": "6.59"
+          },
+          "category": {
+            "S": "Chocolate, Sweets & Chewing Gum"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5022980-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5022980-EA-000"
+          },
+          "product_name": {
+            "S": "Banana Blueberry & Quinoa 6+ Months"
+          },
+          "brand": {
+            "S": "Only Organic"
+          },
+          "size": {
+            "S": "120g"
+          },
+          "price": {
+            "N": "1.89"
+          },
+          "category": {
+            "S": "Baby & Toddler Food"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5046611-KGM-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5046611-KGM-000"
+          },
+          "product_name": {
+            "S": "Navel Oranges Imported"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "kg"
+          },
+          "price": {
+            "N": "3.99"
+          },
+          "category": {
+            "S": "Fruit"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5230824-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5230824-EA-000"
+          },
+          "product_name": {
+            "S": "Fresh New Zealand Duck Breast"
+          },
+          "brand": {
+            "S": "Pams Finest"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "20.99"
+          },
+          "category": {
+            "S": "Chicken & Poultry"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5021100-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5021100-EA-000"
+          },
+          "product_name": {
+            "S": "Original Free Range Chicken Tenders"
+          },
+          "brand": {
+            "S": "Waitoa"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "12.59"
+          },
+          "category": {
+            "S": "Chicken & Poultry"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5335277-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5335277-EA-000"
+          },
+          "product_name": {
+            "S": "Chicken Tenders"
+          },
+          "brand": {
+            "S": "Ingham's"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "16.39"
+          },
+          "category": {
+            "S": "Chicken & Poultry"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5314935-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5314935-EA-000"
+          },
+          "product_name": {
+            "S": "Free Range Crunchy Chicken Burgers"
+          },
+          "brand": {
+            "S": "Tegel"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "15.99"
+          },
+          "category": {
+            "S": "Chicken & Poultry"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5242822-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5242822-EA-000"
+          },
+          "product_name": {
+            "S": "Classic Beef Sausages"
+          },
+          "brand": {
+            "S": "Harmony"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "11.99"
+          },
+          "category": {
+            "S": "Mince, Sausages & Meatballs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5263887-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5263887-EA-000"
+          },
+          "product_name": {
+            "S": "New Zealand Grass-Fed Beef Flat-Iron Steaks"
+          },
+          "brand": {
+            "S": "Silver Fern Farms"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "16.99"
+          },
+          "category": {
+            "S": "Beef"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5005864-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5005864-EA-000"
+          },
+          "product_name": {
+            "S": "Chunky Cheese Sausages"
+          },
+          "brand": {
+            "S": "Hellers"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "13.49"
+          },
+          "category": {
+            "S": "Mince, Sausages & Meatballs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5262773-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5262773-EA-000"
+          },
+          "product_name": {
+            "S": "Precooked Sausages"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "8.99"
+          },
+          "category": {
+            "S": "Mince, Sausages & Meatballs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5252913-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5252913-EA-000"
+          },
+          "product_name": {
+            "S": "Mini Cheese Kransky Sausages"
+          },
+          "brand": {
+            "S": "Beehive"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "12.79"
+          },
+          "category": {
+            "S": "Mince, Sausages & Meatballs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5092474-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5092474-EA-000"
+          },
+          "product_name": {
+            "S": "Family Franks"
+          },
+          "brand": {
+            "S": "Hellers"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "13.99"
+          },
+          "category": {
+            "S": "Mince, Sausages & Meatballs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5345599-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5345599-EA-000"
+          },
+          "product_name": {
+            "S": "Street Eats Jalapeno & Cheese Loaded Dogs"
+          },
+          "brand": {
+            "S": "Hellers"
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "9.49"
+          },
+          "category": {
+            "S": "Mince, Sausages & Meatballs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5306815-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5306815-EA-000"
+          },
+          "product_name": {
+            "S": "Sweet & Smokey Champagne Shaved Ham"
+          },
+          "brand": {
+            "S": "Beehive"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "5.19"
+          },
+          "category": {
+            "S": "Deli Meats & Smoked Fish"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5220973-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5220973-EA-000"
+          },
+          "product_name": {
+            "S": "Premium Cooked Jumbo Prawn Cutlets"
+          },
+          "brand": {
+            "S": "Pams Finest"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "19.99"
+          },
+          "category": {
+            "S": "Seafood"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5081097-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5081097-EA-000"
+          },
+          "product_name": {
+            "S": "Thrive Natural Fish & Seaweed Plant Food"
+          },
+          "brand": {
+            "S": "Yates"
+          },
+          "size": {
+            "S": "500ml"
+          },
+          "price": {
+            "N": "18.19"
+          },
+          "category": {
+            "S": "Garden & Outdoor"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5303240-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5303240-EA-000"
+          },
+          "product_name": {
+            "S": "Medium Grain Rice"
+          },
+          "brand": {
+            "S": "Fortune"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "14.79"
+          },
+          "category": {
+            "S": "Pasta, Rice & Noodles"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5303239-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5303239-EA-000"
+          },
+          "product_name": {
+            "S": "Medium Grain Rice"
+          },
+          "brand": {
+            "S": "Fortune"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "3.69"
+          },
+          "category": {
+            "S": "Pasta, Rice & Noodles"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5206566-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5206566-EA-000"
+          },
+          "product_name": {
+            "S": "Chicken Instant Noodles"
+          },
+          "brand": {
+            "S": "Yum Yum"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "2.99"
+          },
+          "category": {
+            "S": "Pasta, Rice & Noodles"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5016267-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5016267-EA-000"
+          },
+          "product_name": {
+            "S": "Mi Goreng Barbeque Chicken Instant Cup Noodles"
+          },
+          "brand": {
+            "S": "Indomie"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "2.59"
+          },
+          "category": {
+            "S": "Pasta, Rice & Noodles"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5012842-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5012842-EA-000"
+          },
+          "product_name": {
+            "S": "La Pasta Creamy Bacon Pasta & Sauce Single Snack"
+          },
+          "brand": {
+            "S": "San Remo"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "1.39"
+          },
+          "category": {
+            "S": "Deli Meats & Smoked Fish"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5016265-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5016265-EA-000"
+          },
+          "product_name": {
+            "S": "Mi Goreng Instant Cup Noodles"
+          },
+          "brand": {
+            "S": "Indomie"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "2.59"
+          },
+          "category": {
+            "S": "Pasta, Rice & Noodles"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5305408-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5305408-EA-000"
+          },
+          "product_name": {
+            "S": "Ricotta Tomato & Pesto Ravioli Pasta Meal"
+          },
+          "brand": {
+            "S": "Wattie's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.99"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5001524-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5001524-EA-000"
+          },
+          "product_name": {
+            "S": "Spirals Pasta"
+          },
+          "brand": {
+            "S": "Diamond"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "2.99"
+          },
+          "category": {
+            "S": "Pasta, Rice & Noodles"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5238248-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5238248-EA-000"
+          },
+          "product_name": {
+            "S": "Lasagne Sheets"
+          },
+          "brand": {
+            "S": "Diamond"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.09"
+          },
+          "category": {
+            "S": "Pasta, Rice & Noodles"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5006232-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5006232-EA-000"
+          },
+          "product_name": {
+            "S": "Tricolour Fettuccine"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.19"
+          },
+          "category": {
+            "S": "Pasta, Rice & Noodles"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5036564-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5036564-EA-000"
+          },
+          "product_name": {
+            "S": "Gluten Free Spaghetti Pasta"
+          },
+          "brand": {
+            "S": "Barilla"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "6.19"
+          },
+          "category": {
+            "S": "Pasta, Rice & Noodles"
+          }
+        }
+      }
+    }
+  ]
+}

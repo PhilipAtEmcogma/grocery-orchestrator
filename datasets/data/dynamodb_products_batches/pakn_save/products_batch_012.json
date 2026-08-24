@@ -1,0 +1,334 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5012874-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5012874-EA-000"
+          },
+          "product_name": {
+            "S": "Granulated Instant Coffee"
+          },
+          "brand": {
+            "S": "Special Blend"
+          },
+          "size": {
+            "S": "90g"
+          },
+          "price": {
+            "N": "2.99"
+          },
+          "category": {
+            "S": "Coffee"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5010068-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5010068-EA-000"
+          },
+          "product_name": {
+            "S": "Instant Coffee"
+          },
+          "brand": {
+            "S": "Special Blend"
+          },
+          "size": {
+            "S": "90g"
+          },
+          "price": {
+            "N": "2.99"
+          },
+          "category": {
+            "S": "Coffee"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5034510-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5034510-EA-000"
+          },
+          "product_name": {
+            "S": "Classic Medium Roast Instant Coffee Refill"
+          },
+          "brand": {
+            "S": "Moccona"
+          },
+          "size": {
+            "S": "90g"
+          },
+          "price": {
+            "N": "7.79"
+          },
+          "category": {
+            "S": "Coffee"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5206293-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5206293-EA-000"
+          },
+          "product_name": {
+            "S": "Instant Coffee Powder"
+          },
+          "brand": {
+            "S": "Value"
+          },
+          "size": {
+            "S": "90g"
+          },
+          "price": {
+            "N": "2.59"
+          },
+          "category": {
+            "S": "Coffee"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5036448-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5036448-EA-000"
+          },
+          "product_name": {
+            "S": "Original Instant Coffee"
+          },
+          "brand": {
+            "S": "Nescafe"
+          },
+          "size": {
+            "S": "180g"
+          },
+          "price": {
+            "N": "10.99"
+          },
+          "category": {
+            "S": "Coffee"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5002523-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5002523-EA-000"
+          },
+          "product_name": {
+            "S": "Original Black Tea Bags"
+          },
+          "brand": {
+            "S": "Bell"
+          },
+          "size": {
+            "S": "30pk"
+          },
+          "price": {
+            "N": "2.19"
+          },
+          "category": {
+            "S": "Tea"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5001735-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5001735-EA-000"
+          },
+          "product_name": {
+            "S": "Premium Biodegrabable Tea Bags"
+          },
+          "brand": {
+            "S": "Dilmah"
+          },
+          "size": {
+            "S": "100pk"
+          },
+          "price": {
+            "N": "5.29"
+          },
+          "category": {
+            "S": "Tea"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5002531-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5002531-EA-000"
+          },
+          "product_name": {
+            "S": "Original Black Tea Bags"
+          },
+          "brand": {
+            "S": "Bell"
+          },
+          "size": {
+            "S": "100pk"
+          },
+          "price": {
+            "N": "6.39"
+          },
+          "category": {
+            "S": "Tea"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5002522-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5002522-EA-000"
+          },
+          "product_name": {
+            "S": "Original Black Tea Bags"
+          },
+          "brand": {
+            "S": "Bell"
+          },
+          "size": {
+            "S": "60pk"
+          },
+          "price": {
+            "N": "3.89"
+          },
+          "category": {
+            "S": "Tea"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5001736-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5001736-EA-000"
+          },
+          "product_name": {
+            "S": "Premium Biodegradable Tea Bags"
+          },
+          "brand": {
+            "S": "Dilmah"
+          },
+          "size": {
+            "S": "30pk"
+          },
+          "price": {
+            "N": "2.89"
+          },
+          "category": {
+            "S": "Tea"
+          }
+        }
+      }
+    }
+  ]
+}

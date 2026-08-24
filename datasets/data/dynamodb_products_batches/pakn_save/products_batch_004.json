@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5092718-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5092718-EA-000"
+          },
+          "product_name": {
+            "S": "Chopped Tomatoes in Juice"
+          },
+          "brand": {
+            "S": "Pams Value"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "0.89"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5005953-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5005953-EA-000"
+          },
+          "product_name": {
+            "S": "Diced Tomatoes In Juice With Garlic And Oregano"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "1.29"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5005955-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5005955-EA-000"
+          },
+          "product_name": {
+            "S": "Italian Diced Tomatoes"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "1.29"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5004844-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5004844-EA-000"
+          },
+          "product_name": {
+            "S": "Basil & Oregano Italian Diced Tomatoes"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "1.29"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5026477-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5026477-EA-000"
+          },
+          "product_name": {
+            "S": "Organic Chopped Tomatoes"
+          },
+          "brand": {
+            "S": "Ceres Organics"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "1.99"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5019940-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5019940-EA-000"
+          },
+          "product_name": {
+            "S": "Chunky Style Tuna In Spring Water"
+          },
+          "brand": {
+            "S": "Sealord"
+          },
+          "size": {
+            "S": "95g"
+          },
+          "price": {
+            "N": "2.69"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5009951-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5009951-EA-000"
+          },
+          "product_name": {
+            "S": "Lemon Pepper Flavour Tuna"
+          },
+          "brand": {
+            "S": "Sealord"
+          },
+          "size": {
+            "S": "95g"
+          },
+          "price": {
+            "N": "2.69"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5009952-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5009952-EA-000"
+          },
+          "product_name": {
+            "S": "Smoked Flavour Tuna"
+          },
+          "brand": {
+            "S": "Sealord"
+          },
+          "size": {
+            "S": "95g"
+          },
+          "price": {
+            "N": "2.69"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5009950-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5009950-EA-000"
+          },
+          "product_name": {
+            "S": "Tomato & Basil Tuna"
+          },
+          "brand": {
+            "S": "Sealord"
+          },
+          "size": {
+            "S": "95g"
+          },
+          "price": {
+            "N": "2.69"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5016928-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5016928-EA-000"
+          },
+          "product_name": {
+            "S": "Sweet Thai Chilli Tuna"
+          },
+          "brand": {
+            "S": "Sealord"
+          },
+          "size": {
+            "S": "95g"
+          },
+          "price": {
+            "N": "2.69"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5030339-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5030339-EA-000"
+          },
+          "product_name": {
+            "S": "Chickpeas In Brine"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "1.09"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5017693-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5017693-EA-000"
+          },
+          "product_name": {
+            "S": "Organic Chickpeas"
+          },
+          "brand": {
+            "S": "Chantal Organics"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "2.19"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5021436-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5021436-EA-000"
+          },
+          "product_name": {
+            "S": "Chickpeas In Spring Water"
+          },
+          "brand": {
+            "S": "Wattie's"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "2.39"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5042119-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5042119-EA-000"
+          },
+          "product_name": {
+            "S": "Brown Lentils In Brine"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "1.09"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5030355-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5030355-EA-000"
+          },
+          "product_name": {
+            "S": "Cannellini Beans In Brine"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "410g"
+          },
+          "price": {
+            "N": "1.09"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5003771-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5003771-EA-000"
+          },
+          "product_name": {
+            "S": "Split Red Lentils"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "500g"
+          },
+          "price": {
+            "N": "2.29"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5124297-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5124297-EA-000"
+          },
+          "product_name": {
+            "S": "Organic Lentils"
+          },
+          "brand": {
+            "S": "Chantal Organics"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "2.19"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5009340-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5009340-EA-000"
+          },
+          "product_name": {
+            "S": "Red Kidney Beans In Brine"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "410g"
+          },
+          "price": {
+            "N": "1.09"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5219762-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5219762-EA-000"
+          },
+          "product_name": {
+            "S": "Black Beans In Brine"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "410g"
+          },
+          "price": {
+            "N": "1.09"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5017681-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5017681-EA-000"
+          },
+          "product_name": {
+            "S": "Organic Black Beans"
+          },
+          "brand": {
+            "S": "Chantal Organics"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "2.19"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5038667-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5038667-EA-000"
+          },
+          "product_name": {
+            "S": "Black Beans In Spring Water"
+          },
+          "brand": {
+            "S": "Wattie's"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "2.39"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5030321-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5030321-EA-000"
+          },
+          "product_name": {
+            "S": "Black Beans Refried"
+          },
+          "brand": {
+            "S": "La Morena"
+          },
+          "size": {
+            "S": "440g"
+          },
+          "price": {
+            "N": "4.8"
+          },
+          "category": {
+            "S": "World Foods"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5035399-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5035399-EA-000"
+          },
+          "product_name": {
+            "S": "Mexican Black Bean Chilli"
+          },
+          "brand": {
+            "S": "Naked Kitchen"
+          },
+          "size": {
+            "S": "500g"
+          },
+          "price": {
+            "N": "7.79"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5004861-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5004861-EA-000"
+          },
+          "product_name": {
+            "S": "Tomato Paste"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "170g"
+          },
+          "price": {
+            "N": "1.29"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5013376-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5013376-EA-000"
+          },
+          "product_name": {
+            "S": "Tomato Paste"
+          },
+          "brand": {
+            "S": "Leggo's"
+          },
+          "size": {
+            "S": "400g"
+          },
+          "price": {
+            "N": "5.71"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    }
+  ]
+}

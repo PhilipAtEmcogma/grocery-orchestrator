@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5089106-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5089106-EA-000"
+          },
+          "product_name": {
+            "S": "Madagascan Vanilla Bean Extract"
+          },
+          "brand": {
+            "S": "Queen"
+          },
+          "size": {
+            "S": "10ml"
+          },
+          "price": {
+            "N": "7.79"
+          },
+          "category": {
+            "S": "Baking Supplies & Sugar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5038971-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5038971-EA-000"
+          },
+          "product_name": {
+            "S": "Pure Vanilla Beans"
+          },
+          "brand": {
+            "S": "Heilala"
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "15.99"
+          },
+          "category": {
+            "S": "Baking Supplies & Sugar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5327946-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5327946-EA-000"
+          },
+          "product_name": {
+            "S": "Soothing Oat Milk Tonka Bean & Vanilla Body Wash"
+          },
+          "brand": {
+            "S": "Glow Lab"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "19.23"
+          },
+          "category": {
+            "S": "Personal Care"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5009786-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5009786-EA-000"
+          },
+          "product_name": {
+            "S": "Chunky Style Tuna In Spring Water"
+          },
+          "brand": {
+            "S": "Sealord"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "9.29"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5001019-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5001019-EA-000"
+          },
+          "product_name": {
+            "S": "Lemon Pepper Flavour Tuna With Crackers"
+          },
+          "brand": {
+            "S": "Sealord"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "3.49"
+          },
+          "category": {
+            "S": "Chips, Nuts & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5027799-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5027799-EA-000"
+          },
+          "product_name": {
+            "S": "Chunk Style Tuna In Springwater"
+          },
+          "brand": {
+            "S": "John West"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "8.02"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5307233-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5307233-EA-000"
+          },
+          "product_name": {
+            "S": "Protein+ Brown & Red Rice Lime Lemongrass & Chickpeas Tuna Bowl"
+          },
+          "brand": {
+            "S": "John West"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "5.0"
+          },
+          "category": {
+            "S": "Seafood"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5025497-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5025497-EA-000"
+          },
+          "product_name": {
+            "S": "Streaky Bacon"
+          },
+          "brand": {
+            "S": "Beehive"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "9.19"
+          },
+          "category": {
+            "S": "Deli Meats & Smoked Fish"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5014189-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5014189-EA-000"
+          },
+          "product_name": {
+            "S": "Crafty Cooks Bacon Strips"
+          },
+          "brand": {
+            "S": "Hellers"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "7.0"
+          },
+          "category": {
+            "S": "Deli Meats & Smoked Fish"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5014492-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5014492-EA-000"
+          },
+          "product_name": {
+            "S": "Rindless Eye Bacon"
+          },
+          "brand": {
+            "S": "Beehive"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "8.99"
+          },
+          "category": {
+            "S": "Deli Meats & Smoked Fish"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5018448-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5018448-EA-000"
+          },
+          "product_name": {
+            "S": "Middle Bacon"
+          },
+          "brand": {
+            "S": "Medallion"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "14.99"
+          },
+          "category": {
+            "S": "Deli Meats & Smoked Fish"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5276267-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5276267-EA-000"
+          },
+          "product_name": {
+            "S": "Old School Venison Sausages"
+          },
+          "brand": {
+            "S": "Beard Brothers"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "12.69"
+          },
+          "category": {
+            "S": "Mince, Sausages & Meatballs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5031176-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5031176-EA-000"
+          },
+          "product_name": {
+            "S": "Hypo-Allergenic 3 Ply Long Toilet Rolls"
+          },
+          "brand": {
+            "S": "Sorbent"
+          },
+          "size": {
+            "S": "100 sheets"
+          },
+          "price": {
+            "N": "11.99"
+          },
+          "category": {
+            "S": "Household Cleaning & Paper"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5263775-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5263775-EA-000"
+          },
+          "product_name": {
+            "S": "Recycled 2ply Long Toilet Rolls"
+          },
+          "brand": {
+            "S": "Earthsmart"
+          },
+          "size": {
+            "S": "100 sheets"
+          },
+          "price": {
+            "N": "7.49"
+          },
+          "category": {
+            "S": "Household Cleaning & Paper"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5326473-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5326473-EA-000"
+          },
+          "product_name": {
+            "S": "Soft & Strong Every Day 3 Ply White Tissues"
+          },
+          "brand": {
+            "S": "Paseo"
+          },
+          "size": {
+            "S": "100"
+          },
+          "price": {
+            "N": "3.09"
+          },
+          "category": {
+            "S": "Household Cleaning & Paper"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5347425-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5347425-EA-000"
+          },
+          "product_name": {
+            "S": "Rapid Lime Dishwash Tablets"
+          },
+          "brand": {
+            "S": "Active"
+          },
+          "size": {
+            "S": "100"
+          },
+          "price": {
+            "N": "26.99"
+          },
+          "category": {
+            "S": "Household Cleaning & Paper"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5340458-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5340458-EA-000"
+          },
+          "product_name": {
+            "S": "Citrus Dishwash Liquid"
+          },
+          "brand": {
+            "S": "Pams Value"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "3.39"
+          },
+          "category": {
+            "S": "Household Cleaning & Paper"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5016409-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5016409-EA-000"
+          },
+          "product_name": {
+            "S": "Lime With Baking Soda Dishwasher Cleaner"
+          },
+          "brand": {
+            "S": "Active"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "9.29"
+          },
+          "category": {
+            "S": "Household Cleaning & Paper"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5340686-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5340686-EA-000"
+          },
+          "product_name": {
+            "S": "Lemon Plant Powered Dishwasher Tablets"
+          },
+          "brand": {
+            "S": "Earthwise"
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "15.99"
+          },
+          "category": {
+            "S": "Household Cleaning & Paper"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5335527-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5335527-EA-000"
+          },
+          "product_name": {
+            "S": "Super Dish Brush"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "1pk"
+          },
+          "price": {
+            "N": "2.99"
+          },
+          "category": {
+            "S": "Household Cleaning & Paper"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5320882-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5320882-EA-000"
+          },
+          "product_name": {
+            "S": "Cloud Nine Laundry In-Wash Scent Booster"
+          },
+          "brand": {
+            "S": "Fluffy"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "27.99"
+          },
+          "category": {
+            "S": "Household Cleaning & Paper"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5313393-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5313393-EA-000"
+          },
+          "product_name": {
+            "S": "Sensitive 3 In 1 Laundry Capsules"
+          },
+          "brand": {
+            "S": "Persil"
+          },
+          "size": {
+            "S": "100"
+          },
+          "price": {
+            "N": "44.99"
+          },
+          "category": {
+            "S": "Household Cleaning & Paper"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5304194-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5304194-EA-000"
+          },
+          "product_name": {
+            "S": "Sensitive 3 In 1 Laundry Capsules"
+          },
+          "brand": {
+            "S": "Persil"
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "26.49"
+          },
+          "category": {
+            "S": "Household Cleaning & Paper"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5335839-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5335839-EA-000"
+          },
+          "product_name": {
+            "S": "Refresh Rinse Ocean Fresh Fabric Conditioner"
+          },
+          "brand": {
+            "S": "Cuddly"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "14.99"
+          },
+          "category": {
+            "S": "Personal Care"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5321537-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5321537-EA-000"
+          },
+          "product_name": {
+            "S": "Fresh Ocean Scent Dryer Sheets"
+          },
+          "brand": {
+            "S": "Resolv"
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "7.99"
+          },
+          "category": {
+            "S": "Household Cleaning & Paper"
+          }
+        }
+      }
+    }
+  ]
+}
