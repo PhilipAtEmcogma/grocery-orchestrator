@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5035357-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5035357-EA-000"
+          },
+          "product_name": {
+            "S": "Smooth & Shine Macadamia Oil Conditioner"
+          },
+          "brand": {
+            "S": "Palmolive Naturals"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "7.39"
+          },
+          "category": {
+            "S": "Personal Care"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5241617-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5241617-EA-000"
+          },
+          "product_name": {
+            "S": "Variety Pack Assorted Breakfast Cereal"
+          },
+          "brand": {
+            "S": "Kellogg's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "8.29"
+          },
+          "category": {
+            "S": "Breakfast Cereals"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5019144-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5019144-EA-000"
+          },
+          "product_name": {
+            "S": "Natural Brown Rice Flakes"
+          },
+          "brand": {
+            "S": "Real Foods"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "8.49"
+          },
+          "category": {
+            "S": "Pasta, Rice & Noodles"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5335191-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5335191-EA-000"
+          },
+          "product_name": {
+            "S": "Vanilla & Almond Clusters & Crispy Flakes"
+          },
+          "brand": {
+            "S": "Hubbards"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "8.07"
+          },
+          "category": {
+            "S": "Baking Supplies & Sugar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5305817-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5305817-EA-000"
+          },
+          "product_name": {
+            "S": "Organic Blueberry Cashew Gluten Free Muesli"
+          },
+          "brand": {
+            "S": "Ceres Organics"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "13.49"
+          },
+          "category": {
+            "S": "Breakfast Cereals"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5019518-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5019518-EA-000"
+          },
+          "product_name": {
+            "S": "Protein Energize Choc Hit Flavour Liquid Breakfast"
+          },
+          "brand": {
+            "S": "Sanitarium Up & Go"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "12.99"
+          },
+          "category": {
+            "S": "Breakfast Cereals"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5012016-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5012016-EA-000"
+          },
+          "product_name": {
+            "S": "Vanilla Ice Flavour Liquid Breakfast"
+          },
+          "brand": {
+            "S": "Sanitarium Up & Go"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "11.99"
+          },
+          "category": {
+            "S": "Baking Supplies & Sugar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5010920-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5010920-EA-000"
+          },
+          "product_name": {
+            "S": "Vanilla Ice Flavour Liquid Breakfast"
+          },
+          "brand": {
+            "S": "Sanitarium Up & Go"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "3.19"
+          },
+          "category": {
+            "S": "Baking Supplies & Sugar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5013610-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5013610-EA-000"
+          },
+          "product_name": {
+            "S": "Cafe-Style Toasted Original Muesli"
+          },
+          "brand": {
+            "S": "Vogel's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "9.49"
+          },
+          "category": {
+            "S": "Breakfast Cereals"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5348787-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5348787-EA-000"
+          },
+          "product_name": {
+            "S": "Chocolate Max Protein"
+          },
+          "brand": {
+            "S": "Hubbards"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "10.09"
+          },
+          "category": {
+            "S": "Chocolate, Sweets & Chewing Gum"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5272645-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5272645-EA-000"
+          },
+          "product_name": {
+            "S": "Crisp Apple Burst Multipurpose Cleaner Antibacterial Spray"
+          },
+          "brand": {
+            "S": "Dettol"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "6.69"
+          },
+          "category": {
+            "S": "Household Cleaning & Paper"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5287631-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5287631-EA-000"
+          },
+          "product_name": {
+            "S": "Anti Dandruff Apple Fresh Conditioner"
+          },
+          "brand": {
+            "S": "Head & Shoulders"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "14.99"
+          },
+          "category": {
+            "S": "Personal Care"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5334074-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5334074-EA-000"
+          },
+          "product_name": {
+            "S": "Blackcurrant Apple Pre + Probiotic Soda Drink"
+          },
+          "brand": {
+            "S": "Moodi"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "4.99"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5040730-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5040730-EA-000"
+          },
+          "product_name": {
+            "S": "Fairtrade Bananas"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "1pk"
+          },
+          "price": {
+            "N": "5.29"
+          },
+          "category": {
+            "S": "Fruit"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5341072-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5341072-EA-000"
+          },
+          "product_name": {
+            "S": "Strawberry & Banana Yoghurt Melts 12+ Months"
+          },
+          "brand": {
+            "S": "Little Bellies"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "6.49"
+          },
+          "category": {
+            "S": "Yoghurt"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5023479-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5023479-EA-000"
+          },
+          "product_name": {
+            "S": "100% Orange Juice"
+          },
+          "brand": {
+            "S": "The Homegrown Juice Company"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "7.29"
+          },
+          "category": {
+            "S": "Juice & Smoothies"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5006676-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5006676-EA-000"
+          },
+          "product_name": {
+            "S": "Juice Kitchen Premium Orange Juice"
+          },
+          "brand": {
+            "S": "Keri"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "3.99"
+          },
+          "category": {
+            "S": "Juice & Smoothies"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5239963-KGM-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5239963-KGM-000"
+          },
+          "product_name": {
+            "S": "Grapefruit"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "5.79"
+          },
+          "category": {
+            "S": "Fruit"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5018203-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5018203-EA-000"
+          },
+          "product_name": {
+            "S": "Antibacterial 2 Hour Defence Orange Liquid Hand Wash Refill"
+          },
+          "brand": {
+            "S": "Palmolive"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "5.19"
+          },
+          "category": {
+            "S": "Personal Care"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5002153-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5002153-EA-000"
+          },
+          "product_name": {
+            "S": "NZ Grapefruit & Orange Marmalade"
+          },
+          "brand": {
+            "S": "Barker's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "6.49"
+          },
+          "category": {
+            "S": "Jams, Honey & Spreads"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5014937-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5014937-EA-000"
+          },
+          "product_name": {
+            "S": "Orange Flavour Sore Throat Relief Lozenges"
+          },
+          "brand": {
+            "S": "Strepsils"
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "14.99"
+          },
+          "category": {
+            "S": "Health Care"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5025838-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5025838-EA-000"
+          },
+          "product_name": {
+            "S": "Low Calorie Orange Marmalade"
+          },
+          "brand": {
+            "S": "Joknal"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "6.29"
+          },
+          "category": {
+            "S": "Jams, Honey & Spreads"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5025756-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5025756-EA-000"
+          },
+          "product_name": {
+            "S": "Vitamin C 500 + Echinacea Orange Flavour Tablets"
+          },
+          "brand": {
+            "S": "Healtheries"
+          },
+          "size": {
+            "S": "100"
+          },
+          "price": {
+            "N": "13.99"
+          },
+          "category": {
+            "S": "Health Care"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5329506-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5329506-EA-000"
+          },
+          "product_name": {
+            "S": "Pulpy Orange Fruit Drink"
+          },
+          "brand": {
+            "S": "Keri"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "5.99"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5309314-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5309314-EA-000"
+          },
+          "product_name": {
+            "S": "Bubbles Orange Mango Lemonade Carbonated Fruit Drink"
+          },
+          "brand": {
+            "S": "Just Juice"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "9.99"
+          },
+          "category": {
+            "S": "Juice & Smoothies"
+          }
+        }
+      }
+    }
+  ]
+}

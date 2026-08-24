@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5020911-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5020911-EA-000"
+          },
+          "product_name": {
+            "S": "Chocolate Coated Coffee Beans"
+          },
+          "brand": {
+            "S": "L'affare"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "7.79"
+          },
+          "category": {
+            "S": "Chocolate, Sweets & Chewing Gum"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5014475-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5014475-EA-000"
+          },
+          "product_name": {
+            "S": "Raspberry Choc Logs"
+          },
+          "brand": {
+            "S": "RJ's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "3.09"
+          },
+          "category": {
+            "S": "Chocolate, Sweets & Chewing Gum"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5027292-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5027292-EA-000"
+          },
+          "product_name": {
+            "S": "Hokey Pokey Chocolate Biscuits"
+          },
+          "brand": {
+            "S": "Griffin's Squiggles"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "5.99"
+          },
+          "category": {
+            "S": "Biscuits & Crackers"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5008240-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5008240-EA-000"
+          },
+          "product_name": {
+            "S": "Chocolate Sandwiches Biscuits"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "3.49"
+          },
+          "category": {
+            "S": "Biscuits & Crackers"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5011523-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5011523-EA-000"
+          },
+          "product_name": {
+            "S": "The Original Chocolate Chunk Bite Size Cookies"
+          },
+          "brand": {
+            "S": "Cookie Time"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "6.97"
+          },
+          "category": {
+            "S": "Biscuits & Crackers"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5349757-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5349757-EA-000"
+          },
+          "product_name": {
+            "S": "Chockie Chippies Minis Biscuits"
+          },
+          "brand": {
+            "S": "Griffin's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "2.49"
+          },
+          "category": {
+            "S": "Biscuits & Crackers"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5335155-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5335155-EA-000"
+          },
+          "product_name": {
+            "S": "Secret Centre Biscuits"
+          },
+          "brand": {
+            "S": "Bounty"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "5.29"
+          },
+          "category": {
+            "S": "Biscuits & Crackers"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5328226-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5328226-EA-000"
+          },
+          "product_name": {
+            "S": "40% Chocolate Triple Chocolate Chunk Cookies"
+          },
+          "brand": {
+            "S": "Higgins"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "5.49"
+          },
+          "category": {
+            "S": "Biscuits & Crackers"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5010904-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5010904-EA-000"
+          },
+          "product_name": {
+            "S": "Bites"
+          },
+          "brand": {
+            "S": "Griffin's Toffee Pops"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.99"
+          },
+          "category": {
+            "S": "Biscuits & Crackers"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5003075-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5003075-EA-000"
+          },
+          "product_name": {
+            "S": "Milk Arrowroot Biscuits"
+          },
+          "brand": {
+            "S": "Arnott's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "3.59"
+          },
+          "category": {
+            "S": "Biscuits & Crackers"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5249287-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5249287-EA-000"
+          },
+          "product_name": {
+            "S": "Coconut Macaroon Cookies"
+          },
+          "brand": {
+            "S": "Pams Gluten Free"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.19"
+          },
+          "category": {
+            "S": "Biscuits & Crackers"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5017290-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5017290-EA-000"
+          },
+          "product_name": {
+            "S": "Gluten Free Vegan Delicious Homestyle Almond Cookies"
+          },
+          "brand": {
+            "S": "Kea Cookies"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "7.19"
+          },
+          "category": {
+            "S": "Biscuits & Crackers"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5017291-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5017291-EA-000"
+          },
+          "product_name": {
+            "S": "Gluten Free Vegan Delicious Homestyle Peanut Brownies Cookies"
+          },
+          "brand": {
+            "S": "Kea Cookies"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "7.19"
+          },
+          "category": {
+            "S": "Biscuits & Crackers"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5012814-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5012814-EA-000"
+          },
+          "product_name": {
+            "S": "Pub Style Chunky Beer Batter Chips"
+          },
+          "brand": {
+            "S": "McCain"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "5.99"
+          },
+          "category": {
+            "S": "Frozen Chips & Hash Browns"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5021887-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5021887-EA-000"
+          },
+          "product_name": {
+            "S": "Golden Crunch Chunky Cut Chips"
+          },
+          "brand": {
+            "S": "Birds Eye"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "6.04"
+          },
+          "category": {
+            "S": "Frozen Chips & Hash Browns"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5022679-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5022679-EA-000"
+          },
+          "product_name": {
+            "S": "Sea Salt & Rosemary Chips"
+          },
+          "brand": {
+            "S": "Birds Eye Deli"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "6.34"
+          },
+          "category": {
+            "S": "Frozen Chips & Hash Browns"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5263298-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5263298-EA-000"
+          },
+          "product_name": {
+            "S": "Golden Ale Beer Batter Seasoned Chips"
+          },
+          "brand": {
+            "S": "Birds Eye Deli"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "6.34"
+          },
+          "category": {
+            "S": "Frozen Chips & Hash Browns"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5003748-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5003748-EA-000"
+          },
+          "product_name": {
+            "S": "Frozen Garden Peas"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "3.49"
+          },
+          "category": {
+            "S": "Frozen Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5207147-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5207147-EA-000"
+          },
+          "product_name": {
+            "S": "Beef Casserole Frozen Meal"
+          },
+          "brand": {
+            "S": "Tomorrow's Meals"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "11.89"
+          },
+          "category": {
+            "S": "Frozen Meals & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5295266-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5295266-EA-000"
+          },
+          "product_name": {
+            "S": "Frozen Dough Pizza"
+          },
+          "brand": {
+            "S": "Organic Dough Co"
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "13.49"
+          },
+          "category": {
+            "S": "Frozen Meals & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5004964-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5004964-EA-000"
+          },
+          "product_name": {
+            "S": "Classic Mixed Savouries"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "6.99"
+          },
+          "category": {
+            "S": "Frozen Meals & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5261984-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5261984-EA-000"
+          },
+          "product_name": {
+            "S": "Marvels Wildberry Ambrosia Yoghurt Ice Cream"
+          },
+          "brand": {
+            "S": "Much Moore"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "6.29"
+          },
+          "category": {
+            "S": "Ice Cream & Desserts"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5328633-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5328633-EA-000"
+          },
+          "product_name": {
+            "S": "Rocky Road Caramel Ice Cream"
+          },
+          "brand": {
+            "S": "Tip Top"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "8.99"
+          },
+          "category": {
+            "S": "Ice Cream & Desserts"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5034048-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5034048-EA-000"
+          },
+          "product_name": {
+            "S": "Peppermint Ice Cream"
+          },
+          "brand": {
+            "S": "Magnum"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "11.79"
+          },
+          "category": {
+            "S": "Ice Cream & Desserts"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5015103-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5015103-EA-000"
+          },
+          "product_name": {
+            "S": "Vanilla Slices Ice Cream"
+          },
+          "brand": {
+            "S": "Tip Top"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "10.99"
+          },
+          "category": {
+            "S": "Ice Cream & Desserts"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,5790 @@
+{
+  "SmartGroceryRecipes": [
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52893"
+          },
+          "recipe_name": {
+            "S": "Apple & Blackberry Crumble"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "120g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "60g"
+                  },
+                  "key": {
+                    "S": "caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "60g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Braeburn Apples"
+                  },
+                  "measure": {
+                    "S": "300g"
+                  },
+                  "key": {
+                    "S": "braeburn apples"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "30g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Demerara Sugar"
+                  },
+                  "measure": {
+                    "S": "30g"
+                  },
+                  "key": {
+                    "S": "demerara sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Blackberries"
+                  },
+                  "measure": {
+                    "S": "120g"
+                  },
+                  "key": {
+                    "S": "blackberries"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cinnamon"
+                  },
+                  "measure": {
+                    "S": "¼ teaspoon"
+                  },
+                  "key": {
+                    "S": "cinnamon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ice Cream"
+                  },
+                  "measure": {
+                    "S": "to serve"
+                  },
+                  "key": {
+                    "S": "ice cream"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "caster sugar"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "braeburn apples"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "demerara sugar"
+              },
+              {
+                "S": "blackberries"
+              },
+              {
+                "S": "cinnamon"
+              },
+              {
+                "S": "ice cream"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "9"
+          },
+          "instructions": {
+            "S": "Heat oven to 190C/170C fan/gas 5. Tip the flour and sugar into a large bowl. Add the butter, then rub into the flour using your fingertips to make a light breadcrumb texture. Do not overwork it or the crumble will become heavy. Sprinkle the mixture evenly over a baking sheet and bake for 15 mins or until lightly coloured. Meanwhile, for the compote, peel, core and cut the apples into 2cm dice. Put the butter and sugar in a medium saucepan and melt together over a medium heat. Cook for 3 mins until the mixture turns to a light caramel. Stir in the apples and cook for 3 mins. Add the blackberries and cinnamon, and cook for 3 mins more. Cover, remove from the heat, then leave for 2-3 mins to continue cooking in the warmth of the pan. To serve, spoon the warm fruit into an ovenproof gratin dish, top with the crumble mix, then reheat in the oven for 5-10 mins. Serve with vanilla ice cream."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/xvsurr1511719182.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/778642/apple-and-blackberry-crumble"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=4vhcOwVBDO4"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52893"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52768"
+          },
+          "recipe_name": {
+            "S": "Apple Frangipan Tart"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "digestive biscuits"
+                  },
+                  "measure": {
+                    "S": "175g/6oz"
+                  },
+                  "key": {
+                    "S": "digestive biscuits"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "butter"
+                  },
+                  "measure": {
+                    "S": "75g/3oz"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bramley apples"
+                  },
+                  "measure": {
+                    "S": "200g/7oz"
+                  },
+                  "key": {
+                    "S": "bramley apples"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salted Butter"
+                  },
+                  "measure": {
+                    "S": "75g/3oz"
+                  },
+                  "key": {
+                    "S": "salted butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "caster sugar"
+                  },
+                  "measure": {
+                    "S": "75g/3oz"
+                  },
+                  "key": {
+                    "S": "caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "free-range eggs, beaten"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "free range eggs beaten"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "ground almonds"
+                  },
+                  "measure": {
+                    "S": "75g/3oz"
+                  },
+                  "key": {
+                    "S": "ground almonds"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "almond extract"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "almond extract"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "flaked almonds"
+                  },
+                  "measure": {
+                    "S": "50g/1¾oz"
+                  },
+                  "key": {
+                    "S": "flaked almonds"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "digestive biscuits"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "bramley apples"
+              },
+              {
+                "S": "salted butter"
+              },
+              {
+                "S": "caster sugar"
+              },
+              {
+                "S": "free range eggs beaten"
+              },
+              {
+                "S": "ground almonds"
+              },
+              {
+                "S": "almond extract"
+              },
+              {
+                "S": "flaked almonds"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "9"
+          },
+          "instructions": {
+            "S": "Preheat the oven to 200C/180C Fan/Gas 6. Put the biscuits in a large re-sealable freezer bag and bash with a rolling pin into fine crumbs. Melt the butter in a small pan, then add the biscuit crumbs and stir until coated with butter. Tip into the tart tin and, using the back of a spoon, press over the base and sides of the tin to give an even layer. Chill in the fridge while you make the filling. Cream together the butter and sugar until light and fluffy. You can do this in a food processor if you have one. Process for 2-3 minutes. Mix in the eggs, then add the ground almonds and almond extract and blend until well combined. Peel the apples, and cut thin slices of apple. Do this at the last minute to prevent the apple going brown. Arrange the slices over the biscuit base. Spread the frangipane filling evenly on top. Level the surface and sprinkle with the flaked almonds. Bake for 20-25 minutes until golden-brown and set. Remove from the oven and leave to cool for 15 minutes. Remove the sides of the tin. An easy way to do this is to stand the tin on a can of beans and push down gently on the edges of the tin. Transfer the tart, with the tin base attached, to a serving plate. Serve warm with cream, crème fraiche or ice cream."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/wxywrq1468235067.jpg"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=rp8Slv4INLk"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52768"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52959"
+          },
+          "recipe_name": {
+            "S": "Baked salmon with fennel & tomatoes"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Fennel"
+                  },
+                  "measure": {
+                    "S": "2 medium"
+                  },
+                  "key": {
+                    "S": "fennel"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Parsley"
+                  },
+                  "measure": {
+                    "S": "2 tbs chopped"
+                  },
+                  "key": {
+                    "S": "parsley"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemon"
+                  },
+                  "measure": {
+                    "S": "Juice of 1"
+                  },
+                  "key": {
+                    "S": "lemon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cherry Tomatoes"
+                  },
+                  "measure": {
+                    "S": "175g"
+                  },
+                  "key": {
+                    "S": "cherry tomatoes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Olive Oil"
+                  },
+                  "measure": {
+                    "S": "1 tbs"
+                  },
+                  "key": {
+                    "S": "olive oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salmon"
+                  },
+                  "measure": {
+                    "S": "350g"
+                  },
+                  "key": {
+                    "S": "salmon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Black Olives"
+                  },
+                  "measure": {
+                    "S": "to serve"
+                  },
+                  "key": {
+                    "S": "black olives"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "fennel"
+              },
+              {
+                "S": "parsley"
+              },
+              {
+                "S": "lemon"
+              },
+              {
+                "S": "cherry tomatoes"
+              },
+              {
+                "S": "olive oil"
+              },
+              {
+                "S": "salmon"
+              },
+              {
+                "S": "black olives"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "7"
+          },
+          "instructions": {
+            "S": "Heat oven to 180C/fan 160C/gas 4. Trim the fronds from the fennel and set aside. Cut the fennel bulbs in half, then cut each half into 3 wedges. Cook in boiling salted water for 10 mins, then drain well. Chop the fennel fronds roughly, then mix with the parsley and lemon zest. Spread the drained fennel over a shallow ovenproof dish, then add the tomatoes. Drizzle with olive oil, then bake for 10 mins. Nestle the salmon among the veg, sprinkle with lemon juice, then bake 15 mins more until the fish is just cooked. Scatter over the parsley and serve."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/1548772327.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/7745/baked-salmon-with-fennel-and-tomatoes"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=xvPR2Tfw5k0"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52959"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52767"
+          },
+          "recipe_name": {
+            "S": "Bakewell tart"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "plain flour"
+                  },
+                  "measure": {
+                    "S": "175g/6oz"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "chilled butter"
+                  },
+                  "measure": {
+                    "S": "75g/2½oz"
+                  },
+                  "key": {
+                    "S": "chilled butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "cold water"
+                  },
+                  "measure": {
+                    "S": "2-3 tbsp"
+                  },
+                  "key": {
+                    "S": "cold water"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "raspberry jam"
+                  },
+                  "measure": {
+                    "S": "1 tbsp"
+                  },
+                  "key": {
+                    "S": "raspberry jam"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "butter"
+                  },
+                  "measure": {
+                    "S": "125g/4½oz"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "caster sugar"
+                  },
+                  "measure": {
+                    "S": "125g/4½oz"
+                  },
+                  "key": {
+                    "S": "caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "ground almonds"
+                  },
+                  "measure": {
+                    "S": "125g/4½oz"
+                  },
+                  "key": {
+                    "S": "ground almonds"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "free-range egg, beaten"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "free range egg beaten"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "almond extract"
+                  },
+                  "measure": {
+                    "S": "½ tsp"
+                  },
+                  "key": {
+                    "S": "almond extract"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "flaked almonds"
+                  },
+                  "measure": {
+                    "S": "50g/1¾oz"
+                  },
+                  "key": {
+                    "S": "flaked almonds"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "chilled butter"
+              },
+              {
+                "S": "cold water"
+              },
+              {
+                "S": "raspberry jam"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "caster sugar"
+              },
+              {
+                "S": "ground almonds"
+              },
+              {
+                "S": "free range egg beaten"
+              },
+              {
+                "S": "almond extract"
+              },
+              {
+                "S": "flaked almonds"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "10"
+          },
+          "instructions": {
+            "S": "To make the pastry, measure the flour into a bowl and rub in the butter with your fingertips until the mixture resembles fine breadcrumbs. Add the water, mixing to form a soft dough. Roll out the dough on a lightly floured work surface and use to line a 20cm/8in flan tin. Leave in the fridge to chill for 30 minutes. Preheat the oven to 200C/400F/Gas 6 (180C fan). Line the pastry case with foil and fill with baking beans. Bake blind for about 15 minutes, then remove the beans and foil and cook for a further five minutes to dry out the base. For the filing, spread the base of the flan generously with raspberry jam. Melt the butter in a pan, take off the heat and then stir in the sugar. Add ground almonds, egg and almond extract. Pour into the flan tin and sprinkle over the flaked almonds. Bake for about 35 minutes. If the almonds seem to be browning too quickly, cover the tart loosely with foil to prevent them burning."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/wyrqqq1468233628.jpg"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=1ahpSTf_Pvk"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52767"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52894"
+          },
+          "recipe_name": {
+            "S": "Battenberg Cake"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "175g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "175g"
+                  },
+                  "key": {
+                    "S": "caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Self-raising Flour"
+                  },
+                  "measure": {
+                    "S": "140g"
+                  },
+                  "key": {
+                    "S": "self raising flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Almonds"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "almonds"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Baking Powder"
+                  },
+                  "measure": {
+                    "S": "½ tsp"
+                  },
+                  "key": {
+                    "S": "baking powder"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Eggs"
+                  },
+                  "measure": {
+                    "S": "3 Medium"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vanilla Extract"
+                  },
+                  "measure": {
+                    "S": "½ tsp"
+                  },
+                  "key": {
+                    "S": "vanilla extract"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Almond Extract"
+                  },
+                  "measure": {
+                    "S": "¼ teaspoon"
+                  },
+                  "key": {
+                    "S": "almond extract"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "175g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "175g"
+                  },
+                  "key": {
+                    "S": "caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Self-raising Flour"
+                  },
+                  "measure": {
+                    "S": "140g"
+                  },
+                  "key": {
+                    "S": "self raising flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Almonds"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "almonds"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Baking Powder"
+                  },
+                  "measure": {
+                    "S": "½ tsp"
+                  },
+                  "key": {
+                    "S": "baking powder"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Eggs"
+                  },
+                  "measure": {
+                    "S": "3 Medium"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vanilla Extract"
+                  },
+                  "measure": {
+                    "S": "½ tsp"
+                  },
+                  "key": {
+                    "S": "vanilla extract"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Almond Extract"
+                  },
+                  "measure": {
+                    "S": "¼ teaspoon"
+                  },
+                  "key": {
+                    "S": "almond extract"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pink Food Colouring"
+                  },
+                  "measure": {
+                    "S": "½ tsp"
+                  },
+                  "key": {
+                    "S": "pink food colouring"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Apricot"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "apricot"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Marzipan"
+                  },
+                  "measure": {
+                    "S": "1kg"
+                  },
+                  "key": {
+                    "S": "marzipan"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Icing Sugar"
+                  },
+                  "measure": {
+                    "S": "Dusting"
+                  },
+                  "key": {
+                    "S": "icing sugar"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "butter"
+              },
+              {
+                "S": "caster sugar"
+              },
+              {
+                "S": "self raising flour"
+              },
+              {
+                "S": "almonds"
+              },
+              {
+                "S": "baking powder"
+              },
+              {
+                "S": "eggs"
+              },
+              {
+                "S": "vanilla extract"
+              },
+              {
+                "S": "almond extract"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "caster sugar"
+              },
+              {
+                "S": "self raising flour"
+              },
+              {
+                "S": "almonds"
+              },
+              {
+                "S": "baking powder"
+              },
+              {
+                "S": "eggs"
+              },
+              {
+                "S": "vanilla extract"
+              },
+              {
+                "S": "almond extract"
+              },
+              {
+                "S": "pink food colouring"
+              },
+              {
+                "S": "apricot"
+              },
+              {
+                "S": "marzipan"
+              },
+              {
+                "S": "icing sugar"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "20"
+          },
+          "instructions": {
+            "S": "Heat oven to 180C/160C fan/gas 4 and line the base and sides of a 20cm square tin with baking parchment (the easiest way is to cross 2 x 20cm-long strips over the base). To make the almond sponge, put the butter, sugar, flour, ground almonds, baking powder, eggs, vanilla and almond extract in a large bowl. Beat with an electric whisk until the mix comes together smoothly. Scrape into the tin, spreading to the corners, and bake for 25-30 mins – when you poke in a skewer, it should come out clean. Cool in the tin for 10 mins, then transfer to a wire rack to finish cooling while you make the second sponge. For the pink sponge, line the tin as above. Mix all the ingredients together as above, but don’t add the almond extract. Fold in some pink food colouring. Then scrape it all into the tin and bake as before. Cool. To assemble, heat the jam in a small pan until runny, then sieve. Barely trim two opposite edges from the almond sponge, then well trim a third edge. Roughly measure the height of the sponge, then cutting from the well-trimmed edge, use a ruler to help you cut 4 slices each the same width as the sponge height. Discard or nibble leftover sponge. Repeat with pink cake. Take 2 x almond slices and 2 x pink slices and trim so they are all the same length. Roll out one marzipan block on a surface lightly dusted with icing sugar to just over 20cm wide, then keep rolling lengthways until the marzipan is roughly 0.5cm thick. Brush with apricot jam, then lay a pink and an almond slice side by side at one end of the marzipan, brushing jam in between to stick sponges, and leaving 4cm clear marzipan at the end. Brush more jam on top of the sponges, then sandwich remaining 2 slices on top, alternating colours to give a checkerboard effect. Trim the marzipan to the length of the cakes. Carefully lift up the marzipan and smooth over the cake with your hands, but leave a small marzipan fold along the bottom edge before you stick it to the first side. Trim opposite side to match size of fold, then crimp edges using fingers and thumb (or, more simply, press with prongs of fork). If you like, mark the 10 slices using the prongs of a fork. Assemble second Battenberg and keep in an airtight box or well wrapped in cling film for up to 3 days. Can be frozen for up to a month."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/ywwrsp1511720277.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/1120657/battenberg-cake"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=aB41Q7kDZQ0"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52894"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52848"
+          },
+          "recipe_name": {
+            "S": "Bean & Sausage Hotpot"
+          },
+          "category": {
+            "S": "Miscellaneous"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Sausages"
+                  },
+                  "measure": {
+                    "S": "8 large"
+                  },
+                  "key": {
+                    "S": "sausages"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Tomato Sauce"
+                  },
+                  "measure": {
+                    "S": "1 Jar"
+                  },
+                  "key": {
+                    "S": "tomato sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter Beans"
+                  },
+                  "measure": {
+                    "S": "1200g"
+                  },
+                  "key": {
+                    "S": "butter beans"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Black Treacle"
+                  },
+                  "measure": {
+                    "S": "1 tbls"
+                  },
+                  "key": {
+                    "S": "black treacle"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "English Mustard"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "english mustard"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "sausages"
+              },
+              {
+                "S": "tomato sauce"
+              },
+              {
+                "S": "butter beans"
+              },
+              {
+                "S": "black treacle"
+              },
+              {
+                "S": "english mustard"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "5"
+          },
+          "instructions": {
+            "S": "In a large casserole, fry the sausages until brown all over – about 10 mins. Add the tomato sauce, stirring well, then stir in the beans, treacle or sugar and mustard. Bring to the simmer, cover and cook for 30 mins. Great served with crusty bread or rice."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/vxuyrx1511302687.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/339607/bean-and-sausage-hotpot"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=B0YX0yPX4Wo"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52848"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52874"
+          },
+          "recipe_name": {
+            "S": "Beef and Mustard Pie"
+          },
+          "category": {
+            "S": "Beef"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Beef"
+                  },
+                  "measure": {
+                    "S": "1kg"
+                  },
+                  "key": {
+                    "S": "beef"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "2 tbs"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rapeseed Oil"
+                  },
+                  "measure": {
+                    "S": "2 tbs"
+                  },
+                  "key": {
+                    "S": "rapeseed oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Wine"
+                  },
+                  "measure": {
+                    "S": "200ml"
+                  },
+                  "key": {
+                    "S": "red wine"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Beef Stock"
+                  },
+                  "measure": {
+                    "S": "400ml"
+                  },
+                  "key": {
+                    "S": "beef stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1 finely sliced"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "2 chopped"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thyme"
+                  },
+                  "measure": {
+                    "S": "3 sprigs"
+                  },
+                  "key": {
+                    "S": "thyme"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mustard"
+                  },
+                  "measure": {
+                    "S": "2 tbs"
+                  },
+                  "key": {
+                    "S": "mustard"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Egg Yolks"
+                  },
+                  "measure": {
+                    "S": "2 free-range"
+                  },
+                  "key": {
+                    "S": "egg yolks"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Puff Pastry"
+                  },
+                  "measure": {
+                    "S": "400g"
+                  },
+                  "key": {
+                    "S": "puff pastry"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Green Beans"
+                  },
+                  "measure": {
+                    "S": "300g"
+                  },
+                  "key": {
+                    "S": "green beans"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "25g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salt"
+                  },
+                  "measure": {
+                    "S": "pinch"
+                  },
+                  "key": {
+                    "S": "salt"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pepper"
+                  },
+                  "measure": {
+                    "S": "pinch"
+                  },
+                  "key": {
+                    "S": "pepper"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "beef"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "rapeseed oil"
+              },
+              {
+                "S": "red wine"
+              },
+              {
+                "S": "beef stock"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "thyme"
+              },
+              {
+                "S": "mustard"
+              },
+              {
+                "S": "egg yolks"
+              },
+              {
+                "S": "puff pastry"
+              },
+              {
+                "S": "green beans"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "salt"
+              },
+              {
+                "S": "pepper"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "15"
+          },
+          "instructions": {
+            "S": "Preheat the oven to 150C/300F/Gas 2. Toss the beef and flour together in a bowl with some salt and black pepper. Heat a large casserole until hot, add half of the rapeseed oil and enough of the beef to just cover the bottom of the casserole. Fry until browned on each side, then remove and set aside. Repeat with the remaining oil and beef. Return the beef to the pan, add the wine and cook until the volume of liquid has reduced by half, then add the stock, onion, carrots, thyme and mustard, and season well with salt and pepper. Cover with a lid and place in the oven for two hours. Remove from the oven, check the seasoning and set aside to cool. Remove the thyme. When the beef is cool and you're ready to assemble the pie, preheat the oven to 200C/400F/Gas 6. Transfer the beef to a pie dish, brush the rim with the beaten egg yolks and lay the pastry over the top. Brush the top of the pastry with more beaten egg. Trim the pastry so there is just enough excess to crimp the edges, then place in the oven and bake for 30 minutes, or until the pastry is golden-brown and cooked through. For the green beans, bring a saucepan of salted water to the boil, add the beans and cook for 4-5 minutes, or until just tender. Drain and toss with the butter, then season with black pepper. To serve, place a large spoonful of pie onto each plate with some green beans alongside."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/sytuqu1511553755.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbc.co.uk/food/recipes/beef_and_mustard_pie_58002"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=nMyBC9staMU"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52874"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52878"
+          },
+          "recipe_name": {
+            "S": "Beef and Oyster pie"
+          },
+          "category": {
+            "S": "Beef"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Beef"
+                  },
+                  "measure": {
+                    "S": "900g"
+                  },
+                  "key": {
+                    "S": "beef"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Olive Oil"
+                  },
+                  "measure": {
+                    "S": "3 tbs"
+                  },
+                  "key": {
+                    "S": "olive oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Shallots"
+                  },
+                  "measure": {
+                    "S": "3"
+                  },
+                  "key": {
+                    "S": "shallots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "2 cloves minced"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bacon"
+                  },
+                  "measure": {
+                    "S": "125g"
+                  },
+                  "key": {
+                    "S": "bacon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thyme"
+                  },
+                  "measure": {
+                    "S": "1 tbs chopped"
+                  },
+                  "key": {
+                    "S": "thyme"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bay Leaf"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "bay leaf"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Stout"
+                  },
+                  "measure": {
+                    "S": "330ml"
+                  },
+                  "key": {
+                    "S": "stout"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Beef Stock"
+                  },
+                  "measure": {
+                    "S": "400ml"
+                  },
+                  "key": {
+                    "S": "beef stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Corn Flour"
+                  },
+                  "measure": {
+                    "S": "2 tbs"
+                  },
+                  "key": {
+                    "S": "corn flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Oysters"
+                  },
+                  "measure": {
+                    "S": "8"
+                  },
+                  "key": {
+                    "S": "oysters"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "400g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salt"
+                  },
+                  "measure": {
+                    "S": "pinch"
+                  },
+                  "key": {
+                    "S": "salt"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Eggs"
+                  },
+                  "measure": {
+                    "S": "To Glaze"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "beef"
+              },
+              {
+                "S": "olive oil"
+              },
+              {
+                "S": "shallots"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "bacon"
+              },
+              {
+                "S": "thyme"
+              },
+              {
+                "S": "bay leaf"
+              },
+              {
+                "S": "stout"
+              },
+              {
+                "S": "beef stock"
+              },
+              {
+                "S": "corn flour"
+              },
+              {
+                "S": "oysters"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "salt"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "eggs"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "15"
+          },
+          "instructions": {
+            "S": "Season the beef cubes with salt and black pepper. Heat a tablespoon of oil in the frying pan and fry the meat over a high heat. Do this in three batches so that you don’t overcrowd the pan, transferring the meat to a large flameproof casserole dish once it is browned all over. Add extra oil if the pan seems dry. In the same pan, add another tablespoon of oil and cook the shallots for 4-5 minutes, then add the garlic and fry for 30 seconds. Add the bacon and fry until slightly browned. Transfer the onion and bacon mixture to the casserole dish and add the herbs. Preheat the oven to 180C/350F/Gas 4. Pour the stout into the frying pan and bring to the boil, stirring to lift any stuck-on browned bits from the bottom of the pan. Pour the stout over the beef in the casserole dish and add the stock. Cover the casserole and place it in the oven for 1½-2 hours, or until the beef is tender and the sauce is reduced. Skim off any surface fat, taste and add salt and pepper if necessary, then stir in the cornflour paste. Put the casserole dish on the hob – don’t forget that it will be hot – and simmer for 1-2 minutes, stirring, until thickened. Leave to cool. Increase the oven to 200C/400F/Gas 6. To make the pastry, put the flour and salt in a very large bowl. Grate the butter and stir it into the flour in three batches. Gradually add 325ml/11fl oz cold water – you may not need it all – and stir with a round-bladed knife until the mixture just comes together. Knead the pastry lightly into a ball on a lightly floured surface and set aside 250g/9oz for the pie lid. Roll the rest of the pastry out until about 2cm/¾in larger than the dish you’re using. Line the dish with the pastry then pile in the filling, tucking the oysters in as well. Brush the edge of the pastry with beaten egg. Roll the remaining pastry until slightly larger than your dish and gently lift over the filling, pressing the edges firmly to seal, then trim with a sharp knife. Brush with beaten egg to glaze. Put the dish on a baking tray and bake for 25-30 minutes, or until the pastry is golden-brown and the filling is bubbling."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/wrssvt1511556563.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbc.co.uk/food/recipes/beef_and_oyster_pie_65230"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=ONX74yP6JnI"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52878"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52873"
+          },
+          "recipe_name": {
+            "S": "Beef Dumpling Stew"
+          },
+          "category": {
+            "S": "Beef"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Olive Oil"
+                  },
+                  "measure": {
+                    "S": "2 tbs"
+                  },
+                  "key": {
+                    "S": "olive oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "25g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Beef"
+                  },
+                  "measure": {
+                    "S": "750g"
+                  },
+                  "key": {
+                    "S": "beef"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "2 cloves minced"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onions"
+                  },
+                  "measure": {
+                    "S": "175g"
+                  },
+                  "key": {
+                    "S": "onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Celery"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "celery"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Leek"
+                  },
+                  "measure": {
+                    "S": "2 chopped"
+                  },
+                  "key": {
+                    "S": "leek"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Swede"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "swede"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Wine"
+                  },
+                  "measure": {
+                    "S": "150ml"
+                  },
+                  "key": {
+                    "S": "red wine"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Beef Stock"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "beef stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bay Leaf"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "bay leaf"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thyme"
+                  },
+                  "measure": {
+                    "S": "3 tbs"
+                  },
+                  "key": {
+                    "S": "thyme"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Parsley"
+                  },
+                  "measure": {
+                    "S": "3 tblsp chopped"
+                  },
+                  "key": {
+                    "S": "parsley"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "125g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Baking Powder"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "baking powder"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Suet"
+                  },
+                  "measure": {
+                    "S": "60g"
+                  },
+                  "key": {
+                    "S": "suet"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Water"
+                  },
+                  "measure": {
+                    "S": "Splash"
+                  },
+                  "key": {
+                    "S": "water"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "olive oil"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "beef"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "onions"
+              },
+              {
+                "S": "celery"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "leek"
+              },
+              {
+                "S": "swede"
+              },
+              {
+                "S": "red wine"
+              },
+              {
+                "S": "beef stock"
+              },
+              {
+                "S": "bay leaf"
+              },
+              {
+                "S": "thyme"
+              },
+              {
+                "S": "parsley"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "baking powder"
+              },
+              {
+                "S": "suet"
+              },
+              {
+                "S": "water"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "19"
+          },
+          "instructions": {
+            "S": "Preheat the oven to 180C/350F/Gas 4. For the beef stew, heat the oil and butter in an ovenproof casserole and fry the beef until browned on all sides. Sprinkle over the flour and cook for a further 2-3 minutes. Add the garlic and all the vegetables and fry for 1-2 minutes. Stir in the wine, stock and herbs, then add the Worcestershire sauce and balsamic vinegar, to taste. Season with salt and freshly ground black pepper. Cover with a lid, transfer to the oven and cook for about two hours, or until the meat is tender. For the dumplings, sift the flour, baking powder and salt into a bowl. Add the suet and enough water to form a thick dough. With floured hands, roll spoonfuls of the dough into small balls. After two hours, remove the lid from the stew and place the balls on top of the stew. Cover, return to the oven and cook for a further 20 minutes, or until the dumplings have swollen and are tender. (If you prefer your dumplings with a golden top, leave the lid off when returning to the oven.) To serve, place a spoonful of mashed potato onto each of four serving plates and top with the stew and dumplings. Sprinkle with chopped parsley."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/uyqrrv1511553350.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbc.co.uk/food/recipes/beefstewwithdumpling_87333"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=6NgheY-r5t0"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52873"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52824"
+          },
+          "recipe_name": {
+            "S": "Beef Sunday Roast"
+          },
+          "category": {
+            "S": "Beef"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Beef"
+                  },
+                  "measure": {
+                    "S": "8 slices"
+                  },
+                  "key": {
+                    "S": "beef"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Broccoli"
+                  },
+                  "measure": {
+                    "S": "12 florets"
+                  },
+                  "key": {
+                    "S": "broccoli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Potatoes"
+                  },
+                  "measure": {
+                    "S": "1 Packet"
+                  },
+                  "key": {
+                    "S": "potatoes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "1 Packet"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "plain flour"
+                  },
+                  "measure": {
+                    "S": "140g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Eggs"
+                  },
+                  "measure": {
+                    "S": "4"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "milk"
+                  },
+                  "measure": {
+                    "S": "200ml"
+                  },
+                  "key": {
+                    "S": "milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "sunflower oil"
+                  },
+                  "measure": {
+                    "S": "drizzle (for cooking)"
+                  },
+                  "key": {
+                    "S": "sunflower oil"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "beef"
+              },
+              {
+                "S": "broccoli"
+              },
+              {
+                "S": "potatoes"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "eggs"
+              },
+              {
+                "S": "milk"
+              },
+              {
+                "S": "sunflower oil"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "8"
+          },
+          "instructions": {
+            "S": "Cook the Broccoli and Carrots in a pan of boiling water until tender. Roast the Beef and Potatoes in the oven for 45mins, the potatoes may need to be checked regularly to not overcook. To make the Yorkshire puddings: Heat oven to 230C/fan 210C/gas 8. Drizzle a little sunflower oil evenly into 2 x 4-hole Yorkshire pudding tins or a 12-hole non-stick muffin tin and place in the oven to heat through To make the batter, tip 140g plain flour into a bowl and beat in four eggs until smooth. Gradually add 200ml milk and carry on beating until the mix is completely lump-free. Season with salt and pepper. Pour the batter into a jug, then remove the hot tins from the oven. Carefully and evenly pour the batter into the holes. Place the tins back in the oven and leave undisturbed for 20-25 mins until the puddings have puffed up and browned. Serve immediately. Plate up and add the Gravy as desired."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/ssrrrs1503664277.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/9020/best-yorkshire-puddings"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=2l3-dBdNehY"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52824"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52803"
+          },
+          "recipe_name": {
+            "S": "Beef Wellington"
+          },
+          "category": {
+            "S": "Beef"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "mushrooms"
+                  },
+                  "measure": {
+                    "S": "400g"
+                  },
+                  "key": {
+                    "S": "mushrooms"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "English Mustard"
+                  },
+                  "measure": {
+                    "S": "1-2tbsp"
+                  },
+                  "key": {
+                    "S": "english mustard"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Olive Oil"
+                  },
+                  "measure": {
+                    "S": "Dash"
+                  },
+                  "key": {
+                    "S": "olive oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Beef Fillet"
+                  },
+                  "measure": {
+                    "S": "750g piece"
+                  },
+                  "key": {
+                    "S": "beef fillet"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Parma ham"
+                  },
+                  "measure": {
+                    "S": "6-8 slices"
+                  },
+                  "key": {
+                    "S": "parma ham"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Puff Pastry"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "puff pastry"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Flour"
+                  },
+                  "measure": {
+                    "S": "Dusting"
+                  },
+                  "key": {
+                    "S": "flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Egg Yolks"
+                  },
+                  "measure": {
+                    "S": "2 Beaten"
+                  },
+                  "key": {
+                    "S": "egg yolks"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "mushrooms"
+              },
+              {
+                "S": "english mustard"
+              },
+              {
+                "S": "olive oil"
+              },
+              {
+                "S": "beef fillet"
+              },
+              {
+                "S": "parma ham"
+              },
+              {
+                "S": "puff pastry"
+              },
+              {
+                "S": "flour"
+              },
+              {
+                "S": "egg yolks"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "8"
+          },
+          "instructions": {
+            "S": "Put the mushrooms into a food processor with some seasoning and pulse to a rough paste. Scrape the paste into a pan and cook over a high heat for about 10 mins, tossing frequently, to cook out the moisture from the mushrooms. Spread out on a plate to cool. Heat in a frying pan and add a little olive oil. Season the beef and sear in the hot pan for 30 secs only on each side. (You don't want to cook it at this stage, just colour it). Remove the beef from the pan and leave to cool, then brush all over with the mustard. Lay a sheet of cling film on a work surface and arrange the Parma ham slices on it, in slightly overlapping rows. With a palette knife, spread the mushroom paste over the ham, then place the seared beef fillet in the middle. Keeping a tight hold of the cling film from the edge, neatly roll the Parma ham and mushrooms around the beef to form a tight barrel shape. Twist the ends of the cling film to secure. Chill for 15-20 mins to allow the beef to set and keep its shape. Roll out the puff pastry on a floured surface to a large rectangle, the thickness of a £1 coin. Remove the cling film from the beef, then lay in the centre. Brush the surrounding pastry with egg yolk. Fold the ends over, the wrap the pastry around the beef, cutting off any excess. Turn over, so the seam is underneath, and place on a baking sheet. Brush over all the pastry with egg and chill for about 15 mins to let the pastry rest. Heat the oven to 200C, 400F, gas 6. Lightly score the pastry at 1cm intervals and glaze again with beaten egg yolk. Bake for 20 minutes, then lower the oven setting to 180C, 350F, gas 4 and cook for another 15 mins. Allow to rest for 10-15 mins before slicing and serving with the side dishes of your choice. The beef should still be pink in the centre when you serve it."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/vvpprx1487325699.jpg"
+          },
+          "source_url": {
+            "S": "http://www.goodtoknow.co.uk/recipes/164868/Gordon-Ramsay-s-beef-Wellington"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=FS8u1RBdf6I"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52803"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52891"
+          },
+          "recipe_name": {
+            "S": "Blackberry Fool"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Hazlenuts"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "hazlenuts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "125g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemon"
+                  },
+                  "measure": {
+                    "S": "Grated"
+                  },
+                  "key": {
+                    "S": "lemon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Baking Powder"
+                  },
+                  "measure": {
+                    "S": "½ tsp"
+                  },
+                  "key": {
+                    "S": "baking powder"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Blackberries"
+                  },
+                  "measure": {
+                    "S": "600g"
+                  },
+                  "key": {
+                    "S": "blackberries"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "75g"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "2 tbs"
+                  },
+                  "key": {
+                    "S": "caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemon Juice"
+                  },
+                  "measure": {
+                    "S": "1 tbs"
+                  },
+                  "key": {
+                    "S": "lemon juice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Double Cream"
+                  },
+                  "measure": {
+                    "S": "300ml"
+                  },
+                  "key": {
+                    "S": "double cream"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Yogurt"
+                  },
+                  "measure": {
+                    "S": "100ml"
+                  },
+                  "key": {
+                    "S": "yogurt"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mint"
+                  },
+                  "measure": {
+                    "S": "Garnish with"
+                  },
+                  "key": {
+                    "S": "mint"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "hazlenuts"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "caster sugar"
+              },
+              {
+                "S": "lemon"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "baking powder"
+              },
+              {
+                "S": "blackberries"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "caster sugar"
+              },
+              {
+                "S": "lemon juice"
+              },
+              {
+                "S": "double cream"
+              },
+              {
+                "S": "yogurt"
+              },
+              {
+                "S": "mint"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "13"
+          },
+          "instructions": {
+            "S": "For the biscuits, preheat the oven to 200C/180C (fan)/Gas 6 and line two large baking trays with baking parchment. Scatter the nuts over a baking tray and roast in the oven for 6-8 minutes, or until golden-brown. Watch them carefully so that they don’t have a chance to burn. Remove from the oven, tip onto a board and leave to cool. Put the butter and sugar in a large bowl and beat with a wooden spoon until light and creamy. Roughly chop the cooled nuts and add to the creamed butter and sugar, along with the lemon zest, flour and baking powder. Stir well until the mixture comes together and forms a ball – you may need to use your hands. Divide the biscuit dough into 24 even pieces and roll into small balls. Place the balls the prepared baking trays, spaced well apart to allow for spreading. Press the biscuits to flatten to around 1cm/½in thick. Bake the biscuits, one tray at a time, for 12 minutes or until very pale golden-brown. Leave to cool on the trays. They will be very soft when you take them out of the oven, but will crisp as they cool. Store in an airtight tin and eat within five days. For the fool, rinse the blackberries in a colander to wash away any dust or dirt. Put the blackberries in a non-stick saucepan and sprinkle over the caster sugar. Stir in the lemon juice and heat gently for two minutes, or until the blackberries begin to soften and release their juices. Remove and reserve 12 blackberries for decoration and continue cooking the rest. Simmer the blackberries very gently for 15 minutes, stirring regularly until very soft and squidgy. Remove from the heat and press the berries and juice through a sieve over a bowl, using the bottom of a ladle to help you extract as much of the purée as possible. Leave the purée to cool and discard the seeds. You should end up with around 325ml/11fl oz of purée. Put the cream and yoghurt in a large bowl and whip with an electric whisk until soft peaks form when the whisk is removed from the bowl – the acidity of the fruit will thicken the cream further, so don’t take it too far. When the purée is completely cold, adjust the sweetness to taste by adding more sugar if needed. Pour it into the bowl with the whipped cream and yoghurt and stir just once or twice until very lightly combined. Spoon the blackberry fool into individual wide, glass dishes – or one large, single bowl. It should look quite marbled, so don’t over-stir it. Scatter a few tiny mint leaves on top and decorate with the reserved blackberries. Sprinkle with a little sugar if you like and serve with the hazelnut biscuits."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/rpvptu1511641092.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbc.co.uk/food/recipes/blackberry_fool_with_11859"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=kniRGjDLFrQ"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52891"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52792"
+          },
+          "recipe_name": {
+            "S": "Bread and Butter Pudding"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "butter"
+                  },
+                  "measure": {
+                    "S": "25g/1oz"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "bread"
+                  },
+                  "measure": {
+                    "S": "8 thin slices"
+                  },
+                  "key": {
+                    "S": "bread"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "sultanas"
+                  },
+                  "measure": {
+                    "S": "50g/2oz"
+                  },
+                  "key": {
+                    "S": "sultanas"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "cinnamon"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "cinnamon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "milk"
+                  },
+                  "measure": {
+                    "S": "350ml/12fl"
+                  },
+                  "key": {
+                    "S": "milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "double cream"
+                  },
+                  "measure": {
+                    "S": "50ml/2fl oz"
+                  },
+                  "key": {
+                    "S": "double cream"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "eggs"
+                  },
+                  "measure": {
+                    "S": "2 free-range"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "sugar"
+                  },
+                  "measure": {
+                    "S": "25g/1oz"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "nutmeg"
+                  },
+                  "measure": {
+                    "S": "grated, to taste"
+                  },
+                  "key": {
+                    "S": "nutmeg"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "butter"
+              },
+              {
+                "S": "bread"
+              },
+              {
+                "S": "sultanas"
+              },
+              {
+                "S": "cinnamon"
+              },
+              {
+                "S": "milk"
+              },
+              {
+                "S": "double cream"
+              },
+              {
+                "S": "eggs"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "nutmeg"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "9"
+          },
+          "instructions": {
+            "S": "Grease a 1 litre/2 pint pie dish with butter. Cut the crusts off the bread. Spread each slice with on one side with butter, then cut into triangles. Arrange a layer of bread, buttered-side up, in the bottom of the dish, then add a layer of sultanas. Sprinkle with a little cinnamon, then repeat the layers of bread and sultanas, sprinkling with cinnamon, until you have used up all of the bread. Finish with a layer of bread, then set aside. Gently warm the milk and cream in a pan over a low heat to scalding point. Don't let it boil. Crack the eggs into a bowl, add three quarters of the sugar and lightly whisk until pale. Add the warm milk and cream mixture and stir well, then strain the custard into a bowl. Pour the custard over the prepared bread layers and sprinkle with nutmeg and the remaining sugar and leave to stand for 30 minutes. Preheat the oven to 180C/355F/Gas 4. Place the dish into the oven and bake for 30-40 minutes, or until the custard has set and the top is golden-brown."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/xqwwpy1483908697.jpg"
+          },
+          "source_url": {
+            "S": "https://cooking.nytimes.com/recipes/1018529-coq-au-vin"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=Vz5W1-BmOE4"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52792"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52842"
+          },
+          "recipe_name": {
+            "S": "Broccoli & Stilton soup"
+          },
+          "category": {
+            "S": "Starter"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Rapeseed Oil"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "rapeseed oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1 finely chopped"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Celery"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "celery"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Leek"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "leek"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Potatoes"
+                  },
+                  "measure": {
+                    "S": "1 medium"
+                  },
+                  "key": {
+                    "S": "potatoes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "1 knob"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Stock"
+                  },
+                  "measure": {
+                    "S": "1 litre hot"
+                  },
+                  "key": {
+                    "S": "vegetable stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Broccoli"
+                  },
+                  "measure": {
+                    "S": "1 Head chopped"
+                  },
+                  "key": {
+                    "S": "broccoli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Stilton Cheese"
+                  },
+                  "measure": {
+                    "S": "140g"
+                  },
+                  "key": {
+                    "S": "stilton cheese"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "rapeseed oil"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "celery"
+              },
+              {
+                "S": "leek"
+              },
+              {
+                "S": "potatoes"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "vegetable stock"
+              },
+              {
+                "S": "broccoli"
+              },
+              {
+                "S": "stilton cheese"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "9"
+          },
+          "instructions": {
+            "S": "Heat the rapeseed oil in a large saucepan and then add the onions. Cook on a medium heat until soft. Add a splash of water if the onions start to catch. Add the celery, leek, potato and a knob of butter. Stir until melted, then cover with a lid. Allow to sweat for 5 minutes. Remove the lid. Pour in the stock and add any chunky bits of broccoli stalk. Cook for 10 – 15 minutes until all the vegetables are soft. Add the rest of the broccoli and cook for a further 5 minutes. Carefully transfer to a blender and blitz until smooth. Stir in the stilton, allowing a few lumps to remain. Season with black pepper and serve."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/tvvxpv1511191952.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/1940679/broccoli-and-stilton-soup"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=_HgVLpmNxTY"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52842"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52897"
+          },
+          "recipe_name": {
+            "S": "Carrot Cake"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "450ml"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "400g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bicarbonate Of Soda"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "bicarbonate of soda"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "550ml"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Eggs"
+                  },
+                  "measure": {
+                    "S": "5"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salt"
+                  },
+                  "measure": {
+                    "S": "½ tsp"
+                  },
+                  "key": {
+                    "S": "salt"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cinnamon"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "cinnamon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "500g grated"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Walnuts"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "walnuts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cream Cheese"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "cream cheese"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "bicarbonate of soda"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "eggs"
+              },
+              {
+                "S": "salt"
+              },
+              {
+                "S": "cinnamon"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "walnuts"
+              },
+              {
+                "S": "cream cheese"
+              },
+              {
+                "S": "caster sugar"
+              },
+              {
+                "S": "butter"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "12"
+          },
+          "instructions": {
+            "S": "For the carrot cake, preheat the oven to 160C/325F/Gas 3. Grease and line a 26cm/10in springform cake tin. Mix all of the ingredients for the carrot cake, except the carrots and walnuts, together in a bowl until well combined. Stir in the carrots and walnuts. Spoon the mixture into the cake tin and bake for 1 hour 15 minutes, or until a skewer inserted into the middle comes out clean. Remove the cake from the oven and set aside to cool for 10 minutes, then carefully remove the cake from the tin and set aside to cool completely on a cooling rack. Meanwhile, for the icing, beat the cream cheese, caster sugar and butter together in a bowl until fluffy. Spread the icing over the top of the cake with a palette knife."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/vrspxv1511722107.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbc.co.uk/food/recipes/classic_carrot_cake_08513"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=asjZ7iTrGKA"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52897"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52898"
+          },
+          "recipe_name": {
+            "S": "Chelsea Buns"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "White Flour"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "white flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salt"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "salt"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Yeast"
+                  },
+                  "measure": {
+                    "S": "7g"
+                  },
+                  "key": {
+                    "S": "yeast"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Milk"
+                  },
+                  "measure": {
+                    "S": "300ml"
+                  },
+                  "key": {
+                    "S": "milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "40g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Eggs"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "Dash"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "25g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "75g"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cinnamon"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "cinnamon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Dried Fruit"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "dried fruit"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Milk"
+                  },
+                  "measure": {
+                    "S": "2 tbs"
+                  },
+                  "key": {
+                    "S": "milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "2 tbs"
+                  },
+                  "key": {
+                    "S": "caster sugar"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "white flour"
+              },
+              {
+                "S": "salt"
+              },
+              {
+                "S": "yeast"
+              },
+              {
+                "S": "milk"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "eggs"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "cinnamon"
+              },
+              {
+                "S": "dried fruit"
+              },
+              {
+                "S": "milk"
+              },
+              {
+                "S": "caster sugar"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "13"
+          },
+          "instructions": {
+            "S": "Sift the flour and salt into a large bowl. Make a well in the middle and add the yeast. Meanwhile, warm the milk and butter in a saucepan until the butter melts and the mixture is lukewarm. Add the milk mixture and egg to the flour mixture and stir until the contents of the bowl come together as a soft dough. (You may need to add a little extra flour.) Tip the dough onto a generously floured work surface. Knead for five minutes, adding more flour if necessary, until the dough is smooth and elastic and no longer feels sticky. Lightly oil a bowl with a little of the vegetable oil. Place the dough into the bowl and turn until it is covered in the oil. Cover the bowl with cling film and set aside in a warm place for one hour, or until the dough has doubled in size. Lightly grease a baking tray. For the filling, knock the dough back to its original size and turn out onto a lightly floured work surface. Roll the dough out into a rectangle 0.5cm/¼in thick. Brush all over with the melted butter, then sprinkle over the brown sugar, cinnamon and dried fruit. Roll the dough up into a tight cylinder , cut ten 4cm/1½in slice and place them onto a lightly greased baking sheet, leaving a little space between each slice. Cover with a tea towel and set aside to rise for 30 minutes. Preheat oven to 190C/375F/Gas 5. Bake the buns in the oven for 20-25 minutes, or until risen and golden-brown. Meanwhile, for the glaze, heat the milk and sugar in a saucepan until boiling. Reduce the heat and simmer for 2-3 minutes. Remove the buns from the oven and brush with the glaze, then set aside to cool on a wire rack."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/vqpwrv1511723001.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbc.co.uk/food/recipes/chelsea_buns_95015"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=i_zemP3yBKw"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52898"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52846"
+          },
+          "recipe_name": {
+            "S": "Chicken & mushroom Hotpot"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mushrooms"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "mushrooms"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "40g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Stock Cube"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "chicken stock cube"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Nutmeg"
+                  },
+                  "measure": {
+                    "S": "pinch"
+                  },
+                  "key": {
+                    "S": "nutmeg"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mustard Powder"
+                  },
+                  "measure": {
+                    "S": "pinch"
+                  },
+                  "key": {
+                    "S": "mustard powder"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "chicken"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sweetcorn"
+                  },
+                  "measure": {
+                    "S": "2 Handfuls"
+                  },
+                  "key": {
+                    "S": "sweetcorn"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Potatoes"
+                  },
+                  "measure": {
+                    "S": "2 large"
+                  },
+                  "key": {
+                    "S": "potatoes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "1 knob"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "butter"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "mushrooms"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "chicken stock cube"
+              },
+              {
+                "S": "nutmeg"
+              },
+              {
+                "S": "mustard powder"
+              },
+              {
+                "S": "chicken"
+              },
+              {
+                "S": "sweetcorn"
+              },
+              {
+                "S": "potatoes"
+              },
+              {
+                "S": "butter"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "11"
+          },
+          "instructions": {
+            "S": "Heat oven to 200C/180C fan/gas 6. Put the butter in a medium-size saucepan and place over a medium heat. Add the onion and leave to cook for 5 mins, stirring occasionally. Add the mushrooms to the saucepan with the onions. Once the onion and mushrooms are almost cooked, stir in the flour – this will make a thick paste called a roux. If you are using a stock cube, crumble the cube into the roux now and stir well. Put the roux over a low heat and stir continuously for 2 mins – this will cook the flour and stop the sauce from having a floury taste. Take the roux off the heat. Slowly add the fresh stock, if using, or pour in 500ml water if you’ve used a stock cube, stirring all the time. Once all the liquid has been added, season with pepper, a pinch of nutmeg and mustard powder. Put the saucepan back onto a medium heat and slowly bring it to the boil, stirring all the time. Once the sauce has thickened, place on a very low heat. Add the cooked chicken and vegetables to the sauce and stir well. Grease a medium-size ovenproof pie dish with a little butter and pour in the chicken and mushroom filling. Carefully lay the potatoes on top of the hot-pot filling, overlapping them slightly, almost like a pie top. Brush the potatoes with a little melted butter and cook in the oven for about 35 mins. The hot-pot is ready once the potatoes are cooked and golden brown."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/uuuspp1511297945.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/chicken-mushroom-hot-pot"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=bXKWu4GojNI"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52846"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52875"
+          },
+          "recipe_name": {
+            "S": "Chicken Ham and Leek Pie"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Stock"
+                  },
+                  "measure": {
+                    "S": "450ml"
+                  },
+                  "key": {
+                    "S": "chicken stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Breast"
+                  },
+                  "measure": {
+                    "S": "3"
+                  },
+                  "key": {
+                    "S": "chicken breast"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "75g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Leek"
+                  },
+                  "measure": {
+                    "S": "2 sliced"
+                  },
+                  "key": {
+                    "S": "leek"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "2 cloves minced"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Milk"
+                  },
+                  "measure": {
+                    "S": "200ml"
+                  },
+                  "key": {
+                    "S": "milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "White Wine"
+                  },
+                  "measure": {
+                    "S": "3 tbs"
+                  },
+                  "key": {
+                    "S": "white wine"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Double Cream"
+                  },
+                  "measure": {
+                    "S": "150ml"
+                  },
+                  "key": {
+                    "S": "double cream"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ham"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "ham"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sea Salt"
+                  },
+                  "measure": {
+                    "S": "spinkling"
+                  },
+                  "key": {
+                    "S": "sea salt"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pepper"
+                  },
+                  "measure": {
+                    "S": "pinch"
+                  },
+                  "key": {
+                    "S": "pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "350g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Free-range Egg, Beaten"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "free range egg beaten"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cold Water"
+                  },
+                  "measure": {
+                    "S": "1 tbls"
+                  },
+                  "key": {
+                    "S": "cold water"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Free-range Egg, Beaten"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "free range egg beaten"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "chicken stock"
+              },
+              {
+                "S": "chicken breast"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "leek"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "milk"
+              },
+              {
+                "S": "white wine"
+              },
+              {
+                "S": "double cream"
+              },
+              {
+                "S": "ham"
+              },
+              {
+                "S": "sea salt"
+              },
+              {
+                "S": "pepper"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "free range egg beaten"
+              },
+              {
+                "S": "cold water"
+              },
+              {
+                "S": "free range egg beaten"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "17"
+          },
+          "instructions": {
+            "S": "Heat the chicken stock in a lidded saucepan. Add the chicken breast and bring to a low simmer. Cover with a lid and cook for 10 minutes. Remove the chicken breasts from the water with tongs and place on a plate. Pour the cooking liquor into a large jug. Melt 25g/1oz of the butter in a large heavy-based saucepan over a low heat. Stir in the leeks and fry gently for two minutes, stirring occasionally until just softened. Add the garlic and cook for a further minute. Add the remaining butter and stir in the flour as soon as the butter has melted. Cook for 30 seconds, stirring constantly. Slowly pour the milk into the pan, just a little at a time, stirring well between each adding. Gradually add 250ml/10fl oz of the reserved stock and the wine, if using, stirring until the sauce is smooth and thickened slightly. Bring to a gentle simmer and cook for 3 minutes. Season the mixture, to taste, with salt and freshly ground black pepper. Remove from the heat and stir in the cream. Pour into a large bowl and cover the surface of the sauce with cling ilm to prevent a skin forming. Set aside to cool. Preheat the oven to 200C/400F/Gas 6. Put a baking tray in the oven to heat. For the pastry, put the flour and butter in a food processor and blend on the pulse setting until the mixture resembles fine breadcrumbs. With the motor running, add the beaten egg and water and blend until the mixture forms a ball. Portion off 250g/10oz of pastry for the lid. Roll the remaining pastry out on a lightly floured surface, turning the pastry frequently until around 5mm/¼in thick and 4cm/1½in larger than the pie dish. Lift the pastry over the rolling pin and place it gently into the pie dish. Press the pastry firmly up the sides, making sure there are no air bubbles. Leave the excess pastry overhanging the sides. Cut the chicken breasts into 3cm/1¼in pieces. Stir the chicken, ham and leeks into the cooled sauce. Pour the chicken filling into the pie dish. Brush the rim of the dish with beaten egg. Roll out the reserved pastry for the lid. Cover the pie with the pastry lid and press the edges together firmly to seal. Trim any excess pastry. Make a small hole in the centre of the pie with the tip of a knife. Glaze the top of the pie with beaten egg. Bake on the preheated tray in the centre of the oven for 35-40 minutes or until the pie is golden-brown all over and the filling is piping hot."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/xrrtss1511555269.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbc.co.uk/food/recipes/creamy_chicken_ham_and_03877"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=xr-CpPE_lNk"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52875"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52853"
+          },
+          "recipe_name": {
+            "S": "Chocolate Avocado Mousse"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Banana"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "banana"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cacao"
+                  },
+                  "measure": {
+                    "S": "3 tbsp"
+                  },
+                  "key": {
+                    "S": "cacao"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Avocado"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "avocado"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Honey"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "honey"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemon Juice"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "lemon juice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vanilla"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "vanilla"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Water"
+                  },
+                  "measure": {
+                    "S": "2 tbsp"
+                  },
+                  "key": {
+                    "S": "water"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sea Salt"
+                  },
+                  "measure": {
+                    "S": "pinch"
+                  },
+                  "key": {
+                    "S": "sea salt"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "banana"
+              },
+              {
+                "S": "cacao"
+              },
+              {
+                "S": "avocado"
+              },
+              {
+                "S": "honey"
+              },
+              {
+                "S": "lemon juice"
+              },
+              {
+                "S": "vanilla"
+              },
+              {
+                "S": "water"
+              },
+              {
+                "S": "sea salt"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "8"
+          },
+          "instructions": {
+            "S": "1. Blend all the mousse ingredients together in your food processor until smooth. Add the cacao powder first and, as you blend, have all the ingredients to hand in order to adjust the ratios slightly as the size of avocados and bananas varies so much. The perfect ratio in order to avoid the dish tasting too much of either is to use equal amounts of both. 2. Taste and add a few drops of stevia if you feel you need more sweetness. 3. Fill little cups or shot glasses with the mousse, sprinkle with the cacao powder or nibs and serve. Tip If you don’t have a frozen banana to hand you can just use a normal one and then chill the mousse before serving for a cooling dessert."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/uttuxy1511382180.jpg"
+          },
+          "source_url": {
+            "S": "http://www.hemsleyandhemsley.com/recipe/chocolate-avocado-mousse/"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=wuZffe60q4M"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52853"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52966"
+          },
+          "recipe_name": {
+            "S": "Chocolate Caramel Crispy"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Mars Bar"
+                  },
+                  "measure": {
+                    "S": "6 chopped"
+                  },
+                  "key": {
+                    "S": "mars bar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Krispies"
+                  },
+                  "measure": {
+                    "S": "120g"
+                  },
+                  "key": {
+                    "S": "rice krispies"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Milk Chocolate"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "milk chocolate"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "mars bar"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "rice krispies"
+              },
+              {
+                "S": "milk chocolate"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "4"
+          },
+          "instructions": {
+            "S": "Grease and line a 20 x 20cm/8\" x 8\" baking tin with parchment paper. Put the mars bars and butter in a heat proof bowl and place over a pan of barely simmering water. Mixing with a whisk, melt until the mixture is smooth. Pour over the rice krispies in a mixing bowl and mix until all the ingredients are evenly combined. Press evenly into the prepare baking tin and set aside. Melt the milk chocolate in the microwave or over a pan of barely simmering water. Spread the melted chocolate over the rice krispie mixture and leave to set in a cool place. Once set slice into squares and serve!"
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/1550442508.jpg"
+          },
+          "source_url": {
+            "S": "http://www.donalskehan.com/recipes/chocolate-caramel-rice-crispy-treats/"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=qsk_At_gjv0"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52966"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52990"
+          },
+          "recipe_name": {
+            "S": "Christmas cake"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Muscovado Sugar"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "muscovado sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Eggs"
+                  },
+                  "measure": {
+                    "S": "4 Beaten"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Almonds"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "ground almonds"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sherry"
+                  },
+                  "measure": {
+                    "S": "100ml"
+                  },
+                  "key": {
+                    "S": "sherry"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Candied Peel"
+                  },
+                  "measure": {
+                    "S": "85g"
+                  },
+                  "key": {
+                    "S": "candied peel"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Glace Cherry"
+                  },
+                  "measure": {
+                    "S": "85g"
+                  },
+                  "key": {
+                    "S": "glace cherry"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Raisins"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "raisins"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Currants"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "currants"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pecan Nuts"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "pecan nuts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemon"
+                  },
+                  "measure": {
+                    "S": "Grated zest of 1"
+                  },
+                  "key": {
+                    "S": "lemon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mixed Spice"
+                  },
+                  "measure": {
+                    "S": "1 ½ tbsp"
+                  },
+                  "key": {
+                    "S": "mixed spice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rose water"
+                  },
+                  "measure": {
+                    "S": "1 ½ tbsp"
+                  },
+                  "key": {
+                    "S": "rose water"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vanilla Extract"
+                  },
+                  "measure": {
+                    "S": "1/2 tsp"
+                  },
+                  "key": {
+                    "S": "vanilla extract"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Baking Powder"
+                  },
+                  "measure": {
+                    "S": "1/2 tsp"
+                  },
+                  "key": {
+                    "S": "baking powder"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "butter"
+              },
+              {
+                "S": "muscovado sugar"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "eggs"
+              },
+              {
+                "S": "ground almonds"
+              },
+              {
+                "S": "sherry"
+              },
+              {
+                "S": "candied peel"
+              },
+              {
+                "S": "glace cherry"
+              },
+              {
+                "S": "raisins"
+              },
+              {
+                "S": "currants"
+              },
+              {
+                "S": "pecan nuts"
+              },
+              {
+                "S": "lemon"
+              },
+              {
+                "S": "mixed spice"
+              },
+              {
+                "S": "rose water"
+              },
+              {
+                "S": "vanilla extract"
+              },
+              {
+                "S": "baking powder"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "16"
+          },
+          "instructions": {
+            "S": "Heat oven to 160C/fan 140C/gas 3. Line the base and sides of a 20 cm round, 7.5 cm deep cake tin. Beat the butter and sugar with an electric hand mixer for 1-2 mins until very creamy and pale in colour, scraping down the sides of the bowl half way through. Stir in a spoonful of the flour, then stir in the beaten egg and the rest of the flour alternately, a quarter at a time, beating well each time with a wooden spoon. Stir in the almonds. Mix in the sherry (the mix will look curdled), then add the peel, cherries, raisins, cherries, nuts, lemon zest, spice, rosewater and vanilla. Beat together to mix, then stir in the baking powder. Spoon mixture into the tin and smooth the top, making a slight dip in the centre. Bake for 30 mins, then lower temperature to 150C/fan 130C/gas 2 and bake a further 2-2¼ hrs, until a skewer insterted in the middle comes out clean. Leave to cool in the tin, then take out of the tin and peel off the lining paper. When completely cold, wrap well in cling film and foil to store until ready to decorate. The cake will keep for several months."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/ldnrm91576791881.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/angela-nilsens-christmas-cake"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=34yeL8TstO0"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52990"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52788"
+          },
+          "recipe_name": {
+            "S": "Christmas Pudding Flapjack"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "salted butter"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "salted butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "dark soft brown sugar"
+                  },
+                  "measure": {
+                    "S": "225g"
+                  },
+                  "key": {
+                    "S": "dark soft brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "golden syrup"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "golden syrup"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "orange"
+                  },
+                  "measure": {
+                    "S": "Zest of 1"
+                  },
+                  "key": {
+                    "S": "orange"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "rolled oats"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "rolled oats"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Christmas pudding"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "christmas pudding"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "salted butter"
+              },
+              {
+                "S": "dark soft brown sugar"
+              },
+              {
+                "S": "golden syrup"
+              },
+              {
+                "S": "orange"
+              },
+              {
+                "S": "rolled oats"
+              },
+              {
+                "S": "christmas pudding"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "6"
+          },
+          "instructions": {
+            "S": "Preheat the oven to 180°C/fan 160°C/gas mark 4 and grease and line a 25cm x 20cm tin. Melt the butter, sugar, syrup and orange zest in a large saucepan over a medium heat. The aim is to dissolve all the ingredients so that they are smooth, but to not lose any volume through boiling so be careful not to overheat. Add the oats and stir well until evenly coated. Stir through the leftover Christmas pudding and tip into the prepared tin. Use a spoon to flatten the top and bake for 40 minutes until the edges start to brown. Whilst still warm in the tin, score into 12 squares. Allow to cool completely before cutting along the scores. Keeps for 5 days in an air tight tin or freeze for up to 1 month."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/vvusxs1483907034.jpg"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=OaqvGvEiwzU"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52788"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52989"
+          },
+          "recipe_name": {
+            "S": "Christmas Pudding Trifle"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Orange"
+                  },
+                  "measure": {
+                    "S": "3"
+                  },
+                  "key": {
+                    "S": "orange"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Demerara Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tbs"
+                  },
+                  "key": {
+                    "S": "demerara sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Grand Marnier"
+                  },
+                  "measure": {
+                    "S": "2 tbs"
+                  },
+                  "key": {
+                    "S": "grand marnier"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Christmas Pudding"
+                  },
+                  "measure": {
+                    "S": "300g"
+                  },
+                  "key": {
+                    "S": "christmas pudding"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Custard"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "custard"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mascarpone"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "mascarpone"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Double Cream"
+                  },
+                  "measure": {
+                    "S": "284ml"
+                  },
+                  "key": {
+                    "S": "double cream"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Flaked Almonds"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "flaked almonds"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Dark Chocolate"
+                  },
+                  "measure": {
+                    "S": "Grated"
+                  },
+                  "key": {
+                    "S": "dark chocolate"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "orange"
+              },
+              {
+                "S": "demerara sugar"
+              },
+              {
+                "S": "grand marnier"
+              },
+              {
+                "S": "christmas pudding"
+              },
+              {
+                "S": "custard"
+              },
+              {
+                "S": "mascarpone"
+              },
+              {
+                "S": "double cream"
+              },
+              {
+                "S": "flaked almonds"
+              },
+              {
+                "S": "dark chocolate"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "9"
+          },
+          "instructions": {
+            "S": "Peel the oranges using a sharp knife, ensuring all the pith is removed. Slice as thinly as possible and arrange over a dinner plate. Sprinkle with the demerara sugar followed by the Grand Marnier and set aside. Crumble the Christmas pudding into large pieces and scatter over the bottom of a trifle bowl. Lift the oranges onto the pudding in a layer and pour over any juices. Beat the mascarpone until smooth, then stir in the custard. Spoon the mixture over the top of the oranges. Lightly whip the cream and spoon over the custard. Sprinkle with the flaked almonds and grated chocolate. You can make this a day in advance if you like, chill until ready to serve."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/r33cud1576791081.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/1826685/christmas-pudding-trifle"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=jRfyNQs5qhU"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52989"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52988"
+          },
+          "recipe_name": {
+            "S": "Classic Christmas pudding"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Almonds"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "almonds"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bramley Apples"
+                  },
+                  "measure": {
+                    "S": "2 large"
+                  },
+                  "key": {
+                    "S": "bramley apples"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Candied Peel"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "candied peel"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Nutmeg"
+                  },
+                  "measure": {
+                    "S": "1 whole"
+                  },
+                  "key": {
+                    "S": "nutmeg"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Raisins"
+                  },
+                  "measure": {
+                    "S": "1kg"
+                  },
+                  "key": {
+                    "S": "raisins"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "140g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Breadcrumbs"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "breadcrumbs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Muscovado Sugar"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "muscovado sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Eggs"
+                  },
+                  "measure": {
+                    "S": "3 Large"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brandy"
+                  },
+                  "measure": {
+                    "S": "2 tbs"
+                  },
+                  "key": {
+                    "S": "brandy"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "almonds"
+              },
+              {
+                "S": "bramley apples"
+              },
+              {
+                "S": "candied peel"
+              },
+              {
+                "S": "nutmeg"
+              },
+              {
+                "S": "raisins"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "breadcrumbs"
+              },
+              {
+                "S": "muscovado sugar"
+              },
+              {
+                "S": "eggs"
+              },
+              {
+                "S": "brandy"
+              },
+              {
+                "S": "butter"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "11"
+          },
+          "instructions": {
+            "S": "Get everything for the pudding prepared. Chop the almonds coarsely. Peel, core and chop the cooking apples. Sharpen your knife and chop the candied peel. (You can chop the almonds and apples in a food processor, but the peel must be done by hand.) Grate three quarters of the nutmeg (sounds a lot but it's correct). Mix the almonds, apples, candied peel, nutmeg, raisins, flour, breadcrumbs, light muscovado sugar, eggs and 2 tbsp brandy or cognac in a large bowl. Holding the butter in its wrapper, grate a quarter of it into the bowl, then stir everything together. Repeat until all the butter is grated, then stir for 3-4 mins – the mixture is ready when it subsides slightly after each stir. Ask the family to stir too, and get everyone to make a wish. Generously butter two 1.2 litre bowls and put a circle of baking parchment in the bottom of each. Pack in the pudding mixture. Cover with a double layer of baking parchment, pleating it to allow for expansion, then tie with string (keep the paper in place with a rubber band while tying). Trim off any excess paper. Now stand each bowl on a large sheet of foil and bring the edges up over the top, then put another sheet of foil over the top and bring it down underneath to make a double package (this makes the puddings watertight). Tie with more string, and make a handle for easy lifting in and out of the pan. Watch our video to see how to tie up a pudding correctly. Boil or oven steam the puddings for 8 hrs, topping up with water as necessary. Remove from the pans and leave to cool overnight. When cold, discard the messy wrappings and re-wrap in new baking parchment, foil and string. Store in a cool, dry place until Christmas. To make the brandy butter, cream the butter with the orange zest and icing sugar. Gradually beat in the brandy or cognac and chopped stem ginger. Put in a small bowl, fork the top attractively and put in the fridge to set. The butter will keep for a week in the fridge, or it can be frozen for up to six weeks. On Christmas Day, boil or oven steam for 1 hr. Unwrap and turn out. To flame, warm 3-4 tbsp brandy in a small pan, pour it over the pudding and set light to it."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/1d85821576790598.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/classic-christmas-pudding"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=Pb_lJxL1vtk"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52988"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53096"
+          },
+          "recipe_name": {
+            "S": "Corned Beef Hash"
+          },
+          "category": {
+            "S": "Beef"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Unsalted Butter"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons"
+                  },
+                  "key": {
+                    "S": "unsalted butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1 medium chopped"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Corned Beef"
+                  },
+                  "measure": {
+                    "S": "3 Cups"
+                  },
+                  "key": {
+                    "S": "corned beef"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Potatoes"
+                  },
+                  "measure": {
+                    "S": "3 chopped"
+                  },
+                  "key": {
+                    "S": "potatoes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Kosher Salt"
+                  },
+                  "measure": {
+                    "S": "Dash"
+                  },
+                  "key": {
+                    "S": "kosher salt"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Black Pepper"
+                  },
+                  "measure": {
+                    "S": "Dash"
+                  },
+                  "key": {
+                    "S": "black pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Freshly Chopped Parsley"
+                  },
+                  "measure": {
+                    "S": "Chopped"
+                  },
+                  "key": {
+                    "S": "freshly chopped parsley"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "unsalted butter"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "corned beef"
+              },
+              {
+                "S": "potatoes"
+              },
+              {
+                "S": "kosher salt"
+              },
+              {
+                "S": "black pepper"
+              },
+              {
+                "S": "freshly chopped parsley"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "7"
+          },
+          "instructions": {
+            "S": "Sauté the onions: Heat butter in a large skillet (preferably cast iron) on medium heat. Add the onion and cook a few minutes, until translucent. Add the potatoes and corned beef: Mix in the chopped corned beef and potatoes. Spread out evenly over the pan. Increase the heat to high or medium high and press down on the mixture with a metal spatula. Cook until browned and then flip: Do not stir the potatoes and corned beef, but let them brown. If you hear them sizzling, this is good. Use a metal spatula to peek underneath and see if they are browning. If nicely browned, use the spatula to flip sections over in the pan so that they brown on the other side. Press down again with the spatula. If there is too much sticking, you can add a little more butter to the pan. Continue to cook in this manner until the potatoes and the corned beef are nicely browned. Stir in the parsley and season: Remove from heat, stir in chopped parsley. Add plenty of freshly ground black pepper, and add salt to taste."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/vz94r81760534692.jpg"
+          },
+          "source_url": {
+            "S": "https://www.simplyrecipes.com/recipes/corned_beef_hash/"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=SPr_UnCrYPg"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53096"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    }
+  ]
+}

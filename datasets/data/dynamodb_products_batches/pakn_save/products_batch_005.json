@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5019561-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5019561-EA-000"
+          },
+          "product_name": {
+            "S": "Triple Concentrate Tomato Paste"
+          },
+          "brand": {
+            "S": "Leggo's"
+          },
+          "size": {
+            "S": "500g"
+          },
+          "price": {
+            "N": "5.91"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5001803-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5001803-EA-000"
+          },
+          "product_name": {
+            "S": "Tomato Paste"
+          },
+          "brand": {
+            "S": "Leggo's"
+          },
+          "size": {
+            "S": "280g"
+          },
+          "price": {
+            "N": "4.01"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5024680-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5024680-EA-000"
+          },
+          "product_name": {
+            "S": "Tomato Paste Sachets"
+          },
+          "brand": {
+            "S": "Leggo's"
+          },
+          "size": {
+            "S": "200g"
+          },
+          "price": {
+            "N": "3.5"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5019615-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5019615-EA-000"
+          },
+          "product_name": {
+            "S": "Tomato & Garlic Pasta Sauce"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "420g"
+          },
+          "price": {
+            "N": "2.29"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5091771-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5091771-EA-000"
+          },
+          "product_name": {
+            "S": "Roasted Garlic Chunky Tomato & Onion Pasta Sauce"
+          },
+          "brand": {
+            "S": "Leggo's"
+          },
+          "size": {
+            "S": "500g"
+          },
+          "price": {
+            "N": "2.99"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5005317-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5005317-EA-000"
+          },
+          "product_name": {
+            "S": "Caramelised Onion & Garlic Pasta Sauce"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "510g"
+          },
+          "price": {
+            "N": "2.99"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5019580-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5019580-EA-000"
+          },
+          "product_name": {
+            "S": "Tomato & Herb Pasta Sauce"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "420g"
+          },
+          "price": {
+            "N": "2.29"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5005315-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5005315-EA-000"
+          },
+          "product_name": {
+            "S": "Tomato & Basil Pasta Sauce"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "510g"
+          },
+          "price": {
+            "N": "2.99"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5025977-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5025977-EA-000"
+          },
+          "product_name": {
+            "S": "Premium Golden Soy Sauce"
+          },
+          "brand": {
+            "S": "High Mark"
+          },
+          "size": {
+            "S": "550ml"
+          },
+          "price": {
+            "N": "3.59"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5002597-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5002597-EA-000"
+          },
+          "product_name": {
+            "S": "Premium Dark Soy Sauce"
+          },
+          "brand": {
+            "S": "High Mark"
+          },
+          "size": {
+            "S": "550ml"
+          },
+          "price": {
+            "N": "3.59"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5011636-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5011636-EA-000"
+          },
+          "product_name": {
+            "S": "Premium Soy Sauce"
+          },
+          "brand": {
+            "S": "Lee Kum Kee"
+          },
+          "size": {
+            "S": "500ml"
+          },
+          "price": {
+            "N": "4.49"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5003826-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5003826-EA-000"
+          },
+          "product_name": {
+            "S": "Soy Sauce"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "550ml"
+          },
+          "price": {
+            "N": "3.19"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5013067-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5013067-EA-000"
+          },
+          "product_name": {
+            "S": "Thick Soy Style Sauce"
+          },
+          "brand": {
+            "S": "Sungold"
+          },
+          "size": {
+            "S": "1l"
+          },
+          "price": {
+            "N": "5.29"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5224574-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5224574-EA-000"
+          },
+          "product_name": {
+            "S": "Korma Simmer Sauce"
+          },
+          "brand": {
+            "S": "Patak's"
+          },
+          "size": {
+            "S": "450g"
+          },
+          "price": {
+            "N": "4.99"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5270043-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5270043-EA-000"
+          },
+          "product_name": {
+            "S": "Coconut Curry Meal Sauce"
+          },
+          "brand": {
+            "S": "Barker's"
+          },
+          "size": {
+            "S": "500g"
+          },
+          "price": {
+            "N": "5.29"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5224577-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5224577-EA-000"
+          },
+          "product_name": {
+            "S": "Tikka Masala Simmer Sauce"
+          },
+          "brand": {
+            "S": "Patak's"
+          },
+          "size": {
+            "S": "450g"
+          },
+          "price": {
+            "N": "4.99"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5023319-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5023319-EA-000"
+          },
+          "product_name": {
+            "S": "Butter Chicken Simmer Sauce"
+          },
+          "brand": {
+            "S": "Taste of India"
+          },
+          "size": {
+            "S": "425g"
+          },
+          "price": {
+            "N": "4.89"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5224578-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5224578-EA-000"
+          },
+          "product_name": {
+            "S": "Cashew & Coconut Simmer Sauce"
+          },
+          "brand": {
+            "S": "Patak's"
+          },
+          "size": {
+            "S": "450g"
+          },
+          "price": {
+            "N": "4.99"
+          },
+          "category": {
+            "S": "Cooking Sauces, Stocks & Marinades"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5025903-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5025903-EA-000"
+          },
+          "product_name": {
+            "S": "Premium Coconut Milk"
+          },
+          "brand": {
+            "S": "Trident"
+          },
+          "size": {
+            "S": "400ml"
+          },
+          "price": {
+            "N": "2.39"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5238653-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5238653-EA-000"
+          },
+          "product_name": {
+            "S": "Coconut Milk"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "400ml"
+          },
+          "price": {
+            "N": "1.39"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5127149-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5127149-EA-000"
+          },
+          "product_name": {
+            "S": "Classic Coconut Milk"
+          },
+          "brand": {
+            "S": "Kara"
+          },
+          "size": {
+            "S": "400ml"
+          },
+          "price": {
+            "N": "3.5"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5001970-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5001970-EA-000"
+          },
+          "product_name": {
+            "S": "Coconut Cream"
+          },
+          "brand": {
+            "S": "Solo's Choice"
+          },
+          "size": {
+            "S": "400ml"
+          },
+          "price": {
+            "N": "1.69"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5032518-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5032518-EA-000"
+          },
+          "product_name": {
+            "S": "Unsweetened Coconut Milk"
+          },
+          "brand": {
+            "S": "Vitasoy"
+          },
+          "size": {
+            "S": "1l"
+          },
+          "price": {
+            "N": "3.59"
+          },
+          "category": {
+            "S": "Long Life & Dairy Free Milk"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5003695-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5003695-EA-000"
+          },
+          "product_name": {
+            "S": "Canola Oil"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "500ml"
+          },
+          "price": {
+            "N": "1.89"
+          },
+          "category": {
+            "S": "Oil & Vinegar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5045051-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5045051-EA-000"
+          },
+          "product_name": {
+            "S": "Canola Oil"
+          },
+          "brand": {
+            "S": "Pacific Crown"
+          },
+          "size": {
+            "S": "2l"
+          },
+          "price": {
+            "N": "8.49"
+          },
+          "category": {
+            "S": "Oil & Vinegar"
+          }
+        }
+      }
+    }
+  ]
+}

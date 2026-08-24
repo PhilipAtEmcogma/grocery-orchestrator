@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5201479-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5201479-EA-000"
+          },
+          "product_name": {
+            "S": "Standard Milk"
+          },
+          "brand": {
+            "S": "Pams Value"
+          },
+          "size": {
+            "S": "2l"
+          },
+          "price": {
+            "N": "4.88"
+          },
+          "category": {
+            "S": "Milk"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5201490-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5201490-EA-000"
+          },
+          "product_name": {
+            "S": "Standard Milk"
+          },
+          "brand": {
+            "S": "Pams Value"
+          },
+          "size": {
+            "S": "3l"
+          },
+          "price": {
+            "N": "7.25"
+          },
+          "category": {
+            "S": "Milk"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5201487-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5201487-EA-000"
+          },
+          "product_name": {
+            "S": "Lite Milk"
+          },
+          "brand": {
+            "S": "Pams Value"
+          },
+          "size": {
+            "S": "2l"
+          },
+          "price": {
+            "N": "4.88"
+          },
+          "category": {
+            "S": "Milk"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5201489-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5201489-EA-000"
+          },
+          "product_name": {
+            "S": "Lite Milk"
+          },
+          "brand": {
+            "S": "Pams Value"
+          },
+          "size": {
+            "S": "3l"
+          },
+          "price": {
+            "N": "7.25"
+          },
+          "category": {
+            "S": "Milk"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5201800-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5201800-EA-000"
+          },
+          "product_name": {
+            "S": "Standard Milk"
+          },
+          "brand": {
+            "S": "Pams Value"
+          },
+          "size": {
+            "S": "1l"
+          },
+          "price": {
+            "N": "3.19"
+          },
+          "category": {
+            "S": "Milk"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5092911-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5092911-EA-000"
+          },
+          "product_name": {
+            "S": "White Toast Fresh Sliced Bread"
+          },
+          "brand": {
+            "S": "Pams Value"
+          },
+          "size": {
+            "S": "600g"
+          },
+          "price": {
+            "N": "2.05"
+          },
+          "category": {
+            "S": "Sliced & Packaged Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5009506-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5009506-EA-000"
+          },
+          "product_name": {
+            "S": "Supersoft White Toast Bread"
+          },
+          "brand": {
+            "S": "Tip Top"
+          },
+          "size": {
+            "S": "700g"
+          },
+          "price": {
+            "N": "3.97"
+          },
+          "category": {
+            "S": "Sliced & Packaged Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5233712-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5233712-EA-000"
+          },
+          "product_name": {
+            "S": "Wheatmeal Toast Fresh Sliced Bread"
+          },
+          "brand": {
+            "S": "Pams Value"
+          },
+          "size": {
+            "S": "600g"
+          },
+          "price": {
+            "N": "2.05"
+          },
+          "category": {
+            "S": "Sliced & Packaged Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5026067-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5026067-EA-000"
+          },
+          "product_name": {
+            "S": "White Toast Bread"
+          },
+          "brand": {
+            "S": "Nature's Fresh"
+          },
+          "size": {
+            "S": "700g"
+          },
+          "price": {
+            "N": "2.99"
+          },
+          "category": {
+            "S": "Sliced & Packaged Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5025751-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5025751-EA-000"
+          },
+          "product_name": {
+            "S": "Swiss Soya Linseed Bread"
+          },
+          "brand": {
+            "S": "Freya's"
+          },
+          "size": {
+            "S": "750g"
+          },
+          "price": {
+            "N": "4.35"
+          },
+          "category": {
+            "S": "Sliced & Packaged Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5281163-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5281163-EA-000"
+          },
+          "product_name": {
+            "S": "Pack Colony Caged Eggs Size 7"
+          },
+          "brand": {
+            "S": "Rise N Shine"
+          },
+          "size": {
+            "S": "12pk"
+          },
+          "price": {
+            "N": "7.29"
+          },
+          "category": {
+            "S": "Eggs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5290707-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5290707-EA-000"
+          },
+          "product_name": {
+            "S": "Free Range Mixed Grade Eggs"
+          },
+          "brand": {
+            "S": "New Day"
+          },
+          "size": {
+            "S": "18pk"
+          },
+          "price": {
+            "N": "10.99"
+          },
+          "category": {
+            "S": "Eggs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5269558-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5269558-EA-000"
+          },
+          "product_name": {
+            "S": "Free Range Size 6 Eggs"
+          },
+          "brand": {
+            "S": "Woodland"
+          },
+          "size": {
+            "S": "18pk"
+          },
+          "price": {
+            "N": "14.89"
+          },
+          "category": {
+            "S": "Eggs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5257064-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5257064-EA-000"
+          },
+          "product_name": {
+            "S": "Cage-Free Barn Size 7 Eggs"
+          },
+          "brand": {
+            "S": "Farmer Brown"
+          },
+          "size": {
+            "S": "12pk"
+          },
+          "price": {
+            "N": "9.29"
+          },
+          "category": {
+            "S": "Eggs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5314652-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5314652-EA-000"
+          },
+          "product_name": {
+            "S": "Fresh Colony Caged Size 6 Eggs"
+          },
+          "brand": {
+            "S": "Farmer Brown"
+          },
+          "size": {
+            "S": "18pk"
+          },
+          "price": {
+            "N": "12.29"
+          },
+          "category": {
+            "S": "Eggs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5023660-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5023660-EA-000"
+          },
+          "product_name": {
+            "S": "Pure Butter"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "500g"
+          },
+          "price": {
+            "N": "8.29"
+          },
+          "category": {
+            "S": "Butter & Margarine"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5002650-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5002650-EA-000"
+          },
+          "product_name": {
+            "S": "Butter"
+          },
+          "brand": {
+            "S": "Anchor"
+          },
+          "size": {
+            "S": "500g"
+          },
+          "price": {
+            "N": "9.99"
+          },
+          "category": {
+            "S": "Butter & Margarine"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5013505-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5013505-EA-000"
+          },
+          "product_name": {
+            "S": "Salted Buttersoft Spreadable Butter"
+          },
+          "brand": {
+            "S": "Mainland"
+          },
+          "size": {
+            "S": "375g"
+          },
+          "price": {
+            "N": "11.79"
+          },
+          "category": {
+            "S": "Butter & Margarine"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5002843-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5002843-EA-000"
+          },
+          "product_name": {
+            "S": "Unsalted Butter"
+          },
+          "brand": {
+            "S": "Mainland"
+          },
+          "size": {
+            "S": "500g"
+          },
+          "price": {
+            "N": "9.79"
+          },
+          "category": {
+            "S": "Butter & Margarine"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5002842-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5002842-EA-000"
+          },
+          "product_name": {
+            "S": "Salted Butter"
+          },
+          "brand": {
+            "S": "Mainland"
+          },
+          "size": {
+            "S": "500g"
+          },
+          "price": {
+            "N": "9.79"
+          },
+          "category": {
+            "S": "Butter & Margarine"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5268695-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5268695-EA-000"
+          },
+          "product_name": {
+            "S": "Colby Cheese"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "12.65"
+          },
+          "category": {
+            "S": "Cheese"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5268694-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5268694-EA-000"
+          },
+          "product_name": {
+            "S": "Edam Cheese"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "12.65"
+          },
+          "category": {
+            "S": "Cheese"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5334081-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5334081-EA-000"
+          },
+          "product_name": {
+            "S": "Cheese"
+          },
+          "brand": {
+            "S": "Pams Value"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "11.95"
+          },
+          "category": {
+            "S": "Cheese"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5315993-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5315993-EA-000"
+          },
+          "product_name": {
+            "S": "Colby Cheese"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "500g"
+          },
+          "price": {
+            "N": "8.42"
+          },
+          "category": {
+            "S": "Cheese"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5268696-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5268696-EA-000"
+          },
+          "product_name": {
+            "S": "Tasty Cheddar Cheese"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "800g"
+          },
+          "price": {
+            "N": "12.65"
+          },
+          "category": {
+            "S": "Cheese"
+          }
+        }
+      }
+    }
+  ]
+}

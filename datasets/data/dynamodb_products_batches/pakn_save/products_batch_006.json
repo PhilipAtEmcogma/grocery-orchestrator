@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5025226-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5025226-EA-000"
+          },
+          "product_name": {
+            "S": "Rice Bran Oil"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "1l"
+          },
+          "price": {
+            "N": "5.09"
+          },
+          "category": {
+            "S": "Oil & Vinegar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5006697-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5006697-EA-000"
+          },
+          "product_name": {
+            "S": "Pure Canola Oil"
+          },
+          "brand": {
+            "S": "Simply"
+          },
+          "size": {
+            "S": "2l"
+          },
+          "price": {
+            "N": "8.49"
+          },
+          "category": {
+            "S": "Oil & Vinegar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5003828-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5003828-EA-000"
+          },
+          "product_name": {
+            "S": "Pure Olive Oil"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "500ml"
+          },
+          "price": {
+            "N": "8.69"
+          },
+          "category": {
+            "S": "Oil & Vinegar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5003761-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5003761-EA-000"
+          },
+          "product_name": {
+            "S": "Iodised Table Salt"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "1.49"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5341189-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5341189-EA-000"
+          },
+          "product_name": {
+            "S": "Iodised Table Salt"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "500g"
+          },
+          "price": {
+            "N": "2.19"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5027946-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5027946-EA-000"
+          },
+          "product_name": {
+            "S": "Naturals Coarse Sea Salt"
+          },
+          "brand": {
+            "S": "Mrs Rogers"
+          },
+          "size": {
+            "S": "500g"
+          },
+          "price": {
+            "N": "2.29"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5034419-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5034419-EA-000"
+          },
+          "product_name": {
+            "S": "Himalayan Pink Salt Fine Bag"
+          },
+          "brand": {
+            "S": "Mrs Rogers"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "2.99"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5229314-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5229314-EA-000"
+          },
+          "product_name": {
+            "S": "Naturals Coarse Himalayan Pink Salt"
+          },
+          "brand": {
+            "S": "Mrs Rogers"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "2.99"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5026872-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5026872-EA-000"
+          },
+          "product_name": {
+            "S": "Naturals Eco Black Peppercorns"
+          },
+          "brand": {
+            "S": "Mrs Rogers"
+          },
+          "size": {
+            "S": "30g"
+          },
+          "price": {
+            "N": "1.79"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5006164-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5006164-EA-000"
+          },
+          "product_name": {
+            "S": "Whole Black Peppercorns Grinder"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "45g"
+          },
+          "price": {
+            "N": "4.19"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5026416-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5026416-EA-000"
+          },
+          "product_name": {
+            "S": "Naturals Whole Black Peppercorns"
+          },
+          "brand": {
+            "S": "Mrs Rogers"
+          },
+          "size": {
+            "S": "200g"
+          },
+          "price": {
+            "N": "8.19"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5026129-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5026129-EA-000"
+          },
+          "product_name": {
+            "S": "Ground Black Pepper"
+          },
+          "brand": {
+            "S": "Gregg's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "6.49"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5002559-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5002559-EA-000"
+          },
+          "product_name": {
+            "S": "Ground Black Pepper"
+          },
+          "brand": {
+            "S": "King"
+          },
+          "size": {
+            "S": "50g"
+          },
+          "price": {
+            "N": "4.29"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5008899-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5008899-EA-000"
+          },
+          "product_name": {
+            "S": "Crushed Garlic"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "230g"
+          },
+          "price": {
+            "N": "2.29"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5046145-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5046145-EA-000"
+          },
+          "product_name": {
+            "S": "Garlic"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "7pk"
+          },
+          "price": {
+            "N": "2.49"
+          },
+          "category": {
+            "S": "Fresh Salad & Herbs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5046565-KGM-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5046565-KGM-000"
+          },
+          "product_name": {
+            "S": "Loose Garlic"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "kg"
+          },
+          "price": {
+            "N": "10.99"
+          },
+          "category": {
+            "S": "Fresh Salad & Herbs"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5241730-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5241730-EA-000"
+          },
+          "product_name": {
+            "S": "Naturals Eco Garlic Powder"
+          },
+          "brand": {
+            "S": "Mrs Rogers"
+          },
+          "size": {
+            "S": "40g"
+          },
+          "price": {
+            "N": "1.79"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5046212-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5046212-EA-000"
+          },
+          "product_name": {
+            "S": "Crushed Garlic"
+          },
+          "brand": {
+            "S": "Healthy n Fresh"
+          },
+          "size": {
+            "S": "380g"
+          },
+          "price": {
+            "N": "4.79"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5045856-KGM-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5045856-KGM-000"
+          },
+          "product_name": {
+            "S": "Brown Onions"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "kg"
+          },
+          "price": {
+            "N": "2.49"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5264168-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5264168-EA-000"
+          },
+          "product_name": {
+            "S": "Brown Onions"
+          },
+          "brand": {
+            "S": "Value"
+          },
+          "size": {
+            "S": "2kg"
+          },
+          "price": {
+            "N": "3.99"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5223140-KGM-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5223140-KGM-000"
+          },
+          "product_name": {
+            "S": "Peeled Red Onions"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "kg"
+          },
+          "price": {
+            "N": "4.99"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5009708-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5009708-EA-000"
+          },
+          "product_name": {
+            "S": "Onion Soup Mix Sachet"
+          },
+          "brand": {
+            "S": "Maggi"
+          },
+          "size": {
+            "S": "32g"
+          },
+          "price": {
+            "N": "1.39"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5040009-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5040009-EA-000"
+          },
+          "product_name": {
+            "S": "Spring Onions"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "2.29"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5045849-KGM-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5045849-KGM-000"
+          },
+          "product_name": {
+            "S": "White Washed Potatoes"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "kg"
+          },
+          "price": {
+            "N": "3.69"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5264180-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5264180-EA-000"
+          },
+          "product_name": {
+            "S": "Brushed Agria Potatoes"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "3kg"
+          },
+          "price": {
+            "N": "5.99"
+          },
+          "category": {
+            "S": "Vegetables"
+          }
+        }
+      }
+    }
+  ]
+}

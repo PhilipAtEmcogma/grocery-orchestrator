@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5337881-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5337881-EA-000"
+          },
+          "product_name": {
+            "S": "Zero Lacto Blue Milk"
+          },
+          "brand": {
+            "S": "Anchor"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "8.4"
+          },
+          "category": {
+            "S": "Milk"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5255602-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5255602-EA-000"
+          },
+          "product_name": {
+            "S": "Homogenised Jersey Milk"
+          },
+          "brand": {
+            "S": "Lewis Road Creamery"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "7.15"
+          },
+          "category": {
+            "S": "Milk"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5227982-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5227982-EA-000"
+          },
+          "product_name": {
+            "S": "Chocolate Supremo Flavoured Milk"
+          },
+          "brand": {
+            "S": "Primo"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "7.29"
+          },
+          "category": {
+            "S": "Milk"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5008663-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5008663-EA-000"
+          },
+          "product_name": {
+            "S": "Instant Whole Milk Powder"
+          },
+          "brand": {
+            "S": "Eclipse Premium"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "15.59"
+          },
+          "category": {
+            "S": "Milk"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5335772-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5335772-EA-000"
+          },
+          "product_name": {
+            "S": "High Fibre + Low Fat Oat Milk"
+          },
+          "brand": {
+            "S": "Otis Oat Milk"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "4.69"
+          },
+          "category": {
+            "S": "Dairy Free & Meat Free"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5026067-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5026067-EA-000"
+          },
+          "product_name": {
+            "S": "White Toast Bread"
+          },
+          "brand": {
+            "S": "Nature's Fresh"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.21"
+          },
+          "category": {
+            "S": "Sliced & Packaged Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5008057-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5008057-EA-000"
+          },
+          "product_name": {
+            "S": "Superb Soy & Linseed Toast Bread"
+          },
+          "brand": {
+            "S": "Burgen"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "5.19"
+          },
+          "category": {
+            "S": "Sliced & Packaged Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5204608-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5204608-EA-000"
+          },
+          "product_name": {
+            "S": "Good Seed Sprouted Bread"
+          },
+          "brand": {
+            "S": "Home St."
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "9.99"
+          },
+          "category": {
+            "S": "Sliced & Packaged Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5080489-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5080489-EA-000"
+          },
+          "product_name": {
+            "S": "Pure Foodie Paleo Super Seeded Bread"
+          },
+          "brand": {
+            "S": "Venerdi"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "14.99"
+          },
+          "category": {
+            "S": "Sliced & Packaged Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5108736-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5108736-EA-000"
+          },
+          "product_name": {
+            "S": "Pumpernickel Bread"
+          },
+          "brand": {
+            "S": "Mestemacher"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "7.49"
+          },
+          "category": {
+            "S": "Sliced & Packaged Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5045591-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5045591-EA-000"
+          },
+          "product_name": {
+            "S": "Ciabatta Pizza"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "1pk"
+          },
+          "price": {
+            "N": "5.19"
+          },
+          "category": {
+            "S": "Frozen Meals & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5127802-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5127802-EA-000"
+          },
+          "product_name": {
+            "S": "Turkish Pockets"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "5.19"
+          },
+          "category": {
+            "S": "Wraps, Pita & Flat Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5102364-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5102364-EA-000"
+          },
+          "product_name": {
+            "S": "Plain Hamburger Buns"
+          },
+          "brand": {
+            "NULL": true
+          },
+          "size": {
+            "S": "ea"
+          },
+          "price": {
+            "N": "4.39"
+          },
+          "category": {
+            "S": "Wraps, Pita & Flat Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5025358-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5025358-EA-000"
+          },
+          "product_name": {
+            "S": "Honey & Olive Oil Pizza Bases"
+          },
+          "brand": {
+            "S": "Romano's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "3.99"
+          },
+          "category": {
+            "S": "Frozen Meals & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5027047-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5027047-EA-000"
+          },
+          "product_name": {
+            "S": "Buttery Spread"
+          },
+          "brand": {
+            "S": "Meadowlea"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.19"
+          },
+          "category": {
+            "S": "Butter & Margarine"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5002842-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5002842-EA-000"
+          },
+          "product_name": {
+            "S": "Salted Butter"
+          },
+          "brand": {
+            "S": "Mainland"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "9.79"
+          },
+          "category": {
+            "S": "Butter & Margarine"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5026296-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5026296-EA-000"
+          },
+          "product_name": {
+            "S": "Lite Spread"
+          },
+          "brand": {
+            "S": "Meadowlea"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.19"
+          },
+          "category": {
+            "S": "Butter & Margarine"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5045683-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5045683-EA-000"
+          },
+          "product_name": {
+            "S": "Avocado Olive Oil Spread"
+          },
+          "brand": {
+            "S": "Olivani"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "6.79"
+          },
+          "category": {
+            "S": "Butter & Margarine"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5001057-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5001057-EA-000"
+          },
+          "product_name": {
+            "S": "Mild & Creamy Edam Cheese"
+          },
+          "brand": {
+            "S": "Mainland"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "7.99"
+          },
+          "category": {
+            "S": "Cheese"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5013740-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5013740-EA-000"
+          },
+          "product_name": {
+            "S": "Smooth & Creamy Colby Cheese"
+          },
+          "brand": {
+            "S": "Mainland"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "7.99"
+          },
+          "category": {
+            "S": "Cheese"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5026180-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5026180-EA-000"
+          },
+          "product_name": {
+            "S": "Mild & Creamy Edam Cheese"
+          },
+          "brand": {
+            "S": "Mainland"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "10.49"
+          },
+          "category": {
+            "S": "Cheese"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5012553-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5012553-EA-000"
+          },
+          "product_name": {
+            "S": "Feta Cheese"
+          },
+          "brand": {
+            "S": "Bouton d'or"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "5.99"
+          },
+          "category": {
+            "S": "Cheese"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5008626-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5008626-EA-000"
+          },
+          "product_name": {
+            "S": "Spreadable Cream Cheese"
+          },
+          "brand": {
+            "S": "Anchor"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "5.69"
+          },
+          "category": {
+            "S": "Cheese"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5005482-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5005482-EA-000"
+          },
+          "product_name": {
+            "S": "Colby Flavoured Processed Cheese Slices"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.49"
+          },
+          "category": {
+            "S": "Cheese"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5015758-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5015758-EA-000"
+          },
+          "product_name": {
+            "S": "Edam Grated Cheese"
+          },
+          "brand": {
+            "S": "Rolling Meadow"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "11.32"
+          },
+          "category": {
+            "S": "Cheese"
+          }
+        }
+      }
+    }
+  ]
+}
