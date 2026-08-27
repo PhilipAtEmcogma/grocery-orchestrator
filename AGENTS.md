@@ -27,6 +27,9 @@ service into an implementation claim.
 - `ACQUISITION-RISK.md` — terms-of-service assessment for live price
   acquisition (Task 7.9). **Read before touching acquisition.** §8 is the
   condition list Task 11.4 is gated on.
+- `docs/CI-GATE-HEALTH.md` — latent gaps in the gate: where it can go red for
+  a reason unrelated to your change, and where a green local run does not mean
+  a green CI run. Read before widening the evals or bumping a checker pin.
 
 ---
 
