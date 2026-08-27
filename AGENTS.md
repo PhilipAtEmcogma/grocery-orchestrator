@@ -333,6 +333,20 @@ before and after in the commit message.
   never replacements for local tests, golden sets, negative controls, or the
   90% task floor. Record model/profile, region, prompt, dataset, evaluator,
   per-case, trace, latency, token, cost, and S3 object-version provenance.
+- **A single live run does not qualify a model.** The meal-plan suite is 11
+  cases against a non-deterministic model: repeated runs of Claude Sonnet 4.5
+  on an unchanged suite returned 73%, 64% and 55%. That ±18-point spread is
+  wider than the gap between candidate models, so one run can neither clear
+  the 90% floor nor rank two models. Repeat each model and record the band,
+  not a point estimate.
+- **Separate infrastructure failure from model quality before scoring.** A run
+  where the model was never reached is not a low score, it is a void
+  measurement — `run_meal_plan.py` now aborts on a total outage and returns
+  exit code `2` (inconclusive) from `--min-pass-rate` when any case failed
+  upstream. Never report or compare a rate carrying upstream failures.
+- Running any eval against a live model requires `BEDROCK_GUARDRAIL_ID` in the
+  environment; `REQUIRE_GUARDRAIL` defaults on and fails every call closed
+  without it. See the README's "Running an eval against a live model".
 
 ---
 

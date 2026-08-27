@@ -367,6 +367,47 @@ python evals/run_guardrail.py         # 7/7 scripted must-allow structure only
 python scripts/build_lambda.py        # build build/lambda.zip; see Progress to date
 ```
 
+### Running an eval against a live model
+
+`--model` / `--compare` call Bedrock, which needs three things in the
+environment. The third is the one people miss:
+
+```bash
+export AWS_PROFILE=grocery
+export AWS_REGION=ap-southeast-2
+export BEDROCK_GUARDRAIL_ID=b1xezpqe04kx   # grocery-assistant-guardrail-dev
+export BEDROCK_GUARDRAIL_VERSION=DRAFT     # the default; set explicitly when pinning
+
+python evals/run_meal_plan.py --compare claude-sonnet nova-pro
+```
+
+`REQUIRE_GUARDRAIL` defaults to `1`, so a missing `BEDROCK_GUARDRAIL_ID` makes
+every model call fail closed — deliberately, because silently running
+generation without content safety is the worse outcome. List the deployed
+guardrail with:
+
+```bash
+aws bedrock list-guardrails --region ap-southeast-2 \
+  --query 'guardrails[].{Id:id,Name:name,Status:status}' --output table
+```
+
+The harness now aborts rather than reporting a pass rate when the model was
+never reached, and `--min-pass-rate` returns exit code `2` (inconclusive, not
+pass or fail) if any case failed upstream. Before that guard existed, an unset
+`BEDROCK_GUARDRAIL_ID` produced an identical, entirely plausible 27% for two
+different models — a measurement of nothing.
+
+Anthropic models additionally need the account's one-time Anthropic use case
+form submitted (Bedrock console → **Test → Playground** → pick a Claude model
+→ Run). It is account-wide, not per-model, and the retired *Model access* page
+no longer offers it. Check with
+`aws bedrock get-use-case-for-model-access --region ap-southeast-2`.
+
+**On reading the numbers:** this suite is 11 cases and the models are
+non-deterministic. Repeat runs of the same model have differed by ~18 points,
+which is wider than the gap between models. A single run cannot rank two
+models; repeat each before concluding anything.
+
 To exercise the Lambda handler over real HTTP (what the frontend team should
 point at before the AWS account exists):
 
