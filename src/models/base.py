@@ -83,5 +83,31 @@ class ModelError(RuntimeError):
     """Raised when the model call fails or the reply cannot be parsed."""
 
 
+class ModelOutputInvalid(ModelError):
+    """
+    The model answered, and the answer did not satisfy the schema.
+
+    Distinct from a bare ModelError, which means the call itself failed —
+    unreachable endpoint, throttled, timed out, misconfigured. That difference
+    decides what the caller should do and what the failure means:
+
+      * The call failed        -> nothing to repair, retrying the same prompt
+                                  is pointless, and the user should be told the
+                                  service is unavailable.
+      * The output was invalid -> the model IS reachable and answering. This is
+                                  a quality failure, it is what the repair loop
+                                  exists for, and it must count against the
+                                  model in an eval rather than being written
+                                  off as infrastructure.
+
+    Collapsing the two in either direction misreports one as the other: an
+    outage read as an unaffordable budget, or a model that cannot follow its
+    own schema read as a network problem.
+
+    A subclass of ModelError so existing `except ModelError` handlers at the
+    edges (handler.py) keep catching it.
+    """
+
+
 class GuardrailBlocked(ModelError):
     """Raised when a configured model safety guardrail blocks a request."""

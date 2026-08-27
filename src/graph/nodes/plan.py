@@ -15,7 +15,13 @@ from __future__ import annotations
 from decimal import ROUND_HALF_UP, Decimal
 
 from src.graph.state import GroceryState, usage_from
-from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier
+from src.models.base import (
+    GuardrailBlocked,
+    ModelClient,
+    ModelError,
+    ModelOutputInvalid,
+    ModelTier,
+)
 from src.prompts.meal_plan import (
     SYSTEM_PROMPT,
     PlanDraft,
@@ -228,6 +234,19 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
         )
     except GuardrailBlocked:
         raise
+    except ModelOutputInvalid as exc:
+        # The model answered; the answer did not fit PlanDraft. That is a
+        # quality failure and precisely what the repair loop is for, so it
+        # stays a validation error. Caught BEFORE ModelError because it is a
+        # subclass: ordering these the other way sent every schema failure
+        # down the upstream path, which reported a model that could not honour
+        # its own schema — Claude Haiku 4.5 overrunning the 600-character
+        # `reasoning` cap on 8 of 11 cases — as though Bedrock were down.
+        return {
+            "plan": None,
+            "validation_errors": [f"invalid plan draft: {exc}"],
+            "usage": usage_from(model, _usage_before),
+        }
     except ModelError as exc:
         # NOT a validation error. Reporting an unreachable model as one sent
         # this into the repair loop, which re-invoked the same broken client
