@@ -1,0 +1,5889 @@
+{
+  "SmartGroceryRecipes": [
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53191"
+          },
+          "recipe_name": {
+            "S": "Pad Thai"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Noodles"
+                  },
+                  "measure": {
+                    "S": "125g"
+                  },
+                  "key": {
+                    "S": "rice noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 3"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cayenne Pepper"
+                  },
+                  "measure": {
+                    "S": "1/2 teaspoon"
+                  },
+                  "key": {
+                    "S": "cayenne pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Muscovado Sugar"
+                  },
+                  "measure": {
+                    "S": "2 teaspoons"
+                  },
+                  "key": {
+                    "S": "muscovado sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Tiger Prawns"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "tiger prawns"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "4 finely sliced"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bean Sprouts"
+                  },
+                  "measure": {
+                    "S": "140g"
+                  },
+                  "key": {
+                    "S": "bean sprouts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Peanuts"
+                  },
+                  "measure": {
+                    "S": "25g"
+                  },
+                  "key": {
+                    "S": "peanuts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "sweet chilli sauce"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "sweet chilli sauce"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "rice noodles"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "cayenne pepper"
+              },
+              {
+                "S": "muscovado sugar"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "tiger prawns"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "bean sprouts"
+              },
+              {
+                "S": "peanuts"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "sweet chilli sauce"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "13"
+          },
+          "instructions": {
+            "S": "step 1 Put the noodles in a large heatproof bowl, pour boiling water over them and leave for 4 minutes, then drain and refresh under cold running water. step 2 Put the lime juice, cayenne, sugar and fish sauce in a bowl and mix well. Have all the other ingredients ready by the cooker. step 3 Heat the oil and fry the prawns until warmed through. Add the spring onions and noodles and toss around. Tip in the lime juice mixture, then stir in the beansprouts and half the peanuts and coriander. Cook for 1 minute until everything is heated through. step 4 Pile into a large dish, scatter with the rest of the peanuts and coriander, and serve with lime wedges and sweet chilli sauce."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/rg9ze01763479093.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/easy-pad-thai"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=F86GfZIph8o"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53191"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53192"
+          },
+          "recipe_name": {
+            "S": "Panang chicken curry (kaeng panang gai)"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "400ml"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Panang Curry Paste"
+                  },
+                  "measure": {
+                    "S": "1-2tbsp"
+                  },
+                  "key": {
+                    "S": "panang curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Breast"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "chicken breast"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Green Beans"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "green beans"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "2-3 tbsp"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "1-2tbsp"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "makrut lime leaves"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "makrut lime leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Basil Leaves"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "basil leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Jasmine Rice"
+                  },
+                  "measure": {
+                    "S": "Boiled"
+                  },
+                  "key": {
+                    "S": "jasmine rice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "6"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Dried Red Chillies"
+                  },
+                  "measure": {
+                    "S": "4"
+                  },
+                  "key": {
+                    "S": "dried red chillies"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Shrimp Paste"
+                  },
+                  "measure": {
+                    "S": "1 teaspoon"
+                  },
+                  "key": {
+                    "S": "shrimp paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "4 Cloves Chopped"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Galangal"
+                  },
+                  "measure": {
+                    "S": "1 tblsp"
+                  },
+                  "key": {
+                    "S": "galangal"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemongrass"
+                  },
+                  "measure": {
+                    "S": "1 tblsp"
+                  },
+                  "key": {
+                    "S": "lemongrass"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Zest of 2"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Nutmeg"
+                  },
+                  "measure": {
+                    "S": "1 teaspoon"
+                  },
+                  "key": {
+                    "S": "ground nutmeg"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Coriander"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "ground coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Cumin"
+                  },
+                  "measure": {
+                    "S": "1 teaspoon"
+                  },
+                  "key": {
+                    "S": "ground cumin"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Peanuts"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "peanuts"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "panang curry paste"
+              },
+              {
+                "S": "chicken breast"
+              },
+              {
+                "S": "green beans"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "makrut lime leaves"
+              },
+              {
+                "S": "basil leaves"
+              },
+              {
+                "S": "jasmine rice"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "dried red chillies"
+              },
+              {
+                "S": "shrimp paste"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "galangal"
+              },
+              {
+                "S": "lemongrass"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "ground nutmeg"
+              },
+              {
+                "S": "ground coriander"
+              },
+              {
+                "S": "ground cumin"
+              },
+              {
+                "S": "peanuts"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "20"
+          },
+          "instructions": {
+            "S": "step 1 First, make the curry paste. Use a pestle and mortar to pound together the dried and fresh chillies, shrimp paste, garlic, galangal, lemongrass, lime zest, white pepper, coriander, cumin, nutmeg and peanuts, plus 1 tsp salt. You should have a rough paste. Alternatively, add all the ingredients to a food processor along with 2-3 tbsp of coconut milk and pulse until you have a paste. Store in a lidded jar in the fridge. Will keep for up to two weeks. step 2 Add 2-3 tbsp of the thick part of the coconut milk into a saucepan over a medium-high heat. When the coconut milk starts bubbling, add 1-2 tbsp of the curry paste and stir well for about 1 min, until fragrant. step 3 Stir in the chicken and let it cook for about 3-4 mins until beginning to brown all over. Follow with the French beans and stir well. step 4 Season with the fish sauce and sugar, then add the rest of coconut milk. Mix well, add half the makrut lime leaves and simmer for 3-5 mins until the chicken is cooked through. Taste and add more sugar or fish sauce if necessary – it should be salty and nutty, and the sweetness should come through. Add the Thai basil leaves, give it a quick mix and take off the heat. Serve with steamed jasmine rice, garnished with the sliced chilli and the rest of the makrut lime leaves."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/0dhtwr1763371444.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/panang-chicken-curry-kaeng-panang-gai"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=dYZHzK7YfYI"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53192"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53200"
+          },
+          "recipe_name": {
+            "S": "Prawn stir-fry"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Raw tiger prawns"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "raw tiger prawns"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Green Chilli"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "green chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "3 Cloves Crushed"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "1 bunch"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tblsp"
+                  },
+                  "key": {
+                    "S": "caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 1"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "3 tbsp"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Nut Oil"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "ground nut oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "3cm piece"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "8 slices"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Pepper"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Water Chestnut"
+                  },
+                  "measure": {
+                    "S": "85g"
+                  },
+                  "key": {
+                    "S": "water chestnut"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bean Sprouts"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "bean sprouts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Noodles"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "rice noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "raw tiger prawns"
+              },
+              {
+                "S": "green chilli"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "caster sugar"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "ground nut oil"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "red pepper"
+              },
+              {
+                "S": "water chestnut"
+              },
+              {
+                "S": "bean sprouts"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "rice noodles"
+              },
+              {
+                "S": "lime"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "16"
+          },
+          "instructions": {
+            "S": "step 1 Put the prawns in a bowl. Put the chilli, garlic, coriander stalks (snip these up using scissors first) and caster sugar in a spice grinder or small food processor and whizz together. Add half of the lime juice and the fish sauce, then pour this over the prawns. step 2 Heat 1 tbsp oil in a wok, add the ginger and spring onions and fry for 1 min. Add the red pepper and fry for 1 min, until the pepper starts to soften. Add the water chestnuts and bean sprouts, and toss together until the bean sprouts start to wilt. Add the soy sauce and a really good grind of black pepper, then tip the lot into a serving dish. step 3 Heat the remaining oil in the wok and add the prawns, lifting them out of their juices. Toss for 1-2 mins until they turn pink, add the marinade and swirl the wok quickly, then tip the lot onto the veg. Snip over the coriander leaves and sprinkle on the remaining lime. Serves over noodles with extra lime for squeezing over."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/96lt871763480970.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/thai-prawn-ginger-spring-onion-stir-fry"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=DddM8OGb4Jc"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53200"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53204"
+          },
+          "recipe_name": {
+            "S": "Red curry chicken kebabs"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Breasts"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "chicken breasts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thai Red Curry Paste"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "thai red curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Pepper"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "red pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Courgettes"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "courgettes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Onions"
+                  },
+                  "measure": {
+                    "S": "1 cut thin wedges"
+                  },
+                  "key": {
+                    "S": "red onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "chicken breasts"
+              },
+              {
+                "S": "thai red curry paste"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "red pepper"
+              },
+              {
+                "S": "courgettes"
+              },
+              {
+                "S": "red onions"
+              },
+              {
+                "S": "lime"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "7"
+          },
+          "instructions": {
+            "S": "step 1 Fire up the barbecue or heat a griddle pan to high. Tip chicken, curry paste and coconut milk into a bowl, then mix well until the chicken is evenly coated. Thread vegetables and chicken onto skewers. Cook the skewers on the barbecue or griddle for 5-8 mins, turning every so often, until the chicken is cooked through and charred. Serve with herby rice, salad and a lime half to squeeze over."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/prjve31763486864.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/red-curry-chicken-kebabs"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=XJscdFRT8_8"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53204"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53209"
+          },
+          "recipe_name": {
+            "S": "Spicy Thai prawn noodles"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Noodles"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "rice noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sesame Seed Oil"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "sesame seed oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Egg"
+                  },
+                  "measure": {
+                    "S": "2 Beaten"
+                  },
+                  "key": {
+                    "S": "egg"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "3cm piece"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Prawns"
+                  },
+                  "measure": {
+                    "S": "450g"
+                  },
+                  "key": {
+                    "S": "prawns"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Bunch"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mint"
+                  },
+                  "measure": {
+                    "S": "1/2 handful"
+                  },
+                  "key": {
+                    "S": "mint"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Zest and juice of 1"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Peanuts"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "peanuts"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "rice noodles"
+              },
+              {
+                "S": "sesame seed oil"
+              },
+              {
+                "S": "egg"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "prawns"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "mint"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "peanuts"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "11"
+          },
+          "instructions": {
+            "S": "step 1 Cook the noodles following the pack instructions, drain and set aside for later. Heat the oil in a large frying pan and pour in the beaten egg. Swirl around the pan to make a thin omelette, cook for 1-2 mins, then flip over and cook the other side for 1 min. Tip out and slice into thin strips. step 2 Add the chilli and ginger to the pan, fry for 1-2 mins then tip in the noodles, prawns and egg. Splash in the soy sauce and stir-fry for 1 min more. Throw in the chopped herbs and pour over the lime juice and zest, then sprinkle over the chopped peanuts and serve."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/568t931763584227.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/spicy-thai-prawn-noodles"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53209"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53201"
+          },
+          "recipe_name": {
+            "S": "Stir-fried chicken with chillies & basil"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken"
+                  },
+                  "measure": {
+                    "S": "450g"
+                  },
+                  "key": {
+                    "S": "chicken"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "3 tblsp chopped"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Shallots"
+                  },
+                  "measure": {
+                    "S": "3 tblsp chopped"
+                  },
+                  "key": {
+                    "S": "shallots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "3"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Basil Leaves"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "basil leaves"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "chicken"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "shallots"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "basil leaves"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "9"
+          },
+          "instructions": {
+            "S": "Heat a wok or large frying pan until it is very hot, then add 1 tbsp of the oil. When it is very hot, add the chicken and stir-fry over a high heat for 8-10 minutes, until browned all over. Using a slotted spoon, take the chicken from the pan and set aside. step 2 Reheat the wok and add the remaining oil. Toss in the garlic and shallots and stir fry for 3 minutes, until golden brown. step 3 Return the chicken to the wok and add the chillies, fish sauce, dark soy sauce and sugar. Stir fry over a high heat for a further 8-10 minutes or until the chicken is cooked through. Stir in the basil leaves and serve at once."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/el64dy1763483009.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/ken-homs-stir-fried-chicken-chillies-basil"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=fF4GpyiZL8Q"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53201"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53199"
+          },
+          "recipe_name": {
+            "S": "Thai beef stir-fry"
+          },
+          "category": {
+            "S": "Beef"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "2 tbsp"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Beef"
+                  },
+                  "measure": {
+                    "S": "400g"
+                  },
+                  "key": {
+                    "S": "beef"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Oyster Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "oyster sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Basil Leaves"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "basil leaves"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "beef"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "oyster sauce"
+              },
+              {
+                "S": "basil leaves"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "5"
+          },
+          "instructions": {
+            "S": "step 1 Heat a wok or large frying pan until smoking hot. Pour in the oil and swirl around the pan, then tip in the beef strips and chilli. Cook, stirring all the time, until the meat is lightly browned, about 3 mins, then pour over the oyster sauce. Cook until heated through and the sauce coats the meat. stir in the basil leaves and serve with plain rice."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/kyuxew1763479470.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/thai-beef-stir-fry"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=N3OI_7zu5sA"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53199"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53206"
+          },
+          "recipe_name": {
+            "S": "Thai chicken cakes with sweet chilli sauce"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Breast"
+                  },
+                  "measure": {
+                    "S": "2 large"
+                  },
+                  "key": {
+                    "S": "chicken breast"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "1 clove"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "1 small"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "4 tbs"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Green Chilli"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "green chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Olive Oil"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "olive oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "sweet chilli sauce"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "sweet chilli sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "Chopped"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "Chopped"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "chicken breast"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "green chilli"
+              },
+              {
+                "S": "olive oil"
+              },
+              {
+                "S": "sweet chilli sauce"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "red chilli"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "11"
+          },
+          "instructions": {
+            "S": "step 1 Toss the chicken, garlic, ginger, onion, coriander and chilli into a food processor and season well. Blitz until the chicken is finely ground and everything is well mixed. Use your hands to shape six small cakes. step 2 Heat the oil in a frying pan, then fry the cakes over a medium heat for about 6-8 mins, turning once. Serve hot, with sweet chilli sauce, lime wedges, coriander, shredded spring onion and red chilli."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/6s3i3p1763488540.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/thai-chicken-cakes-sweet-chilli-sauce"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=pT0WoqUZXw0"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53206"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53208"
+          },
+          "recipe_name": {
+            "S": "Thai coconut & veg broth"
+          },
+          "category": {
+            "S": "Vegetarian"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Thai Red Curry Paste"
+                  },
+                  "measure": {
+                    "S": "1 ½ tbsp"
+                  },
+                  "key": {
+                    "S": "thai red curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Stock"
+                  },
+                  "measure": {
+                    "S": "1 L"
+                  },
+                  "key": {
+                    "S": "vegetable stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "400ml"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Egg Noodles"
+                  },
+                  "measure": {
+                    "S": "175g"
+                  },
+                  "key": {
+                    "S": "egg noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chinese Leaf"
+                  },
+                  "measure": {
+                    "S": "1/2"
+                  },
+                  "key": {
+                    "S": "chinese leaf"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bean Sprouts"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "bean sprouts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cherry Tomatoes"
+                  },
+                  "measure": {
+                    "S": "6"
+                  },
+                  "key": {
+                    "S": "cherry tomatoes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 1"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "3 sliced thinly"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "thai red curry paste"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "vegetable stock"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "egg noodles"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "chinese leaf"
+              },
+              {
+                "S": "bean sprouts"
+              },
+              {
+                "S": "cherry tomatoes"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "coriander"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "13"
+          },
+          "instructions": {
+            "S": "step 1 Place the curry paste in a large saucepan or wok with the oil. Fry for 1 min until fragrant. Tip in the vegetable stock, coconut milk and brown sugar. Simmer for 3 mins. step 2 Add the noodles, carrots and Chinese leaf and simmer for 4-6 mins, until all are tender. Mix in beansprouts and tomatoes. Add lime juice to taste and some extra seasoning, if you like. Spoon into bowls and sprinkle with spring onions and coriander."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/4k8nzy1763583384.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/thai-coconut-veg-broth"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=1OeM2sdLOPk"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53208"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53195"
+          },
+          "recipe_name": {
+            "S": "Thai curry noodle soup"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "1 teaspoon"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thai Green Curry Paste"
+                  },
+                  "measure": {
+                    "S": "1 tbsp"
+                  },
+                  "key": {
+                    "S": "thai green curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Stir-fry Vegetables"
+                  },
+                  "measure": {
+                    "S": "220g"
+                  },
+                  "key": {
+                    "S": "stir fry vegetables"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Raw King Prawns"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "raw king prawns"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "150ml"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Stock"
+                  },
+                  "measure": {
+                    "S": "225ml"
+                  },
+                  "key": {
+                    "S": "vegetable stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Udon Noodles"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "udon noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "10g"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Basil"
+                  },
+                  "measure": {
+                    "S": "10g"
+                  },
+                  "key": {
+                    "S": "basil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "thai green curry paste"
+              },
+              {
+                "S": "stir fry vegetables"
+              },
+              {
+                "S": "raw king prawns"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "vegetable stock"
+              },
+              {
+                "S": "udon noodles"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "basil"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "spring onions"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "11"
+          },
+          "instructions": {
+            "S": "step 1 Heat the oil in a saucepan over a medium heat and cook the curry paste for 1 min before adding the stir-fry veg and prawns. Cook for 3 mins until the prawns are mostly pink, then add the coconut milk, veg stock and noodles. step 2 Bring to the boil, then reduce the heat to a simmer and cook for 5 mins until the noodles are cooked through and the veg is tender but still has a bite. Divide between two bowls and sprinkle over the herbs, chilli and spring onion."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/118oj61763423896.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/thai-curry-noodle-soup"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=FN8tcugjCFs"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53195"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53212"
+          },
+          "recipe_name": {
+            "S": "Thai drumsticks"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "sweet chilli sauce"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "sweet chilli sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Orange"
+                  },
+                  "measure": {
+                    "S": "Zest of 1"
+                  },
+                  "key": {
+                    "S": "orange"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Orange"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "orange"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "1 clove peeled crushed"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thai Red Curry Paste"
+                  },
+                  "measure": {
+                    "S": "1 tblsp"
+                  },
+                  "key": {
+                    "S": "thai red curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken drumsticks"
+                  },
+                  "measure": {
+                    "S": "8"
+                  },
+                  "key": {
+                    "S": "chicken drumsticks"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "sweet chilli sauce"
+              },
+              {
+                "S": "orange"
+              },
+              {
+                "S": "orange"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "thai red curry paste"
+              },
+              {
+                "S": "chicken drumsticks"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "6"
+          },
+          "instructions": {
+            "S": "step 1 Heat oven to 200C/180C fan/gas 6 and line a baking tray with foil. Mix the chilli sauce with the orange zest and juice, garlic, curry paste and ¼ tsp salt. Add the chicken and coat really well. step 2 Arrange the drumsticks on the foil, spaced apart. Coat the chicken with any marinade left in the bowl, then roast for 35-40 mins until tender. Wrap in foil or pack into a food container."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/ittake1763586925.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/fragrant-thai-drumsticks"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=lv1tj9FK3f0"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53212"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53198"
+          },
+          "recipe_name": {
+            "S": "Thai fried rice with prawns & peas"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "2 tbsp"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Onions"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic Clove"
+                  },
+                  "measure": {
+                    "S": "2 sliced"
+                  },
+                  "key": {
+                    "S": "garlic clove"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Raw King Prawns"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "raw king prawns"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Rice"
+                  },
+                  "measure": {
+                    "S": "140g"
+                  },
+                  "key": {
+                    "S": "brown rice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Frozen Peas"
+                  },
+                  "measure": {
+                    "S": "75g"
+                  },
+                  "key": {
+                    "S": "frozen peas"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Bunch"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Egg"
+                  },
+                  "measure": {
+                    "S": "4 large"
+                  },
+                  "key": {
+                    "S": "egg"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Hotsauce"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "hotsauce"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "red onions"
+              },
+              {
+                "S": "garlic clove"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "raw king prawns"
+              },
+              {
+                "S": "brown rice"
+              },
+              {
+                "S": "frozen peas"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "egg"
+              },
+              {
+                "S": "hotsauce"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "12"
+          },
+          "instructions": {
+            "S": "step 1 Heat 1 tbsp of the oil in a wok, add the onion, garlic and chilli, and cook for 2-3 mins until golden. Add the prawns and cook for 1 min. Tip in the rice and peas, and keep tossing until very hot. Add the soy and fish sauce, then stir through the chopped coriander. Keep warm while you fry the eggs. step 2 Heat the remaining oil in a frying pan and fry the eggs with some seasoning. Divide the fried rice mix between 4 bowls and top each with a fried egg. Serve scattered with coriander, with chilli sauce, if you like."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/hblwvg1763478203.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/thai-fried-rice-prawns-peas"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=9wZAYbPcF-I"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53198"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53214"
+          },
+          "recipe_name": {
+            "S": "Thai green chicken soup"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Sunflower Oil"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "sunflower oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Thighs"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "chicken thighs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic Clove"
+                  },
+                  "measure": {
+                    "S": "4 sliced"
+                  },
+                  "key": {
+                    "S": "garlic clove"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thai Green Curry Paste"
+                  },
+                  "measure": {
+                    "S": "280g"
+                  },
+                  "key": {
+                    "S": "thai green curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "400ml"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Stock"
+                  },
+                  "measure": {
+                    "S": "2 Litres"
+                  },
+                  "key": {
+                    "S": "chicken stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime Leaves"
+                  },
+                  "measure": {
+                    "S": "5"
+                  },
+                  "key": {
+                    "S": "lime leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "1 bunch"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Green Beans"
+                  },
+                  "measure": {
+                    "S": "280g"
+                  },
+                  "key": {
+                    "S": "green beans"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bamboo Shoot"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "bamboo shoot"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 2"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Basil"
+                  },
+                  "measure": {
+                    "S": "Bunch"
+                  },
+                  "key": {
+                    "S": "basil"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "sunflower oil"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "chicken thighs"
+              },
+              {
+                "S": "garlic clove"
+              },
+              {
+                "S": "thai green curry paste"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "chicken stock"
+              },
+              {
+                "S": "lime leaves"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "green beans"
+              },
+              {
+                "S": "bamboo shoot"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "basil"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "14"
+          },
+          "instructions": {
+            "S": "step 1 Heat the oil in your largest pan, add the onion and fry for 3 mins to soften. Add the chicken and garlic, and cook until the chicken changes colour. step 2 Add the curry paste, coconut milk, stock, lime leaves and fish sauce, then simmer for 12 mins. Add the chopped onion tops, green beans and bamboo shoots and cook for 4-6 mins, until the beans are just tender. step 3 Meanwhile, put the lime juice and basil in a narrow jug and blitz with a hand blender to make a smooth green paste. Pour into the soup with the sliced spring onion and heat through. Serve with lime wedges for a light lunch or supper or as a make-ahead starter."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/7kb44y1763589084.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/thai-green-chicken-soup"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=3s4Yitd546w"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53214"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52814"
+          },
+          "recipe_name": {
+            "S": "Thai Green Curry"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Potatoes"
+                  },
+                  "measure": {
+                    "S": "225g new"
+                  },
+                  "key": {
+                    "S": "potatoes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "green beans"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "green beans"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "sunflower oil"
+                  },
+                  "measure": {
+                    "S": "1 tbsp"
+                  },
+                  "key": {
+                    "S": "sunflower oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "garlic"
+                  },
+                  "measure": {
+                    "S": "1 clove"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thai green curry paste"
+                  },
+                  "measure": {
+                    "S": "4 tsp"
+                  },
+                  "key": {
+                    "S": "thai green curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "coconut milk"
+                  },
+                  "measure": {
+                    "S": "400ml"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thai fish sauce"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "thai fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken"
+                  },
+                  "measure": {
+                    "S": "450g boneless"
+                  },
+                  "key": {
+                    "S": "chicken"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "lime"
+                  },
+                  "measure": {
+                    "S": "2 fresh kaffir leaves"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "basil"
+                  },
+                  "measure": {
+                    "S": "handfull"
+                  },
+                  "key": {
+                    "S": "basil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice"
+                  },
+                  "measure": {
+                    "S": "Boiled"
+                  },
+                  "key": {
+                    "S": "rice"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "potatoes"
+              },
+              {
+                "S": "green beans"
+              },
+              {
+                "S": "sunflower oil"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "thai green curry paste"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "thai fish sauce"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "chicken"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "basil"
+              },
+              {
+                "S": "rice"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "12"
+          },
+          "instructions": {
+            "S": "Put the potatoes in a pan of boiling water and cook for 5 minutes. Throw in the beans and cook for a further 3 minutes, by which time both should be just tender but not too soft. Drain and put to one side. In a wok or large frying pan, heat the oil until very hot, then drop in the garlic and cook until golden, this should take only a few seconds. Don’t let it go very dark or it will spoil the taste. Spoon in the curry paste and stir it around for a few seconds to begin to cook the spices and release all the flavours. Next, pour in the coconut milk and let it come to a bubble. Stir in the fish sauce and sugar, then the pieces of chicken. Turn the heat down to a simmer and cook, covered, for about 8 minutes until the chicken is cooked. Tip in the potatoes and beans and let them warm through in the hot coconut milk, then add a lovely citrussy flavour by stirring in the shredded lime leaves (or lime zest). The basil leaves go in next, but only leave them briefly on the heat or they will quickly lose their brightness. Scatter with the lime garnish and serve immediately with boiled rice."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/sstssx1487349585.jpg"
+          },
+          "source_url": {
+            "S": "http://www.bbcgoodfood.com/recipes/3235/thai-green-chicken-curry"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=LIbKVpBQKJI"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52814"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53197"
+          },
+          "recipe_name": {
+            "S": "Thai pork & peanut curry"
+          },
+          "category": {
+            "S": "Pork"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "Bunch"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Bunch"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pork Tenderloin"
+                  },
+                  "measure": {
+                    "S": "400g"
+                  },
+                  "key": {
+                    "S": "pork tenderloin"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thai Red Curry Paste"
+                  },
+                  "measure": {
+                    "S": "4 tablespoons"
+                  },
+                  "key": {
+                    "S": "thai red curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Peanut Butter"
+                  },
+                  "measure": {
+                    "S": "4 tablespoons"
+                  },
+                  "key": {
+                    "S": "peanut butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tbsp"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "400ml"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sweetcorn"
+                  },
+                  "measure": {
+                    "S": "175g"
+                  },
+                  "key": {
+                    "S": "sweetcorn"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 1"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Jasmine Rice"
+                  },
+                  "measure": {
+                    "S": "Steamed"
+                  },
+                  "key": {
+                    "S": "jasmine rice"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "pork tenderloin"
+              },
+              {
+                "S": "thai red curry paste"
+              },
+              {
+                "S": "peanut butter"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "sweetcorn"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "jasmine rice"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "12"
+          },
+          "instructions": {
+            "S": "step 1 Heat the oil in a large saucepan or flameproof casserole. Add the spring onions and coriander stalks and cook for 1 min. Add the pork slices and cook for 5 mins until starting to brown. step 2 Stir in the curry paste and peanut butter. After 30 secs, add the sugar, soy and coconut milk, plus ½ can of water. Mix well, put a lid on and leave to simmer for 15 mins, stirring occasionally. step 3 Remove the lid, add the baby corn and increase the heat. Bubble for 3 mins until the corn is cooked and the sauce has thickened a little. Stir in the lime juice and check the seasoning. Can now be frozen for up to 2 months. To cook from frozen: thoroughly defrost, then heat in a pan on the hob until curry is hot all the way through. Serve scattered with the coriander leaves and rice."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/snmtd61763426568.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/thai-pork-peanut-curry"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=cxryD8ZHCdQ"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53197"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53205"
+          },
+          "recipe_name": {
+            "S": "Thai prawn curry"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "1 tbls"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thai Red Curry Paste"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "thai red curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Tinned Tomatos"
+                  },
+                  "measure": {
+                    "S": "400g"
+                  },
+                  "key": {
+                    "S": "tinned tomatos"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Cream"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "coconut cream"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Raw Frozen Prawns"
+                  },
+                  "measure": {
+                    "S": "400g"
+                  },
+                  "key": {
+                    "S": "raw frozen prawns"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Chopped"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "thai red curry paste"
+              },
+              {
+                "S": "tinned tomatos"
+              },
+              {
+                "S": "coconut cream"
+              },
+              {
+                "S": "raw frozen prawns"
+              },
+              {
+                "S": "coriander"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "8"
+          },
+          "instructions": {
+            "S": "step 1 Heat the oil in a medium saucepan. Tip in the onion and ginger, then cook for a few mins until softened. Stir in the curry paste, then cook for 1 min more. Pour over the chopped tomatoes and coconut cream. Bring to the boil, then leave to simmer for 5 mins, adding a little boiling water if the mixture gets too thick. step 2 Tip in the prawns, then cook for 5-10 mins more, depending on how large they are. Serve alongside some plain rice and sprinkle with a little chopped coriander, if you like."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/qqlwv91763501559.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/easy-thai-prawn-curry"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=dEMPVKQXSYA"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53205"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53210"
+          },
+          "recipe_name": {
+            "S": "Thai pumpkin soup"
+          },
+          "category": {
+            "S": "Vegetarian"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Pumpkin"
+                  },
+                  "measure": {
+                    "S": "1.5kg"
+                  },
+                  "key": {
+                    "S": "pumpkin"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sunflower Oil"
+                  },
+                  "measure": {
+                    "S": "4 tsp"
+                  },
+                  "key": {
+                    "S": "sunflower oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "1 tbsp grated"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemongrass"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "lemongrass"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thai Red Curry Paste"
+                  },
+                  "measure": {
+                    "S": "4 tablespoons"
+                  },
+                  "key": {
+                    "S": "thai red curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "400ml"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Stock"
+                  },
+                  "measure": {
+                    "S": "800ml"
+                  },
+                  "key": {
+                    "S": "vegetable stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime juice"
+                  },
+                  "measure": {
+                    "S": "To taste"
+                  },
+                  "key": {
+                    "S": "lime juice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "To taste"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "pumpkin"
+              },
+              {
+                "S": "sunflower oil"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "lemongrass"
+              },
+              {
+                "S": "thai red curry paste"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "vegetable stock"
+              },
+              {
+                "S": "lime juice"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "red chilli"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "11"
+          },
+          "instructions": {
+            "S": "step 1 Heat oven to 200C/180C fan/gas 6. Toss the pumpkin or squash in a roasting tin with half the oil and seasoning, then roast for 30 mins until golden and tender. step 2 Meanwhile, put the remaining oil in a pan with the onion, ginger and lemongrass. Gently cook for 8-10 mins until softened. Stir in the curry paste for 1 min, followed by the roasted pumpkin, all but 3 tbsp of the coconut milk and the stock. Bring to a simmer, cook for 5 mins, then fish out the lemongrass. Cool for a few mins, then whizz until smooth with a hand blender, or in a large blender in batches. Return to the pan to heat through, seasoning with salt, pepper, lime juice and sugar, if it needs it. Serve drizzled with the remaining coconut milk and scattered with chilli, if you like."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/1brbso1763585098.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/thai-pumpkin-soup"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=X3BxTRAhgTc"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53210"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53203"
+          },
+          "recipe_name": {
+            "S": "Thai rice noodle salad"
+          },
+          "category": {
+            "S": "Vegetarian"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Vermicelli Rice Noodles"
+                  },
+                  "measure": {
+                    "S": "1/2 bag"
+                  },
+                  "key": {
+                    "S": "vermicelli rice noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bean Sprouts"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "bean sprouts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Zest and juice of 2"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "2-3 tbsp"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Muscovado Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "muscovado sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Onions"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lettuce"
+                  },
+                  "measure": {
+                    "S": "2 small"
+                  },
+                  "key": {
+                    "S": "lettuce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Minced Pork"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "minced pork"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "Knob"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cayenne Pepper"
+                  },
+                  "measure": {
+                    "S": "Pinch"
+                  },
+                  "key": {
+                    "S": "cayenne pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sunflower Oil"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "sunflower oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sesame Seed"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "sesame seed"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Oil"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sirloin steak"
+                  },
+                  "measure": {
+                    "S": "4"
+                  },
+                  "key": {
+                    "S": "sirloin steak"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "vermicelli rice noodles"
+              },
+              {
+                "S": "bean sprouts"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "muscovado sugar"
+              },
+              {
+                "S": "red onions"
+              },
+              {
+                "S": "lettuce"
+              },
+              {
+                "S": "minced pork"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "cayenne pepper"
+              },
+              {
+                "S": "sunflower oil"
+              },
+              {
+                "S": "sesame seed"
+              },
+              {
+                "S": "oil"
+              },
+              {
+                "S": "sirloin steak"
+              },
+              {
+                "S": "red chilli"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "15"
+          },
+          "instructions": {
+            "S": "step 1 Place the noodles and beansprouts in a heatproof bowl and cover with boiling water. Leave for 4 mins, or until the noodles are tender. Drain, then cool under cold running water and drain again. Return to the bowl. step 2 Stir together the lime zest and juice, fish or soy sauce and sugar. Stir into the noodles with the red onion and lettuce. step 3 To make with mince, heat a little oil in a non-stick frying pan and stir-fry 500g minced pork, a small knob of grated ginger and pinch cayenne pepper or chilli powder for 10 mins, until the mince is browned and cooked through. Mix into the noodles, divide between four bowls and serve warm. step 4 To make with steak, make the rice noodle salad. Heat 1 tsp sunflower oil in a frying pan. Tip 2 tbsp sesame seeds onto a plate. Rub 1 tsp oil into 4 x 175g sirloin steaks and press into sesame seeds. Fry for 5 mins for medium rare, turning halfway. Leave to rest for 5 mins, then thinly slice. Toss 1 deseeded and shredded red chilli, and a handful mint leaves into noodles. Top with steak to serve."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/6g3rso1763486069.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/thai-rice-noodle-salad"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53203"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53213"
+          },
+          "recipe_name": {
+            "S": "Thai-style fish broth with greens"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Rice Noodle"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "brown rice noodle"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Stock"
+                  },
+                  "measure": {
+                    "S": "500ml"
+                  },
+                  "key": {
+                    "S": "chicken stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thai Red Curry Paste"
+                  },
+                  "measure": {
+                    "S": "1 tblsp"
+                  },
+                  "key": {
+                    "S": "thai red curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime Leaves"
+                  },
+                  "measure": {
+                    "S": "4"
+                  },
+                  "key": {
+                    "S": "lime leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tblsp"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "White Fish"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "white fish"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Raw King Prawns"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "raw king prawns"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pak Choi"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "pak choi"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander Leaves"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "coriander leaves"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "brown rice noodle"
+              },
+              {
+                "S": "chicken stock"
+              },
+              {
+                "S": "thai red curry paste"
+              },
+              {
+                "S": "lime leaves"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "white fish"
+              },
+              {
+                "S": "raw king prawns"
+              },
+              {
+                "S": "pak choi"
+              },
+              {
+                "S": "coriander leaves"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "9"
+          },
+          "instructions": {
+            "S": "step 1 Cook the noodles following pack instructions. Refresh in cold water and drain well. step 2 Put the stock in a large saucepan and stir in the curry paste, lime leaves, fish sauce and 250ml cold water. Bring to a simmer and cook for 5 mins. step 3 Cut the fish into roughly 3cm cubes and add to the pan. Return to a simmer, then cook for 2 mins uncovered. step 4 Stir in the noodles, prawns and pak choi, and simmer for 2-3 mins or until the fish and prawns are just cooked. Serve in bowls scattered with coriander."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/a2ec961763587756.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/thai-style-fish-broth-greens"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=rRwnwCd5om8"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53213"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53202"
+          },
+          "recipe_name": {
+            "S": "Thai-style steamed fish"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Trout"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "trout"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "Knob"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic Clove"
+                  },
+                  "measure": {
+                    "S": "1 small finely diced"
+                  },
+                  "key": {
+                    "S": "garlic clove"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 small finely diced"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice/zest of one"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Baby Pak Koi"
+                  },
+                  "measure": {
+                    "S": "3"
+                  },
+                  "key": {
+                    "S": "baby pak koi"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "trout"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "garlic clove"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "baby pak koi"
+              },
+              {
+                "S": "soy sauce"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "7"
+          },
+          "instructions": {
+            "S": "step 1 Nestle the fish fillets side by side on a large square of foil and scatter the ginger, garlic, chilli and lime zest over them. Drizzle the lime juice on top and then scatter the pieces of pak choi around and on top of the fish. Pour the soy sauce over the pak choi and loosely seal the foil to make a package, making sure you leave space at the top for the steam to circulate as the fish cooks. step 2 Steam for 15 minutes. (If you haven’t got a steamer, put the parcel on a heatproof plate over a pan of gently simmering water, cover with a lid and steam.)"
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/yx8j1i1763484612.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/thai-style-steamed-fish"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=KQ-dl8fuBlQ"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53202"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53207"
+          },
+          "recipe_name": {
+            "S": "Tom kha gai"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Stock"
+                  },
+                  "measure": {
+                    "S": "800ml"
+                  },
+                  "key": {
+                    "S": "chicken stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "800g"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Galangal Paste"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "galangal paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemongrass Stalks"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "lemongrass stalks"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime Leaves"
+                  },
+                  "measure": {
+                    "S": "8"
+                  },
+                  "key": {
+                    "S": "lime leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Thighs"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "chicken thighs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Oyster Mushrooms"
+                  },
+                  "measure": {
+                    "S": "300g"
+                  },
+                  "key": {
+                    "S": "oyster mushrooms"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Birds-eye Chillies"
+                  },
+                  "measure": {
+                    "S": "6"
+                  },
+                  "key": {
+                    "S": "birds eye chillies"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "5 tablespoons"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 3"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander Leaves"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "coriander leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "rice"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "chicken stock"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "galangal paste"
+              },
+              {
+                "S": "lemongrass stalks"
+              },
+              {
+                "S": "lime leaves"
+              },
+              {
+                "S": "chicken thighs"
+              },
+              {
+                "S": "oyster mushrooms"
+              },
+              {
+                "S": "birds eye chillies"
+              },
+              {
+                "S": "caster sugar"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "coriander leaves"
+              },
+              {
+                "S": "rice"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "13"
+          },
+          "instructions": {
+            "S": "step 1 Pour the chicken stock and coconut milk into a large saucepan set over a medium heat. Tip in the galangal, lemongrass and lime leaves, and bring to a gentle simmer, around 6-8 mins. Keeping at a gentle simmer, add the chicken. Cook for 8-10 mins until tender and cooked through. step 2 Stir in the mushrooms and chillies, and simmer for a further 3-5 mins until everything is cooked through. Sprinkle in the sugar and 3 tbsp each of the fish sauce and lime juice. Taste and add the remaining if required. step 3 Remove the galangal, lemongrass and lime leaves before serving using a slotted spoon. Ladle into bowls and serve with coriander leaves sprinkled over and steamed rice on the side. Will keep chilled for up to three days. Leave to cool first."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/ol2xxt1763582263.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/tom-kha-gai"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=2BbIZwmIP7Q"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53207"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53196"
+          },
+          "recipe_name": {
+            "S": "Tom yum (hot & sour) soup with prawns"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Stock"
+                  },
+                  "measure": {
+                    "S": "700ml"
+                  },
+                  "key": {
+                    "S": "chicken stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemongrass"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "lemongrass"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Galangal"
+                  },
+                  "measure": {
+                    "S": "5 Slices"
+                  },
+                  "key": {
+                    "S": "galangal"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "6"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "makrut lime leaves"
+                  },
+                  "measure": {
+                    "S": "3"
+                  },
+                  "key": {
+                    "S": "makrut lime leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "King Prawns"
+                  },
+                  "measure": {
+                    "S": "6"
+                  },
+                  "key": {
+                    "S": "king prawns"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Green Chilli"
+                  },
+                  "measure": {
+                    "S": "6 small"
+                  },
+                  "key": {
+                    "S": "green chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime juice"
+                  },
+                  "measure": {
+                    "S": "4 tablespoons"
+                  },
+                  "key": {
+                    "S": "lime juice"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "chicken stock"
+              },
+              {
+                "S": "lemongrass"
+              },
+              {
+                "S": "galangal"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "makrut lime leaves"
+              },
+              {
+                "S": "king prawns"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "green chilli"
+              },
+              {
+                "S": "lime juice"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "9"
+          },
+          "instructions": {
+            "S": "step 1 Bring the stock to a boil in a medium-sized saucepan. Add the lemongrass, galangal, coriander roots and lime leaves, then simmer for 2 mins. step 2 Add the prawns, fish sauce, chillies and lime juice, then return to the boil. Taste and adjust the seasoning with either more lime juice or fish sauce, then garnish with coriander leaves and serve."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/9c5nlx1763424766.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/tom-yum-hot-sour-soup-prawns"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=FJer_Cutb2I"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53196"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53194"
+          },
+          "recipe_name": {
+            "S": "Tom yum soup with prawns"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Thai"
+          },
+          "country": {
+            "S": "Thailand"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Tomato"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "tomato"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "20g"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Galangal"
+                  },
+                  "measure": {
+                    "S": "15g"
+                  },
+                  "key": {
+                    "S": "galangal"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemongrass Stalks"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "lemongrass stalks"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Raw King Prawns"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "raw king prawns"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Stock Cube"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "chicken stock cube"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Oyster Mushrooms"
+                  },
+                  "measure": {
+                    "S": "120g"
+                  },
+                  "key": {
+                    "S": "oyster mushrooms"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "makrut lime leaves"
+                  },
+                  "measure": {
+                    "S": "8"
+                  },
+                  "key": {
+                    "S": "makrut lime leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "25 ml"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime juice"
+                  },
+                  "measure": {
+                    "S": "25 ml"
+                  },
+                  "key": {
+                    "S": "lime juice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "70 ml"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thai Chilli Jam"
+                  },
+                  "measure": {
+                    "S": "1 tblsp"
+                  },
+                  "key": {
+                    "S": "thai chilli jam"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "onion"
+              },
+              {
+                "S": "tomato"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "galangal"
+              },
+              {
+                "S": "lemongrass stalks"
+              },
+              {
+                "S": "raw king prawns"
+              },
+              {
+                "S": "chicken stock cube"
+              },
+              {
+                "S": "oyster mushrooms"
+              },
+              {
+                "S": "makrut lime leaves"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "lime juice"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "thai chilli jam"
+              },
+              {
+                "S": "coriander"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "14"
+          },
+          "instructions": {
+            "S": "step 1 Pour 1.3 litres water into a large saucepan over a high heat. Add the onion, tomato, chilli, galangal, lemongrass, prawn heads and chicken stock cube. Stir and bring to a boil, then reduce the heat to medium and simmer for 20 mins until the liquid has reduced. step 2 Carefully strain the hot broth into a large heatproof bowl or jug, then discard the prawn heads. Return the strained veg and herb mixture to the saucepan and pour over the broth. Stir through the mushrooms and lime leaves, then cook for 3 mins until the mushrooms are tender. step 3 Add 1 tbsp sugar, the fish sauce, lime juice, coconut milk and prawns. Bring to the boil and cook until the prawns are cooked through, about 1-2 mins. Remove from the heat. Remove the lemongrass, then stir in the Thai chilli jam, if using. Scatter over the coriander to finish, if you like, and serve."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/l50vz41763422681.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/tom-yum-soup-with-prawns"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=fvLcZg9gNnE"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53194"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53239"
+          },
+          "recipe_name": {
+            "S": "Bang bang prawn salad"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Noodles"
+                  },
+                  "measure": {
+                    "S": "140g"
+                  },
+                  "key": {
+                    "S": "rice noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Peanut Butter"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons"
+                  },
+                  "key": {
+                    "S": "peanut butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "4 tablespoons"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "sweet chilli sauce"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons"
+                  },
+                  "key": {
+                    "S": "sweet chilli sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "3 sliced thinly"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cucumber"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "cucumber"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bean Sprouts"
+                  },
+                  "measure": {
+                    "S": "300g"
+                  },
+                  "key": {
+                    "S": "bean sprouts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Prawns"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "prawns"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "rice noodles"
+              },
+              {
+                "S": "peanut butter"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "sweet chilli sauce"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "cucumber"
+              },
+              {
+                "S": "bean sprouts"
+              },
+              {
+                "S": "prawns"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "8"
+          },
+          "instructions": {
+            "S": "step 1 Cook the noodles following pack instructions, then rinse under cold water and drain thoroughly. In a small saucepan melt together the peanut butter, coconut milk, sweet chilli sauce and half the spring onions, adding 1-2 tbsp of water to loosen the mixture to a drizzling consistency. step 2 Mix the noodles, cucumber and beansprouts in a serving dish. Top with the prawns, drizzle over the peanut sauce and scatter over the remaining spring onions."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/4xcfai1763765676.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/bang-bang-prawn-salad"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=Na-6-lzs2wU"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53239"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53242"
+          },
+          "recipe_name": {
+            "S": "Barbecue pork buns"
+          },
+          "category": {
+            "S": "Pork"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "85g"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "White Bread Mix"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "white bread mix"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sunflower Oil"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "sunflower oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bacon"
+                  },
+                  "measure": {
+                    "S": "12"
+                  },
+                  "key": {
+                    "S": "bacon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "Knob"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "2 cloves chopped"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Clear Honey"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons"
+                  },
+                  "key": {
+                    "S": "clear honey"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Tomato Puree"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons"
+                  },
+                  "key": {
+                    "S": "tomato puree"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Egg"
+                  },
+                  "measure": {
+                    "S": "1 beaten"
+                  },
+                  "key": {
+                    "S": "egg"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "white bread mix"
+              },
+              {
+                "S": "sunflower oil"
+              },
+              {
+                "S": "bacon"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "clear honey"
+              },
+              {
+                "S": "tomato puree"
+              },
+              {
+                "S": "egg"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "10"
+          },
+          "instructions": {
+            "S": "step 1 Heat the oven to 200C/fan 180C/gas. Mix the sugar into the bread mix in a large bowl, then add water as instructed on the pack. Bring the dough together with a wooden spoon, then knead on a lightly floured surface for 5 mins until smooth. Put into a large bowl, cover with oiled cling film then leave in a warm place until doubled in size. step 2 Meanwhile, heat the oil in a pan, then fry the bacon until crisp, about 5 mins. Add the ginger and garlic and fry for 1 min until soft, then tip in the soy, honey and tomato purée and stir well. Can be made up to 3 days ahead. step 3 Turn out the dough and knead briefly, then pull into 12 even-sized balls. Flatten with your hands, then put a teaspoon-size blob of the filling in the middle. Draw the dough up and pinch it closed like a purse, then turn the bun over and sit it on a large baking sheet. Cover with oiled cling film and leave to rise for about 30 mins until the dough feels pillowy. Brush with egg and bake for 20 mins until golden. Serve warm with dipping sauce. Can be frozen after second rise for up to 1 month or baked up to a day ahead and re-warmed."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/tzsy461763769901.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/barbecue-pork-buns"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=T3mBULRIcY8"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53242"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5006781-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5006781-EA-000"
+          },
+          "product_name": {
+            "S": "Sparkling Water"
+          },
+          "brand": {
+            "S": "Antipodes"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "6.49"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5348648-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5348648-EA-000"
+          },
+          "product_name": {
+            "S": "Coconut Twist Chocolate Flavour Coconut Water"
+          },
+          "brand": {
+            "S": "UFC"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "5.99"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5339480-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5339480-EA-000"
+          },
+          "product_name": {
+            "S": "Coffee Coconut Water"
+          },
+          "brand": {
+            "S": "Cocobella"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "5.49"
+          },
+          "category": {
+            "S": "Coffee"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5002411-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5002411-EA-000"
+          },
+          "product_name": {
+            "S": "Lime Soft Drink"
+          },
+          "brand": {
+            "S": "Sparkling Duet"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "2.49"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5094826-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5094826-EA-000"
+          },
+          "product_name": {
+            "S": "Cola Flavour 99% Sugar Free Soft Drink"
+          },
+          "brand": {
+            "S": "Value"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "1.29"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5001901-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5001901-EA-000"
+          },
+          "product_name": {
+            "S": "Soft Drink"
+          },
+          "brand": {
+            "S": "L&P"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "5.49"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5005357-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5005357-EA-000"
+          },
+          "product_name": {
+            "S": "Soft Drink"
+          },
+          "brand": {
+            "S": "Pepsi"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "4.49"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5325105-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5325105-EA-000"
+          },
+          "product_name": {
+            "S": "Zero Sugar Soft Drink Cans"
+          },
+          "brand": {
+            "S": "Pepsi Max"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "15.99"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5324090-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5324090-EA-000"
+          },
+          "product_name": {
+            "S": "Melon Sparkling Soft Drink"
+          },
+          "brand": {
+            "S": "Ramune"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "3.49"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5032315-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5032315-EA-000"
+          },
+          "product_name": {
+            "S": "Classic Soda Water Cans"
+          },
+          "brand": {
+            "S": "Schweppes"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "6.69"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5347732-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5347732-EA-000"
+          },
+          "product_name": {
+            "S": "Pre+ Pro+ Postbiotic Grape Soda"
+          },
+          "brand": {
+            "S": "Good Juju"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "4.0"
+          },
+          "category": {
+            "S": "Soft Drinks, Water & Juice"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5342695-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5342695-EA-000"
+          },
+          "product_name": {
+            "S": "Creamy Cheese Bruschetta Chips"
+          },
+          "brand": {
+            "S": "Krambals"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "3.49"
+          },
+          "category": {
+            "S": "Chips, Nuts & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5313491-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5313491-EA-000"
+          },
+          "product_name": {
+            "S": "Munchos Spicy Tomato Cereal Snacks"
+          },
+          "brand": {
+            "S": "Griffin's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.19"
+          },
+          "category": {
+            "S": "Canned Foods & Packets"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5267629-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5267629-EA-000"
+          },
+          "product_name": {
+            "S": "Lightly Salted Cantina Style Tortilla Chips"
+          },
+          "brand": {
+            "S": "Tostitos"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "3.89"
+          },
+          "category": {
+            "S": "Chips, Nuts & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5020744-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5020744-EA-000"
+          },
+          "product_name": {
+            "S": "Lightly Salted Corn Chips"
+          },
+          "brand": {
+            "S": "Mexicano"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "4.99"
+          },
+          "category": {
+            "S": "Chips, Nuts & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5212929-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5212929-EA-000"
+          },
+          "product_name": {
+            "S": "Double Cheese Flavoured Corn Chips"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "2.59"
+          },
+          "category": {
+            "S": "Chips, Nuts & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5036438-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5036438-EA-000"
+          },
+          "product_name": {
+            "S": "Original Salted Corn Chips"
+          },
+          "brand": {
+            "S": "Doritos"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "3.89"
+          },
+          "category": {
+            "S": "Chips, Nuts & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5328664-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5328664-EA-000"
+          },
+          "product_name": {
+            "S": "Dip Sensations Kumara Dip"
+          },
+          "brand": {
+            "S": "Continental"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "2.19"
+          },
+          "category": {
+            "S": "Dips, Hummus & Antipasti"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5009660-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5009660-EA-000"
+          },
+          "product_name": {
+            "S": "Berry And Biscuit 33% Cocoa Milk Chocolate Block"
+          },
+          "brand": {
+            "S": "Whittaker's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "8.49"
+          },
+          "category": {
+            "S": "Biscuits & Crackers"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5287053-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5287053-EA-000"
+          },
+          "product_name": {
+            "S": "Hokey Pokey Crunch 33% Cocoa Milk Chocolate Block"
+          },
+          "brand": {
+            "S": "Whittaker's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "8.49"
+          },
+          "category": {
+            "S": "Chocolate, Sweets & Chewing Gum"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5307536-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5307536-EA-000"
+          },
+          "product_name": {
+            "S": "Hazella Creamy Milk Chocolate Block"
+          },
+          "brand": {
+            "S": "Whittaker's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "8.49"
+          },
+          "category": {
+            "S": "Chocolate, Sweets & Chewing Gum"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5215070-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5215070-EA-000"
+          },
+          "product_name": {
+            "S": "Caramilk Chocolate Block"
+          },
+          "brand": {
+            "S": "Cadbury"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "6.99"
+          },
+          "category": {
+            "S": "Chocolate, Sweets & Chewing Gum"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5249665-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5249665-EA-000"
+          },
+          "product_name": {
+            "S": "Marvelous Creations Jelly Popping Candy Beanies Chocolate Block"
+          },
+          "brand": {
+            "S": "Cadbury Dairy Milk"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "6.99"
+          },
+          "category": {
+            "S": "Chocolate, Sweets & Chewing Gum"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5277054-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5277054-EA-000"
+          },
+          "product_name": {
+            "S": "Caramel Sea Salt Milk Chocolate Bar"
+          },
+          "brand": {
+            "S": "Tony's Chocolonely"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "11.99"
+          },
+          "category": {
+            "S": "Chocolate, Sweets & Chewing Gum"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5244770-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5244770-EA-000"
+          },
+          "product_name": {
+            "S": "Lindor Pistachio Chocolates Pouch"
+          },
+          "brand": {
+            "S": "Lindt"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "15.49"
+          },
+          "category": {
+            "S": "Chocolate, Sweets & Chewing Gum"
+          }
+        }
+      }
+    }
+  ]
+}

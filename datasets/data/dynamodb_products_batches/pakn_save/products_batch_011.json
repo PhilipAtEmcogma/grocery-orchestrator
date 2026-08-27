@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5003963-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5003963-EA-000"
+          },
+          "product_name": {
+            "S": "Crinkle Cut Fries"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "3.05"
+          },
+          "category": {
+            "S": "Frozen Chips & Hash Browns"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5262675-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5262675-EA-000"
+          },
+          "product_name": {
+            "S": "Superfries Crinkle Cut Chips"
+          },
+          "brand": {
+            "S": "McCain"
+          },
+          "size": {
+            "S": "900g"
+          },
+          "price": {
+            "N": "2.49"
+          },
+          "category": {
+            "S": "Frozen Chips & Hash Browns"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5003955-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5003955-EA-000"
+          },
+          "product_name": {
+            "S": "Straight Cut Fries"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "3.05"
+          },
+          "category": {
+            "S": "Frozen Chips & Hash Browns"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5040293-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5040293-EA-000"
+          },
+          "product_name": {
+            "S": "Shoe String Fries"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "3.05"
+          },
+          "category": {
+            "S": "Frozen Chips & Hash Browns"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5262674-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5262674-EA-000"
+          },
+          "product_name": {
+            "S": "Superfries Shoestring Chips"
+          },
+          "brand": {
+            "S": "McCain"
+          },
+          "size": {
+            "S": "900g"
+          },
+          "price": {
+            "N": "2.49"
+          },
+          "category": {
+            "S": "Frozen Chips & Hash Browns"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5016678-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5016678-EA-000"
+          },
+          "product_name": {
+            "S": "Wraps Premium White"
+          },
+          "brand": {
+            "S": "Farrah's"
+          },
+          "size": {
+            "S": "6pk"
+          },
+          "price": {
+            "N": "5.29"
+          },
+          "category": {
+            "S": "Wraps, Pita & Flat Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5269394-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5269394-EA-000"
+          },
+          "product_name": {
+            "S": "White Wraps"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "8pk"
+          },
+          "price": {
+            "N": "4.39"
+          },
+          "category": {
+            "S": "Wraps, Pita & Flat Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5016682-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5016682-EA-000"
+          },
+          "product_name": {
+            "S": "Wraps Wholemeal"
+          },
+          "brand": {
+            "S": "Farrah's"
+          },
+          "size": {
+            "S": "6pk"
+          },
+          "price": {
+            "N": "5.29"
+          },
+          "category": {
+            "S": "Wraps, Pita & Flat Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5016684-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5016684-EA-000"
+          },
+          "product_name": {
+            "S": "Wraps Garden Spinach"
+          },
+          "brand": {
+            "S": "Farrah's"
+          },
+          "size": {
+            "S": "6pk"
+          },
+          "price": {
+            "N": "5.29"
+          },
+          "category": {
+            "S": "Wraps, Pita & Flat Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5084004-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5084004-EA-000"
+          },
+          "product_name": {
+            "S": "Wraps Garlic Butter"
+          },
+          "brand": {
+            "S": "Farrah's"
+          },
+          "size": {
+            "S": "6pk"
+          },
+          "price": {
+            "N": "5.29"
+          },
+          "category": {
+            "S": "Wraps, Pita & Flat Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5331704-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5331704-EA-000"
+          },
+          "product_name": {
+            "S": "Flour Tortillas"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "15 x 43g"
+          },
+          "price": {
+            "N": "3.99"
+          },
+          "category": {
+            "S": "World Foods"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5005960-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5005960-EA-000"
+          },
+          "product_name": {
+            "S": "White Jumbo Tortillas"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "6 x 73g"
+          },
+          "price": {
+            "N": "2.99"
+          },
+          "category": {
+            "S": "World Foods"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5001565-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5001565-EA-000"
+          },
+          "product_name": {
+            "S": "Flour Regular Tortillas"
+          },
+          "brand": {
+            "S": "Old El Paso"
+          },
+          "size": {
+            "S": "6pk"
+          },
+          "price": {
+            "N": "2.99"
+          },
+          "category": {
+            "S": "World Foods"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5200051-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5200051-EA-000"
+          },
+          "product_name": {
+            "S": "Flame Baked Taco Tortillas"
+          },
+          "brand": {
+            "S": "Farrah's"
+          },
+          "size": {
+            "S": "12pk"
+          },
+          "price": {
+            "N": "6.39"
+          },
+          "category": {
+            "S": "Wraps, Pita & Flat Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5200052-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5200052-EA-000"
+          },
+          "product_name": {
+            "S": "Flame Baked Tortillas"
+          },
+          "brand": {
+            "S": "Farrah's"
+          },
+          "size": {
+            "S": "10pk"
+          },
+          "price": {
+            "N": "6.39"
+          },
+          "category": {
+            "S": "Wraps, Pita & Flat Bread"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5003808-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5003808-EA-000"
+          },
+          "product_name": {
+            "S": "Smooth Peanut Butter"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "375g"
+          },
+          "price": {
+            "N": "1.49"
+          },
+          "category": {
+            "S": "Jams, Honey & Spreads"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5085333-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5085333-EA-000"
+          },
+          "product_name": {
+            "S": "Smooth Peanut Butter"
+          },
+          "brand": {
+            "S": "Fix & Fogg"
+          },
+          "size": {
+            "S": "375g"
+          },
+          "price": {
+            "N": "4.49"
+          },
+          "category": {
+            "S": "Jams, Honey & Spreads"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5003815-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5003815-EA-000"
+          },
+          "product_name": {
+            "S": "Smooth Peanut Butter"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "4.99"
+          },
+          "category": {
+            "S": "Jams, Honey & Spreads"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5085331-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5085331-EA-000"
+          },
+          "product_name": {
+            "S": "Super Crunchy Peanut Butter"
+          },
+          "brand": {
+            "S": "Fix & Fogg"
+          },
+          "size": {
+            "S": "375g"
+          },
+          "price": {
+            "N": "4.49"
+          },
+          "category": {
+            "S": "Jams, Honey & Spreads"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5004911-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5004911-EA-000"
+          },
+          "product_name": {
+            "S": "Crunchy Peanut Butter"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "375g"
+          },
+          "price": {
+            "N": "1.49"
+          },
+          "category": {
+            "S": "Jams, Honey & Spreads"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5003862-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5003862-EA-000"
+          },
+          "product_name": {
+            "S": "Strawberry Jam"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "450g"
+          },
+          "price": {
+            "N": "2.49"
+          },
+          "category": {
+            "S": "Jams, Honey & Spreads"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5003832-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5003832-EA-000"
+          },
+          "product_name": {
+            "S": "Raspberry Jam"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "450g"
+          },
+          "price": {
+            "N": "2.49"
+          },
+          "category": {
+            "S": "Jams, Honey & Spreads"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5001295-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5001295-EA-000"
+          },
+          "product_name": {
+            "S": "Raspberry Fruit Jam"
+          },
+          "brand": {
+            "S": "Craig's"
+          },
+          "size": {
+            "S": "375g"
+          },
+          "price": {
+            "N": "3.29"
+          },
+          "category": {
+            "S": "Jams, Honey & Spreads"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5001303-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5001303-EA-000"
+          },
+          "product_name": {
+            "S": "Strawberry Fruit Jam"
+          },
+          "brand": {
+            "S": "Craig's"
+          },
+          "size": {
+            "S": "375g"
+          },
+          "price": {
+            "N": "3.29"
+          },
+          "category": {
+            "S": "Jams, Honey & Spreads"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "pakn_save_5328522-EA-000"
+          },
+          "store_id": {
+            "S": "92086ded-a55d-4241-a364-7d7ea91531b4"
+          },
+          "store_name": {
+            "S": "PAK'nSAVE Lincoln Road"
+          },
+          "product_id": {
+            "S": "5328522-EA-000"
+          },
+          "product_name": {
+            "S": "Mixed Berries Jam"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "450g"
+          },
+          "price": {
+            "N": "2.49"
+          },
+          "category": {
+            "S": "Jams, Honey & Spreads"
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+{
+  "TableName": "SmartGroceryProducts",
+  "BillingMode": "PAY_PER_REQUEST",
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "primary_key",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "category",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "price",
+      "AttributeType": "N"
+    }
+  ],
+  "KeySchema": [
+    {
+      "AttributeName": "primary_key",
+      "KeyType": "HASH"
+    }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "CategoryPriceIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "category",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "price",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    }
+  ],
+  "Tags": [
+    {
+      "Key": "Project",
+      "Value": "SmartGroceryAssistant"
+    },
+    {
+      "Key": "Owner",
+      "Value": "AUT-AWS-DataPipeline"
+    }
+  ]
+}

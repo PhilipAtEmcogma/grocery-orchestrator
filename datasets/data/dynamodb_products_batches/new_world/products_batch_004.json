@@ -1,0 +1,829 @@
+{
+  "SmartGroceryProducts": [
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5019548-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5019548-EA-000"
+          },
+          "product_name": {
+            "S": "Spaghetti"
+          },
+          "brand": {
+            "S": "Garofalo"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "6.39"
+          },
+          "category": {
+            "S": "Pasta, Rice & Noodles"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5341107-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5341107-EA-000"
+          },
+          "product_name": {
+            "S": "Mushroom & Bacon Pasta & Sauce"
+          },
+          "brand": {
+            "S": "Continental"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "3.99"
+          },
+          "category": {
+            "S": "Deli Meats & Smoked Fish"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5271171-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5271171-EA-000"
+          },
+          "product_name": {
+            "S": "Traditional Potato Gnocchi"
+          },
+          "brand": {
+            "S": "Rana"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "9.92"
+          },
+          "category": {
+            "S": "Pasta, Rice & Noodles"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5258728-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5258728-EA-000"
+          },
+          "product_name": {
+            "S": "White Spelt Organic Flour"
+          },
+          "brand": {
+            "S": "Ceres Organics"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "9.99"
+          },
+          "category": {
+            "S": "Baking Supplies & Sugar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5107806-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5107806-EA-000"
+          },
+          "product_name": {
+            "S": "Organic Oat Bran"
+          },
+          "brand": {
+            "S": "Ceres Organics"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "8.69"
+          },
+          "category": {
+            "S": "Breakfast Cereals"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5002752-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5002752-EA-000"
+          },
+          "product_name": {
+            "S": "White Sugar"
+          },
+          "brand": {
+            "S": "Chelsea"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "2.49"
+          },
+          "category": {
+            "S": "Baking Supplies & Sugar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5006947-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5006947-EA-000"
+          },
+          "product_name": {
+            "S": "Palm Sugar"
+          },
+          "brand": {
+            "S": "Jeeny's"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "3.39"
+          },
+          "category": {
+            "S": "Baking Supplies & Sugar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5318761-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5318761-EA-000"
+          },
+          "product_name": {
+            "S": "White Sugar Cubes"
+          },
+          "brand": {
+            "S": "Chelsea"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "5.89"
+          },
+          "category": {
+            "S": "Baking Supplies & Sugar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5271924-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5271924-EA-000"
+          },
+          "product_name": {
+            "S": "Baker's Secret Ultimate Sugar Replacement"
+          },
+          "brand": {
+            "S": "Whole Earth"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "13.99"
+          },
+          "category": {
+            "S": "Baking Supplies & Sugar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5026866-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5026866-EA-000"
+          },
+          "product_name": {
+            "S": "Naturals Coarse Himalayan Pink Salt"
+          },
+          "brand": {
+            "S": "Mrs Rogers"
+          },
+          "size": {
+            "S": "10g"
+          },
+          "price": {
+            "N": "3.39"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5030864-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5030864-EA-000"
+          },
+          "product_name": {
+            "S": "Sea Salt Flakes"
+          },
+          "brand": {
+            "S": "Maldon"
+          },
+          "size": {
+            "S": "10g"
+          },
+          "price": {
+            "N": "8.34"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5006066-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5006066-EA-000"
+          },
+          "product_name": {
+            "S": "Coarse Sea Salt Grinder"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "10g"
+          },
+          "price": {
+            "N": "4.49"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5006164-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5006164-EA-000"
+          },
+          "product_name": {
+            "S": "Whole Black Peppercorns Grinder"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "10g"
+          },
+          "price": {
+            "N": "4.49"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5115081-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5115081-EA-000"
+          },
+          "product_name": {
+            "S": "Mixed - Up Salt"
+          },
+          "brand": {
+            "S": "Jane's Krazy"
+          },
+          "size": {
+            "S": "10g"
+          },
+          "price": {
+            "N": "8.79"
+          },
+          "category": {
+            "S": "Spices, Seasoning & Coatings"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5003828-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5003828-EA-000"
+          },
+          "product_name": {
+            "S": "Pure Olive Oil"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "9.69"
+          },
+          "category": {
+            "S": "Oil & Vinegar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5003745-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5003745-EA-000"
+          },
+          "product_name": {
+            "S": "Extra Virgin Olive Oil"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "12.99"
+          },
+          "category": {
+            "S": "Oil & Vinegar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5012158-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5012158-EA-000"
+          },
+          "product_name": {
+            "S": "Canola Oil"
+          },
+          "brand": {
+            "S": "Sunfield"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "4.99"
+          },
+          "category": {
+            "S": "Oil & Vinegar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5292362-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5292362-EA-000"
+          },
+          "product_name": {
+            "S": "Cold Pressed Extra Virgin High Oleic Sunflower Oil"
+          },
+          "brand": {
+            "S": "The Good Oil"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "12.49"
+          },
+          "category": {
+            "S": "Oil & Vinegar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5003742-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5003742-EA-000"
+          },
+          "product_name": {
+            "S": "Extra Light Olive Oil"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "15.09"
+          },
+          "category": {
+            "S": "Oil & Vinegar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5344471-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5344471-EA-000"
+          },
+          "product_name": {
+            "S": "Pupple Mango Lime Flavored Drink & Blueberry Flavored Fruit Balls Bubble Tea"
+          },
+          "brand": {
+            "S": "Bobajoy"
+          },
+          "size": {
+            "S": "1L"
+          },
+          "price": {
+            "N": "4.49"
+          },
+          "category": {
+            "S": "Tea"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5002382-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5002382-EA-000"
+          },
+          "product_name": {
+            "S": "Italian Red Wine Vinegar"
+          },
+          "brand": {
+            "S": "Delmaine"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "5.09"
+          },
+          "category": {
+            "S": "Oil & Vinegar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5010036-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5010036-EA-000"
+          },
+          "product_name": {
+            "S": "Lemon Pepper Flavour In Olive Oil Salmon"
+          },
+          "brand": {
+            "S": "Sealord"
+          },
+          "size": {
+            "S": "1kg"
+          },
+          "price": {
+            "N": "3.49"
+          },
+          "category": {
+            "S": "Seafood"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5039837-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5039837-EA-000"
+          },
+          "product_name": {
+            "S": "Sesame Oil"
+          },
+          "brand": {
+            "S": "Nissin"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "6.39"
+          },
+          "category": {
+            "S": "Oil & Vinegar"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5317326-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5317326-EA-000"
+          },
+          "product_name": {
+            "S": "Basil & Olive Oil Crackers"
+          },
+          "brand": {
+            "S": "Pams"
+          },
+          "size": {
+            "S": "100g"
+          },
+          "price": {
+            "N": "2.79"
+          },
+          "category": {
+            "S": "Chips, Nuts & Snacks"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "primary_key": {
+            "S": "new_world_5105417-EA-000"
+          },
+          "store_id": {
+            "S": "c8998066-d39b-401c-aa6b-d6d18f8d122f"
+          },
+          "store_name": {
+            "S": "New World Albany"
+          },
+          "product_id": {
+            "S": "5105417-EA-000"
+          },
+          "product_name": {
+            "S": "Aceto Red Balsamic"
+          },
+          "brand": {
+            "S": "Giusti"
+          },
+          "size": {
+            "S": "100ml"
+          },
+          "price": {
+            "N": "23.19"
+          },
+          "category": {
+            "S": "Oil & Vinegar"
+          }
+        }
+      }
+    }
+  ]
+}
