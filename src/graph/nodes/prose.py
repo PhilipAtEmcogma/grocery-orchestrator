@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import re
 
-from src.graph.state import GroceryState
+from src.graph.state import GroceryState, usage_from
 from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier
 from src.prompts.prose import (
     MEAL_PLAN_SYSTEM,
@@ -100,6 +100,11 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
     plan = state.get("plan")
 
     figures: dict[str, str] = {}
+    # Bound here rather than in the PRICE_CHECK branch alone: the check after
+    # generation reads it, and a name assigned on only one branch is unbound
+    # on the others as far as the type checker -- and a meal-plan turn -- are
+    # concerned.
+    cheapest_refs: list[str] = []
 
     if intent == Intent.MEAL_PLAN and plan is not None:
         figures["total"] = "the plan total"
@@ -128,10 +133,20 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
             reused=reused,
         )
     elif intent == Intent.PRICE_CHECK:
-        cheapest = citations[0]
         figures["savings"] = "the price difference"
 
         groups = state.get("item_groups") or {}
+        # One winner per item the shopper asked about. retrieve_prices fills
+        # each group from cheapest_for_product, which reads GSI1's zero-padded
+        # price sort key, so refs[0] is that item's cheapest and equal prices
+        # resolve by store key. build_comparisons derives is_cheapest from the
+        # same ordering, and that shared ordering is the only reason the
+        # sentence and the table name the same store.
+        cheapest_refs = [refs[0] for refs in groups.values() if refs]
+        cheapest = (
+            citation_index.get(cheapest_refs[0]) if cheapest_refs else None
+        ) or citations[0]
+
         items = ", ".join(k.rsplit("-", 1)[0].replace("-", " ") for k in groups) or (
             "that item"
         )
@@ -141,9 +156,14 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
             query_item=items,
             options=_placeholder_list(citations),
             on_special=cheapest.on_special,
+            cheapest_refs=cheapest_refs or [cheapest.ref],
         )
     else:
         return {}
+
+    # Read before the try, not inside it: a name bound only on the happy
+    # path is unbound on every except branch that needs it.
+    _usage_before = model.last_usage
 
     try:
         result = model.structured(
@@ -162,6 +182,21 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
         if unknown:
             raise ValueError(f"prose referenced unknown placeholders: {sorted(unknown)}")
 
+        # Verified against the retrieved records, not against what the model
+        # claims (Req 5.4's rule, applied to the price claim). The prompt names
+        # the computed winner; citing any other option would put a dearer store
+        # in the sentence while the table beside it flags a different one as
+        # cheapest. Degrading to the structured payload is the honest failure.
+        if intent == Intent.PRICE_CHECK and cheapest_refs:
+            cited = referenced_placeholders(result.text) & set(citation_index)
+            misattributed = cited - set(cheapest_refs)
+            if misattributed:
+                raise ValueError(
+                    "prose cited a non-cheapest option: "
+                    f"{sorted(misattributed)}, computed cheapest "
+                    f"{sorted(cheapest_refs)}"
+                )
+
         rendered = render(result.text, citation_index, figures)
 
     except GuardrailBlocked:
@@ -169,7 +204,7 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
     except (ModelError, ValueError, KeyError) as exc:
         # Degrade silently to the structured payload. The comparison table or
         # plan is the substance; the sentence above it is not.
-        return {"prose_error": str(exc)}
+        return {"prose_error": str(exc), "usage": usage_from(model, _usage_before)}
 
     seq = _next_seq(state)
     sentences = [s for s in SENTENCE_END.split(rendered.strip()) if s]
@@ -178,4 +213,4 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
         for i, s in enumerate(sentences)
     ]
 
-    return {"prose": rendered, "events": events}
+    return {"prose": rendered, "events": events, "usage": usage_from(model, _usage_before)}

@@ -128,7 +128,13 @@ def _carry_forward_volatile(live: dict[str, Any], path: Path) -> dict[str, Any]:
             cur["server_time"] = prev["server_time"]
         prev_usage, cur_usage = prev.get("usage"), cur.get("usage")
         if isinstance(prev_usage, dict) and isinstance(cur_usage, dict):
-            if "latency_ms" in prev_usage and "latency_ms" in cur_usage:
+            # `is not None` matters. Carrying forward suppresses CHURN in a
+            # wall-clock value; carrying forward a null suppresses the field
+            # appearing at all. When usage went from never-populated to
+            # populated, this pinned latency_ms at null beside real token
+            # counts -- a combination the server cannot produce, published as
+            # the contract the frontend reads.
+            if prev_usage.get("latency_ms") is not None and "latency_ms" in cur_usage:
                 cur_usage["latency_ms"] = prev_usage["latency_ms"]
     return out
 

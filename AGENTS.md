@@ -30,6 +30,13 @@ service into an implementation claim.
 - `docs/CI-GATE-HEALTH.md` — latent gaps in the gate: where it can go red for
   a reason unrelated to your change, and where a green local run does not mean
   a green CI run. Read before widening the evals or bumping a checker pin.
+- `docs/ARCHITECTURE.md` — the **deployment record**: what exists in
+  `ap-southeast-2`, its identifiers, the IAM shapes that took two attempts to
+  get right, and two defects that only appeared once the thing was deployed.
+  This file and the specs describe intent; that one describes an account. Read
+  it before touching deployed resources, and before assuming a manual test
+  result is fresh — the idempotency cache returns stored outcomes for a reused
+  session/turn pair, which is how two fixes looked inert for an afternoon.
 
 ---
 
@@ -186,6 +193,9 @@ python scripts/generate_fixtures.py              # regenerate seed data
 python scripts/dev_server.py                     # localhost:8000 for frontend
 python scripts/apply_guardrail.py --dry-run      # validate guardrail policy
 python scripts/build_lambda.py                   # build/lambda.zip, ~30 MB unzipped
+python scripts/apply_iam.py --dry-run     --config config/iam-<role>.json              # execution roles, policy-as-data
+python scripts/apply_state_machine.py --dry-run  # ingestion Step Functions
+python -m pytest tests/test_ingestion.py         # ingestion; no AWS
 ```
 
 The pre-commit hook lives in `scripts/hooks/pre-commit` — **version
@@ -335,6 +345,10 @@ before and after in the commit message.
   zip-only. Measured dependency size fits well under the archive limit.
 - Loosen `resolve_product_key` to fuzzy matching. Under-matching is
   recoverable; mis-matching produces a confident wrong price.
+- Hardcode an AWS account id into `config/`. This repo is public. Use
+  `${AWS_ACCOUNT_ID}` / `${AWS_REGION}`; `scripts/apply_*.py` resolve them
+  from STS at apply time, and `tests/test_config_placeholders.py` fails the
+  build if a literal twelve-digit id reappears.
 - Add a price field to any model output schema.
 - Use Lambda Function URLs for streaming — loses throttling, usage plans and
   auth.
@@ -349,6 +363,11 @@ before and after in the commit message.
   input — which is the user's message. Use `exception_fields()`.
 - Point acquisition at live retailer sites. Task 11.4 is gated —
   `ACQUISITION-RISK.md` §8. Build against fixtures and recorded responses.
+- Run ingestion at the products table without diffing first. `refresh()`
+  reports `added`/`changed`/`unchanged` on every run and takes
+  `{"dry_run": true}`; use it whenever the normaliser changed. Skipping this
+  is how `unit_price_nzd` became "2490.00" on a $2.49 item across six live
+  rows with no signal — `docs/ARCHITECTURE.md` §8.
 - Circumvent a retailer's technical controls — bot mitigation, rate limits, an
   undocumented internal endpoint. This is the one path in the whole assessment
   with criminal exposure attached (§4.2). A block is an answer, not an

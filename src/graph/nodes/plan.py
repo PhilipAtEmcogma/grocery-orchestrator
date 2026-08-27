@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from decimal import ROUND_HALF_UP, Decimal
 
-from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState
+from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState, usage_from
 from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier
 from src.prompts.meal_plan import (
     SYSTEM_PROMPT,
@@ -205,6 +205,10 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
             cheaper_options=_cheaper_options(citations, used),
         )
 
+    # Read before the try, not inside it: a name bound only on the
+    # happy path is unbound on every except branch that needs it.
+    _usage_before = model.last_usage
+
     try:
         # `task` is what the registry routes on, and it was previously left
         # to the parameter's default — so every plan call routed as
@@ -225,7 +229,11 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
     except GuardrailBlocked:
         raise
     except ModelError as exc:
-        return {"plan": None, "validation_errors": [f"generation failed: {exc}"]}
+        return {
+            "plan": None,
+            "validation_errors": [f"generation failed: {exc}"],
+            "usage": usage_from(model, _usage_before),
+        }
 
     try:
         plan = assemble_plan(
@@ -243,9 +251,10 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
         return {
             "plan": None,
             "validation_errors": [f"plan referenced unknown product {exc}"],
+            "usage": usage_from(model, _usage_before),
         }
 
-    return {"plan": plan}
+    return {"plan": plan, "usage": usage_from(model, _usage_before)}
 
 
 def route_after_validation(state: GroceryState) -> str:

@@ -1,0 +1,98 @@
+{
+  "_comment": "Lambda execution role for the orchestrator. Data, not console clicks, for the same reasons the guardrail and alarms are (design.md 10.1): reviewable in a pull request, diffable over time, reproducible in another account. Under IaC this becomes a CDK Role construct. Apply with scripts/apply_iam.py.",
+  "version": "1.0",
+  "region": "ap-southeast-2",
+  "environment": "dev",
+
+  "_naming": "The -dev suffix follows config/alarms.json: generated resources coexist with manually created ones during the migration to IaC (design.md 11, point 2).",
+
+  "role_name": "grocery-orchestrator-dev-role",
+  "description": "Execution role for the Smart Grocery & Meal Budget Assistant orchestrator Lambda.",
+
+  "managed_policy_arns": [
+    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  ],
+
+  "_managed_note": "AWSLambdaBasicExecutionRole covers CreateLogGroup/CreateLogStream/PutLogEvents only. Powertools Metrics needs no cloudwatch:PutMetricData -- it emits Embedded Metric Format to stdout and CloudWatch extracts the metrics from the log records. Granting PutMetricData would be permission for a call the code never makes.",
+
+  "trust_policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": { "Service": "lambda.amazonaws.com" },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  },
+
+  "inline_policy_name": "grocery-orchestrator-dev-policy",
+
+  "inline_policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "_comment": "Cross-region inference profiles need BOTH the profile ARN in this region AND the underlying foundation model in every region the profile can route to. config/models.json uses apac.* and au.* profiles, which span multiple APAC regions; granting only the profile ARN yields an opaque AccessDeniedException naming a region nobody configured. The foundation-model ARNs are region-wildcarded for that reason and account-less by design -- foundation models are AWS-owned, not account resources.",
+        "Sid": "BedrockInvokeConfiguredModels",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream"
+        ],
+        "Resource": [
+          "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:inference-profile/apac.amazon.nova-lite-v1:0",
+          "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:inference-profile/apac.amazon.nova-pro-v1:0",
+          "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:inference-profile/au.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:inference-profile/au.anthropic.claude-sonnet-4-5-20250929-v1:0",
+          "arn:aws:bedrock:*::foundation-model/amazon.nova-lite-v1:0",
+          "arn:aws:bedrock:*::foundation-model/amazon.nova-pro-v1:0",
+          "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
+          "arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-5-20250929-v1:0"
+        ]
+      },
+      {
+        "_comment": "Guardrail is applied on every model call when REQUIRE_GUARDRAIL=1. Version 1 is the published version; DRAFT is deliberately not granted so a console edit to DRAFT cannot silently change runtime behaviour.",
+        "Sid": "BedrockApplyGuardrail",
+        "Effect": "Allow",
+        "Action": "bedrock:ApplyGuardrail",
+        "Resource": "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:guardrail/b1xezpqe04kx"
+      },
+      {
+        "_comment": "Read-only on products. The orchestrator never writes prices -- ingestion does, under a separate role. GSI1 is a distinct resource ARN and must be listed explicitly; omitting it is a common cause of a working GetItem and a failing cheapest-price Query. Scan is required and easy to miss: DynamoPriceRepository.candidates_for_budget pages the base table because it needs cross-product, cross-store coverage filtered by category, so without it every MEAL PLAN turn fails AccessDenied while price checks keep working -- the read path exercised least by a smoke test. It stays read-only; Scan reads.",
+        "Sid": "DynamoReadProducts",
+        "Effect": "Allow",
+        "Action": [
+          "dynamodb:GetItem",
+          "dynamodb:BatchGetItem",
+          "dynamodb:Query",
+          "dynamodb:Scan"
+        ],
+        "Resource": [
+          "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/grocery-products-dev",
+          "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/grocery-products-dev/index/GSI1"
+        ]
+      },
+      {
+        "_comment": "Idempotency needs conditional writes: PutItem with attribute_not_exists for the atomic claim, UpdateItem to record the terminal outcome, GetItem on retry. No Delete -- expiry is by TTL, which requires no permission.",
+        "Sid": "DynamoIdempotency",
+        "Effect": "Allow",
+        "Action": [
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:UpdateItem"
+        ],
+        "Resource": "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/grocery-idempotency-dev"
+      },
+      {
+        "_comment": "Powertools Tracer. X-Ray segment writes are not resource-scopable -- the API takes no resource -- so * is the only expressible form.",
+        "Sid": "XRayTracing",
+        "Effect": "Allow",
+        "Action": [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords"
+        ],
+        "Resource": "*"
+      }
+    ]
+  }
+}

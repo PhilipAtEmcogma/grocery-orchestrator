@@ -17,7 +17,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from src.graph.dietary import map_exclusions
-from src.graph.state import Constraints, GroceryState
+from src.graph.state import Constraints, GroceryState, usage_from
 from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier
 from src.prompts.intent import (
     SYSTEM_PROMPT,
@@ -115,6 +115,10 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
     hints = state.get("hints") or {}
     degraded = False
 
+    # Read before the try, not inside it: a name bound only on the happy
+    # path is unbound on every except branch that needs it.
+    _usage_before = model.last_usage
+
     try:
         extracted = model.structured(
             system=SYSTEM_PROMPT,
@@ -166,4 +170,5 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
         "intent_degraded": degraded,
         "unsupported_exclusions": unsupported,
         "events": events,
+        "usage": usage_from(model, _usage_before),
     }

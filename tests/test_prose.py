@@ -12,6 +12,7 @@ from decimal import Decimal
 import pytest
 
 from src.graph.nodes.prose import render, store_name
+from src.models.base import ModelTier, T
 from src.models.scripted import ScriptedModelClient
 from src.prompts.prose import (
     assert_no_literal_money,
@@ -194,3 +195,81 @@ def test_prose_is_generated_on_the_cheap_tier(repo):
     run_turn(_req("cheapest butter"), repo, model)
     prose_calls = [t for t, s in model.calls if s == "ProseResult"]
     assert prose_calls == [ModelTier.FAST]
+
+
+# ------------------------------------------- misattribution guard (Req 4)
+
+
+class _CitesRefModel(ScriptedModelClient):
+    """
+    A model that always cites one chosen placeholder for the prose call.
+
+    Everything else defers to the scripted client, so intent classification and
+    planning behave normally and only the sentence under test is controlled.
+    """
+
+    def __init__(self, ref: str) -> None:
+        super().__init__()
+        self._ref = ref
+
+    def structured(
+        self,
+        *,
+        system: str,
+        user: str,
+        schema: type[T],
+        tier: ModelTier,
+        max_tokens: int = 1024,
+        task: str = "classify_intent",
+    ) -> T:
+        if task == "generate_prose":
+            self._usage = {"model_ids": ["stub"], "latency_ms": 1}
+            return schema(text=f"The cheapest option is [[{self._ref}]] this week.")
+        return super().structured(
+            system=system, user=user, schema=schema, tier=tier,
+            max_tokens=max_tokens, task=task,
+        )
+
+
+def _cheapest_ref(resp) -> str:
+    comparison = next(e.data for e in resp.events if e.type == "price_comparison")
+    return next(o.citation_ref for o in comparison.options if o.is_cheapest)
+
+
+def test_prose_survives_when_it_cites_the_computed_cheapest(repo):
+    """Control: the guard must not reject the sentence it is meant to allow."""
+    probe = run_turn(_req("cheapest butter"), repo, ScriptedModelClient())
+    winner = _cheapest_ref(probe)
+
+    resp = run_turn(_req("cheapest butter"), repo, _CitesRefModel(winner))
+
+    assert [e for e in resp.events if e.type == "token"], (
+        "prose citing the computed cheapest ref was rejected"
+    )
+
+
+def test_prose_is_dropped_when_it_cites_a_dearer_option(repo):
+    """
+    The regression this guard exists for.
+
+    The placeholder list carries no prices, so before the winner was named in
+    the prompt the model chose a citation unaided -- live Nova named Pak'nSave
+    Sylvia Park while the comparison flagged Mangere. Both were $2.97, so a tie
+    hid it; on a non-tie the sentence would have named a DEARER store as
+    cheapest, which Req 4 forbids. Degrading to the structured payload is the
+    honest failure.
+    """
+    probe = run_turn(_req("cheapest butter"), repo, ScriptedModelClient())
+    winner = _cheapest_ref(probe)
+    citations = [e.citation.ref for e in probe.events if e.type == "citation"]
+    dearer = next(r for r in citations if r != winner)
+
+    resp = run_turn(_req("cheapest butter"), repo, _CitesRefModel(dearer))
+
+    assert not [e for e in resp.events if e.type == "token"], (
+        f"prose citing {dearer} was published while the comparison flags "
+        f"{winner} as cheapest"
+    )
+    # The turn still succeeds -- the comparison is the substance.
+    assert [e for e in resp.events if e.type == "price_comparison"]
+    assert [e.type for e in resp.events][-1] == "done"

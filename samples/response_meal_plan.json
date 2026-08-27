@@ -619,10 +619,13 @@
             "seq": 22,
             "type": "done",
             "usage": {
-                "model_ids": [],
-                "input_tokens": null,
-                "output_tokens": null,
-                "latency_ms": null,
+                "model_ids": [
+                    "apac.amazon.nova-lite-v1:0",
+                    "apac.amazon.nova-pro-v1:0"
+                ],
+                "input_tokens": 4336,
+                "output_tokens": 402,
+                "latency_ms": 4432,
                 "guardrail_intervened": false
             },
             "server_time": "2026-08-23T09:44:30.790472Z"

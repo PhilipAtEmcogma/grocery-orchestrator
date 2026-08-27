@@ -1,0 +1,60 @@
+{
+  "Comment": "Daily price refresh. Inline Map fans one invocation per retailer so a retailer that is slow, rate-limited or broken fails alone -- the coupling a single fan-out Lambda would create is the reason design.md 33 and tech.md specify Step Functions here. Catch is INSIDE the item processor for the same reason: without it, one failed branch aborts the Map and the retailers that already succeeded are reported as part of a failed execution.",
+  "StartAt": "RefreshAllRetailers",
+  "States": {
+    "RefreshAllRetailers": {
+      "Type": "Map",
+      "ItemsPath": "$.retailers",
+      "MaxConcurrency": 3,
+      "ItemProcessor": {
+        "ProcessorConfig": { "Mode": "INLINE" },
+        "StartAt": "RefreshOneRetailer",
+        "States": {
+          "RefreshOneRetailer": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Parameters": {
+              "FunctionName": "arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:grocery-ingestion-dev",
+              "Payload": { "retailer.$": "$" }
+            },
+            "OutputPath": "$.Payload",
+            "Retry": [
+              {
+                "Comment": "Transient only. A ValueError from an unknown retailer is a definition bug and must fail fast rather than be retried three times.",
+                "ErrorEquals": [
+                  "Lambda.ServiceException",
+                  "Lambda.AWSLambdaException",
+                  "Lambda.SdkClientException",
+                  "Lambda.TooManyRequestsException"
+                ],
+                "IntervalSeconds": 5,
+                "MaxAttempts": 3,
+                "BackoffRate": 2
+              }
+            ],
+            "Catch": [
+              {
+                "_comment": "ResultPath is null, not \"$.error\". Map items here are STRINGS, and applying a ResultPath to a non-object input raises States.ResultPathMatchFailure -- which aborts the Map, the exact coupling this Catch exists to prevent. Null discards the error and passes the original retailer name through.",
+                "ErrorEquals": ["States.ALL"],
+                "ResultPath": null,
+                "Next": "RecordRetailerFailure"
+              }
+            ],
+            "End": true
+          },
+          "RecordRetailerFailure": {
+            "Comment": "A failed retailer is a reported outcome, not a silent gap. The execution succeeds with this branch marked failed so the other retailers' results survive and the failure is visible in the execution history.",
+            "Type": "Pass",
+            "Parameters": {
+              "retailer.$": "$",
+              "written": 0,
+              "status": "failed"
+            },
+            "End": true
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

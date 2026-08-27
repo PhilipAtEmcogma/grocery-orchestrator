@@ -1,0 +1,57 @@
+{
+  "_comment": "Execution role for the price ingestion Lambda. Data, not console clicks, for the same reasons the guardrail and alarms are (design.md 10.1). Apply with: python scripts/apply_iam.py --config config/iam-ingestion-role.json",
+  "version": "1.0",
+  "region": "ap-southeast-2",
+  "environment": "dev",
+
+  "_naming": "The -dev suffix follows config/alarms.json: generated resources coexist with manually created ones during the migration to IaC (design.md 11, point 2).",
+
+  "role_name": "grocery-ingestion-dev-role",
+  "description": "Execution role for the Smart Grocery price ingestion Lambda.",
+
+  "managed_policy_arns": [
+    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  ],
+
+  "_separation_note": "Deliberately NOT the orchestrator's role. Ingestion writes prices and cannot invoke a model or touch the idempotency table; the orchestrator reads prices and cannot write them. Neither can do the other's job, so a defect in one cannot express itself through the other's permissions.",
+
+  "trust_policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "Effect": "Allow",
+        "Principal": { "Service": "lambda.amazonaws.com" },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  },
+
+  "inline_policy_name": "grocery-ingestion-dev-policy",
+
+  "inline_policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "_comment": "Query is here so ingestion can diff before it writes. The first version of this role was write-only, and a write-only writer cannot know what it is about to change -- which is how unit_price_nzd \"2490.00\" reached six live rows with no signal. Reading the rows it is about to overwrite is the smallest permission that makes the write reportable. It is scoped to the base table only: the diff queries by store_key, which is the base table's partition key, so GSI1 is not needed and is not granted.",
+        "Sid": "DynamoDiffAndWriteProducts",
+        "Effect": "Allow",
+        "Action": [
+          "dynamodb:Query",
+          "dynamodb:PutItem",
+          "dynamodb:BatchWriteItem"
+        ],
+        "Resource": "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/grocery-products-dev"
+      },
+      {
+        "_comment": "Powertools Tracer. X-Ray segment writes are not resource-scopable -- the API takes no resource -- so * is the only expressible form.",
+        "Sid": "XRayTracing",
+        "Effect": "Allow",
+        "Action": [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords"
+        ],
+        "Resource": "*"
+      }
+    ]
+  }
+}

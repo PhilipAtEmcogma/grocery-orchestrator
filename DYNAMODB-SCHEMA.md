@@ -14,6 +14,13 @@ Further resources must be defined in TypeScript CDK. Existing stateful tables
 are adopted/imported rather than recreated. Manual console creation is no
 longer the default path.
 
+A reviewed architecture diagram labels the DynamoDB box "Products + Sessions".
+There is no sessions table and none is planned for the pilot: that label is
+`grocery-idempotency-dev`, which is already session-scoped with a TTL. A
+genuine conversation-state store is a Privacy Act 2020 workstream first —
+TTL, scoping, consent and deletion — per `.kiro/steering/security.md` line 25.
+See `docs/ARCHITECTURE.md` §2.
+
 Three table domains are retained: products, meals/recipes, and idempotency. A
 materialized candidate view may be added by Pilot Task 6 if an index on the
 products table cannot serve category/location/freshness queries without a
@@ -420,7 +427,7 @@ The products and idempotency tables already exist. Pilot Task 9 adopts/imports
 those stateful resources into a TypeScript CDK stateful stack before the
 service stack is deployed; they must not be replaced or recreated.
 
-1. Regenerate `describe-table` evidence from account `097087133897` in
+1. Regenerate `describe-table` evidence from the deployment account in
    `ap-southeast-2` and compare it with this document before import.
 2. Define stable logical ids and matching physical names, billing mode, keys,
    indexes, encryption, PITR, TTL, retention, and deletion protection in CDK.
