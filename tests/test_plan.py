@@ -11,6 +11,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
+from pydantic import ValidationError
 
 from src.graph.nodes.plan import assemble_plan
 from src.models.base import ModelError, ModelOutputInvalid, ModelTier
@@ -18,6 +19,8 @@ from src.models.scripted import ScriptedModelClient
 from src.prompts.meal_plan import (
     DELIM,
     DELIM_END,
+    REASONING_MAX_CHARS,
+    SYSTEM_PROMPT,
     DraftIngredient,
     DraftMeal,
     PlanDraft,
@@ -512,3 +515,61 @@ def test_transport_failure_and_schema_failure_diverge(repo):
         if e.type == "error"
     )
     assert unreachable.code != malformed.code
+
+
+# ------------------------------------------------- the reasoning scratchpad
+#
+# `reasoning` is write-only: assemble_plan ignores it, no event carries it,
+# assert_grounded never sees it. Enforcing its length could therefore only
+# ever destroy value — Claude Haiku 4.5 overran the 600-character cap on 11 of
+# 11 first attempts in a live run, and each overrun discarded an otherwise
+# valid plan and spent a repair call regenerating one. The cap is now advice
+# to the model, not a validation rule.
+
+
+def _draft_payload(reasoning: str) -> dict:
+    return {
+        "meals": [{
+            "name": "Mince pasta",
+            "serves": 2,
+            "ingredients": [{
+                "citation_ref": "c1", "packs": 1,
+                "qty_display": "1kg", "item": "beef mince",
+            }],
+        }],
+        "reasoning": reasoning,
+    }
+
+
+def test_overlong_reasoning_does_not_reject_the_plan():
+    draft = PlanDraft.model_validate(_draft_payload("x" * 5000))
+    assert draft.meals[0].name == "Mince pasta"
+
+
+def test_overlong_reasoning_is_truncated_to_the_cap():
+    draft = PlanDraft.model_validate(_draft_payload("x" * 5000))
+    assert len(draft.reasoning) == REASONING_MAX_CHARS
+
+
+def test_reasoning_within_the_cap_is_untouched():
+    draft = PlanDraft.model_validate(_draft_payload("Cheapest mince at PAK'nSAVE."))
+    assert draft.reasoning == "Cheapest mince at PAK'nSAVE."
+
+
+def test_the_cap_is_still_advertised_to_the_model():
+    """Dropping it from the tool schema would remove the only brevity signal."""
+    schema = PlanDraft.model_json_schema()["properties"]["reasoning"]
+    assert schema.get("maxLength") == REASONING_MAX_CHARS
+
+
+def test_the_prompt_also_asks_for_brevity():
+    """The schema hint alone did not hold; the instruction is the other half."""
+    assert str(REASONING_MAX_CHARS) in SYSTEM_PROMPT
+
+
+def test_a_genuinely_malformed_draft_is_still_rejected():
+    """Softening the scratchpad must not soften the fields that carry meaning."""
+    payload = _draft_payload("fine")
+    payload["meals"][0]["ingredients"][0]["citation_ref"] = "not-a-ref"
+    with pytest.raises(ValidationError):
+        PlanDraft.model_validate(payload)
