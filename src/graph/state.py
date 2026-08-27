@@ -177,6 +177,13 @@ class GroceryState(TurnInput, total=False):
     # ---- validate / repair loop
     repair_attempts: int
     validation_errors: list[str]
+    # An upstream failure — Bedrock unreachable, timed out, throttled, or
+    # misconfigured. Deliberately NOT a validation error: a validation error
+    # means "the model produced a plan and the plan is wrong", which the
+    # repair loop can act on. This means "there is no model output at all",
+    # which repair cannot fix and which must not be reported to the user as
+    # a budget problem. See emit_upstream_failure.
+    upstream_error: str
 
     # ---- output
     events: Annotated[list[Event], append_events]

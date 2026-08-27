@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from decimal import ROUND_HALF_UP, Decimal
 
-from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState, usage_from
+from src.graph.state import GroceryState, usage_from
 from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier
 from src.prompts.meal_plan import (
     SYSTEM_PROMPT,
@@ -229,9 +229,15 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
     except GuardrailBlocked:
         raise
     except ModelError as exc:
+        # NOT a validation error. Reporting an unreachable model as one sent
+        # this into the repair loop, which re-invoked the same broken client
+        # twice more and then emitted BUDGET_INFEASIBLE — telling a user whose
+        # Bedrock call had failed to "raise the budget", advice that cannot
+        # help and that they may act on. It also made a total outage
+        # indistinguishable from a genuinely unaffordable basket in the evals.
         return {
             "plan": None,
-            "validation_errors": [f"generation failed: {exc}"],
+            "upstream_error": str(exc),
             "usage": usage_from(model, _usage_before),
         }
 
@@ -257,9 +263,8 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
     return {"plan": plan, "usage": usage_from(model, _usage_before)}
 
 
-def route_after_validation(state: GroceryState) -> str:
-    if not state.get("validation_errors"):
-        return "finalise"
-    if state.get("repair_attempts", 0) >= MAX_REPAIR_ATTEMPTS:
-        return "infeasible"
-    return "repair"
+# route_after_validation used to be defined here as well as in
+# src/graph/nodes/__init__.py. Only the latter was ever imported, so this copy
+# was dead, and it would have silently disagreed with the live router the
+# moment either changed — which is exactly what the upstream_error branch
+# would have done. Removed rather than kept in sync.
