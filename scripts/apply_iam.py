@@ -26,6 +26,13 @@ from typing import Any
 import boto3
 from botocore.exceptions import ClientError
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from aws_placeholders import (
+    assert_resolved,
+    current_account_id,
+    substitute,
+)
+
 CONFIG = Path(__file__).resolve().parent.parent / "config" / "iam-orchestrator-role.json"
 
 
@@ -54,7 +61,17 @@ def summarise(cfg: dict) -> None:
         print(f"  statement   {stmt['Sid']}: {actions}  ({count} resource(s))")
 
 
+def resolve(cfg: dict) -> dict:
+    """Substitute ${AWS_ACCOUNT_ID} / ${AWS_REGION} from STS and the config."""
+    resolved = substitute(
+        cfg, account_id=current_account_id(), region=cfg["region"]
+    )
+    assert_resolved(resolved, cfg["role_name"])
+    return resolved
+
+
 def apply(cfg: dict) -> None:
+    cfg = resolve(cfg)
     iam = boto3.client("iam")
     role = cfg["role_name"]
     trust = json.dumps(strip_comments(cfg["trust_policy"]))

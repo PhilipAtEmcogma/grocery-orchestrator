@@ -40,7 +40,7 @@
           "dynamodb:PutItem",
           "dynamodb:BatchWriteItem"
         ],
-        "Resource": "arn:aws:dynamodb:ap-southeast-2:097087133897:table/grocery-products-dev"
+        "Resource": "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/grocery-products-dev"
       },
       {
         "_comment": "Powertools Tracer. X-Ray segment writes are not resource-scopable -- the API takes no resource -- so * is the only expressible form.",

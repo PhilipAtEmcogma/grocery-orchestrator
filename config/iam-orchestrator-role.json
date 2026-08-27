@@ -40,10 +40,10 @@
           "bedrock:InvokeModelWithResponseStream"
         ],
         "Resource": [
-          "arn:aws:bedrock:ap-southeast-2:097087133897:inference-profile/apac.amazon.nova-lite-v1:0",
-          "arn:aws:bedrock:ap-southeast-2:097087133897:inference-profile/apac.amazon.nova-pro-v1:0",
-          "arn:aws:bedrock:ap-southeast-2:097087133897:inference-profile/au.anthropic.claude-haiku-4-5-20251001-v1:0",
-          "arn:aws:bedrock:ap-southeast-2:097087133897:inference-profile/au.anthropic.claude-sonnet-4-5-20250929-v1:0",
+          "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:inference-profile/apac.amazon.nova-lite-v1:0",
+          "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:inference-profile/apac.amazon.nova-pro-v1:0",
+          "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:inference-profile/au.anthropic.claude-haiku-4-5-20251001-v1:0",
+          "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:inference-profile/au.anthropic.claude-sonnet-4-5-20250929-v1:0",
           "arn:aws:bedrock:*::foundation-model/amazon.nova-lite-v1:0",
           "arn:aws:bedrock:*::foundation-model/amazon.nova-pro-v1:0",
           "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0",
@@ -55,7 +55,7 @@
         "Sid": "BedrockApplyGuardrail",
         "Effect": "Allow",
         "Action": "bedrock:ApplyGuardrail",
-        "Resource": "arn:aws:bedrock:ap-southeast-2:097087133897:guardrail/b1xezpqe04kx"
+        "Resource": "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:guardrail/b1xezpqe04kx"
       },
       {
         "_comment": "Read-only on products. The orchestrator never writes prices -- ingestion does, under a separate role. GSI1 is a distinct resource ARN and must be listed explicitly; omitting it is a common cause of a working GetItem and a failing cheapest-price Query. Scan is required and easy to miss: DynamoPriceRepository.candidates_for_budget pages the base table because it needs cross-product, cross-store coverage filtered by category, so without it every MEAL PLAN turn fails AccessDenied while price checks keep working -- the read path exercised least by a smoke test. It stays read-only; Scan reads.",
@@ -68,8 +68,8 @@
           "dynamodb:Scan"
         ],
         "Resource": [
-          "arn:aws:dynamodb:ap-southeast-2:097087133897:table/grocery-products-dev",
-          "arn:aws:dynamodb:ap-southeast-2:097087133897:table/grocery-products-dev/index/GSI1"
+          "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/grocery-products-dev",
+          "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/grocery-products-dev/index/GSI1"
         ]
       },
       {
@@ -81,7 +81,7 @@
           "dynamodb:PutItem",
           "dynamodb:UpdateItem"
         ],
-        "Resource": "arn:aws:dynamodb:ap-southeast-2:097087133897:table/grocery-idempotency-dev"
+        "Resource": "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/grocery-idempotency-dev"
       },
       {
         "_comment": "Powertools Tracer. X-Ray segment writes are not resource-scopable -- the API takes no resource -- so * is the only expressible form.",

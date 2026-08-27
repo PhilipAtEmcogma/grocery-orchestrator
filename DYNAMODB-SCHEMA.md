@@ -427,7 +427,7 @@ The products and idempotency tables already exist. Pilot Task 9 adopts/imports
 those stateful resources into a TypeScript CDK stateful stack before the
 service stack is deployed; they must not be replaced or recreated.
 
-1. Regenerate `describe-table` evidence from account `097087133897` in
+1. Regenerate `describe-table` evidence from the deployment account in
    `ap-southeast-2` and compare it with this document before import.
 2. Define stable logical ids and matching physical names, billing mode, keys,
    indexes, encryption, PITR, TTL, retention, and deletion protection in CDK.

@@ -194,6 +194,7 @@ python scripts/dev_server.py                     # localhost:8000 for frontend
 python scripts/apply_guardrail.py --dry-run      # validate guardrail policy
 python scripts/build_lambda.py                   # build/lambda.zip, ~30 MB unzipped
 python scripts/apply_iam.py --dry-run     --config config/iam-<role>.json              # execution roles, policy-as-data
+python scripts/apply_state_machine.py --dry-run  # ingestion Step Functions
 python -m pytest tests/test_ingestion.py         # ingestion; no AWS
 ```
 
@@ -344,6 +345,10 @@ before and after in the commit message.
   zip-only. Measured dependency size fits well under the archive limit.
 - Loosen `resolve_product_key` to fuzzy matching. Under-matching is
   recoverable; mis-matching produces a confident wrong price.
+- Hardcode an AWS account id into `config/`. This repo is public. Use
+  `${AWS_ACCOUNT_ID}` / `${AWS_REGION}`; `scripts/apply_*.py` resolve them
+  from STS at apply time, and `tests/test_config_placeholders.py` fails the
+  build if a literal twelve-digit id reappears.
 - Add a price field to any model output schema.
 - Use Lambda Function URLs for streaming — loses throttling, usage plans and
   auth.

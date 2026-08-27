@@ -83,7 +83,8 @@ proposed, or gated as labelled; it is not implemented.
   throttling, usage plan, SSM configuration, log retention, and scoped IAM.
 - [ ] **Pilot Task 11 — Deploy and verify the anonymous pilot safely.** Treat
   resource adoption and deployment as separate reviewed operations in account
-  `097087133897`, region `ap-southeast-2`.
+  the deployment account (see `aws sts get-caller-identity`), region
+  `ap-southeast-2`.
 - [ ] **Pilot Task 12 — Add operational acceptance gates and artefact storage.**
   Build CloudWatch dashboards/alarms, X-Ray evidence, Budgets, quota review,
   latency/cost baselines, and alarm drills. Use encrypted versioned S3 with

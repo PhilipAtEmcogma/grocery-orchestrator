@@ -327,6 +327,39 @@ write-only writer cannot know what it is about to change, which is the shape of
 the original problem stated as an IAM policy. It now has `dynamodb:Query` on
 the base table — the smallest grant that makes the write reportable.
 
+### Config carries placeholders, not an account id
+
+This repository is public, and the config files this work added originally
+hardcoded the account id into every ARN. The id is not a credential, and it was
+already present in `DYNAMODB-SCHEMA.md` and `tasks.md`, so nothing was newly
+exposed — but it is the wrong default twice over: it pins each file to one
+account, contradicting the "reproducible in another account" line every config
+header carries, and it hands a reader a concrete enumeration target for
+nothing in return.
+
+Config now carries `${AWS_ACCOUNT_ID}` and `${AWS_REGION}`.
+`scripts/aws_placeholders.py` resolves them at apply time — the account from
+STS, so it is by construction the account being deployed to and cannot drift
+from the file the way a literal can; the region from the config's own `region`
+field. `assert_resolved()` refuses to apply a half-substituted document,
+because some AWS APIs accept `${AWS_ACCOUNT_ID}` as a literal ARN segment and
+fail later at use rather than at apply.
+
+`tests/test_config_placeholders.py` fails the build if a twelve-digit id
+reappears in `config/`. That guard exists because this is exactly the kind of
+rule that decays: the next person adding a resource pastes the ARN from the
+console, and it reads as correct — because it is correct, for one account.
+
+`scripts/apply_state_machine.py` was added at the same time, for the same
+reason `apply_iam.py` was: the definition had been applied by hand, and the
+`Catch`/`ResultPath` defect survived precisely because nothing re-derived the
+deployed definition from the file.
+
+**This is hygiene, not redaction.** The id is in this repository's git history
+and history is not meaningfully rewritable on a public repo with forks. Treat
+the existing value as public, because it is. What changes is that new work does
+not add more, and CI now says so.
+
 ### The lesson worth keeping
 
 Every one of the three high-severity findings was invisible to a green test
