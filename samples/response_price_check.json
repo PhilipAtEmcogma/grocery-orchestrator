@@ -165,10 +165,12 @@
             "seq": 10,
             "type": "done",
             "usage": {
-                "model_ids": [],
-                "input_tokens": null,
-                "output_tokens": null,
-                "latency_ms": null,
+                "model_ids": [
+                    "apac.amazon.nova-lite-v1:0"
+                ],
+                "input_tokens": 2514,
+                "output_tokens": 75,
+                "latency_ms": 1661,
                 "guardrail_intervened": false
             },
             "server_time": "2026-08-23T09:44:30.760852Z"

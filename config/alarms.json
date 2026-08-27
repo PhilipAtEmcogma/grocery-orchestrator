@@ -49,7 +49,7 @@
       "metric_name": "5XXError",
       "_dimensions_note": "ApiName must match the deployed API exactly. A dimension that matches nothing yields a metric with no datapoints, which looks identical to a healthy service.",
       "dimensions": {
-        "ApiName": "grocery-orchestrator-dev"
+        "ApiName": "grocery-orchestrator-api-dev"
       },
       "statistic": "Sum",
       "period": 300,

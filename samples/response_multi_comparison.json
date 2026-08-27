@@ -435,10 +435,12 @@
             "seq": 22,
             "type": "done",
             "usage": {
-                "model_ids": [],
-                "input_tokens": null,
-                "output_tokens": null,
-                "latency_ms": null,
+                "model_ids": [
+                    "scripted-fast"
+                ],
+                "input_tokens": 700,
+                "output_tokens": 80,
+                "latency_ms": 2,
                 "guardrail_intervened": false
             },
             "server_time": "2026-08-10T05:57:56.557511Z"

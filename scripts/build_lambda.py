@@ -50,12 +50,20 @@ REQUIREMENTS = ROOT / "requirements.txt"
 
 # Application code copied into the archive verbatim. Deliberately an
 # allowlist rather than "everything except tests/evals/scripts/.kiro": the
-# repo also holds infra/, ingestion/ and top-level docs the handler never
-# imports, which have no business inflating a Lambda archive. The effect is
-# the same either way — tests/, evals/, scripts/ and .kiro/ never appear in
-# the zip — but an allowlist can't accidentally sweep in something new added
-# to the repo root later.
-INCLUDE_DIRS = ["src", "config", "fixtures"]
+# repo also holds infra/ and top-level docs no handler imports, which have no
+# business inflating a Lambda archive. The effect is the same either way —
+# tests/, evals/, scripts/ and .kiro/ never appear in the zip — but an
+# allowlist can't accidentally sweep in something new added to the repo root
+# later.
+#
+# `ingestion` is here because ONE archive serves TWO functions: the
+# orchestrator entered at src.handler.lambda_handler and the price refresh
+# entered at ingestion.handler.lambda_handler. Two zips would mean two builds
+# to keep in step and two artefacts for the CI `package` job to verify, for
+# about 10 KB of Python. The functions stay separate — separate IAM roles,
+# separate invocation paths — and only the artefact is shared. `ingestion`
+# needs `fixtures`, which was already here.
+INCLUDE_DIRS = ["src", "config", "fixtures", "ingestion"]
 
 # Installed but never imported by anything we ship, dead weight either way.
 # Transitive pulls from langchain-aws and langsmith respectively.
@@ -250,7 +258,20 @@ def verify_import(zip_path: Path, runtime_dir: Path) -> None:
 
         env = {**os.environ, "PYTHONPATH": str(runtime_dir)}
         result = subprocess.run(
-            [sys.executable, "-c", "from src.handler import lambda_handler"],
+            # BOTH entrypoints. The archive serves two functions, and an
+            # import that resolves for one proves nothing about the other:
+            # ingestion.handler additionally reads fixtures/products.json at a
+            # path resolved relative to the zip root, so a packaging change
+            # that drops `fixtures` would leave the orchestrator importable and
+            # every scheduled refresh failing.
+            [
+                sys.executable,
+                "-c",
+                "from src.handler import lambda_handler; "
+                "from ingestion.handler import lambda_handler as ingest; "
+                "from ingestion.sources import FIXTURES; "
+                "assert FIXTURES.exists(), FIXTURES",
+            ],
             cwd=tmp_path,
             env=env,
             capture_output=True,
@@ -263,7 +284,7 @@ def verify_import(zip_path: Path, runtime_dir: Path) -> None:
             raise SystemExit("Packaged archive does not import. See output above.")
 
         print(
-            "OK: from src.handler import lambda_handler resolves "
+            "OK: src.handler and ingestion.handler both resolve "
             f"(archive + {', '.join(RUNTIME_PROVIDED)} from the runtime)."
         )
 

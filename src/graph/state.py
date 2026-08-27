@@ -20,6 +20,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Annotated, TypedDict
 
+from src.models.base import ModelClient
 from src.retrieval.base import PriceRecord
 from src.schemas.contract import (
     Citation,
@@ -34,9 +35,80 @@ from src.schemas.contract import (
 MAX_REPAIR_ATTEMPTS = 2
 
 
+def usage_from(model: ModelClient, previous: dict | None = None) -> UsageMeta:
+    """
+    Lift a client's most recent call into the contract's usage shape.
+
+    `last_usage` reports one call, so every node that calls the model must
+    return this and let `merge_usage` combine them. A node that calls the model
+    and does not return usage drops those tokens from the turn silently -- the
+    response still validates, it just under-reports, which is the failure mode
+    that left `model_ids` empty on every deployed response until this existed.
+
+    PASS `previous`. `BedrockModelClient` assigns `self._usage` only after
+    `converse` returns, so a call that raises `ModelError` leaves the PREVIOUS
+    call's numbers in place. Reporting them again double-counts on exactly the
+    turns that failed: a meal plan whose generation throttles through two
+    repairs bills `classify_intent`'s tokens four times. Handing in the value
+    read before the call lets an unchanged reading be recognised as "this call
+    recorded nothing" and dropped.
+
+    A guardrail block is NOT that case and keeps its numbers -- `converse`
+    returned and wrote fresh usage before the stop reason was inspected, which
+    is the call you most want the tokens for. `InstrumentedModelClient._call`
+    guards its telemetry the same way, for the same reason.
+    """
+    raw = model.last_usage or {}
+    if previous is not None and raw == previous:
+        return UsageMeta()
+    return UsageMeta(
+        model_ids=list(raw.get("model_ids") or []),
+        input_tokens=raw.get("input_tokens"),
+        output_tokens=raw.get("output_tokens"),
+        latency_ms=raw.get("latency_ms"),
+        guardrail_intervened=bool(raw.get("guardrail_intervened")),
+    )
+
+
 def append_events(left: list[Event], right: list[Event]) -> list[Event]:
     """Reducer: nodes return only their NEW events, LangGraph concatenates."""
     return [*left, *right]
+
+
+def merge_usage(left: UsageMeta | None, right: UsageMeta | None) -> UsageMeta:
+    """
+    Reducer: a turn makes several model calls -- classify_intent, generate_plan,
+    up to two repairs, generate_prose -- and the contract reports one usage
+    block for the turn. Without a reducer the last writer wins, so a plan turn
+    would report only the prose call's tokens and the field would understate
+    cost by most of the turn.
+
+    Tokens and latency sum. `latency_ms` is therefore time spent in the model,
+    not wall-clock for the turn; those differ and the summed figure is the one
+    that maps to spend. Model ids accumulate in call order, deduplicated, so a
+    turn routed entirely to one model reports it once. `guardrail_intervened`
+    is sticky: a turn in which the guardrail fired once is a turn in which it
+    fired, regardless of what a later call reports.
+    """
+    if left is None:
+        return right or UsageMeta()
+    if right is None:
+        return left
+
+    def _sum(a: int | None, b: int | None) -> int | None:
+        # None means "not reported", which is not the same as zero -- a model
+        # that returns no token counts must not read as a free call.
+        return None if a is None and b is None else (a or 0) + (b or 0)
+
+    return UsageMeta(
+        model_ids=list(dict.fromkeys([*left.model_ids, *right.model_ids])),
+        input_tokens=_sum(left.input_tokens, right.input_tokens),
+        output_tokens=_sum(left.output_tokens, right.output_tokens),
+        latency_ms=_sum(left.latency_ms, right.latency_ms),
+        guardrail_intervened=(
+            left.guardrail_intervened or right.guardrail_intervened
+        ),
+    )
 
 
 class Constraints(TypedDict, total=False):
@@ -108,7 +180,7 @@ class GroceryState(TurnInput, total=False):
 
     # ---- output
     events: Annotated[list[Event], append_events]
-    usage: UsageMeta
+    usage: Annotated[UsageMeta, merge_usage]
 
     # ---- control
     terminated: bool
