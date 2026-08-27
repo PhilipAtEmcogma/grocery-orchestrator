@@ -9,40 +9,101 @@ a reviewer to re-propose the options that were already ruled out.
 
 ---
 
-## 1. Architecture
+## 1. Architecture and delivery status
 
-```
-Browser
-   |  HTTPS
-Static site (S3 + CloudFront)
-   |  POST /chat
-API Gateway (REST)
-   |
-Orchestrator Lambda
-   |-- LangGraph state machine
-   |-- Price store (DynamoDB)
-   |-- Model plane (Bedrock, per-task routing)
-   |
-Response (ordered typed events)
-```
+This document uses four states: **implemented**, **live verified**, **planned**,
+and **proposed — mentor approval required**. A planned or proposed service is
+not a current capability.
 
-Separately, on a schedule:
+The authoritative production-pilot target remains:
 
-```
-EventBridge -> Step Functions -> scraper Lambdas -> DynamoDB
+```text
+Browser -> API Gateway REST (strict CORS, throttling, usage plan)
+        -> published Python 3.13 zip Lambda alias + SnapStart
+        -> deterministic LangGraph
+           |-> DynamoDB price/recipe records
+           |-> Bedrock Converse + numbered Guardrail
+           `-> grounding, dietary, arithmetic, repair and honest-failure checks
+        -> ordered contract events
 ```
 
-**Region:** `ap-southeast-2` (Sydney). Auckland lacks the required Bedrock and
-Lambda features.
+Controlled ingestion remains separate:
+
+```text
+EventBridge -> Step Functions Inline Map -> per-source adapters
+            -> provenance/normalisation validation -> DynamoDB
+```
+
+The AWS-learning roadmap is deliberately broad but purpose-driven. Every
+service needs a product purpose, bounded scope, acceptance evidence, security
+and cost controls, and rollback/removal criteria. It must not weaken the core
+invariants. The stages are:
+
+| Stage | Status | Boundary |
+|---|---|---|
+| Deterministic shopper workflow | Implemented reference workflow/handler; deployment planned | Authoritative target is API Gateway REST -> Lambda/SnapStart -> LangGraph |
+| Local read-only MCP | Planned first, Pilot Task 8 | Coarse complete-application operations only |
+| AgentCore Gateway hybrid | Proposed; ADR 0002 mentor approval required | Identity/policy/mediation over the same coarse tools; never around the graph |
+| AgentCore Runtime reviewer | Proposed; ADR 0002 mentor approval required | Separate capped sanitised ingestion review; no shopper/write/publication authority |
+| Managed evaluations | Proposed companions | Bedrock Model Evaluation and AgentCore Evaluations alongside local gates |
+| Companion AWS services | Planned or gated | Purpose/evidence matrix in ADR 0002 and §17 |
+
+```text
+Approved local client -> local read-only MCP -> coarse operations
+                                             -> deterministic Lambda service
+
+Proposed managed client -> WAF/Cognito or workload identity
+                        -> AgentCore Gateway + Identity + Policy
+                        -> same coarse operations
+                        -> deterministic Lambda service
+
+Validated ingestion -> Streams -> SQS/DLQ -> capped sanitised snapshot
+                                            -> isolated reviewer Runtime
+                                            -> cited S3 review artefact
+                                            -> deterministic validation -> human
+```
+
+All resources remain in `ap-southeast-2`. The orchestrator remains a zip
+Lambda; containerising it would forfeit SnapStart. API Gateway REST is the first
+transport. See accepted ADR 0001 and proposed ADR 0002. Until ADR 0002 receives
+mentor approval, the local-first ADR 0001 position remains controlling.
+
+### 1.1 Current release blockers
+
+The reference implementation is not yet a deployable pilot. Pilot Tasks 2–3
+corrected citation construction, citation-before-use ordering, money-free
+comparison reasoning/prose labels, regenerated samples, and offline
+`GuardrailBlocked` propagation. Remaining blockers include:
+
+1. Final grounding lacks immutable retrieved-record context, exact key/value
+   equality proof, and wrong-key/altered-value controls; `run_turn()` does not
+   call the whole-response literal-money assertion.
+2. The live Guardrail harness is experimental: `--model` does not pin the
+   requested model, `OUT_OF_SCOPE` can count as blocked, and live must-block
+   misses do not fail the process. No qualifying 13/13 plus 7/7 live result
+   exists.
+3. Location/freshness, payable totals, production fail-closed selection,
+   idempotency ownership/candidate access, and complete model qualification
+   remain open.
+4. CDK adoption, least-privilege IAM, API controls, published SnapStart alias,
+   dashboards, budgets, and deployment verification are not implemented.
+5. MCP, AgentCore, managed evaluations, ingestion, and companion services are
+   planned/proposed only as labelled; none is a deployed capability.
+
+Mandatory correctness and service-plane Pilot Tasks close before public traffic.
+Local MCP remains the planned first learning stage; proposed or gated managed
+services are not pilot-release prerequisites unless approved and adopted. Any
+adopted optional stage must pass its component-specific acceptance and rollback
+gates before exposure.
 
 ---
 
 ## 2. The grounding mechanism (Req 3)
 
-Three independent barriers over structured output, in order of strength. Each
-would be sufficient on its own; together they mean a hallucinated price
-requires all three to fail. A fourth (§2.4) covers free text, where the first
-three do not apply.
+Three independent barriers protect structured output, and a fourth protects
+free text. Topology and schema prevent model-originated prices by construction;
+final assertions are still required to prove the response matches the immutable
+retrieval snapshot.
 
 ### 2.1 Topology (Req 3.3)
 
@@ -62,9 +123,16 @@ nowhere to put one.
 
 ### 2.3 Assertion (Req 3.5, 3.6)
 
-Before delivery, every referenced identifier is checked against the identifiers
-actually retrieved. An unresolved reference fails the response rather than
-silently dropping the line. A negative test in CI proves the check fires.
+Pilot Task 2 strengthened `assert_grounded()` to require a declaration before
+use and basic source shape using the configured physical table, `store_key`,
+and normalized `product_key`. Unknown references, ordering violations, and
+malformed source keys fail.
+
+This is not full Req 3.5–3.6 proof. The assertion does not receive immutable
+retrieved-record context, so it cannot independently prove that citation keys
+and monetary values equal the actual retrieved record. Wrong-key and
+altered-value negative controls remain an explicit follow-up. Response
+self-consistency is necessary but not sufficient for exact provenance.
 
 ### 2.4 Free text (Req 3.7)
 
@@ -73,18 +141,28 @@ mechanism, because §2.2 does not transfer: a prose field is a string, and a
 model can always type a number into a string. There is no schema shape that
 makes a price unrepresentable in a sentence.
 
-So the model writes `[[c1]]` placeholders instead of figures, and application
-code expands them from the retrieved records after generation. Three checks
-run before the text is delivered:
+So the model writes `[[c1]]` placeholders instead of figures. The target
+renderer resolves a known placeholder only to a non-monetary product/store
+label; the source price remains in the citation event and in structured fields
+that carry `citation_ref`. Token text and comparison reasoning have no
+field-level citation reference, so they remain money-free. Three checks run
+before text is delivered:
 
-1. Any money-shaped string in the model's output rejects the text. Both
-   `$2.97` and "71 cents" count; quantities like "500g pack" and "3 days" do
-   not, since over-rejection would leave nothing worth reading.
+1. Any money-shaped string in either model output or rendered user-visible text
+   rejects the text. Both `$2.97` and "71 cents" count; quantities like "500g
+   pack" and "3 days" do not, since over-rejection would leave nothing useful.
 2. A placeholder referring to something that was never retrieved rejects the
    text — the same rule as §2.3, applied to prose.
-3. Expansion of an unknown placeholder raises rather than leaving `[[c9]]`
-   visible or dropping it silently. A dropped placeholder produces a sentence
-   missing its subject; a visible one shows the user a defect.
+3. An unknown placeholder raises rather than remaining visible or disappearing
+   silently. A dropped placeholder produces a sentence missing its subject; a
+   visible one shows the user a defect.
+
+**Implemented scope:** Pilot Task 2 changed rendering to non-monetary labels,
+removed literal money from comparison reasoning, regenerated samples, and added
+`assert_no_literal_money_in_response()` over token text, reasoning, and notice
+messages with three negative controls. The remaining gap is runtime integration:
+`run_turn()` does not yet call the whole-response assertion, and the field
+inventory must stay complete as the contract evolves.
 
 **Failure degrades rather than propagating.** All three checks discard the
 prose and let the turn deliver its structured payload. A comparison table with
@@ -104,8 +182,11 @@ price.
 
 | Node | Model? | Responsibility |
 |---|---|---|
+| Node | Model? | Responsibility |
+|---|---|---|
 | `validate_input` | no | Emit session event, initialise state |
-| `classify_intent` | yes, low-cost | Classify and extract constraints |
+| `classify_intent` | yes, low-cost | Classify, extract constraints, record any unmappable dietary terms |
+| `emit_dietary_unsupported` | no | Honest refusal for a dietary term we cannot honour (Req 5.6) |
 | `retrieve_prices` | no | Query price store; **only** creator of references |
 | `emit_no_data` | no | Honest "no data" outcome (Req 4.1) |
 | `generate_comparison` | **no** | Assemble comparison from references |
@@ -143,6 +224,19 @@ configured maximum (Req 2.4).
 
 **Failed drafts are discarded** on the infeasible path (Req 4.5). Delivering an
 over-budget plan beside a message saying no plan was possible is incoherent.
+
+**Unsupported dietary exclusions refuse before retrieval** (Req 5.6). The
+mapping from user terms to fixture categories is data — `SUPPORTED_EXCLUSIONS`
+in `src/graph/dietary.py` — and `classify_intent` records any terms it could
+not map. Meal-plan routing sees the list is non-empty and goes to
+`emit_dietary_unsupported`, which returns `ErrorCode.UNSUPPORTED_EXCLUSION`
+with a message naming the terms we can honour. The graph does not do the
+work for a plan we cannot verify: filtering an incomplete map would ship a
+plan whose safety was probabilistic rather than checkable, which is the exact
+shape of the bug that used to serve dairy to a vegan user. Price checks are
+not gated the same way — a dietary term does not apply to a single-product
+query and blocking one would refuse a legitimate question for no safety
+benefit.
 
 ---
 
@@ -222,9 +316,9 @@ transport the same events arrive one at a time. A client written as an event
 handler needs no change.
 
 **Prices appear only in reference events.** Content events cite them by
-identifier. This is the wire-level expression of section 2.2 — and it means the
-grounding invariant is checkable from the response alone, without access to
-internals.
+identifier. This makes declaration/order/basic-source consistency checkable
+from the response. Exact record and value equality still requires immutable
+retrieved-record context; the response alone cannot prove it.
 
 ### 6.1 Idempotent turns (Req 12.3)
 
@@ -242,9 +336,12 @@ identifiers and nothing makes them globally unique. A collision across sessions
 would serve one user another user's shopping list — a privacy failure produced
 by an optimisation.
 
-**The payload is fingerprinted.** The same identifier arriving with different
-content is a client bug. Returning the cached response would answer a question
-nobody asked, so it is rejected as a non-retryable client error instead.
+**The validated payload is canonically fingerprinted.** The same identifier
+arriving with different validated content is a client bug. Whitespace, object-key
+order, and omitted-versus-explicit-null optional fields do not create different
+fingerprints. Returning the cached response for genuinely different content
+would answer a question nobody asked, so it is rejected as a non-retryable
+client error instead.
 
 **In-flight requests are detected.** A retry usually arrives while the first
 attempt is *still running* — that is what a timeout means. A store that only
@@ -253,9 +350,14 @@ in-progress marker is honoured for longer than the gateway ceiling, so a
 slow-but-alive request is not duplicated, but short enough that a crashed
 invocation does not block retries until the expiry.
 
+**Claim ownership is fenced.** Every successful acquire or stale takeover
+returns a fresh opaque owner token/version. Completion and release are
+conditional on that token and `in_progress` status, so an old invocation that
+resumes after takeover cannot overwrite or delete the new owner's claim.
+
 **Only terminal outcomes are cached.** Caching a transient failure would make
 the client's retry permanently useless: it would receive the same failure
-forever. A retryable error releases the claim instead.
+forever. A retryable error releases only the caller's owned claim instead.
 
 **The store failing does not fail the turn.** If the store is unreachable the
 handler runs the work anyway. A duplicated response is a worse outcome than a
@@ -267,11 +369,11 @@ would both read "absent" and both proceed, which is exactly the case the
 mechanism exists to prevent and exactly the case that testing on one machine
 will not surface.
 
-**Single-process today.** The fixture store is correct in one process and
-silently wrong across many: Lambda execution environments share no memory, so
-a deployment on it would deduplicate nothing while appearing to work. This is
-why the stored implementation is not optional in production, and why it raises
-rather than returning plausible results (§7).
+**Current versus target.** The in-memory and DynamoDB stores exist, and the
+five current DynamoDB outcomes have live evidence. Production readiness still
+requires canonical validated request hashing, a shared protocol contract suite,
+and stale-owner fencing in both implementations. Production startup must reject
+the in-memory store rather than silently selecting it.
 
 ---
 
@@ -329,12 +431,13 @@ direction: an empty intersection of "preferred" and "nearby" would have
 returned exactly the stores the user ruled out. No caller passed `[]`, so
 tightening it changed no behaviour; it removed a trap.
 
-**Unimplemented adapters raise rather than returning empty results.** Both
-stored implementations exist as scaffolding so the wiring is proven, and every
-method raises. An empty price list would be indistinguishable from a genuine
-"no data" outcome, and a store that never deduplicates is indistinguishable
-from one where nothing was retried — both would look like working software. A
-misconfigured deployment should fail loudly at the first call.
+**Implemented adapters fail loudly on misconfiguration.** The fixture and
+DynamoDB price repositories and the in-memory and DynamoDB idempotency stores
+are implemented; the shared price-repository suite has been live-verified
+against DynamoDB. Production still needs a shared idempotency contract suite,
+claim-owner conditions, and startup validation that rejects demo adapters.
+Returning an empty result for a misconfigured repository remains forbidden
+because it is indistinguishable from a genuine no-data outcome.
 
 ---
 
@@ -342,10 +445,12 @@ misconfigured deployment should fail loudly at the first call.
 
 Recording these prevents them being re-proposed.
 
-**Managed agent frameworks.** Rejected. An agent that decides for itself
-whether to consult the price store can offer only a behavioural guarantee. The
-requirement (Req 3.3) is structural. Also: the previous-generation service
-entered maintenance mode and is closed to new accounts.
+**Managed agents controlling the shopper path.** Rejected. An agent that
+decides whether to consult the price store or run validation offers only a
+behavioural guarantee where Req 3.3 requires structure. This does not reject the
+proposed AgentCore Gateway mediation layer or isolated Runtime reviewer in ADR
+0002; neither controls shopper workflow decisions. Bedrock Agents Classic
+remains prohibited.
 
 **Autonomous tool-calling loop.** Rejected for the same reason. The model makes
 bounded judgements at fixed points; control flow is code. Knowing when not to
@@ -431,7 +536,7 @@ default.
 | 12.3 Exactly-once turns | Atomic claim on a session-scoped key (§6.1) |
 | 5.5 Content safety (policy) | Guardrail policy as version-controlled data, validated in CI |
 | 5.5 Content safety (enforcement) | Attached to every generation call; call refuses to run without one |
-| 5.5 Content safety (verification) | **Not met** — requires a live endpoint |
+| 5.5 Content safety (verification) | **Partially verified** — numbered Guardrail/basic invocation live; offline propagation and 7/7 scripted must-allow structure pass; qualifying live 13/13 + 7/7 remains open |
 | 6.5 Untrusted input | User text delimited; system instruction declares it data |
 | 6.5 Untrusted input (filter) | Per-request input tagging, so the prompt-attack filter evaluates it |
 
@@ -512,39 +617,42 @@ just wrote. And a check whose failure does not block or notify anyone is
 documentation, not enforcement — which is the same argument §8 makes for
 structural guarantees over behavioural ones, applied to the build.
 
-### 10.4 What is not yet verified
+### 10.4 What remains to be verified
 
-Everything in §10.1–10.2 describes code that is built and tested offline. None
-of it has been observed working against a live service. A twenty-case red-team
-set exists for that — thirteen cases that must be blocked across prompt
-injection, unsafe preparation, disordered eating, medical advice,
-age-restricted goods and payment data, and seven ordinary grocery questions
-that must be *allowed*.
+The Guardrail `b1xezpqe04kx`, version `1`, has been created and observed on a
+basic attached Bedrock invocation in `ap-southeast-2`. That verifies the live
+resource, numbered attachment, and basic request shape; it does **not** verify
+policy quality or graph-level intervention behavior.
 
-The must-allow half is not padding. Over-blocking is the usual failure mode of
-an aggressive policy, and a filter that refuses legitimate grocery questions
-has produced a broken product rather than a safe one. A verification set
-containing only attacks cannot detect that.
+The twenty-case dataset contains thirteen must-block attacks and seven ordinary
+grocery questions that must be allowed. Pilot Task 3 added
+`evals/run_guardrail.py` and proved specialized `GuardrailBlocked` propagation
+through intent, plan, and prose nodes, plus 7/7 scripted must-allow structural
+evidence.
 
-One specific thing to check first: the request shape used to mark untrusted
-regions is unverified against the live API. If the guardrail reports zero
-prompt-attack evaluations on a known-malicious input, that is where to look —
-and it would mean the control has been inert the whole time while appearing
-configured.
+That is not live policy qualification. The current `--model` path does not
+truly pin the selected model, an `OUT_OF_SCOPE` outcome can be counted as a
+block, and a live must-block miss does not force a nonzero process exit. Until
+those controls and their tests land, no live 13/13 must-block plus 7/7
+must-allow claim is valid. The must-allow half remains essential because an
+over-blocking filter is a broken product, not a safe one.
+
+`GuardrailBlocked` is now a provider-neutral `ModelError` subtype defined at
+`src/models/base.py`; concrete providers raise it and every node preserves it
+to the single service mapping. This keeps provider details outside graph control
+flow.
 
 ---
 
 ## 11. Path to infrastructure as code (Req 12.4)
 
-The build is manual first by team decision. To keep the conversion mechanical:
-
-1. Tag every resource on creation with project, environment, and owner.
-2. Name consistently with an environment suffix, so generated resources can
-   coexist with manual ones during migration.
-3. Export each resource's configuration immediately after creation and commit
-   it. That export is the specification the definitions are written from.
-4. Adopt existing resources into the stack during migration rather than
-   recreating them, so no data is lost.
+The products and idempotency tables already exist outside CDK. Pilot Task 9
+adopts/imports them into a stateful TypeScript stack before any service-plane
+deployment; replacement is forbidden. Regenerated live configuration is local
+review evidence because it contains account-bearing ARNs, while sanitized CDK
+assertions and review outcomes are committed. New resources are CDK-first.
+Stateful adoption and service deployment are separate reviewed operations. See
+§16 and `DYNAMODB-SCHEMA.md` for the target stack split and import sequence.
 
 ---
 
@@ -636,12 +744,11 @@ costume of a dependency upgrade.
 
 ### 12.6 The two alarms, as configuration
 
-Both are now defined in `config/alarms.json` and applied by
-`scripts/apply_alarms.py`, following the guardrail pattern (§10.1): the file is
-the source of truth, not the console, so the alerting is reviewable in a pull
-request, diffable, and reproducible in another account. Nothing is deployed —
-there is still no account — but `--dry-run` validates offline and runs in CI
-and the pre-commit hook, so the definitions cannot rot while they wait.
+The alarm definitions are version-controlled in `config/alarms.json` and
+validated by `scripts/apply_alarms.py --dry-run`. They are not deployed because
+the service plane does not yet exist; that is a deployment gap, not absence of
+an AWS account. Offline validation runs in CI and the pre-commit hook so the
+definitions cannot rot while they wait.
 
 These are the two worth having on day one, and they are cheap because the
 signals already exist:
@@ -693,6 +800,168 @@ Everything else can wait for a dashboard. `TurnWithoutContent` (§12.3) is the
 next candidate, but it needs a baseline on the conversational intents first,
 and there is no traffic to take one from.
 
-Not deployed. When the account lands, the remaining manual step is subscribing
-someone to the topic and confirming it; the script says so, loudly, and exits
-non-zero until it is true.
+Not deployed. The AWS account and base resources exist; after the service
+plane is deployed, someone must subscribe to the topic and confirm it. The
+script says so, loudly, and exits non-zero until that is true.
+
+---
+
+## 13. Location, store scope, provenance and freshness (planned)
+
+The request schema already accepts location and every citation already carries
+store location and capture date, but the repository contract does not yet make
+location or freshness a selection constraint. Until Pilot Task 5 lands, the
+assistant must not claim that results are nearby or current merely because
+those fields are present.
+
+The target repository request carries an explicit store scope, optional
+location/radius, and an `as_of`/freshness policy. Price checks may query GSI1 by
+product and filter the bounded result set by eligible store locations. Meal
+candidate retrieval must not retain the current full-table scan at production
+scale; Pilot Task 6 selects either a category/location/freshness index or a
+materialized candidate view. Stale-only results route to a contract-valid
+honest outcome rather than being labelled current.
+
+Every citation is now constructed with the configured physical table,
+`store_key = <chain>#<location-slug>`, and normalized `product_key`. Pilot Task
+2 also checks citation-before-use and basic source shape. Final validation still
+needs immutable retrieved-record context to prove exact key and value equality;
+that is the release-blocking follow-up, not citation construction.
+
+## 14. Payable meal-plan arithmetic (planned)
+
+The user budget applies to the amount payable at checkout, not a fractional
+consumption estimate. The target design maintains two concepts:
+
+- **Consumption subtotal:** ingredient quantity consumed by meals, useful for
+  allocation and waste analysis.
+- **Payable total:** full pack price multiplied by the whole packs required
+  after aggregating repeated use of each cited product.
+
+The shopping list contains each cited product once per store, with its required
+pack count and payable line total. The plan budget check uses the payable total.
+Both figures are derived from citations in Python; neither is accepted from a
+model. The current arithmetic does not prove every reuse/multipack case and is
+not pilot-ready until Pilot Task 4 closes that gap.
+
+## 15. Guardrail intervention semantics
+
+A Guardrail intervention is a safety outcome, not an ordinary model failure.
+Pilot Task 3 proved offline that intent, plan, and prose nodes preserve
+`GuardrailBlocked` to the handler's single `GUARDRAIL_BLOCKED` mapping; ordinary
+model errors may still use heuristics, repair, or optional-prose degradation.
+Three node propagation tests and one handler mapping test cover this boundary.
+
+The provider-neutral subtype is defined at the `src/models/base.py`
+`ModelError` protocol boundary. Concrete providers raise it and nodes preserve
+it; graph code does not depend on provider exception types. The live Guardrail resource has only basic attached-invocation evidence.
+The harness is experimental for the reasons in §10.4, so qualifying live
+13/13 must-block plus 7/7 must-allow evidence remains open.
+
+## 16. Production configuration and CDK adoption (planned)
+
+Local development may select fixtures and the scripted model explicitly.
+Production startup requires DynamoDB, Bedrock, a numbered Guardrail version,
+strict CORS, stored idempotency, and named resources; missing dependencies fail
+closed.
+
+The TypeScript CDK application is split by lifecycle:
+
+1. **Stateful:** adopted products/idempotency tables; later meals, encrypted
+   versioned S3 artefacts, PITR, TTL, retention, and deletion protection.
+2. **Service:** Python 3.13 zip Lambda, published SnapStart alias, REST API,
+   throttling, usage plan, strict CORS, logs, alarms, budgets, SSM catalogue,
+   and least-privilege IAM.
+3. **Ingestion/review:** EventBridge, Step Functions, optional filtered
+   DynamoDB Streams -> SQS/DLQ, SNS notifications, and—only after ADR 0002
+   approval—the isolated reviewer Runtime.
+4. **Managed exposure/evaluation:** separate proposed stacks for AgentCore
+   Gateway/Identity/Policy and managed evaluation resources, so each can be
+   disabled or deleted without changing the shopper service.
+
+Existing tables are adopted before service deployment and never recreated.
+Synthesis is deterministic and covered by assertions. Adoption, deployment,
+managed exposure, and public access are separate reviews.
+
+## 17. Purpose-driven MCP, AgentCore, and companion services
+
+The service-adoption rule is uniform: named product purpose, bounded scope,
+acceptance evidence, security/cost owner, and tested rollback/removal. AWS
+learning is deliberate, but service breadth never overrides the deterministic
+shopper invariants.
+
+### 17.1 Planned local MCP first
+
+Pilot Task 8 exposes grounded comparison, grounded plan request, and provenance
+inspection as coarse read-only operations that call the complete application
+service. It exposes no raw DynamoDB, AWS SDK, filesystem, network, acquisition,
+write, citation, or generation primitive. Schema, cap, audit, and direct-call
+parity tests are prerequisites for managed exposure.
+
+### 17.2 Proposed AgentCore Gateway hybrid
+
+After local proof and ADR 0002 mentor approval, Gateway may provide managed
+authentication, authorization, policy, and mediation over the same coarse
+operations. AgentCore Identity and Policy, WAF, Cognito or an approved workload
+identity, least privilege, quotas, timeouts, privacy-safe audit, cost/latency
+measurement, and a disable/fallback drill are required. Gateway never invokes
+an internal node or bypasses the Lambda graph.
+
+### 17.3 Proposed isolated AgentCore Runtime reviewer
+
+Pilot Task 14 may deploy a separate Runtime over capped sanitised ingestion
+snapshots. Read-only allowlisted tools and row/call/token/time/cost/egress caps
+produce cited schema-checked findings in a versioned S3 review artefact.
+Deterministic reference validation and human approval follow. The Runtime gets
+no shopper PII, production write, publication, or shopper-path permission.
+DynamoDB Streams plus SQS/DLQ may decouple review triggers; SNS may carry
+non-sensitive operator/approval notices.
+
+### 17.4 Complementary managed evaluation and knowledge services
+
+Bedrock Model Evaluation and AgentCore Evaluations supplement local tests,
+golden sets, negative controls, and scorecards. Runs record versioned dataset,
+prompt, model/profile, evaluator, per-case, trace, latency, token, and cost
+provenance. Managed scores cannot override a failed local invariant or qualify
+another task.
+
+Cross-Region inference profiles require measured availability/latency purpose
+and residency/quality/cost evidence. Knowledge Bases are limited to cited
+recipe/catalogue knowledge and have no price authority. Automated Reasoning is
+advisory where supported. AgentCore Memory is later-only after Cognito,
+consent, TTL, export/deletion, revocation, and privacy review, and never stores
+or supplies authoritative prices. CloudWatch, X-Ray, and Budgets accompany each
+deployed stage and provide evidence for retaining or removing it.
+
+Moving the shopper meal-plan path to AgentCore Runtime is a separate contingency
+only: p99 above approximately 25 seconds after mitigations plus separate mentor
+approval. Gateway/reviewer approval does not trigger it.
+
+## 18. Production-pilot acceptance gates
+
+A release candidate requires:
+
+- 100% pass for grounding, literal-money, arithmetic, dietary fail-closed, and
+  Guardrail propagation controls, including negative tests. Exact immutable
+  retrieved-record/value proof and whole-response runtime money enforcement
+  remain explicit Task 2 follow-ups.
+- Repaired live Guardrail evaluation controls and qualifying 13/13 must-block
+  plus 7/7 must-allow evidence; the current scripted 7/7 is structural only.
+- A scorecard for every enabled model and at least 90% on every active route's
+  applicable golden set; managed evals are additional evidence only.
+- p95 under 5 seconds for price checks, p95 under 20 seconds for meal plans,
+  and p99 under the approximately 25-second escalation trigger.
+- At least 99% successful service responses excluding contract-valid refusals,
+  with unhandled 5xx below 1%.
+- No message, raw location, dietary value, credential, or model prompt in logs,
+  traces, snapshots, managed datasets, review artefacts, or notifications.
+- Exact source key, location, and capture date for every price, independently
+  compared with immutable retrieved context before publication.
+- Cost per successful task, budget alerts at 50/80/100%, and review of unit-cost
+  regressions above 20%.
+- For each staged managed service: product-purpose evidence, least privilege,
+  parity or quality evidence, retention/deletion controls, mentor approval where
+  required, and a successful disable/teardown/fallback drill.
+
+These are targets and proposals subject to evidence, not claims about current
+deployment.

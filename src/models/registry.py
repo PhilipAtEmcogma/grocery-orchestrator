@@ -103,10 +103,16 @@ class ModelRegistry:
             caps = entry["capabilities"]
             limits = entry["limits"]
             cost = entry["cost_per_1k"]
-            # Model ids resolve from the environment. Sydney often needs
-            # cross-region inference profile ids with an 'apac.' prefix, so
-            # hardcoding them here would be wrong for half of all deployments.
-            model_id = os.environ.get(entry["model_id_env"], "")
+            # Model ids resolve from the environment first, falling back to
+            # a default_model_id in the config. The env override exists because
+            # Sydney often needs cross-region inference profile ids with an
+            # 'apac.' or 'au.' prefix, and operators may need to switch without
+            # a deploy. The default means the system works out-of-the-box once
+            # the config lists valid ids for the account.
+            model_id = (
+                os.environ.get(entry["model_id_env"], "")
+                or entry.get("default_model_id", "")
+            )
 
             self._specs[entry["key"]] = ModelSpec(
                 key=entry["key"],

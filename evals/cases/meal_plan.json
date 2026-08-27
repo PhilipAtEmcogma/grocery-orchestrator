@@ -93,6 +93,27 @@
         "min_distinct_meals": 2
       },
       "note": "Budget far exceeds need. Should not pad the basket to spend it."
+    },
+    {
+      "id": "plan-010",
+      "message": "vegan meal plan for 2 people, 4 days, $40",
+      "hints": { "household_size": 2, "budget_nzd": 40, "days": 4, "dietary_exclusions": ["vegan"] },
+      "expect": {
+        "must_produce_plan": true,
+        "exclude_categories": ["vegan"],
+        "min_budget_used": 0.20
+      },
+      "note": "Regression: 'vegan' used to be extracted then silently ignored, so a vegan user got meat, dairy and eggs. The mapping in src/graph/dietary.py now excludes {meat, seafood, dairy, chilled}. The floor is deliberately lower than plan-004's dairy-free case because vegan leaves fewer candidates."
+    },
+    {
+      "id": "plan-011",
+      "message": "gluten-free dinners for 3, $50, this week",
+      "hints": { "household_size": 3, "budget_nzd": 50, "days": 7, "dietary_exclusions": ["gluten-free"] },
+      "expect": {
+        "must_produce_plan": false,
+        "expect_error_code": "UNSUPPORTED_EXCLUSION"
+      },
+      "note": "Gluten-free needs per-product allergen tagging the fixture does not carry. Honest refusal is safer than a best-effort plan."
     }
   ]
 }

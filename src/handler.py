@@ -48,7 +48,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from src.models.base import ModelClient, ModelError
+from src.models.base import GuardrailBlocked, ModelClient, ModelError
 from src.observability import (
     NULL_TELEMETRY,
     InstrumentedModelClient,
@@ -247,7 +247,6 @@ def handle_turn(
     accumulator. The wrappers are always applied rather than applied
     conditionally: one code path is worth more than one attribute lookup.
     """
-    from src.models.bedrock import GuardrailBlocked
     from src.runner import run_turn
 
     stats = stats if stats is not None else TurnStats()
@@ -291,9 +290,9 @@ def handle_turn(
         )
 
     except AssertionError as exc:
-        # assert_grounded failed: the response contained a price with no
-        # citation. Refuse to ship it. This is the last line of the grounding
-        # defence and it must fail closed.
+        # A final grounding or response invariant failed. Refuse to ship the
+        # response rather than exposing unverifiable content. Exact immutable
+        # record/value comparison remains a separate documented follow-up.
         logger.error("grounding_violation", extra=exception_fields(exc))
         return 200, _error_response(
             session_id=request.session_id,

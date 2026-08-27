@@ -54,7 +54,7 @@ from src.schemas.contract import ChatRequest
 # appear nowhere else in this repository. If any of them reaches stdout, it
 # got there from the request.
 PERSONAL_MESSAGE = (
-    "dinner plan for a whanau of five on $20 this week, "
+    "dinner plan for a whanau of five on $30 this week, "
     "quinoa and halloumi, absolutely no shellfish"
 )
 PERSONAL_LABEL = "Aro Valley"
@@ -313,7 +313,7 @@ def _personal_body(message: str, **extra) -> dict:
         message,
         hints={
             "household_size": 5,
-            "budget_nzd": 20,
+            "budget_nzd": 30,
             "days": 3,
             "dietary_exclusions": PERSONAL_EXCLUSIONS,
         },
@@ -458,7 +458,7 @@ def _turn_guardrail_blocked(monkeypatch) -> None:
     the process to log — and the reason the handler's guardrail branch logs a
     bare event name with no fields at all.
     """
-    from src.models.bedrock import GuardrailBlocked
+    from src.models.base import GuardrailBlocked
 
     def blocked(*_args, **_kwargs):
         raise GuardrailBlocked(f"blocked input: {PERSONAL_MESSAGE}")
@@ -1014,7 +1014,7 @@ def test_idempotent_replay_is_counted(captured):
 
 def test_guardrail_intervention_is_counted(captured, monkeypatch):
     from src.handler import handle_turn
-    from src.models.bedrock import GuardrailBlocked
+    from src.models.base import GuardrailBlocked
 
     def blocked(*_args, **_kwargs):
         raise GuardrailBlocked("Request blocked by Bedrock Guardrail")

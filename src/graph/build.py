@@ -6,22 +6,29 @@ Graph assembly.
   validate_input
       v
   classify_intent
-      |--- general_chat / out_of_scope ------------------> finalise
+      |--- general_chat / out_of_scope --------------------------> finalise
+      |--- meal_plan + unsupported exclusion --> emit_dietary_unsupported -> finalise
       v
   retrieve_prices            <-- the ONLY source of prices
-      |--- no citations -----> emit_no_data -------------> finalise
-      |--- price_check ------> generate_comparison ------> finalise
+      |--- no citations -----> emit_no_data ---------------------> finalise
+      |--- price_check ------> generate_comparison -> generate_prose -> finalise
       v (meal_plan)
   generate_plan  <----------------+
       v                           |
   validate_plan                   | repair (bounded)
       |--- errors ---> repair_plan+
-      |--- attempts exhausted ---> emit_budget_infeasible -> finalise
+      |--- attempts exhausted ---> emit_budget_infeasible -------> finalise
       v ok
-  finalise -> END
+  generate_prose -> finalise -> END
 
-The grounding guarantee is the shape itself: generate_* is unreachable except
-through retrieve_prices. There is no edge that skips it.
+Two safety guarantees are the shape itself:
+
+* generate_* is unreachable except through retrieve_prices (grounding,
+  Invariant 1). There is no edge that skips it.
+* A meal_plan turn with a stated dietary exclusion we cannot map refuses
+  BEFORE retrieval (Invariant 3). We do not do the work for a plan we
+  cannot safely verify — see src/graph/dietary.py for the mapping and the
+  fail-closed rule.
 """
 
 from __future__ import annotations
@@ -43,6 +50,7 @@ def build_graph(repo: PriceRepository, model: ModelClient):
     g.add_node("classify_intent", partial(nodes.classify_intent, model=model))
     g.add_node("retrieve_prices", partial(nodes.retrieve_prices, repo=repo))
     g.add_node("emit_no_data", nodes.emit_no_data)
+    g.add_node("emit_dietary_unsupported", nodes.emit_dietary_unsupported)
     g.add_node("generate_comparison", nodes.generate_comparison)
     g.add_node("generate_plan", partial(nodes.generate_plan, model=model))
     g.add_node("validate_plan", nodes.validate_plan)
@@ -57,8 +65,13 @@ def build_graph(repo: PriceRepository, model: ModelClient):
     g.add_conditional_edges(
         "classify_intent",
         nodes.route_after_intent,
-        {"retrieve": "retrieve_prices", "finalise": "finalise"},
+        {
+            "retrieve": "retrieve_prices",
+            "dietary_unsupported": "emit_dietary_unsupported",
+            "finalise": "finalise",
+        },
     )
+    g.add_edge("emit_dietary_unsupported", "finalise")
 
     g.add_conditional_edges(
         "retrieve_prices",

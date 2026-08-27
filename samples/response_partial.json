@@ -30,8 +30,8 @@
                 "on_special": true,
                 "valid_date": "2026-07-31",
                 "source": {
-                    "table": "Products",
-                    "pk": "paknsave#dairy",
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#mangere",
                     "sk": "butter-500g"
                 }
             }
@@ -50,8 +50,8 @@
                 "on_special": true,
                 "valid_date": "2026-07-31",
                 "source": {
-                    "table": "Products",
-                    "pk": "paknsave#dairy",
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
                     "sk": "butter-500g"
                 }
             }
@@ -70,8 +70,8 @@
                 "on_special": false,
                 "valid_date": "2026-07-31",
                 "source": {
-                    "table": "Products",
-                    "pk": "woolworths#dairy",
+                    "table": "grocery-products-dev",
+                    "pk": "woolworths#mt-wellington",
                     "sk": "butter-500g"
                 }
             }
@@ -90,8 +90,8 @@
                 "on_special": false,
                 "valid_date": "2026-07-31",
                 "source": {
-                    "table": "Products",
-                    "pk": "woolworths#dairy",
+                    "table": "grocery-products-dev",
+                    "pk": "woolworths#ponsonby",
                     "sk": "butter-500g"
                 }
             }
@@ -110,8 +110,8 @@
                 "on_special": false,
                 "valid_date": "2026-07-31",
                 "source": {
-                    "table": "Products",
-                    "pk": "new_world#dairy",
+                    "table": "grocery-products-dev",
+                    "pk": "new_world#devonport",
                     "sk": "butter-500g"
                 }
             }
@@ -125,7 +125,7 @@
         {
             "seq": 8,
             "type": "token",
-            "text": "The cheapest option is $2.97 at Pak'nSave Mangere."
+            "text": "The cheapest option is Pams Butter 500g at Pak'nSave Mangere."
         },
         {
             "seq": 9,
@@ -164,7 +164,7 @@
                         "savings_vs_dearest_nzd": null
                     }
                 ],
-                "reasoning": "Paknsave Mangere is cheapest at $2.97 for 500g."
+                "reasoning": "Paknsave Mangere is cheapest for Pams Butter 500g (on special)."
             }
         },
         {

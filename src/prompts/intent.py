@@ -70,8 +70,15 @@ class IntentResult(BaseModel):
     dietary_exclusions: list[str] = Field(
         default_factory=list,
         description=(
-            "Lowercase exclusion terms stated by the user, e.g. "
-            "['seafood'], ['vegetarian'], ['dairy-free']. Empty if none stated."
+            "Dietary exclusion terms stated by the user, returned as-is in "
+            "lowercase. Use the user's phrasing: 'no dairy' -> 'dairy-free', "
+            "'no fish' -> 'seafood', 'vegetarian' -> 'vegetarian', "
+            "'vegan' -> 'vegan', 'no meat' -> 'no meat', 'no eggs' -> 'no eggs'. "
+            "Known terms: seafood, fish, shellfish, vegetarian, no meat, vegan, "
+            "dairy-free, no dairy, no eggs, pescatarian. "
+            "If the user says something outside this list (e.g. 'gluten-free', "
+            "'nut-free'), still include it — downstream will handle refusal. "
+            "Empty if none stated."
         ),
     )
     preferred_stores: list[Store] = Field(default_factory=list)
@@ -104,6 +111,11 @@ your own judgement: something downstream decides how many can be answered, and \
 it can only tell the user what went unanswered if you reported it.
 - Budgets are New Zealand dollars. "$30", "30 dollars", "thirty bucks" all mean \
 30.
+- dietary_exclusions: use the canonical form from this list when the user's \
+phrasing matches one: seafood, fish, shellfish, vegetarian, no meat, vegan, \
+dairy-free, no dairy, no eggs, pescatarian. "no fish" maps to "seafood". \
+"I don't eat dairy" maps to "dairy-free". If the user says something not on \
+this list (e.g. "gluten-free"), include it exactly as stated.
 - "a flat of 3", "for 3 people", "me and my two flatmates" all mean \
 household_size 3.
 - Confidence reflects how clear the intent is, not how confident you are that \

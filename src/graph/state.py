@@ -75,6 +75,11 @@ class GroceryState(TurnInput, total=False):
     intent_confidence: float
     intent_degraded: bool
     constraints: Constraints
+    # Dietary terms the user stated that we cannot safely honour against the
+    # current catalogue — see src/graph/dietary.py. Populated at
+    # classify_intent time, so a meal_plan turn can refuse *before* doing
+    # retrieval and generation work. An empty list is the normal case.
+    unsupported_exclusions: list[str]
 
     # ---- retrieval (the ONLY source of prices)
     records: list[PriceRecord]

@@ -55,15 +55,15 @@ def test_unknown_task_raises_rather_than_guessing(registry):
 
 
 def test_pinning_an_unconfigured_model_raises(registry, monkeypatch):
-    monkeypatch.delenv("BEDROCK_MODEL_NOVA_LITE", raising=False)
+    monkeypatch.delenv("BEDROCK_MODEL_LLAMA", raising=False)
     fresh = ModelRegistry()
     with pytest.raises(UnroutableTask):
         fresh.route("classify_intent", policy=RoutingPolicy.PINNED,
-                    pinned_key="nova-lite")
+                    pinned_key="llama-instruct")
 
 
 def test_disabled_models_are_not_routed_to(registry):
-    """nova-lite ships disabled; it must not be selected until scored."""
+    """A disabled model must not be selected regardless of tier or preference."""
     for task in ("classify_intent", "generate_plan", "repair_plan"):
         assert registry.route(task).enabled
 

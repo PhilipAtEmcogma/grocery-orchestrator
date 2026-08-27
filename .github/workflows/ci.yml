@@ -185,7 +185,7 @@ jobs:
         run: python evals/run_intent.py --min-accuracy 0.75
 
       - name: Meal plan invariants
-        run: python evals/run_meal_plan.py --min-pass-rate 0.85
+        run: python evals/run_meal_plan.py --min-pass-rate 0.90
 
   package:
     name: Lambda deployment package
