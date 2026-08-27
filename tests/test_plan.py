@@ -13,7 +13,7 @@ from decimal import Decimal
 import pytest
 
 from src.graph.nodes.plan import assemble_plan
-from src.models.base import ModelTier
+from src.models.base import ModelError, ModelTier
 from src.models.scripted import ScriptedModelClient
 from src.prompts.meal_plan import (
     DELIM,
@@ -355,3 +355,98 @@ def test_repair_prompt_states_the_shortfall():
         previous_items=["mince"], cheaper_options="",
     )
     assert "12.34" in prompt
+
+
+# ------------------------------------------------- upstream vs budget failure
+#
+# These pin the distinction that a live eval run exposed: when Bedrock was
+# unreachable, `generate_plan` reported the ModelError as a validation error,
+# the repair loop re-invoked the same broken client twice, and the turn ended
+# on BUDGET_INFEASIBLE — telling the user to raise a budget that was never the
+# problem. An outage and an unaffordable basket are different facts, and only
+# one of them is worth retrying.
+
+
+class _UnreachableModel(ScriptedModelClient):
+    """Plans fail like Bedrock being down; everything else behaves normally."""
+
+    def __init__(self, *, message: str = "Bedrock call failed: timeout", **kw):
+        super().__init__(**kw)
+        self.message = message
+        self.plan_calls = 0
+
+    def structured(self, **kw):
+        if kw.get("task") in ("generate_plan", "repair_plan"):
+            self.plan_calls += 1
+            raise ModelError(self.message)
+        return super().structured(**kw)
+
+
+def test_unreachable_model_is_not_reported_as_a_budget_problem(repo):
+    model = _UnreachableModel()
+    resp = run_turn(
+        _plan_request("plan dinners", budget_nzd=30, household_size=2), repo, model
+    )
+    errors = [e for e in resp.events if e.type == "error"]
+    assert errors, "an upstream failure must still terminate with an error event"
+    assert errors[0].code != ErrorCode.BUDGET_INFEASIBLE
+
+
+def test_unreachable_model_message_does_not_blame_the_budget(repo):
+    """The old message told users to raise a budget that would not have helped."""
+    model = _UnreachableModel()
+    resp = run_turn(
+        _plan_request("plan dinners", budget_nzd=30, household_size=2), repo, model
+    )
+    text = " ".join(e.message for e in resp.events if e.type == "error").lower()
+    assert "budget" not in text or "budget and preferences are fine" in text
+    assert "$30" not in text
+
+
+def test_upstream_failure_is_retryable(repo):
+    """Unlike an infeasible budget, trying again is the correct advice."""
+    model = _UnreachableModel()
+    resp = run_turn(
+        _plan_request("plan dinners", budget_nzd=30, household_size=2), repo, model
+    )
+    assert next(e for e in resp.events if e.type == "error").retryable is True
+
+
+def test_upstream_failure_does_not_burn_the_repair_loop(repo):
+    """Re-prompting a client we know is failing wastes the latency budget."""
+    model = _UnreachableModel()
+    run_turn(_plan_request("plan dinners", budget_nzd=30, household_size=2), repo, model)
+    assert model.plan_calls == 1
+
+
+def test_timeout_and_misconfiguration_get_distinct_codes(repo):
+    timed_out = _UnreachableModel(message="Read timeout on endpoint URL")
+    misconfigured = _UnreachableModel(message="BEDROCK_GUARDRAIL_ID is not set")
+    req = _plan_request("plan dinners", budget_nzd=30, household_size=2)
+
+    a = next(e for e in run_turn(req, repo, timed_out).events if e.type == "error")
+    b = next(e for e in run_turn(req, repo, misconfigured).events if e.type == "error")
+
+    assert a.code == ErrorCode.UPSTREAM_TIMEOUT
+    assert b.code == ErrorCode.INTERNAL_ERROR
+
+
+def test_upstream_failure_leaks_no_internal_configuration(repo):
+    """'BEDROCK_GUARDRAIL_ID is not set' is operator detail, not user-facing."""
+    model = _UnreachableModel(message="BEDROCK_GUARDRAIL_ID is not set")
+    resp = run_turn(
+        _plan_request("plan dinners", budget_nzd=30, household_size=2), repo, model
+    )
+    text = " ".join(e.message for e in resp.events if e.type == "error")
+    assert "GUARDRAIL" not in text.upper()
+
+
+def test_a_real_infeasible_budget_still_says_so(repo):
+    """The fix must not turn genuine budget failures into upstream errors."""
+    model = ScriptedModelClient(plan_packs=Decimal("5"))
+    resp = run_turn(
+        _plan_request("plan dinners", budget_nzd=5, household_size=2), repo, model
+    )
+    assert next(e for e in resp.events if e.type == "error").code == (
+        ErrorCode.BUDGET_INFEASIBLE
+    )

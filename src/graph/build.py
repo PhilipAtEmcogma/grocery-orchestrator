@@ -16,10 +16,16 @@ Graph assembly.
   generate_plan  <----------------+
       v                           |
   validate_plan                   | repair (bounded)
+      |--- model unreachable ----> emit_upstream_failure --------> finalise
       |--- errors ---> repair_plan+
       |--- attempts exhausted ---> emit_budget_infeasible -------> finalise
       v ok
   generate_prose -> finalise -> END
+
+The upstream_failure branch exists so that "we could not reach the model" and
+"your budget does not stretch" cannot collapse into the same message. They are
+different facts about different things, only one is retryable, and conflating
+them told users to raise a budget that was never the problem.
 
 Two safety guarantees are the shape itself:
 
@@ -56,6 +62,7 @@ def build_graph(repo: PriceRepository, model: ModelClient):
     g.add_node("validate_plan", nodes.validate_plan)
     g.add_node("repair_plan", nodes.repair_plan)
     g.add_node("emit_budget_infeasible", nodes.emit_budget_infeasible)
+    g.add_node("emit_upstream_failure", nodes.emit_upstream_failure)
     g.add_node("generate_prose", partial(nodes.generate_prose, model=model))
     g.add_node("finalise", nodes.finalise)
 
@@ -96,10 +103,12 @@ def build_graph(repo: PriceRepository, model: ModelClient):
             "finalise": "generate_prose",
             "repair": "repair_plan",
             "infeasible": "emit_budget_infeasible",
+            "upstream_failed": "emit_upstream_failure",
         },
     )
     g.add_edge("repair_plan", "generate_plan")
     g.add_edge("emit_budget_infeasible", "finalise")
+    g.add_edge("emit_upstream_failure", "finalise")
     g.add_edge("generate_prose", "finalise")
     g.add_edge("finalise", END)
 

@@ -340,6 +340,45 @@ def emit_dietary_unsupported(state: GroceryState) -> dict:
     }
 
 
+def emit_upstream_failure(state: GroceryState) -> dict:
+    """
+    The model could not be reached. Distinct from every other terminal node
+    here, which describe things that are true about the user's *request*.
+
+    This one is about us. Saying "I couldn't build a plan within $30 using
+    current prices" when Bedrock timed out is not a softer way of reporting an
+    outage — it is a false statement about their budget, and the alternatives
+    it offers (raise the budget, cut days) cannot possibly work. So the
+    message says the service failed, and `retryable` is True because, unlike a
+    budget that genuinely does not stretch, trying again is the right move.
+
+    The underlying error goes to the log, not the user: it can name internal
+    configuration ("BEDROCK_GUARDRAIL_ID is not set"), which is operator
+    detail, not something a shopper can act on.
+    """
+    detail = state.get("upstream_error", "")
+    timed_out = "timeout" in detail.lower() or "timed out" in detail.lower()
+    return {
+        "terminated": True,
+        "plan": None,
+        "events": [
+            ErrorEvent(
+                seq=_next_seq(state),
+                code=(
+                    ErrorCode.UPSTREAM_TIMEOUT if timed_out
+                    else ErrorCode.INTERNAL_ERROR
+                ),
+                retryable=True,
+                message=(
+                    "I couldn't reach the service that builds meal plans just "
+                    "then, so I haven't got a plan for you. Your budget and "
+                    "preferences are fine — please try again in a moment."
+                ),
+            )
+        ],
+    }
+
+
 def emit_budget_infeasible(state: GroceryState) -> dict:
     """Repair budget exhausted. Honest failure with actionable alternatives."""
     budget = state.get("constraints", {}).get("budget_nzd", Decimal("0"))
@@ -413,6 +452,12 @@ def route_after_retrieval(state: GroceryState) -> str:
 
 def route_after_validation(state: GroceryState) -> str:
     """The repair loop's conditional edge."""
+    # Checked before validation_errors: an upstream failure produced no plan
+    # to repair, so looping would just re-invoke a client we already know is
+    # failing — burning two more calls and the latency budget with it — and
+    # land on the wrong terminal message.
+    if state.get("upstream_error"):
+        return "upstream_failed"
     if not state.get("validation_errors"):
         return "finalise"
     if state.get("repair_attempts", 0) >= MAX_REPAIR_ATTEMPTS:

@@ -74,12 +74,35 @@ class PlanMetrics:
         return self.ingredient_lines / self.distinct_products
 
 
+# Error codes that mean "we never got an answer from the model", as opposed to
+# "the model answered and the answer was wrong". Scoring the first kind as if
+# it were the second is how a total Bedrock outage once rendered as a tidy 27%
+# for two different models at once.
+UPSTREAM_CODES = {"INTERNAL_ERROR", "UPSTREAM_TIMEOUT", "RATE_LIMITED"}
+
+
 @dataclass
 class CaseResult:
     case_id: str
     passed: bool
     violations: list[str] = field(default_factory=list)
     metrics: PlanMetrics = field(default_factory=PlanMetrics)
+    error_code: str | None = None
+
+    @property
+    def is_upstream_failure(self) -> bool:
+        """The model never answered — infrastructure, not plan quality."""
+        if self.error_code in UPSTREAM_CODES:
+            return True
+        # Any exception that escaped the graph. Deliberately NOT a list of
+        # known network errors: the first version of this guard enumerated
+        # ReadTimeout/ConnectTimeout/EndpointConnectionError, and the very
+        # next run died on UnauthorizedSSOTokenError — an expired login — and
+        # was duly reported as three models scoring 0%. An exception is never
+        # a judgement about plan quality, whatever its type, so the rule is
+        # the shape of the failure rather than a roster of causes that will
+        # always be one entry behind reality.
+        return any(v.startswith("raised ") for v in self.violations)
 
 
 @dataclass
@@ -94,6 +117,15 @@ class Scorecard:
     @property
     def pass_rate(self) -> float:
         return self.passed / len(self.results) if self.results else 0.0
+
+    @property
+    def upstream_failures(self) -> int:
+        return sum(1 for r in self.results if r.is_upstream_failure)
+
+    @property
+    def answered(self) -> int:
+        """Cases where the model actually produced something to judge."""
+        return len(self.results) - self.upstream_failures
 
     def mean(self, attr: str) -> float:
         values = [
@@ -221,15 +253,53 @@ def run(model: ModelClient, label: str) -> Scorecard:
         violations = _check_invariants(case, plan, error_code, citations)
         metrics = _measure(plan, citations) if plan else PlanMetrics()
         results.append(
-            CaseResult(case["id"], not violations, violations, metrics)
+            CaseResult(case["id"], not violations, violations, metrics, error_code)
         )
 
     return Scorecard(label, results)
 
 
+class UpstreamOutage(RuntimeError):
+    """Raised instead of returning a score the run did not actually measure."""
+
+
+def assert_measured(card: Scorecard) -> None:
+    """
+    Refuse to report a pass rate when the model was never reached.
+
+    A pass rate is a claim about model quality. If every case failed upstream,
+    the run measured the network and the Bedrock configuration, and reporting
+    a percentage invites exactly the mistake it caused once already: reading
+    an outage as a model that scored badly, and worse, comparing two such
+    numbers to each other as if the comparison meant something.
+
+    Deliberately raises rather than exiting non-zero, so `--compare` cannot
+    quietly drop one model and rank the survivor.
+    """
+    if card.answered == 0:
+        first = card.results[0].violations
+        raise UpstreamOutage(
+            # ASCII only: this goes to stderr on a cp1252 Windows console,
+            # where an em dash renders as a replacement character and makes a
+            # diagnostic message look like corruption.
+            f"{card.model_label}: all {len(card.results)} cases failed upstream. "
+            f"The model was never reached, so there is no pass rate to report.\n"
+            f"  First failure: {first[0] if first else 'unknown'}\n"
+            f"  Check AWS credentials, the region, and BEDROCK_GUARDRAIL_ID."
+        )
+
+
 def report(card: Scorecard, spec: ModelSpec | None = None) -> None:
     print(f"\n=== {card.model_label} ===")
     print(f"  invariants  {card.pass_rate:.0%}  ({card.passed}/{len(card.results)})")
+    if card.upstream_failures:
+        # Partial outages still distort the score; the reader needs to know how
+        # much of it is infrastructure before comparing it to anything.
+        print(
+            f"  WARNING: {card.upstream_failures}/{len(card.results)} cases failed "
+            f"upstream (model never answered). The rate above understates quality "
+            f"by up to {card.upstream_failures / len(card.results):.0%}."
+        )
     print("\n  quality metrics (reported, not scored):")
     print(f"    budget used      {card.mean('budget_used'):.0%}")
     print(f"    distinct meals   {card.mean('distinct_meals'):.1f}")
@@ -262,12 +332,13 @@ def main() -> int:
 
     if not keys:
         card = run(ScriptedModelClient(), "scripted (no model call)")
+        assert_measured(card)
         report(card)
         print(
             "\nBaseline only. The scripted planner picks by position, not by "
             "suitability, so treat this as a floor to beat rather than a target."
         )
-        return _gate(card.pass_rate, args.min_pass_rate)
+        return _gate(card.pass_rate, args.min_pass_rate, card)
 
     from src.models.bedrock import BedrockModelClient
     from src.models.registry import ModelRegistry, RoutingPolicy
@@ -279,26 +350,61 @@ def main() -> int:
             "generate_plan", policy=RoutingPolicy.PINNED, pinned_key=key
         )
         card = run(BedrockModelClient(pinned_spec=spec), spec.display_name)
+        try:
+            assert_measured(card)
+        except UpstreamOutage as exc:
+            print(f"\nABORTED\n{exc}", file=sys.stderr)
+            return 2
         report(card, spec)
         cards.append((card, spec))
 
     if len(cards) > 1:
         print("\n=== comparison ===")
-        print(f"  {'model':<24} {'invariants':>11} {'budget':>8} {'variety':>8}")
+        print(
+            f"  {'model':<24} {'invariants':>11} {'budget':>8} {'variety':>8} "
+            f"{'upstream':>9}"
+        )
         for card, spec in sorted(cards, key=lambda c: -c[0].pass_rate):
             print(
                 f"  {spec.display_name:<24} {card.pass_rate:>10.0%} "
                 f"{card.mean('budget_used'):>7.0%} "
-                f"{card.mean('distinct_meals'):>8.1f}"
+                f"{card.mean('distinct_meals'):>8.1f} "
+                f"{card.upstream_failures:>9}"
             )
 
-    best = max(c.pass_rate for c, _ in cards)
-    return _gate(best, args.min_pass_rate)
+        # One run of 11 cases is a small, noisy sample: repeated runs of the
+        # same model on this suite have differed by ~18 points. A gap narrower
+        # than that is not evidence of anything, and saying so here is cheaper
+        # than watching someone re-route production on it.
+        rates = sorted((c.pass_rate for c, _ in cards), reverse=True)
+        spread = (rates[0] - rates[1]) * len(cards[0][0].results)
+        if spread < 2:
+            print(
+                "\n  These are within ~1 case of each other on an 11-case suite.\n"
+                "  That is inside this eval's run-to-run noise — do not rank them\n"
+                "  on a single run. Repeat each model before drawing a conclusion."
+            )
+
+    best_card = max((c for c, _ in cards), key=lambda c: c.pass_rate)
+    return _gate(best_card.pass_rate, args.min_pass_rate, best_card)
 
 
-def _gate(actual: float, floor: float | None) -> int:
+def _gate(actual: float, floor: float | None, card: Scorecard | None = None) -> int:
     if floor is None:
         return 0
+    # A gate is a claim that the code met a quality bar. A run with upstream
+    # failures cannot support that claim in either direction: it would fail a
+    # good model because Bedrock was slow, or — worse in CI, where the retry
+    # is automatic — pass on a rate assembled from fewer cases than the suite
+    # contains. Neither outcome is about the code under test.
+    if card is not None and card.upstream_failures:
+        print(
+            f"\nINCONCLUSIVE: {card.upstream_failures}/{len(card.results)} cases "
+            f"failed upstream, so {actual:.0%} is not a measurement of quality. "
+            f"Re-run; do not treat this as a pass or a failure.",
+            file=sys.stderr,
+        )
+        return 2
     if actual < floor:
         print(f"\nFAIL: pass rate {actual:.0%} is below the floor of {floor:.0%}")
         return 1
