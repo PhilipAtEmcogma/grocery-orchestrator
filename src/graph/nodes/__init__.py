@@ -4,9 +4,10 @@ Graph nodes.
 Every node is a function of state -> partial state, which makes them
 independently unit-testable without running the whole graph.
 
-STUBBED at this stage: classify_intent, generate_comparison, generate_plan
-return deterministic output with no model call. The TOPOLOGY is real.
-Filling each stub is a separate increment that does not touch the graph.
+Dietary exclusion mapping lives in `src/graph/dietary.py` — the single
+reviewable source of truth for what a user term means and whether it can be
+honoured. Nodes here consume `map_exclusions()` output; no node defines its
+own mapping.
 """
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from decimal import Decimal
 
+from src.graph.dietary import map_exclusions, supported_terms
 from src.graph.nodes.intent import classify_intent as classify_intent
 from src.graph.nodes.plan import generate_plan as generate_plan
 from src.graph.nodes.prose import generate_prose as generate_prose
@@ -57,19 +59,6 @@ def _join(items: list[str]) -> str:
     if len(clean) == 1:
         return clean[0]
     return f"{', '.join(clean[:-1])} and {clean[-1]}"
-
-
-def _exclusion_categories(exclusions: list[str]) -> list[str]:
-    out: set[str] = set()
-    for ex in exclusions:
-        low = ex.lower()
-        if low in {"seafood", "fish"}:
-            out.add("seafood")
-        if low in {"vegetarian", "no meat"}:
-            out |= {"meat", "seafood"}
-        if low in {"dairy-free", "no dairy"}:
-            out.add("dairy")
-    return sorted(out)
 
 
 # --------------------------------------------------------------- nodes
@@ -133,8 +122,8 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
             on_special=rec.on_special,
             valid_date=rec.valid_date,
             source=SourceRef(
-                table="Products",
-                pk=f"{rec.store.value}#{rec.category}",
+                table=repo.table_name,
+                pk=rec.store_key,
                 sk=rec.product_key,
             ),
         )
@@ -159,11 +148,23 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
                 continue  # the user named the same product twice
             item_groups[key] = [add(rec) for rec in found]
     else:
+        # `map_exclusions` returns (categories, unsupported). classify_intent
+        # already recorded the unsupported terms and the router refuses the
+        # turn before it reaches here, so retrieval trusts that the mapping
+        # exists — anything unmappable that got this far is a routing bug and
+        # must fail rather than silently produce an unsafe plan.
+        exclude_categories, unsupported = map_exclusions(
+            constraints.get("dietary_exclusions", [])
+        )
+        if unsupported:
+            raise RuntimeError(
+                f"routing bug: retrieve_prices reached with unsupported "
+                f"exclusions {unsupported!r}. classify_intent should have "
+                f"routed to emit_dietary_unsupported."
+            )
         for rec in repo.candidates_for_budget(
             categories=MEAL_CATEGORIES,
-            exclude_categories=_exclusion_categories(
-                constraints.get("dietary_exclusions", [])
-            ),
+            exclude_categories=exclude_categories,
             limit_per_category=3,
         ):
             add(rec)
@@ -271,8 +272,9 @@ def generate_comparison(state: GroceryState) -> dict:
                 ],
                 reasoning=(
                     f"{cheapest.store.value.replace('_', ' ').title()} "
-                    f"{cheapest.store_location} is cheapest at "
-                    f"${cheapest.price_nzd} for {cheapest.unit}."
+                    f"{cheapest.store_location} is cheapest for "
+                    f"{cheapest.product_name}"
+                    f"{' (on special)' if cheapest.on_special else ''}."
                 ),
             )
         )
@@ -303,6 +305,39 @@ def validate_plan(state: GroceryState) -> dict:
 def repair_plan(state: GroceryState) -> dict:
     """Increments the attempt counter; regeneration happens on the loop back."""
     return {"repair_attempts": state.get("repair_attempts", 0) + 1}
+
+
+def emit_dietary_unsupported(state: GroceryState) -> dict:
+    """
+    Honest refusal when a stated dietary exclusion cannot be safely honoured.
+
+    Reached only for meal_plan turns (a price_check for one product does not
+    apply a dietary filter). Dropping a restriction is the dangerous
+    direction of error, so a plan we cannot verify is refused rather than
+    guessed — same principle as `emit_budget_infeasible` (Req 4.5, Req 5.1).
+
+    The message names the terms we cannot honour AND the ones we can, so the
+    user has an actionable next step rather than being told what will not
+    work.
+    """
+    unsupported = state.get("unsupported_exclusions") or []
+    supported = supported_terms()
+    return {
+        "terminated": True,
+        "events": [
+            ErrorEvent(
+                seq=_next_seq(state),
+                code=ErrorCode.UNSUPPORTED_EXCLUSION,
+                retryable=False,
+                message=(
+                    f"I can't safely plan meals for {_join(unsupported)} "
+                    f"from my current data. I can plan around any of: "
+                    f"{', '.join(supported)}. Would you like me to try with "
+                    f"different constraints?"
+                ),
+            )
+        ],
+    }
 
 
 def emit_budget_infeasible(state: GroceryState) -> dict:
@@ -357,7 +392,15 @@ def finalise(state: GroceryState) -> dict:
 
 
 def route_after_intent(state: GroceryState) -> str:
-    if state.get("intent") in (Intent.PRICE_CHECK, Intent.MEAL_PLAN):
+    intent = state.get("intent")
+    # An unsupported dietary exclusion refuses the plan BEFORE retrieval:
+    # the alternative is filtering an incomplete map at retrieval time and
+    # producing a plan we cannot verify. Only meal_plan carries the risk —
+    # a price_check for one product does not apply a dietary filter, and
+    # blocking it would refuse a legitimate query for no safety benefit.
+    if intent == Intent.MEAL_PLAN and state.get("unsupported_exclusions"):
+        return "dietary_unsupported"
+    if intent in (Intent.PRICE_CHECK, Intent.MEAL_PLAN):
         return "retrieve"
     return "finalise"
 

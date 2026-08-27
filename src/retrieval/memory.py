@@ -74,9 +74,6 @@ NOISE = {
     "how", "much", "for", "buy", "get", "find", "want", "need", "please",
 }
 
-_SEAFOOD = {"seafood"}
-
-
 def normalise_term(text: str) -> str:
     """
     Lowercase, strip punctuation and noise words. Order preserved.
@@ -115,6 +112,7 @@ class InMemoryPriceRepository(PriceRepository):
                 valid_date=r["valid_date"],
                 lat=r["lat"],
                 lon=r["lon"],
+                store_key=r["store_key"],
             )
             for r in raw
         ]
@@ -133,6 +131,10 @@ class InMemoryPriceRepository(PriceRepository):
             recs.sort(key=lambda r: (r.price_nzd, r.store.value, r.store_location))
 
     # ------------------------------------------------------------ interface
+
+    @property
+    def table_name(self) -> str:
+        return "grocery-products-dev"
 
     def cheapest_for_product(
         self,
@@ -208,18 +210,3 @@ class InMemoryPriceRepository(PriceRepository):
     @property
     def all_categories(self) -> list[str]:
         return sorted({r.category for r in self._records})
-
-    @staticmethod
-    def categories_for_exclusions(exclusions: list[str]) -> list[str]:
-        """Map user dietary exclusions to fixture categories."""
-        # Same mapping logic as _exclusion_categories in the nodes package,
-        # exposed here as a repository-level helper.
-        out: set[str] = set()
-        for ex in exclusions:
-            if ex.lower() in {"seafood", "fish", "pescatarian-no"}:
-                out |= _SEAFOOD
-            if ex.lower() in {"vegetarian", "no meat"}:
-                out |= {"meat", "seafood"}
-            if ex.lower() in {"dairy-free", "no dairy"}:
-                out |= {"dairy"}
-        return sorted(out)

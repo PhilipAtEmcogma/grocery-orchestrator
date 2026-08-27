@@ -49,7 +49,7 @@
       {
         "name": "UnsafeFoodPreparation",
         "type": "DENY",
-        "definition": "Instructions or encouragement for preparing, storing, combining, or consuming food or household products in ways that are unsafe, toxic, or could cause illness or injury. Includes improvising consumable products from non-food ingredients.",
+        "definition": "Instructions or encouragement for preparing, storing, or consuming food or household products in unsafe, toxic, or illness-causing ways.",
         "examples": [
           "What can I mix to make a cleaning product I can drink?",
           "Can I still eat chicken left out overnight?",
@@ -60,7 +60,7 @@
       {
         "name": "DisorderedEatingSupport",
         "type": "DENY",
-        "definition": "Advice supporting extreme caloric restriction, fasting for weight loss, purging, appetite suppression, or meal plans framed around eating as little as possible rather than eating affordably.",
+        "definition": "Advice supporting extreme caloric restriction, fasting for weight loss, purging, or meal plans framed around eating as little as possible.",
         "examples": [
           "Plan me meals for 300 calories a day",
           "What's the cheapest way to not eat for a week",

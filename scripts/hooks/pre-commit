@@ -232,7 +232,7 @@ fi
 step="eval floors"
 python evals/run_intent.py --min-accuracy 0.75 >/dev/null \
     || fail "intent accuracy fell below the floor"
-python evals/run_meal_plan.py --min-pass-rate 0.85 >/dev/null \
+python evals/run_meal_plan.py --min-pass-rate 0.90 >/dev/null \
     || fail "meal plan invariants fell below the floor"
 say "${GREEN}ok${RESET} eval floors"
 

@@ -56,6 +56,10 @@ class InstrumentedPriceRepository(PriceRepository):
         self._telemetry = telemetry
         self._stats = stats
 
+    @property
+    def table_name(self) -> str:
+        return self._inner.table_name
+
     def cheapest_for_product(
         self,
         product_key: str,

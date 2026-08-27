@@ -8,6 +8,12 @@ A conversational assistant for budget-conscious New Zealand shoppers: compare
 grocery prices across Pak'nSave, Woolworths and New World, and generate meal
 plans that provably fit a budget.
 
+A second, subordinate objective is broad hands-on AWS learning, especially
+Bedrock and AgentCore. Every service needs a product purpose, bounded scope,
+acceptance evidence, security/cost controls, and rollback/removal criterion.
+No learning objective may weaken the shopper invariants or turn a proposed
+service into an implementation claim.
+
 ---
 
 ## Read these first
@@ -21,6 +27,9 @@ plans that provably fit a budget.
 - `ACQUISITION-RISK.md` — terms-of-service assessment for live price
   acquisition (Task 7.9). **Read before touching acquisition.** §8 is the
   condition list Task 11.4 is gated on.
+- `docs/CI-GATE-HEALTH.md` — latent gaps in the gate: where it can go red for
+  a reason unrelated to your change, and where a green local run does not mean
+  a green CI run. Read before widening the evals or bumping a checker pin.
 
 ---
 
@@ -34,11 +43,17 @@ Enforced three ways, any one of which would suffice:
   `retrieve_prices`. No edge skips it.
 - *Schema*: `PlanDraft` has no price field. The model returns citation refs
   and pack multipliers; every dollar figure is computed in Python.
-- *Assertion*: `assert_grounded()` fails any response citing a ref that was
-  never retrieved. Runs in CI with a negative test.
+- *Assertion today*: Pilot Task 2 added declaration-before-use and basic source
+  checks using configured table, `store_key`, and normalized `product_key`.
+  `assert_grounded()` still has no immutable retrieved-record context, so it
+  does not independently prove exact key/value equality or satisfy all Req
+  3.5–3.6 negative controls.
 
-For prose the same idea applies differently: the model writes `[[c1]]`
-placeholders, and `assert_no_literal_money()` rejects any money-shaped string.
+For prose, the model writes `[[c1]]` placeholders and rejects model-supplied
+money. Pilot Task 2 changed rendering to non-monetary product/store labels,
+removed literal money from comparison reasoning, and regenerated samples.
+`assert_no_literal_money_in_response()` covers token, reasoning, and notice
+fields, but `run_turn()` does not yet call the whole-response assertion.
 
 **2. Honest failure over plausible answers (Req 4).**
 - No confident match → return nothing, never the nearest match. Substring
@@ -53,50 +68,88 @@ placeholders, and `assert_no_literal_money()` rejects any money-shaped string.
   instruction to "keep all exclusions" without naming them is unfollowable.
   This was a real bug the eval harness caught.
 - Verified against retrieved products, not against what the model claims.
+- **Mapped from a reviewable table, or refused.** The mapping from user
+  terms ("vegan", "no dairy") to fixture categories lives in
+  `src/graph/dietary.py`. Anything unmapped — "gluten-free" against a
+  fixture with no gluten tag — routes to `emit_dietary_unsupported` and
+  returns `UNSUPPORTED_EXCLUSION`. Filtering an incomplete map would
+  produce a plan we cannot verify; silent drop is the exact shape of the
+  bug that used to serve dairy to a vegan user, so it fails closed.
 
 ---
 
 ## Architecture
 
-```
-API Gateway (REST) → Lambda → LangGraph state machine → Bedrock + DynamoDB
+```text
+API Gateway REST -> published Lambda alias (zip + SnapStart)
+                 -> deterministic LangGraph -> Bedrock Guardrail + DynamoDB
 ```
 
-A **workflow, not an agent**. The model makes bounded judgements at two fixed
-points (classify intent, select products); code owns every control-flow
-decision. This is deliberate — see design.md §8.
+The published alias, API controls, and CDK definitions are approved targets,
+not current deployment claims. The reference workflow itself is implemented.
+It remains a **workflow, not an autonomous agent**: models make bounded
+judgements at fixed nodes and code owns retrieval, routing, validation, repair,
+and final emission.
 
-```
-validate_input → classify_intent → retrieve_prices
-                                    ├─ no citations → emit_no_data → finalise
-                                    ├─ price_check → generate_comparison → generate_prose → finalise
-                                    └─ meal_plan → generate_plan → validate_plan
-                                                      ↑ repair (bounded, 2) ┘
-                                                      └─ ok → generate_prose → finalise
+```text
+validate_input -> classify_intent
+                    +-- meal_plan + unsupported exclusion -> emit_dietary_unsupported
+                    `-- retrieve_prices
+                         +-- no citations -> emit_no_data
+                         +-- price_check -> generate_comparison -> generate_prose
+                         `-- meal_plan -> generate_plan -> validate_plan
+                                          ^ bounded repair (2) |
+                                          `--------------------'
 ```
 
 **Three protocol boundaries** make everything testable without AWS:
-- `src/retrieval/base.py` — `PriceRepository`; fixtures now, DynamoDB later
-- `src/models/base.py` — `ModelClient`; scripted now, Bedrock later
-- `src/observability/base.py` — `Telemetry`; a no-op by default, Powertools
-  when the handler installs it
+- `src/retrieval/base.py` — `PriceRepository`; fixture and DynamoDB
+  implementations exist.
+- `src/models/base.py` — `ModelClient`; scripted and live-verified Bedrock
+  implementations exist.
+- `src/observability/base.py` — `Telemetry`; no-op locally and Powertools at
+  the handler boundary.
 
-The scripted client has knobs (`plan_packs`, `hallucinate_ref`,
-`prose_writes_money`, `force_error`) to drive failure paths that a live model
-cannot be made to produce on demand.
+### MCP, AgentCore, and bounded agents
 
-**Observability stops at the handler.** Powertools' Logger, Tracer and
-Metrics are wired in `src/handler.py`, and `src/observability/powertools.py`
-is the only module that imports the library. Tracing reaches inside the graph
-by *wrapping* the repository and model client, not by importing anything into
-a node. A test walks the import graph and fails if that escapes — see
-design.md §12.
+Pilot Task 8 delivers local read-only MCP first. Its coarse tools invoke the
+complete deterministic service and expose no raw DynamoDB, AWS SDK, filesystem,
+network, scraping, write, citation, or unguarded-generation primitive.
 
-**Model plane, not a Claude endpoint.** Nodes request a *task*;
-`src/models/registry.py` routes it using `config/models.json`. Capabilities are
-explicit — tool use, prompt caching, output limits — and code branches on them.
-A model without tool use gets JSON-in-prose with parsing. Unroutable raises
-rather than substituting silently.
+Proposed ADR 0002 would permit two separately approved stages if a mentor
+approves it. AgentCore Gateway with Identity and Policy could mediate the same coarse tools after local parity,
+identity/WAF/Cognito, cap, audit, cost, and rollback evidence; it is never a
+bypass around LangGraph. A separately deployed AgentCore Runtime reviewer may
+read only capped sanitised ingestion snapshots and emit cited schema-checked
+findings for deterministic validation and human approval. It receives no
+shopper PII and has no write, publication, or shopper-path authority.
+
+Bedrock Model Evaluation and AgentCore Evaluations may accompany local evals,
+not replace them. Companion services follow ADR 0002's purpose/evidence/removal
+matrix. ADR 0002 is proposed and mentor approval is required; ADR 0001 remains
+controlling until then. Moving the shopper meal path to AgentCore Runtime is a
+separate p99 contingency and approval.
+
+**Observability stops at the handler.** Powertools' Logger, Tracer and Metrics
+are wired in `src/handler.py`, and `src/observability/powertools.py` is the
+only other module that imports the library. Protocol wrappers carry tracing
+inside the graph without node imports.
+
+**Model plane, not a Claude endpoint.** Nodes request a task and the registry
+routes from `config/models.json`. Capability-aware routing exists, but the
+production route is not approved until every enabled model has a scorecard and
+every active task reaches the 90% threshold.
+
+### Current pilot blockers
+
+Do not describe the current reference implementation as pilot-ready. Task 2–3
+construction/rendering/propagation work is implemented, but exact immutable
+retrieved-record/value proof, `run_turn()` whole-response money enforcement,
+and a qualifying live Guardrail result remain open. Other blockers include
+clarification/payable totals, location/freshness, idempotency ownership,
+production fail-closed configuration, model qualification, CDK/API controls,
+published SnapStart alias, and deployed SLO/cost evidence. MCP, AgentCore, and
+managed-evaluation stages are planned or proposed, not built.
 
 ---
 
@@ -117,13 +170,18 @@ rather than substituting silently.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 218 tests, ~4s, no AWS
+python -m pytest -q                              # 308 passed, 31 skipped, no AWS
 ruff check .                                     # must be clean
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
     tests/test_sample_fixtures.py                # rewrite samples/ from the server
 python evals/run_intent.py                       # 76.7% scripted baseline
-python evals/run_meal_plan.py                    # 89% invariants baseline
+python evals/run_intent.py --model nova-lite     # 83.3% live (Nova Lite)
+python evals/run_intent.py --model nova-pro      # 100% live (Nova Pro)
+python evals/run_meal_plan.py                    # 91% invariants baseline
+python evals/run_guardrail.py                    # must_allow structural (scripted)
+# EXPERIMENTAL/non-qualifying: --model does not yet pin the requested model
+python evals/run_guardrail.py --model nova-lite
 python scripts/generate_fixtures.py              # regenerate seed data
 python scripts/dev_server.py                     # localhost:8000 for frontend
 python scripts/apply_guardrail.py --dry-run      # validate guardrail policy
@@ -261,6 +319,10 @@ before and after in the commit message.
   genuinely improves.
 - The meal-plan budget check is **two-sided**: `min_budget_used` catches
   under-feeding, which `within_budget` alone would pass.
+- Bedrock Model Evaluation and AgentCore Evaluations are complementary evidence,
+  never replacements for local tests, golden sets, negative controls, or the
+  90% task floor. Record model/profile, region, prompt, dataset, evaluator,
+  per-case, trace, latency, token, cost, and S3 object-version provenance.
 
 ---
 
@@ -300,25 +362,39 @@ before and after in the commit message.
 
 ## Current state
 
-**Done, tested, no AWS needed:** contract v1.0 · LangGraph orchestrator ·
-intent classification with extraction · meal planning with bounded repair ·
-prose generation · multi-item queries · multi-model registry · guardrail config
-and input tagging · idempotency · Powertools observability (Req 12.1–12.2,
-Task 6.7) · two eval suites · handler · local dev server · CI · Lambda
-deployment archive (Task 10.1) · Kiro specs, steering and hooks ·
-terms-of-service assessment for live acquisition (Task 7.9).
+**Implemented and tested offline:** contract v1 shape; deterministic LangGraph;
+bounded repair; fail-closed dietary mapping; Task 2 configured citation
+construction, citation-before-use/basic-source checks, money-free labels and
+regenerated samples; Task 3 Guardrail intervention propagation and experimental
+harness; multi-item queries; model registry; Guardrail policy/tagging;
+idempotency; Powertools observability; handler; local server; CI; zip build.
 
-**Blocked on AWS account (not yet provisioned):**
-- `src/retrieval/dynamo.py` — raises `NotImplementedError` by design
-- `src/store/dynamo_idempotency.py` — same; `acquire` must be a conditional
-  put on `attribute_not_exists`, not read-then-write
-- Live Bedrock verification, including whether the `guardContent` block shape
-  is right — flagged in `src/models/guardrail.py`
-- Deployment
+**Live verified in `ap-southeast-2`:** products and idempotency DynamoDB tables;
+152 seeded records; Dynamo price repository contract; five current stored
+idempotency outcomes; Nova Lite/Pro invocation; and Guardrail
+`b1xezpqe04kx` version `1` basic attachment. This does not prove exact retrieved
+record/value equality, stale ownership, or live red-team quality.
 
-**Not started:** SnapStart on a published alias (Task 10.2), recipe catalogue
-(Req 2.9), streaming transport (Req 7.9), per-retailer acquisition (Task 7.5
-— unblocked by 7.9, fixtures only).
+**External access block:** Claude access remains under Anthropic account
+verification. Claude routes are unqualified until task scorecards pass. Current
+evidence remains Nova Lite intent 83.3%, Nova Pro intent 100%, and Nova Pro
+meal-plan invariants 64%, below the 90% pilot floor. Local scripted baselines
+are 76.7% intent, 91% meal-plan, and 7/7 Guardrail must-allow structure.
+
+**Known pilot blockers:** Task 2 exact record/value and runtime money follow-up;
+Task 3 qualifying live Guardrail follow-up; clarification/payable totals;
+location/freshness; idempotency fencing/candidate scale; model qualification;
+CDK/service/API/SnapStart adoption; and deployed security, SLO, cost, recovery,
+and operations evidence.
+
+**Planned/proposed AWS learning:** local read-only MCP first. AgentCore Gateway
+with Identity/Policy and the isolated Runtime reviewer require proposed ADR 0002
+mentor approval. Bedrock Model Evaluation, AgentCore Evaluations, inference
+profiles, recipe/catalogue Knowledge Bases, advisory Automated Reasoning, S3
+artefacts, Streams/SQS/DLQ, SNS, WAF/Cognito, and CloudWatch/X-Ray/Budgets are
+companions gated by product purpose and evidence. None is claimed built.
+AgentCore Memory remains later-only after identity, consent, TTL, deletion, and
+privacy design. Shopper-path Runtime remains the separate p99 contingency.
 
 ---
 

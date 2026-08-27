@@ -32,7 +32,7 @@ def _citation(ref: str, price: str) -> Citation:
         ref=ref, store=Store.PAKNSAVE, store_location="Sylvia Park",
         product_name=f"Product {ref}", price_nzd=Decimal(price), unit="500g",
         on_special=False, valid_date=date(2026, 7, 31),
-        source=SourceRef(table="Products", pk="paknsave#dairy", sk=f"p-{ref}"),
+        source=SourceRef(table="grocery-products-dev", pk="paknsave#sylvia-park", sk=f"p-{ref}"),
     )
 
 
@@ -81,9 +81,11 @@ def test_legitimate_numbers_are_allowed(text):
 def test_placeholders_expand_to_grounded_figures():
     citations = {"c1": _citation("c1", "2.97")}
     out = render("Cheapest is [[c1]] today.", citations, {})
-    assert "$2.97" in out
+    # Prose is now money-free: placeholders expand to product/store labels
+    assert "Product c1" in out
     assert "Pak'nSave Sylvia Park" in out
     assert "[[c1]]" not in out
+    assert "$" not in out
 
 
 def test_unknown_placeholder_raises_rather_than_rendering_visibly():
@@ -93,8 +95,9 @@ def test_unknown_placeholder_raises_rather_than_rendering_visibly():
 
 
 def test_computed_figures_render():
-    out = render("Total [[total]] of [[budget]].", {}, {"total": "$23.16", "budget": "$30"})
-    assert out == "Total $23.16 of $30."
+    figures = {"total": "the plan total", "budget": "your budget"}
+    out = render("Total [[total]] of [[budget]].", {}, figures)
+    assert out == "Total the plan total of your budget."
 
 
 def test_store_names_use_retailer_capitalisation():
@@ -116,7 +119,10 @@ def test_price_check_emits_prose(repo):
                     ScriptedModelClient())
     tokens = [e for e in resp.events if e.type == "token"]
     assert tokens
-    assert "$" in "".join(t.text for t in tokens)
+    # Prose is now money-free — verify it contains store/product info instead
+    text = "".join(t.text for t in tokens)
+    assert "$" not in text
+    assert "Pak'nSave" in text or "Woolworths" in text or "New World" in text
 
 
 def test_meal_plan_emits_prose(repo):

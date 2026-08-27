@@ -133,10 +133,22 @@ def _check(case: dict, out: dict, repo: InMemoryPriceRepository) -> list[str]:
             failures.append(f"budget {actual} != {wanted}")
 
     if "exclusions" in expect:
-        actual = set(constraints.get("dietary_exclusions", []))
-        wanted = set(expect["exclusions"])
-        if not wanted.issubset(actual):
-            failures.append(f"exclusions {sorted(actual)} missing {sorted(wanted - actual)}")
+        # Assert what the exclusions RESOLVE to (categories), not the exact
+        # term string. "no meat" and "vegetarian" both map to {meat, seafood}
+        # — the system's behaviour is identical for both. Asserting the literal
+        # term tests the model's vocabulary alignment, not correctness.
+        from src.graph.dietary import map_exclusions
+
+        actual_terms = constraints.get("dietary_exclusions", [])
+        actual_cats, _ = map_exclusions(actual_terms)
+        wanted_cats, _ = map_exclusions(list(expect["exclusions"]))
+        actual_set = set(actual_cats)
+        wanted_set = set(wanted_cats)
+        if not wanted_set.issubset(actual_set):
+            failures.append(
+                f"exclusions {sorted(actual_terms)} missing "
+                f"{sorted(wanted_set - actual_set)}"
+            )
 
     if "multi_item" in expect:
         # Every item must resolve, not just the first. This is the check the

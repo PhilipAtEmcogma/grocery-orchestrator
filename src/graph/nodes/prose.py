@@ -1,7 +1,7 @@
 """
 Prose node.
 
-Generates the explanatory text, renders placeholders into real figures from
+Generates explanatory text, renders placeholders into non-monetary labels from
 retrieved records, and validates that no literal money survived.
 
 DEGRADATION: prose is a nicety. If generation or validation fails, the turn
@@ -15,7 +15,7 @@ from __future__ import annotations
 import re
 
 from src.graph.state import GroceryState
-from src.models.base import ModelClient, ModelError, ModelTier
+from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier
 from src.prompts.prose import (
     MEAL_PLAN_SYSTEM,
     PRICE_CHECK_SYSTEM,
@@ -53,9 +53,9 @@ def store_name(value: str) -> str:
 
 
 def _describe(citation: Citation) -> str:
-    """How a citation reads inside a sentence."""
+    """How a citation reads inside a sentence — non-monetary label only."""
     return (
-        f"${citation.price_nzd} at {store_name(citation.store.value)} "
+        f"{citation.product_name} at {store_name(citation.store.value)} "
         f"{citation.store_location}"
     )
 
@@ -71,7 +71,7 @@ def _placeholder_list(citations: list[Citation]) -> str:
 
 def render(text: str, citations: dict[str, Citation], figures: dict[str, str]) -> str:
     """
-    Expand placeholders into real figures.
+    Expand placeholders into verified non-monetary labels.
 
     An unknown placeholder raises rather than being left visible or silently
     dropped: a shopper reading "cheapest at [[c9]]" has been shown a defect,
@@ -102,8 +102,8 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
     figures: dict[str, str] = {}
 
     if intent == Intent.MEAL_PLAN and plan is not None:
-        figures["total"] = f"${plan.total_nzd}"
-        figures["budget"] = f"${plan.budget_nzd}"
+        figures["total"] = "the plan total"
+        figures["budget"] = "your budget"
 
         used = [i.citation_ref for m in plan.meals for i in m.ingredients]
         reused = sorted(
@@ -129,8 +129,7 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
         )
     elif intent == Intent.PRICE_CHECK:
         cheapest = citations[0]
-        dearest = citations[-1]
-        figures["savings"] = f"${(dearest.price_nzd - cheapest.price_nzd):.2f}"
+        figures["savings"] = "the price difference"
 
         groups = state.get("item_groups") or {}
         items = ", ".join(k.rsplit("-", 1)[0].replace("-", " ") for k in groups) or (
@@ -165,6 +164,8 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
 
         rendered = render(result.text, citation_index, figures)
 
+    except GuardrailBlocked:
+        raise
     except (ModelError, ValueError, KeyError) as exc:
         # Degrade silently to the structured payload. The comparison table or
         # plan is the substance; the sentence above it is not.

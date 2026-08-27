@@ -16,8 +16,9 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from src.graph.dietary import map_exclusions
 from src.graph.state import Constraints, GroceryState
-from src.models.base import ModelClient, ModelError, ModelTier
+from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier
 from src.prompts.intent import (
     SYSTEM_PROMPT,
     IntentResult,
@@ -126,6 +127,8 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
             # per-model latency metric are grouped by.
             task="classify_intent",
         )
+    except GuardrailBlocked:
+        raise
     except (ModelError, ValueError):
         extracted = _fallback(message, hints)
         degraded = True
@@ -136,6 +139,14 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
     # repository's own normaliser gets a chance rather than retrieval being
     # skipped entirely.
     constraints["query_items"] = extracted.query_items or [message]
+
+    # Terms we cannot map to a category — "gluten-free", "no nuts". Recorded
+    # in state now so a meal_plan turn refuses BEFORE doing retrieval and
+    # generation work for a request we cannot safely fulfil (Req 5.1,
+    # Invariant 3). See src/graph/dietary.py for the safety reasoning.
+    # `.get()` with a default rather than a subscript: Constraints is total=False,
+    # and pyright's flow analysis does not see the assignment three lines above.
+    _, unsupported = map_exclusions(constraints.get("dietary_exclusions", []))
 
     seq = _next_seq(state)
     events: list[object] = [
@@ -153,5 +164,6 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
         "intent_confidence": extracted.confidence,
         "constraints": constraints,
         "intent_degraded": degraded,
+        "unsupported_exclusions": unsupported,
         "events": events,
     }
