@@ -13,7 +13,7 @@ from decimal import Decimal
 import pytest
 
 from src.graph.nodes.plan import assemble_plan
-from src.models.base import ModelError, ModelTier
+from src.models.base import ModelError, ModelOutputInvalid, ModelTier
 from src.models.scripted import ScriptedModelClient
 from src.prompts.meal_plan import (
     DELIM,
@@ -450,3 +450,65 @@ def test_a_real_infeasible_budget_still_says_so(repo):
     assert next(e for e in resp.events if e.type == "error").code == (
         ErrorCode.BUDGET_INFEASIBLE
     )
+
+
+# ------------------------------------------- invalid output is not an outage
+#
+# The mirror of the bug above, introduced while fixing it. Routing every
+# ModelError to the upstream path swept schema failures in with outages, so a
+# model that could not honour its own PlanDraft schema — Claude Haiku 4.5
+# overran the 600-character `reasoning` cap on 8 of 11 live cases — was
+# reported as Bedrock being unreachable, and scored as infrastructure rather
+# than against the model. A model that answers badly is still answering.
+
+
+class _InvalidOutputModel(ScriptedModelClient):
+    """Plans come back malformed; the endpoint itself is perfectly healthy."""
+
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.plan_calls = 0
+
+    def structured(self, **kw):
+        if kw.get("task") in ("generate_plan", "repair_plan"):
+            self.plan_calls += 1
+            raise ModelOutputInvalid(
+                "PlanDraft failed validation: 1 validation error for PlanDraft\n"
+                "reasoning\n  String should have at most 600 characters"
+            )
+        return super().structured(**kw)
+
+
+def test_schema_failure_is_not_reported_as_an_outage(repo):
+    model = _InvalidOutputModel()
+    resp = run_turn(
+        _plan_request("plan dinners", budget_nzd=30, household_size=2), repo, model
+    )
+    code = next(e for e in resp.events if e.type == "error").code
+    assert code not in (ErrorCode.INTERNAL_ERROR, ErrorCode.UPSTREAM_TIMEOUT)
+
+
+def test_schema_failure_is_repaired_not_abandoned(repo):
+    """The model is reachable and answering, which is what repair is for."""
+    model = _InvalidOutputModel()
+    run_turn(_plan_request("plan dinners", budget_nzd=30, household_size=2), repo, model)
+    assert model.plan_calls > 1
+
+
+def test_model_output_invalid_is_a_model_error():
+    """Edge handlers catching ModelError must keep catching this."""
+    assert issubclass(ModelOutputInvalid, ModelError)
+
+
+def test_transport_failure_and_schema_failure_diverge(repo):
+    """The two must not collapse back into one another in either direction."""
+    req = _plan_request("plan dinners", budget_nzd=30, household_size=2)
+    unreachable = next(
+        e for e in run_turn(req, repo, _UnreachableModel()).events if e.type == "error"
+    )
+    malformed = next(
+        e
+        for e in run_turn(req, repo, _InvalidOutputModel()).events
+        if e.type == "error"
+    )
+    assert unreachable.code != malformed.code

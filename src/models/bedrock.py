@@ -26,7 +26,14 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 from pydantic import ValidationError
 
-from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier, T
+from src.models.base import (
+    GuardrailBlocked,
+    ModelClient,
+    ModelError,
+    ModelOutputInvalid,
+    ModelTier,
+    T,
+)
 from src.models.guardrail import guard_content_block
 from src.models.registry import ModelRegistry, ModelSpec, RoutingPolicy
 
@@ -140,9 +147,13 @@ class BedrockModelClient(ModelClient):
                 try:
                     return schema.model_validate(block["toolUse"]["input"])
                 except ValidationError as exc:
-                    raise ModelError(f"{tool_name} failed validation: {exc}") from exc
+                    raise ModelOutputInvalid(
+                        f"{tool_name} failed validation: {exc}"
+                    ) from exc
 
-        raise ModelError(f"model returned no {tool_name} tool call")
+        # The model replied, just not with the tool call it was forced to
+        # make. Still the model answering badly, not the call failing.
+        raise ModelOutputInvalid(f"model returned no {tool_name} tool call")
 
     def _structured_via_prose(
         self, *, system: str, user: str, schema: type[T],
@@ -166,7 +177,7 @@ class BedrockModelClient(ModelClient):
         try:
             return schema.model_validate_json(_extract_json(text))
         except (ValidationError, ValueError) as exc:
-            raise ModelError(
+            raise ModelOutputInvalid(
                 f"{schema.__name__} could not be parsed from prose reply: {exc}"
             ) from exc
 
