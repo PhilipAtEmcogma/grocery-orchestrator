@@ -153,7 +153,7 @@ Do not describe the current reference implementation as pilot-ready. Task 2–3
 construction/rendering/propagation work is implemented, but exact immutable
 retrieved-record/value proof, `run_turn()` whole-response money enforcement,
 and a qualifying live Guardrail result remain open. Other blockers include
-clarification/payable totals, location/freshness, idempotency ownership,
+clarification, location/freshness, idempotency ownership,
 production fail-closed configuration, model qualification, CDK/API controls,
 published SnapStart alias, and deployed SLO/cost evidence. MCP, AgentCore, and
 managed-evaluation stages are planned or proposed, not built.
@@ -347,7 +347,12 @@ before and after in the commit message.
   on an unchanged suite returned 73%, 64% and 55%. That ±18-point spread is
   wider than the gap between candidate models, so one run can neither clear
   the 90% floor nor rank two models. Repeat each model and record the band,
-  not a point estimate.
+  not a point estimate. (Those three figures came from a scorer since found
+  wrong in three ways — see the model evidence section. The lesson holds;
+  the numbers are kept only as an illustration of spread. Note also that
+  back-to-back reps throttle the account and the throttling reads as poor
+  quality: cool down between them, and discard any rep with upstream
+  failures rather than averaging it in.)
 - **Separate infrastructure failure from model quality before scoring.** A run
   where the model was never reached is not a low score, it is a void
   measurement — `run_meal_plan.py` now aborts on a total outage and returns
@@ -417,14 +422,58 @@ idempotency outcomes; Nova Lite/Pro invocation; and Guardrail
 `b1xezpqe04kx` version `1` basic attachment. This does not prove exact retrieved
 record/value equality, stale ownership, or live red-team quality.
 
-**External access block:** Claude access remains under Anthropic account
-verification. Claude routes are unqualified until task scorecards pass. Current
-evidence remains Nova Lite intent 83.3%, Nova Pro intent 100%, and Nova Pro
-meal-plan invariants 64%, below the 90% pilot floor. Local scripted baselines
-are 76.7% intent, 91% meal-plan, and 7/7 Guardrail must-allow structure.
+**Model evidence (meal-plan invariants, 2026-08-28).** Anthropic access is no
+longer blocked: the account's one-time Anthropic use case form was submitted
+and every configured model now answers. Three reps each, 90s apart, at the
+production 20s client timeout, reported from reps with zero upstream failures:
+
+| Model | clean band | reps | latency median / p90 | over 20s ceiling |
+|---|---|---|---|---|
+| Amazon Nova Pro | **100%** | 3/3 | 1.2s / 5.9s | 0 of 90 |
+| Claude Haiku 4.5 | **91%** | 2/3 | 2.5s / 7.8s | 0 of 83 |
+| Claude Sonnet 4.5 | not requalified | — | 11.8s / 19.9s | **9 of 98** |
+
+Both clear the 90% floor **on this task**. Sonnet is excluded on latency
+rather than quality: its p90 sat on the ceiling and roughly one plan call in
+eleven exceeded it, so it fails real turns in `ap-southeast-2` before plan
+quality is considered.
+
+This is not route approval. The rule is a scorecard per task for every enabled
+model, and **neither Claude model has an intent scorecard** —
+`evals/run_intent.py --model claude-haiku` has never been run. Clearing the
+meal-plan floor qualifies a model for `generate_plan`, and for nothing else.
+
+**READ THE GAIN AS THE HARNESS, NOT THE MODELS.** Nova Pro went from 64% to
+100% without changing. Everything that moved was ours, and every earlier
+figure was measured by a scorer that was wrong in at least one way:
+
+* the budget invariant compared CONSUMPTION, a number the shopper never pays,
+  so a plan whose basket cost $65.01 scored as fitting a $60 budget
+* the dietary exclusion check compared store locations against category names
+  and could not fail at all
+* `PlanDraft`'s reasoning cap rejected valid plans, so scores were measured
+  through a repair loop that should not have been running
+* candidates are now pre-filtered to the budget, and impossible requests are
+  refused before generation, so the model is handed an easier and better-posed
+  problem
+
+These numbers supersede every earlier one and are not comparable to them.
+They are evidence the system got correct, not that the models got better.
+
+**The suite has run out of headroom.** A cheap model scoring 100% across three
+reps cannot rank candidates. Treat this as "both are good enough", never as
+"Nova Pro beats Haiku" — the eval can no longer support the second claim.
+Ranking needs harder cases: budgets that are feasible but demanding, more
+exclusion combinations, larger households.
+
+Local scripted baselines are 76.7% intent and 100% meal-plan (was 91%; the
+same harness fixes lifted it), plus 7/7 Guardrail must-allow structure.
+Nova Lite intent 83.3%, Nova Pro intent 100% — both unchanged and measured by
+the intent harness, which has had none of the above scrutiny.
 
 **Known pilot blockers:** Task 2 exact record/value and runtime money follow-up;
-Task 3 qualifying live Guardrail follow-up; clarification/payable totals;
+Task 3 qualifying live Guardrail follow-up; clarification (payable totals
+are DONE — MealPlan carries payable_total_nzd and within_budget follows it);
 location/freshness; idempotency fencing/candidate scale; model qualification;
 CDK/service/API/SnapStart adoption; and deployed security, SLO, cost, recovery,
 and operations evidence.

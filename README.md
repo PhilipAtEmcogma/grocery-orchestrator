@@ -16,7 +16,7 @@ It is **not yet a deployable production pilot**. Pilot Tasks 2–3 corrected
 citation construction, citation ordering, money-free comparison/prose labels,
 samples, and offline Guardrail intervention propagation. Exact retrieved-record
 and value equality, whole-response runtime money enforcement, qualifying live
-Guardrail evaluation, location/freshness, payable totals, production fail-closed
+Guardrail evaluation, location/freshness, production fail-closed
 startup, CDK/API controls, and deployed SLOs remain open.
 
 The project also has an explicit learning objective: gain hands-on experience
@@ -310,7 +310,7 @@ Planned/proposed items are not current capabilities:
 
 - **Core follow-ups (Pilot Tasks 2–7):** immutable retrieved-record/key/value
   proof and runtime whole-response money enforcement; qualifying live Guardrail
-  harness semantics/result; clarification/payable totals; location/freshness;
+  harness semantics/result; clarification; location/freshness;
   idempotency ownership/candidate access; qualified SSM model routing.
 - **Local read-only MCP first** (Pilot Task 8), proving coarse operation
   schemas, caps, audit, direct-service parity, and disable behavior.
