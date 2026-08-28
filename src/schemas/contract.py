@@ -50,6 +50,12 @@ class ErrorCode(StrEnum):
     NO_DATA = "NO_DATA"
     STALE_DATA = "STALE_DATA"
     BUDGET_INFEASIBLE = "BUDGET_INFEASIBLE"
+    # We could not build a plan we were willing to stand behind — repair
+    # exhausted on drafts that failed validation, not on price. Separate from
+    # BUDGET_INFEASIBLE because the budget may be perfectly generous, and
+    # separate from INTERNAL_ERROR because the model plane is up and
+    # answering. Additive under the v1 rules: clients tolerate unknown codes.
+    PLAN_GENERATION_FAILED = "PLAN_GENERATION_FAILED"
     # An honest refusal when the user states a dietary exclusion we cannot
     # guarantee against our current data. Additive per Req 7.9 — dropping a
     # restriction is the dangerous direction of error, so the safe response

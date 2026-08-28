@@ -18,7 +18,8 @@ Graph assembly.
   validate_plan                   | repair (bounded)
       |--- model unreachable ----> emit_upstream_failure --------> finalise
       |--- errors ---> repair_plan+
-      |--- attempts exhausted ---> emit_budget_infeasible -------> finalise
+      |--- exhausted, over budget -> emit_budget_infeasible ------> finalise
+      |--- exhausted, invalid -----> emit_plan_generation_failed -> finalise
       v ok
   generate_prose -> finalise -> END
 
@@ -63,6 +64,7 @@ def build_graph(repo: PriceRepository, model: ModelClient):
     g.add_node("repair_plan", nodes.repair_plan)
     g.add_node("emit_budget_infeasible", nodes.emit_budget_infeasible)
     g.add_node("emit_upstream_failure", nodes.emit_upstream_failure)
+    g.add_node("emit_plan_generation_failed", nodes.emit_plan_generation_failed)
     g.add_node("generate_prose", partial(nodes.generate_prose, model=model))
     g.add_node("finalise", nodes.finalise)
 
@@ -104,11 +106,13 @@ def build_graph(repo: PriceRepository, model: ModelClient):
             "repair": "repair_plan",
             "infeasible": "emit_budget_infeasible",
             "upstream_failed": "emit_upstream_failure",
+            "generation_failed": "emit_plan_generation_failed",
         },
     )
     g.add_edge("repair_plan", "generate_plan")
     g.add_edge("emit_budget_infeasible", "finalise")
     g.add_edge("emit_upstream_failure", "finalise")
+    g.add_edge("emit_plan_generation_failed", "finalise")
     g.add_edge("generate_prose", "finalise")
     g.add_edge("finalise", END)
 

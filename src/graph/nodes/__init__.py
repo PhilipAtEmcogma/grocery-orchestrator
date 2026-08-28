@@ -286,7 +286,8 @@ def validate_plan(state: GroceryState) -> dict:
     """Arithmetic verification. Never trust model-computed totals."""
     plan = state.get("plan")
     if plan is None:
-        return {"validation_errors": ["no plan produced"]}
+        # No plan to price, so nothing here is evidence about the budget.
+        return {"validation_errors": ["no plan produced"], "over_budget": False}
 
     errors: list[str] = []
     try:
@@ -294,12 +295,13 @@ def validate_plan(state: GroceryState) -> dict:
     except AssertionError as exc:
         errors.append(str(exc))
 
-    if plan.total_nzd > plan.budget_nzd:
+    over_budget = plan.total_nzd > plan.budget_nzd
+    if over_budget:
         errors.append(
             f"total {plan.total_nzd} exceeds budget {plan.budget_nzd} "
             f"by {plan.total_nzd - plan.budget_nzd}"
         )
-    return {"validation_errors": errors}
+    return {"validation_errors": errors, "over_budget": over_budget}
 
 
 def repair_plan(state: GroceryState) -> dict:
@@ -373,6 +375,43 @@ def emit_upstream_failure(state: GroceryState) -> dict:
                     "I couldn't reach the service that builds meal plans just "
                     "then, so I haven't got a plan for you. Your budget and "
                     "preferences are fine — please try again in a moment."
+                ),
+            )
+        ],
+    }
+
+
+def emit_plan_generation_failed(state: GroceryState) -> dict:
+    """
+    Repair exhausted without ever producing a valid plan.
+
+    Reached when the failures were about the plan's validity rather than its
+    price: a draft that would not satisfy PlanDraft, a hallucinated citation
+    ref, arithmetic that did not reconcile. The budget may be perfectly
+    generous; we simply could not build something we were willing to stand
+    behind, and saying otherwise sends the user to change a setting that was
+    never the problem.
+
+    Carries its own code rather than INTERNAL_ERROR. Folding it in there
+    would tell an operator that the model plane had failed when it is up and
+    answering, which is the same conflation, one layer along. Adding an enum
+    member is additive under the v1 rules -- clients are required to tolerate
+    codes they do not recognise, exactly as they do unknown event types.
+    """
+    return {
+        "terminated": True,
+        "plan": None,
+        "events": [
+            ErrorEvent(
+                seq=_next_seq(state),
+                code=ErrorCode.PLAN_GENERATION_FAILED,
+                # Generation is non-deterministic, so unlike a budget that
+                # genuinely does not stretch, another attempt may well work.
+                retryable=True,
+                message=(
+                    "I couldn't put together a plan I trust this time. That's "
+                    "a problem on my end, not with your budget or your "
+                    "preferences — please try again."
                 ),
             )
         ],
@@ -461,5 +500,10 @@ def route_after_validation(state: GroceryState) -> str:
     if not state.get("validation_errors"):
         return "finalise"
     if state.get("repair_attempts", 0) >= MAX_REPAIR_ATTEMPTS:
-        return "infeasible"
+        # Exhausting repair says we failed; it does not say why. Only a plan
+        # that was actually costed and came out over budget licenses the
+        # budget message. Repair exhausted on malformed drafts is our failure
+        # to generate, and telling that user to raise their budget is the same
+        # false statement this graph already fixed on the upstream path.
+        return "infeasible" if state.get("over_budget") else "generation_failed"
     return "repair"
