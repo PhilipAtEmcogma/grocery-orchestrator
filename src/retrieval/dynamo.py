@@ -27,7 +27,7 @@ import boto3
 from boto3.dynamodb.conditions import Key
 from botocore.config import Config
 
-from src.retrieval.base import PriceRecord, PriceRepository
+from src.retrieval.base import PriceRecord, PriceRepository, cap_to_budget
 from src.retrieval.memory import SYNONYMS, normalise_term
 from src.schemas.contract import Store
 
@@ -164,6 +164,7 @@ class DynamoPriceRepository(PriceRepository):
         categories: list[str],
         exclude_categories: list[str],
         limit_per_category: int = 3,
+        budget_nzd: Decimal | None = None,
     ) -> list[PriceRecord]:
         """
         Cheapest distinct products per category, excluding dietary categories.
@@ -204,4 +205,7 @@ class DynamoPriceRepository(PriceRepository):
                 if len(seen_products) >= limit_per_category:
                     break
 
-        return out
+        # Same cap as the fixture implementation, from the same helper: the
+        # contract suite runs over both, so a divergence here would be a
+        # different affordability guarantee depending on where prices live.
+        return cap_to_budget(out, budget_nzd)

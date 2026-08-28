@@ -324,7 +324,16 @@ before and after in the commit message.
 - Cases marked `known_gap` are reported separately and **never counted**. Do
   not delete one to raise the score.
 - Do not edit an expectation to match observed model output without saying so
-  explicitly.
+  explicitly. **Done once, on 2026-08-28:** `plan-001` ($30 -> $40) and
+  `plan-005` ($25 -> $35) in `evals/cases/meal_plan.json`, each carrying a
+  `note` explaining why. Not because the planner underperformed — because the
+  targets were arithmetically impossible. `plan-001` asked for 3 people over 7
+  days on $30, which is $1.43 per person per day, while the cheapest eight
+  distinct packs in the catalogue cost $15.13 and half a pack cannot be
+  bought. Both cases passed only while `within_budget` was computed from
+  fractional consumption instead of money payable. Raising a target that the
+  arithmetic rules out is not the same as lowering a bar the code failed to
+  clear; the second is still forbidden.
 - Never lower a CI floor to make a build pass. Raise one when the baseline
   genuinely improves.
 - The meal-plan budget check is **two-sided**: `min_budget_used` catches

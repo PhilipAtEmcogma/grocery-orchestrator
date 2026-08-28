@@ -206,7 +206,29 @@ a price passes through a `Number`, the precision is gone. That includes
 `JSON.parse` reviver tricks and any ORM-ish layer that "helpfully" coerces types.
 
 Fields affected: `price_nzd`, `unit_price_nzd`, `savings_vs_dearest_nzd`,
-`line_cost_nzd`, `subtotal_nzd`, `basket_total_nzd`, `total_nzd`, `budget_nzd`.
+`line_cost_nzd`, `subtotal_nzd`, `basket_total_nzd`, `total_nzd`,
+`payable_total_nzd`, `budget_nzd`.
+
+### 2.2a Show `payable_total_nzd`, not `total_nzd`
+
+A meal plan carries two totals and they are not interchangeable:
+
+- **`payable_total_nzd`** — what the shopper hands over. Every pack counted
+  once at full shelf price; equals the sum of the store baskets. **This is the
+  one to render**, and the one `within_budget` is computed from.
+- **`total_nzd`** — what the meals *consume*, at fractional pack multipliers.
+  Smaller, because a recipe using 500g of a 1kg pack counts half a pack.
+
+The difference is large. A plan whose `total_nzd` is `$34.39` against a `$60`
+budget has a shopping list costing `$65.01`, because half a pack of butter
+cannot be bought. `total_nzd` is the right number for "how much food value
+this plan uses" and the wrong number for "can I afford it".
+
+If you already shipped against `total_nzd` as the headline figure, that is the
+field to change — it was understating the bill, and until recently
+`within_budget` agreed with it, so plans that busted the budget reported
+`within_budget: true`. `samples/response_meal_plan.json` showed exactly that
+and has been corrected.
 
 ### 2.3 Ignore unknown event types — don't throw
 

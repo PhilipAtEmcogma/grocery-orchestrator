@@ -11,6 +11,7 @@ Graph assembly.
       v
   retrieve_prices            <-- the ONLY source of prices
       |--- no citations -----> emit_no_data ---------------------> finalise
+      |--- budget impossible -> emit_budget_infeasible -----------> finalise
       |--- price_check ------> generate_comparison -> generate_prose -> finalise
       v (meal_plan)
   generate_plan  <----------------+
@@ -89,6 +90,7 @@ def build_graph(repo: PriceRepository, model: ModelClient):
             "no_data": "emit_no_data",
             "comparison": "generate_comparison",
             "plan": "generate_plan",
+            "infeasible": "emit_budget_infeasible",
         },
     )
 

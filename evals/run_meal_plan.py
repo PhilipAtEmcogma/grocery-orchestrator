@@ -139,7 +139,11 @@ class Scorecard:
 def _measure(plan: MealPlan, citations: dict) -> PlanMetrics:
     lines = [i for m in plan.meals for i in m.ingredients]
     return PlanMetrics(
-        budget_used=float(plan.total_nzd / plan.budget_nzd) if plan.budget_nzd else 0.0,
+        # Payable, so the reported utilisation matches the ceiling check.
+        budget_used=(
+            float(plan.payable_total_nzd / plan.budget_nzd)
+            if plan.budget_nzd else 0.0
+        ),
         distinct_meals=len({m.name for m in plan.meals}),
         distinct_products=len({i.citation_ref for i in lines}),
         ingredient_lines=len(lines),
@@ -169,16 +173,25 @@ def _check_invariants(
         v.append(f"no plan produced (error={error_code})")
         return v
 
-    # Hard budget ceiling.
-    if plan.total_nzd > plan.budget_nzd:
-        v.append(f"over budget: ${plan.total_nzd} > ${plan.budget_nzd}")
+    # Hard budget ceiling, measured in money the shopper actually pays.
+    #
+    # This checked total_nzd, the CONSUMPTION figure, which is smaller than
+    # the shopping list whenever a recipe uses part of a pack -- almost
+    # always. So a plan whose baskets came to $65.01 against a $60 budget
+    # scored as within budget on a $34.39 consumption total, and the budget
+    # invariant was measuring a number the user never pays.
+    if plan.payable_total_nzd > plan.budget_nzd:
+        v.append(
+            f"over budget: payable ${plan.payable_total_nzd} > "
+            f"${plan.budget_nzd} (consumption was ${plan.total_nzd})"
+        )
     if not plan.within_budget:
         v.append("within_budget flag is False on a delivered plan")
 
     # Budget floor. within_budget alone would let an $8 plan for $30 pass.
     floor = expect.get("min_budget_used")
     if floor is not None and plan.budget_nzd:
-        used = float(plan.total_nzd / plan.budget_nzd)
+        used = float(plan.payable_total_nzd / plan.budget_nzd)
         if used < floor:
             v.append(
                 f"under-spends: {used:.0%} of budget, floor is {floor:.0%} "

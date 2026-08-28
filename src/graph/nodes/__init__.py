@@ -48,6 +48,47 @@ MEAL_CATEGORIES = [
     "pantry", "produce", "meat", "dairy", "frozen", "bakery", "chilled", "seafood",
 ]
 
+# Floor for "could this budget feed these people at all", in grams of food per
+# person per day. THE ONLY POLICY NUMBER HERE -- everything else is derived
+# from the catalogue -- and it is deliberately well below a real diet. It is
+# not a nutrition target; it is the point past which the request is
+# physically impossible however cleverly you shop.
+#
+# 600g was calibrated against expectations that already existed rather than
+# picked to make anything pass. Against the catalogue's cheapest food by
+# weight ($1.59/kg), it refuses both requests the project already said must be
+# refused -- eval case plan-006 ("feed 5 people for 7 days on $15") and the
+# $5-for-two-people-three-days case in tests/test_plan.py -- and comfortably
+# admits all seven that must produce a plan. 400g admitted the $5 case; 700g
+# would also work, so the choice is not balanced on a knife edge.
+#
+# Revisit it when the catalogue changes: it is a statement about these prices.
+MIN_GRAMS_PER_PERSON_DAY = 600
+
+
+def minimum_spend(records: list, household: int, days: int) -> Decimal | None:
+    """
+    The least this request could cost, buying nothing but the cheapest food by
+    weight in the catalogue.
+
+    A lower bound on possibility, not a suggestion: no plan can beat it,
+    because it assumes the shopper buys the single cheapest thing per gram and
+    nothing else. Under it, "I can't do this for $15" is a fact rather than an
+    opinion about groceries.
+
+    Needed because capping candidates to the budget makes every plan
+    affordable BY CONSTRUCTION -- so affordability stopped being evidence that
+    the request was reasonable, and "feed 5 people for 7 days on $15" started
+    producing a tidy plan instead of the refusal it deserves.
+    """
+    per_gram = [
+        rec.price_nzd / rec.pack_grams for rec in records if getattr(rec, "pack_grams", 0)
+    ]
+    if not per_gram:
+        return None
+    grams = household * days * MIN_GRAMS_PER_PERSON_DAY
+    return min(per_gram) * grams
+
 
 def _next_seq(state: GroceryState) -> int:
     return len(state.get("events", []))
@@ -97,6 +138,9 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
     """
     constraints = state.get("constraints", {})
     intent = state.get("intent")
+    household_size = constraints.get("household_size", 1)
+    days_covered = constraints.get("days", 1)
+    infeasible_upfront = False
 
     records: list = []
     item_groups: dict[str, list[str]] = {}
@@ -162,11 +206,31 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
                 f"exclusions {unsupported!r}. classify_intent should have "
                 f"routed to emit_dietary_unsupported."
             )
-        for rec in repo.candidates_for_budget(
+        # The budget goes to retrieval, not to the model. The model never
+        # sees a price, so it cannot keep itself inside a budget; what it CAN
+        # be given is a candidate set where every possible selection is
+        # affordable. Without this the plan node could only discover the
+        # overspend afterwards, and its one repair lever -- smaller portions --
+        # does not reduce what a pack costs.
+        budget = constraints.get("budget_nzd")
+        candidates = repo.candidates_for_budget(
             categories=MEAL_CATEGORIES,
             exclude_categories=exclude_categories,
             limit_per_category=3,
-        ):
+            budget_nzd=budget,
+        )
+
+        # Refuse before generating when the budget cannot cover the request at
+        # any price. Checked here rather than after costing a draft because
+        # the candidate set is now capped to the budget, so a draft built from
+        # it always "fits" -- affordability alone can no longer tell us the
+        # request was possible.
+        if budget is not None:
+            floor = minimum_spend(candidates, household_size, days_covered)
+            if floor is not None and budget < floor:
+                infeasible_upfront = True
+
+        for rec in candidates:
             add(rec)
 
     # Honest gaps for items we could not answer, alongside the ones we could.
@@ -206,6 +270,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         "item_groups": item_groups,
         "unresolved_items": unresolved,
         "skipped_items": skipped,
+        "budget_impossible": infeasible_upfront,
         "events": events,
     }
 
@@ -295,11 +360,15 @@ def validate_plan(state: GroceryState) -> dict:
     except AssertionError as exc:
         errors.append(str(exc))
 
-    over_budget = plan.total_nzd > plan.budget_nzd
+    # Against PAYABLE, not consumption. Checking total_nzd here meant the
+    # repair loop never fired for a plan whose shopping list busted the budget
+    # while its fractional line costs did not -- the common case, since most
+    # recipes use part of a pack.
+    over_budget = plan.payable_total_nzd > plan.budget_nzd
     if over_budget:
         errors.append(
-            f"total {plan.total_nzd} exceeds budget {plan.budget_nzd} "
-            f"by {plan.total_nzd - plan.budget_nzd}"
+            f"payable {plan.payable_total_nzd} exceeds budget {plan.budget_nzd} "
+            f"by {plan.payable_total_nzd - plan.budget_nzd}"
         )
     return {"validation_errors": errors, "over_budget": over_budget}
 
@@ -486,6 +555,10 @@ def route_after_intent(state: GroceryState) -> str:
 def route_after_retrieval(state: GroceryState) -> str:
     if not state.get("citations"):
         return "no_data"
+    # Checked before "plan": there is no point spending a model call on a
+    # request the catalogue's own cheapest prices say is impossible.
+    if state.get("budget_impossible"):
+        return "infeasible"
     return "plan" if state.get("intent") == Intent.MEAL_PLAN else "comparison"
 
 
