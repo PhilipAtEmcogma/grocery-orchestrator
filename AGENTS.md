@@ -31,10 +31,12 @@ service into an implementation claim.
   planning path that has NOT had domain review. Self-contained, needs no
   code reading, and says what would change the answer. Read it if you know
   anything about food budgeting.
-- `docs/THROUGHPUT-AND-SCALING.md` — the measured request-per-minute ceiling
-  (~8 meal-plan turns/min), why it was accepted for workshop scale, and the two
-  options for production with their costs. Read before assuming a Bedrock quota
-  increase is available: Nova's request limits are not adjustable.
+- `docs/THROUGHPUT-AND-SCALING.md` — the request-per-minute ceiling (10
+  meal-plan turns/min, 5 with repairs), why it was accepted for workshop
+  scale, and the two options for production with their costs. Never assume a
+  Bedrock quota increase is available: Nova's request limits are not
+  adjustable and Claude's are, which is the opposite of what most people
+  guess. `scripts/check_quotas.py` answers it in one command.
 - `docs/CI-GATE-HEALTH.md` — latent gaps in the gate: where it can go red for
   a reason unrelated to your change, and where a green local run does not mean
   a green CI run. Read before widening the evals or bumping a checker pin.
@@ -545,11 +547,17 @@ CDK/service/API/SnapStart adoption; and deployed security, SLO, cost, recovery,
 and operations evidence.
 
 **Not a blocker, but on the record before production:** the deployment is
-capped at ~8 meal-plan turns per minute by Bedrock request quotas, and the
-binding one (Nova Lite, 20/min) cannot be raised by request. Accepted for
-workshop scale. `docs/THROUGHPUT-AND-SCALING.md` holds the measurement and
-the two options for lifting it, with their costs — read it before promising
-anyone a throughput figure.
+capped at 10 meal-plan turns per minute, falling to 5 when the repair loop
+fires, and the binding quota (Nova Lite, 20/min) cannot be raised by
+request. Accepted for workshop scale.
+
+Run `python scripts/check_quotas.py` rather than quoting a figure from any
+document, including this one. It derives the ceiling from the live account
+and the current routing, names the model that BINDS it, and says whether
+that one is adjustable — which is the only useful form of the question, as
+a raisable limit on a model that is not the constraint is not a way out.
+`docs/THROUGHPUT-AND-SCALING.md` holds the two options for lifting it and
+what they cost.
 
 **Planned/proposed AWS learning:** local read-only MCP first. AgentCore Gateway
 with Identity/Policy and the isolated Runtime reviewer require proposed ADR 0002

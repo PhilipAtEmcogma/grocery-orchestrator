@@ -39,9 +39,23 @@ what the `apac.*` and `au.*` model ids use):
 | Claude Haiku 4.5 | 10 | **yes** | 5,000,000 | yes |
 | Claude Sonnet 4.5 | 10 | **yes** | 5,000,000 | yes |
 
-**Nova Lite binds first, at roughly 8 meal-plan turns per minute** — about 480
-an hour, service-wide across all users. Nova Pro is not the constraint: one
-call per turn against 25/min.
+**Nova Lite binds first.** Derived by `scripts/check_quotas.py` against the
+live account rather than by hand:
+
+| Turn | Turns/min | Bound by |
+|---|---|---|
+| meal plan, no repair | **10.0** | Amazon Nova Lite |
+| meal plan, 2 repairs | **5.0** | Amazon Nova Lite |
+| price check | 10.0 | Amazon Nova Lite |
+
+So 5-10 meal-plan turns per minute service-wide, depending on how often repair
+fires — roughly 300-600 an hour. Nova Pro is not the constraint at one call
+per turn against 25/min.
+
+An earlier draft of this document said "roughly 8/min", derived by hand. It
+was a middle estimate of a range, and stating one number hid the fact that a
+turn needing repair costs twice as much headroom as one that does not. Run the
+script rather than quoting a figure from here.
 
 Token limits are nowhere near binding. A plan turn uses on the order of 1,300
 input and 120 output tokens; the request count runs out first by two orders of

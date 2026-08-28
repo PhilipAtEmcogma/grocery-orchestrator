@@ -202,15 +202,22 @@ not.
 
 ## 6a. Throughput ceiling, measured
 
-The account's Bedrock request-per-minute quotas cap this deployment at roughly
-**8 meal-plan turns per minute**, service-wide across all users — about 480 an
-hour. The binding limit is Amazon Nova Lite at 20 cross-region requests per
-minute, against the 2-3 Nova Lite calls each meal-plan turn makes.
+The account's Bedrock request-per-minute quotas cap this deployment at **10
+meal-plan turns per minute, falling to 5 when the repair loop fires** —
+service-wide across all users, so roughly 300-600 an hour. The binding limit is
+Amazon Nova Lite at 20 cross-region requests per minute, against the 2 Nova
+Lite calls a clean meal-plan turn makes and the 4 a fully repaired one makes.
+
+Do not quote those figures from here. `python scripts/check_quotas.py` derives
+them from the live account and the current routing; this paragraph is a summary
+that goes stale the moment either changes.
 
 **Nova's request-per-minute quotas are NOT adjustable; Claude's are.** So the
 reflex answer to a throughput problem — ask for an increase — is unavailable
-for the models this deployment actually routes to. Check `Adjustable` before
-planning around one.
+for the models this deployment actually routes to. `scripts/check_quotas.py`
+ends by saying whether the BINDING quota can be raised, which is the only form
+of that question worth asking: a raisable limit on a model that is not the
+constraint is not a way out.
 
 Accepted deliberately: the target is a workshop and a demo, where 8/min is
 ample, and a throttled call already fails honestly as a retryable
