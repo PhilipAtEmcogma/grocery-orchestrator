@@ -1,11 +1,19 @@
 # CI gate health — standing recommendations
 
 Observations from merging PRs #17 and #19 (2026-08-27). Each entry records a
-gap that is currently *latent*: the gate is green today, and every one of these
-would let it go red for a reason unrelated to the change that trips it.
+gap that was *latent*: the gate was green, and every one of these would let it
+go red for a reason unrelated to the change that trips it.
 
 Nothing here blocks a merge. They are ordered by how much warning you get
 before they bite.
+
+**Status as of 2026-08-29.** §2, §5 and §6 are resolved and kept for their
+reasoning rather than deleted. §1, §3 and §4 remain open.
+
+Two of them stopped being hypothetical in the meantime, in the same afternoon:
+adopting `ruff format` moved line numbers across the tree, which invalidated
+the secrets baseline (§3) and then, on rescan, produced the Windows backslash
+paths §2 was written about. A latent gap is one that has not bitten *yet*.
 
 ---
 
@@ -46,7 +54,7 @@ suite at 100% for BOTH candidate models can no longer rank them, so the same
 "add harder cases" work serves both. See the eval discipline section in
 `AGENTS.md`.
 
-## 2. `.secrets.baseline` canonical form is enforced only locally
+## 2. `.secrets.baseline` canonical form is enforced only locally — RESOLVED 2026-08-29
 
 `scripts/normalise_secrets_baseline.py` fixes the Windows/Linux separator
 churn, and `scripts/hooks/pre-commit` runs it. CI does not.
@@ -75,8 +83,20 @@ the existing scan —
       || { echo "::error::.secrets.baseline is not canonical. Run: python scripts/normalise_secrets_baseline.py"; exit 1; }
 ```
 
-The script already exits 0 when the file is untouched and 1 when it rewrote
-it, so the check is nearly free.
+**Resolved: added**, as a `Baseline is canonical` step in the Security
+scanning job, ordered BEFORE the scan it explains — a non-canonical baseline
+makes the scan report "a new secret was detected" for every recorded false
+positive, which sends the reader hunting a secret that is not there.
+
+Implemented as an explicit `if` rather than the `git diff --exit-code` form
+sketched above: under `bash -e` the script's own non-zero exit ends the step
+before any diff could report why, so the sketch would have failed correctly
+with the wrong message.
+
+It earned its place before it was even merged. Adopting `ruff format` moved
+line numbers across the tree, the baseline needed a rescan (§3), and rescanning
+on Windows wrote seven backslash paths — the exact failure this section
+describes, twice in one afternoon.
 
 ## 3. The baseline records line numbers, so unrelated edits move it
 
@@ -148,7 +168,7 @@ grew from 39 of 75 files to 59 of 104 while the question sat open, which is the
 argument for deciding these promptly rather than the argument for this
 particular answer.
 
-## 6. `actions/upload-artifact@v5` still targets Node 20
+## 6. `actions/upload-artifact@v5` still targets Node 20 — RESOLVED 2026-08-29
 
 Every CI run carries the annotation:
 
@@ -159,5 +179,8 @@ Harmless now — the runner forces Node 24 — but it is the only warning
 annotation on an otherwise clean run, and a warning that is always present is
 one nobody reads. Every other action in `ci.yml` is on `@v7`.
 
-Recommended: bump it when a `@v6`+ release is available, or pin and note it, so
-a genuinely new annotation is visible against a quiet baseline.
+**Resolved: bumped to `@v7`.** `v7.0.1` declares `using: node24` where `v5.0.0`
+declared `using: node20`, so the annotation is gone rather than suppressed —
+verified by reading each tag's `action.yml` rather than by assuming the version
+bump implied it. Every action in `ci.yml` is now on `@v7`, and a new annotation
+would show against a quiet baseline.
