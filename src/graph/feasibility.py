@@ -27,6 +27,16 @@ The threshold has two parts and only one of them is an opinion:
 Keeping them apart matters: it means "this budget is impossible" is mostly
 derived from data, and the part that is not is written down where it can be
 argued with.
+
+OPEN REVIEW
+-----------
+The grams figure has NOT been reviewed by anyone with domain knowledge of
+food budgeting. It was calibrated against expectations the project already
+held and bounded by tests, which makes it defensible, not justified.
+`docs/OPEN-REVIEW-min-grams-per-person-day.md` states the question for a
+reviewer who will not read this file. If you are changing the value, read
+that first — the tests will tell you which existing expectation your number
+contradicts, and that disagreement is usually the real decision.
 """
 
 from __future__ import annotations

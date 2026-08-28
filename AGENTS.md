@@ -27,6 +27,10 @@ service into an implementation claim.
 - `ACQUISITION-RISK.md` — terms-of-service assessment for live price
   acquisition (Task 7.9). **Read before touching acquisition.** §8 is the
   condition list Task 11.4 is gated on.
+- `docs/OPEN-REVIEW-min-grams-per-person-day.md` — the one judgement in the
+  planning path that has NOT had domain review. Self-contained, needs no
+  code reading, and says what would change the answer. Read it if you know
+  anything about food budgeting.
 - `docs/CI-GATE-HEALTH.md` — latent gaps in the gate: where it can go red for
   a reason unrelated to your change, and where a green local run does not mean
   a green CI run. Read before widening the evals or bumping a checker pin.
@@ -470,6 +474,15 @@ Local scripted baselines are 76.7% intent and 100% meal-plan (was 91%; the
 same harness fixes lifted it), plus 7/7 Guardrail must-allow structure.
 Nova Lite intent 83.3%, Nova Pro intent 100% — both unchanged and measured by
 the intent harness, which has had none of the above scrutiny.
+
+**Open for human review:** `min_grams_per_person_day` in
+`config/feasibility.json` decides when a meal-plan request is refused as
+impossible. It is the only figure in the planning path that is a judgement
+rather than derived from the catalogue, and it was set by inspecting
+fixtures, not by anyone who knows about food. Bounded by tests to a
+525g-1197g window and not blocking anything — but it decides which requests
+get refused outright, so it should not stay unreviewed indefinitely. Brief:
+`docs/OPEN-REVIEW-min-grams-per-person-day.md`.
 
 **Known pilot blockers:** Task 2 exact record/value and runtime money follow-up;
 Task 3 qualifying live Guardrail follow-up; clarification (payable totals

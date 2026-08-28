@@ -14,5 +14,7 @@
 
   "_safe_range": "Every expectation is satisfied between about 525g and about 1197g for the current prices, so 600 is not balanced on a knife edge — but it sits nearer the lower edge than the upper. The binding constraints are not the obvious ones: the lower edge comes from the $5-for-two-people case, the upper from plan-001 (3 people, 7 days, $40). An earlier note here claimed 400g was the lower bound; it is 525g, and 500 fails too. tests/test_feasibility.py derives both edges from the catalogue so this cannot go stale silently.",
 
+  "_review_brief": "docs/OPEN-REVIEW-min-grams-per-person-day.md — written for a reviewer who will not read code: what the number decides, what would change it, and how to change it safely.",
+
   "_review": "This number has NOT been reviewed by anyone with domain expertise in nutrition or food budgeting. It was set by inspection of the fixture catalogue. Treat it as a placeholder pending that review, and revisit it whenever the catalogue's price range changes materially — it is a statement about these prices as much as about people."
 }
