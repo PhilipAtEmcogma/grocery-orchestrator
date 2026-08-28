@@ -122,7 +122,7 @@ for exactly this reason; `requirements-dev.txt` already explains why
 ("a checker release can turn main red with no repo change"). The pin stops the
 surprise arriving unannounced; it does not tell you the upgrade is safe.
 
-## 5. `ruff format` is not enforced, and the tree has drifted
+## 5. `ruff format` is not enforced, and the tree has drifted — RESOLVED 2026-08-29
 
 CI runs `ruff check` only. `ruff format --check .` reports **59 of 104 files
 would be reformatted** (re-measured 2026-08-29; it was 39 of 75, so the drift
@@ -132,10 +132,21 @@ That is not a bug — formatting was evidently never adopted — but the drift
 grows, and adopting it later means one enormous mechanical diff across most of
 the repo, landing on top of whatever is in flight.
 
-Recommended: decide deliberately, and record the decision either way. Either
-add `ruff format --check` to the lint step and take the reformat as a single
-isolated commit while only two PRs are open, or note in `.kiro/steering/tech.md`
-that formatting is intentionally not gated, so the question stops recurring.
+**Resolved: adopted.** The reformat landed as a single isolated commit against
+a clean `main` with nothing else open, `ruff format --check --diff .` now runs
+in CI beside `ruff check`, and the pre-commit hook checks the same thing. The
+decision and its cost are recorded in `.kiro/steering/tech.md`.
+
+`.git-blame-ignore-revs` carries the reformat commit, because `git blame` on 59
+files would otherwise point at it rather than at whoever wrote the line — and
+this repository keeps most of its value in comments attached to specific lines.
+Run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once per clone;
+GitHub reads it automatically.
+
+Kept rather than deleted because the reasoning is the useful part: the drift
+grew from 39 of 75 files to 59 of 104 while the question sat open, which is the
+argument for deciding these promptly rather than the argument for this
+particular answer.
 
 ## 6. `actions/upload-artifact@v5` still targets Node 20
 

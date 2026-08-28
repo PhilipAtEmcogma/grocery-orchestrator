@@ -113,6 +113,12 @@ if [ "$before" != "$after" ]; then
     fail "ruff auto-fixed files. Review and 'git add' them, then commit again."
 fi
 ruff check . >/dev/null || fail "run: ruff check ."
+
+# Formatting, gated in CI since 2026-08-29. Checked rather than applied, for
+# the same reason as the --fix guard above: reformatting now would not be in
+# the staged content, so the commit would record the unformatted version and
+# CI would fail on exactly what this hook exists to catch first.
+ruff format --check . >/dev/null     || fail "unformatted. Run: ruff format . && git add -u"
 say "${GREEN}ok${RESET} ruff"
 
 # --------------------------------------------------------------- types

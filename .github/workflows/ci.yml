@@ -51,6 +51,18 @@ jobs:
       - name: Lint
         run: ruff check --output-format=github .
 
+      # Formatting is gated, as of 2026-08-29. It was not, and the drift had
+      # reached 59 of 104 files -- growing with the repo, and guaranteeing that
+      # whenever it was adopted the diff would land on top of whatever was in
+      # flight. Adopting it against a clean main was the cheapest that ever
+      # got. `line-length = 100` in pyproject.toml is shared with the linter,
+      # so the two cannot disagree.
+      #
+      # If this fails: run `ruff format .` and commit. It never needs a
+      # judgement call, which is the point of gating it.
+      - name: Format
+        run: ruff format --check --diff .
+
       # Ruff does not check types. The Telemetry protocol declared span() as
       # returning None while both implementations returned a context manager,
       # so neither satisfied the protocol — ten errors that ruff and the tests
