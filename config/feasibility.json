@@ -1,0 +1,18 @@
+{
+  "_comment": "Feasibility policy: when is a meal-plan request impossible rather than merely tight? Data, not code, for the same reasons as models.json — this is the one number in the planning path that is a JUDGEMENT rather than a fact derived from the catalogue, and it should be reviewable and changeable by someone who knows about food rather than someone who knows about Python.",
+  "version": "1.0",
+
+  "min_grams_per_person_day": 600,
+
+  "_why_this_exists": "Candidates are pre-filtered so that everything offered to the model is affordable. That makes affordability true by construction, so it stopped being evidence that the request was reasonable: 'feed 5 people for 7 days on $15' began returning a tidy plan built from $15 of food. This floor is what refuses that instead.",
+
+  "_what_it_is_not": "Not a nutrition target and not a recommended diet. 600g/person/day is deliberately well below what anyone should eat. It marks the point past which the request is physically impossible however cleverly you shop — everything above it is the planner's problem, not the arithmetic's.",
+
+  "_how_it_is_used": "minimum_spend() multiplies it by household x days, then by the CHEAPEST price per gram in the current catalogue. Only the 600 is a judgement; the price comes from the data. Below the resulting figure the turn is refused before any model call.",
+
+  "_calibration": "Chosen against expectations that already existed, not tuned to make anything pass. At the catalogue's cheapest food by weight ($1.59/kg as of 2026-08-28) it refuses both requests the project already said must be refused — eval case plan-006 ('feed 5 people for 7 days on $15') and the $5-for-two-people case in tests/test_plan.py — and admits all seven that must produce a plan.",
+
+  "_safe_range": "Every expectation is satisfied between about 525g and about 1197g for the current prices, so 600 is not balanced on a knife edge — but it sits nearer the lower edge than the upper. The binding constraints are not the obvious ones: the lower edge comes from the $5-for-two-people case, the upper from plan-001 (3 people, 7 days, $40). An earlier note here claimed 400g was the lower bound; it is 525g, and 500 fails too. tests/test_feasibility.py derives both edges from the catalogue so this cannot go stale silently.",
+
+  "_review": "This number has NOT been reviewed by anyone with domain expertise in nutrition or food budgeting. It was set by inspection of the fixture catalogue. Treat it as a placeholder pending that review, and revisit it whenever the catalogue's price range changes materially — it is a statement about these prices as much as about people."
+}

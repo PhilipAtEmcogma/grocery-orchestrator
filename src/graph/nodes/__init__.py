@@ -16,6 +16,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from src.graph.dietary import map_exclusions, supported_terms
+from src.graph.feasibility import minimum_spend
 from src.graph.nodes.intent import classify_intent as classify_intent
 from src.graph.nodes.plan import generate_plan as generate_plan
 from src.graph.nodes.prose import generate_prose as generate_prose
@@ -47,47 +48,6 @@ MAX_ITEMS_PER_TURN = 5
 MEAL_CATEGORIES = [
     "pantry", "produce", "meat", "dairy", "frozen", "bakery", "chilled", "seafood",
 ]
-
-# Floor for "could this budget feed these people at all", in grams of food per
-# person per day. THE ONLY POLICY NUMBER HERE -- everything else is derived
-# from the catalogue -- and it is deliberately well below a real diet. It is
-# not a nutrition target; it is the point past which the request is
-# physically impossible however cleverly you shop.
-#
-# 600g was calibrated against expectations that already existed rather than
-# picked to make anything pass. Against the catalogue's cheapest food by
-# weight ($1.59/kg), it refuses both requests the project already said must be
-# refused -- eval case plan-006 ("feed 5 people for 7 days on $15") and the
-# $5-for-two-people-three-days case in tests/test_plan.py -- and comfortably
-# admits all seven that must produce a plan. 400g admitted the $5 case; 700g
-# would also work, so the choice is not balanced on a knife edge.
-#
-# Revisit it when the catalogue changes: it is a statement about these prices.
-MIN_GRAMS_PER_PERSON_DAY = 600
-
-
-def minimum_spend(records: list, household: int, days: int) -> Decimal | None:
-    """
-    The least this request could cost, buying nothing but the cheapest food by
-    weight in the catalogue.
-
-    A lower bound on possibility, not a suggestion: no plan can beat it,
-    because it assumes the shopper buys the single cheapest thing per gram and
-    nothing else. Under it, "I can't do this for $15" is a fact rather than an
-    opinion about groceries.
-
-    Needed because capping candidates to the budget makes every plan
-    affordable BY CONSTRUCTION -- so affordability stopped being evidence that
-    the request was reasonable, and "feed 5 people for 7 days on $15" started
-    producing a tidy plan instead of the refusal it deserves.
-    """
-    per_gram = [
-        rec.price_nzd / rec.pack_grams for rec in records if getattr(rec, "pack_grams", 0)
-    ]
-    if not per_gram:
-        return None
-    grams = household * days * MIN_GRAMS_PER_PERSON_DAY
-    return min(per_gram) * grams
 
 
 def _next_seq(state: GroceryState) -> int:

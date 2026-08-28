@@ -251,10 +251,10 @@ def never_affordable(monkeypatch):
     its own this fixture stopped forcing anything.
 
     So retrieval is uncapped too. Production pre-filters candidates so that
-    buying every one of them stays inside the budget, which makes an
-    over-budget draft impossible and the repair branch unreachable. Removing
-    that filter puts the branch back in reach, which is the only way to keep
-    testing machinery that remains as defence in depth.
+    buying every one of them ONCE stays inside the budget, which removes the
+    common overspend without eliminating it -- a draft using 1.2 packs buys
+    two and can still exceed. Uncapping here forces that state reliably rather
+    than waiting for a multi-pack draft to turn up.
     """
     from decimal import Decimal
 
@@ -378,8 +378,9 @@ def _repairable_body(**extra) -> dict:
     candidate set costs (~$50), or the draft fits and there is nothing to
     repair. $40 sits between the two.
 
-    Pair it with `never_affordable`, which removes the candidate cap; with the
-    cap in place no draft can exceed the budget at all.
+    Pair it with `never_affordable`, which removes the candidate cap. The cap
+    does not make overspend impossible -- multi-pack usage still can -- but
+    removing it makes the state reliable to reproduce.
     """
     return _body(
         "dinner plan for a whanau of five on $40 this week, no shellfish",
