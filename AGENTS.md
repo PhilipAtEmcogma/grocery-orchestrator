@@ -129,12 +129,24 @@ and final emission.
 validate_input -> classify_intent
                     +-- meal_plan + unsupported exclusion -> emit_dietary_unsupported
                     `-- retrieve_prices
-                         +-- no citations -> emit_no_data
+                         +-- no citations -------> emit_no_data
+                         +-- budget impossible --> emit_budget_infeasible
                          +-- price_check -> generate_comparison -> generate_prose
                          `-- meal_plan -> generate_plan -> validate_plan
                                           ^ bounded repair (2) |
                                           `--------------------'
+                                                              |
+   over budget after repairs -> emit_budget_infeasible <------+
+   drafts never validated ----> emit_plan_generation_failed <-+
+   model unreachable ---------> emit_upstream_failure <-------+
 ```
+
+The repair arrow is `repair_plan`, which only increments the attempt counter;
+regeneration happens on the loop back. Every path ends at `finalise`, which
+always emits `done` — including after an error. The four terminals differ
+because they are four different facts: the budget genuinely does not stretch,
+we could not build a plan we trust, the model plane failed, or the request was
+impossible before we started.
 
 **Three protocol boundaries** make everything testable without AWS:
 - `src/retrieval/base.py` — `PriceRepository`; fixture and DynamoDB
@@ -204,8 +216,8 @@ managed-evaluation stages are planned or proposed, not built.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 308 passed, 31 skipped, no AWS
-ruff check .                                     # must be clean
+python -m pytest -q                              # 453 passed, 31 skipped, no AWS
+ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
     tests/test_sample_fixtures.py                # rewrite samples/ from the server
@@ -223,6 +235,8 @@ python scripts/build_lambda.py                   # build/lambda.zip, ~30 MB unzi
 python scripts/apply_iam.py --dry-run     --config config/iam-<role>.json              # execution roles, policy-as-data
 python scripts/apply_state_machine.py --dry-run  # ingestion Step Functions
 python -m pytest tests/test_ingestion.py         # ingestion; no AWS
+python scripts/check_quotas.py                    # throughput ceiling, live
+python Philip_demo/run_all.py                     # seven feature demos, offline
 ```
 
 The pre-commit hook lives in `scripts/hooks/pre-commit` — **version
