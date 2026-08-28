@@ -275,7 +275,7 @@ afterwards.
 `models.json` still routes to Nova, which is unaffected either way.
 
 **The pilot blockers in `AGENTS.md` are not discharged by any of this.** Exact
-retrieved-record equality, `run_turn()` whole-response money enforcement, and a
+retrieved-record equality and a
 qualifying live Guardrail result all remain open. Deployment proves wiring, not
 correctness.
 

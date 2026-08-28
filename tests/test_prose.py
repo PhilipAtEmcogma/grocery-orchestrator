@@ -273,3 +273,66 @@ def test_prose_is_dropped_when_it_cites_a_dearer_option(repo):
     # The turn still succeeds -- the comparison is the substance.
     assert [e for e in resp.events if e.type == "price_comparison"]
     assert [e.type for e in resp.events][-1] == "done"
+
+
+# --------------------------------------------- money on the far side of render
+#
+# The pre-render check sees `[[total]]`, not a number: placeholders are
+# expanded afterwards, so the string the user reads is not the string that was
+# validated. Nothing can inject money there today — `figures` maps to fixed
+# words and `_describe` emits a product and store label — which makes the
+# guarantee a property of the current code rather than a rule about it. These
+# pin the rule, so that "show the price in the sentence" fails here instead of
+# shipping.
+
+
+def test_money_introduced_by_rendering_is_caught(repo, monkeypatch):
+    """A figure placeholder that expands to a price must not reach the user."""
+    import src.graph.nodes.prose as prose_mod
+
+    original = prose_mod.render
+
+    def leaky(text, citations, figures):
+        return original(text, citations, {**figures, "total": "$41.20"})
+
+    monkeypatch.setattr(prose_mod, "render", leaky)
+    resp = run_turn(
+        _req("feed a flat of 3 for under $80", household_size=3,
+             budget_nzd=80, days=3),
+        repo, ScriptedModelClient(),
+    )
+    assert not [e for e in resp.events if e.type == "token"]
+
+
+def test_the_turn_survives_money_introduced_by_rendering(repo, monkeypatch):
+    """
+    Degrades, does not die. This is why the check lives here and not in
+    `run_turn`, which raises: the user keeps the cited answer and loses only
+    the sentence.
+    """
+    import src.graph.nodes.prose as prose_mod
+
+    original = prose_mod.render
+
+    def leaky(text, citations, figures):
+        return original(text, citations, {**figures, "total": "$41.20"})
+
+    monkeypatch.setattr(prose_mod, "render", leaky)
+    resp = run_turn(
+        _req("feed a flat of 3 for under $80", household_size=3,
+             budget_nzd=80, days=3),
+        repo, ScriptedModelClient(),
+    )
+    types = [e.type for e in resp.events]
+    assert "meal_plan" in types
+    assert types[-1] == "done"
+
+
+def test_clean_rendering_still_produces_prose(repo):
+    """The new check must not reject the labels rendering actually emits."""
+    resp = run_turn(
+        _req("feed a flat of 3 for under $80", household_size=3,
+             budget_nzd=80, days=3),
+        repo, ScriptedModelClient(),
+    )
+    assert [e for e in resp.events if e.type == "token"]

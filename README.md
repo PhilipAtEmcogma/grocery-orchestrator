@@ -15,7 +15,7 @@ live evidence in `ap-southeast-2`.
 It is **not yet a deployable production pilot**. Pilot Tasks 2–3 corrected
 citation construction, citation ordering, money-free comparison/prose labels,
 samples, and offline Guardrail intervention propagation. Exact retrieved-record
-and value equality, whole-response runtime money enforcement, qualifying live
+and value equality, qualifying live
 Guardrail evaluation, location/freshness, production fail-closed
 startup, CDK/API controls, and deployed SLOs remain open.
 
@@ -222,9 +222,12 @@ ingestion/                   Step Functions price-scraping pipeline — not star
 - ✅ Prose generation node (`src/graph/nodes/prose.py`): the model emits
   `[[c1]]` placeholders, model-supplied money is rejected, and Pilot Task 2
   changed rendering to money-free product/store labels. Comparison reasoning is
-  money-free and samples were regenerated. The whole-response
-  `assert_no_literal_money_in_response()` covers token, reasoning, and notice
-  fields with negative controls, but `run_turn()` does not yet call it.
+  money-free and samples were regenerated. The node checks for money twice —
+  on the model's template and again on the rendered string, since placeholders
+  expand between them — and degrades rather than failing the turn.
+  `run_turn()` deliberately does not call the whole-response assertion:
+  it raises, which would cost the user the turn instead of the sentence.
+  `validate.py` runs it over `samples/` in CI with negative controls.
 - ✅ Multi-item price queries: "cheapest for butter, milk and eggs" resolves
   and compares every item asked about, with partial resolution (`no_data` per
   unresolved item) rather than silently answering about only the first one.
@@ -316,7 +319,7 @@ ingestion/                   Step Functions price-scraping pipeline — not star
 Planned/proposed items are not current capabilities:
 
 - **Core follow-ups (Pilot Tasks 2–7):** immutable retrieved-record/key/value
-  proof and runtime whole-response money enforcement; qualifying live Guardrail
+  proof; qualifying live Guardrail
   harness semantics/result; clarification; location/freshness;
   idempotency ownership/candidate access; qualified SSM model routing.
 - **Local read-only MCP first** (Pilot Task 8), proving coarse operation
