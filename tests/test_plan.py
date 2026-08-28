@@ -34,11 +34,35 @@ from src.schemas.contract import (
     Citation,
     ClientHints,
     ErrorCode,
+    MealPlan,
     SourceRef,
     Store,
     assert_arithmetic,
     assert_grounded,
 )
+
+
+class _UncappedRepository(InMemoryPriceRepository):
+    """
+    Candidates unfiltered by budget, as retrieval behaved before pre-filtering.
+
+    Retrieval now caps the candidate set so that buying ALL of it stays within
+    budget, which means no selection can come back over budget and the repair
+    loop's budget branch is unreachable in production. It is kept as
+    defence in depth -- a future repository, or a bug in the cap, would put an
+    over-budget draft back in front of validate_plan -- and machinery that is
+    never exercised is machinery that has quietly stopped working. These tests
+    reach it by removing the thing that prevents it.
+    """
+
+    def candidates_for_budget(self, **kwargs):
+        kwargs["budget_nzd"] = None
+        return super().candidates_for_budget(**kwargs)
+
+
+@pytest.fixture(scope="module")
+def uncapped_repo() -> _UncappedRepository:
+    return _UncappedRepository()
 
 
 @pytest.fixture(scope="module")
@@ -224,11 +248,22 @@ def test_first_attempt_uses_quality_tier(repo):
     assert plan_calls[0] == ModelTier.QUALITY
 
 
-def test_repair_passes_use_fast_tier(repo):
-    """Repair is substitution, not creative planning — the cheap model suffices."""
+def test_repair_passes_use_fast_tier(uncapped_repo):
+    """
+    Repair is substitution, not creative planning — the cheap model suffices.
+
+    Uses the uncapped repository: with candidates pre-filtered to the budget a
+    draft cannot come back over budget, so nothing reaches the repair branch.
+    $30 for three people over five days clears the feasibility floor, so the
+    turn is not refused up front, and the over-buying scripted planner busts
+    it — which is exactly the state repair exists for.
+    """
     model = ScriptedModelClient(plan_packs=Decimal("3"))
     run_turn(
-        _plan_request("plan dinners", budget_nzd=5, household_size=2), repo, model
+        _plan_request(
+            "plan dinners", budget_nzd=30, household_size=3, days=5,
+        ),
+        uncapped_repo, model,
     )
     plan_calls = [t for t, s in model.calls if s == "PlanDraft"]
     assert len(plan_calls) > 1
@@ -238,7 +273,10 @@ def test_repair_passes_use_fast_tier(repo):
 def test_repair_loop_is_bounded(repo):
     model = ScriptedModelClient(plan_packs=Decimal("5"))
     resp = run_turn(
-        _plan_request("plan dinners", budget_nzd=5, household_size=2), repo, model
+        _plan_request(
+            "plan dinners", budget_nzd=10, household_size=5, days=7,
+        ),
+        repo, model,
     )
     plan_calls = [t for t, s in model.calls if s == "PlanDraft"]
     assert len(plan_calls) <= 3          # first attempt + MAX_REPAIR_ATTEMPTS
@@ -248,7 +286,10 @@ def test_repair_loop_is_bounded(repo):
 def test_infeasible_budget_reports_honestly(repo):
     model = ScriptedModelClient(plan_packs=Decimal("5"))
     resp = run_turn(
-        _plan_request("plan dinners", budget_nzd=5, household_size=2), repo, model
+        _plan_request(
+            "plan dinners", budget_nzd=10, household_size=5, days=7,
+        ),
+        repo, model,
     )
     errors = [e for e in resp.events if e.type == "error"]
     assert errors[0].code == ErrorCode.BUDGET_INFEASIBLE
@@ -258,7 +299,10 @@ def test_infeasible_does_not_also_emit_the_failing_plan(repo):
     """Showing an over-budget plan beside 'I could not make one' is incoherent."""
     model = ScriptedModelClient(plan_packs=Decimal("5"))
     resp = run_turn(
-        _plan_request("plan dinners", budget_nzd=5, household_size=2), repo, model
+        _plan_request(
+            "plan dinners", budget_nzd=10, household_size=5, days=7,
+        ),
+        repo, model,
     )
     types = [e.type for e in resp.events]
     assert "error" in types
@@ -448,7 +492,10 @@ def test_a_real_infeasible_budget_still_says_so(repo):
     """The fix must not turn genuine budget failures into upstream errors."""
     model = ScriptedModelClient(plan_packs=Decimal("5"))
     resp = run_turn(
-        _plan_request("plan dinners", budget_nzd=5, household_size=2), repo, model
+        _plan_request(
+            "plan dinners", budget_nzd=10, household_size=5, days=7,
+        ),
+        repo, model,
     )
     assert next(e for e in resp.events if e.type == "error").code == (
         ErrorCode.BUDGET_INFEASIBLE
@@ -600,7 +647,7 @@ def test_exhausted_on_invalid_drafts_does_not_blame_the_budget(repo):
 def test_a_real_over_budget_plan_still_reports_budget_infeasible(repo):
     """The discriminator must not swallow the case it was carved out of."""
     resp = run_turn(
-        _plan_request("plan dinners", budget_nzd=5, household_size=2),
+        _plan_request("plan dinners", budget_nzd=10, household_size=5, days=7),
         repo, ScriptedModelClient(plan_packs=Decimal("5")),
     )
     err = next(e for e in resp.events if e.type == "error")
@@ -618,7 +665,7 @@ def test_generation_failure_is_retryable_but_budget_failure_is_not(repo):
     )
     budget = next(
         e for e in run_turn(
-            _plan_request("plan dinners", budget_nzd=5, household_size=2),
+            _plan_request("plan dinners", budget_nzd=10, household_size=5, days=7),
             repo, ScriptedModelClient(plan_packs=Decimal("5")),
         ).events if e.type == "error"
     )
@@ -642,3 +689,82 @@ def test_over_budget_flag_is_set_only_by_a_costed_plan():
         "plan": None,
     }
     assert validate_plan(state)["over_budget"] is False
+
+
+# ------------------------------------------- consumption is not what you pay
+#
+# `within_budget` was computed from total_nzd, which sums FRACTIONAL line
+# costs: using 500g of a 1kg pack contributes half that pack's price. You
+# cannot buy half a pack, so the shopping list always costs more. A live run
+# produced a plan reporting $34.39 "of $60", within_budget=True, whose store
+# baskets came to $65.01 -- and samples/response_meal_plan.json shipped the
+# same contradiction as the reference example ($18.62 of $30, baskets $60.14).
+
+
+def _half_pack_plan(budget: str) -> MealPlan:
+    """One 1kg pack, half of it used. Consumption $5, payable $10."""
+    citations = {"c1": _citation("c1", "10.00")}
+    return assemble_plan(
+        _draft(("c1", "0.5")), citations,
+        household_size=2, days=1, budget_nzd=Decimal(budget),
+        exclusions=[], repair_attempts=0,
+    )
+
+
+def test_payable_counts_whole_packs_not_fractions():
+    plan = _half_pack_plan("50")
+    assert plan.total_nzd == Decimal("5.00")
+    assert plan.payable_total_nzd == Decimal("10.00")
+
+
+def test_payable_equals_the_sum_of_the_baskets():
+    plan = _half_pack_plan("50")
+    assert plan.payable_total_nzd == sum(
+        (b.basket_total_nzd for b in plan.baskets), Decimal(0)
+    )
+
+
+def test_within_budget_follows_payable_not_consumption():
+    """
+    The exact shape of the bug: a budget that consumption fits and the
+    shopping list does not. $8 covers the $5 consumed but not the $10 pack.
+    """
+    plan = _half_pack_plan("8")
+    assert plan.total_nzd <= plan.budget_nzd      # consumption fits
+    assert plan.payable_total_nzd > plan.budget_nzd  # the shopper does not
+    assert plan.within_budget is False
+
+
+def test_within_budget_is_true_when_the_shopper_can_actually_pay():
+    plan = _half_pack_plan("12")
+    assert plan.within_budget is True
+
+
+def test_assert_arithmetic_rejects_a_payable_that_disagrees_with_baskets():
+    plan = _half_pack_plan("50")
+    tampered = plan.model_copy(update={"payable_total_nzd": Decimal("3.00")})
+    with pytest.raises(AssertionError, match="sum of store baskets"):
+        assert_arithmetic(tampered)
+
+
+def test_assert_arithmetic_rejects_within_budget_computed_from_consumption():
+    """The precise regression: flag true because $5 <= $8, while payable is $10."""
+    plan = _half_pack_plan("8")
+    tampered = plan.model_copy(update={"within_budget": True})
+    with pytest.raises(AssertionError, match="contradicts payable"):
+        assert_arithmetic(tampered)
+
+
+def test_the_repair_loop_fires_on_payable_overspend(repo):
+    """
+    A plan whose consumption fits but whose baskets do not must not be
+    delivered. Before the split, validate_plan compared consumption and this
+    turn shipped a plan the shopper could not afford.
+    """
+    resp = run_turn(
+        _plan_request("plan dinners", budget_nzd=20, household_size=3),
+        repo, ScriptedModelClient(),
+    )
+    plan = next((e.data for e in resp.events if e.type == "meal_plan"), None)
+    if plan is not None:
+        assert plan.payable_total_nzd <= plan.budget_nzd

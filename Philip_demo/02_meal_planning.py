@@ -48,11 +48,11 @@ heading("DEMO 2 - Meal planning, the repair loop, and dietary safety")
 
 # ------------------------------------------------------------------ a plan
 section("1. A budgeted plan")
-print("User: 'feed a flat of 3 for under $60 this week'\n")
+print("User: 'feed a flat of 3 for under $90 this week'\n")
 resp = run_turn(
     request(
-        "feed a flat of 3 for under $60 this week",
-        household_size=3, budget_nzd=60, days=5,
+        "feed a flat of 3 for under $90 this week",
+        household_size=3, budget_nzd=90, days=7,
     ),
     repo, model,
 )
@@ -64,8 +64,17 @@ if plan_event:
     index = citations(resp)
     print(f"\n  {len(plan.meals)} meals for {plan.household_size} people "
           f"over {plan.days} days")
-    print(f"  Total ${plan.total_nzd} of ${plan.budget_nzd} budget "
-          f"({plan.total_nzd / plan.budget_nzd:.0%} used)\n")
+    print(f"  Consumed  ${plan.total_nzd:>7}   value the meals use, at "
+          f"fractional packs")
+    print(f"  PAYABLE   ${plan.payable_total_nzd:>7}   money the shopper hands "
+          f"over")
+    print(f"  Budget    ${plan.budget_nzd:>7}   within_budget="
+          f"{plan.within_budget} "
+          f"({plan.payable_total_nzd / plan.budget_nzd:.0%} of budget)")
+    print("\n  Two totals, because you cannot buy half a pack of butter. Using")
+    print("  500g of a 1kg pack consumes $2.50 of value and costs $5.00 at the")
+    print("  till. within_budget is computed from the payable figure; reading")
+    print("  the consumption one as 'your total' understates the bill.\n")
 
     for meal in plan.meals:
         print(f"    {meal.name}  (serves {meal.serves})  ${meal.subtotal_nzd}")
@@ -89,6 +98,9 @@ if plan_event:
         print(f"  {basket.store.value} {basket.store_location}: "
               f"${basket.basket_total_nzd} across "
               f"{len(basket.citation_refs)} products")
+    total_baskets = sum(b.basket_total_nzd for b in plan.baskets)
+    print(f"  {'sum of baskets':<28} ${total_baskets}"
+          f"   == payable_total_nzd (${plan.payable_total_nzd})")
     print("\n  A pack is counted ONCE even when used across several meals,")
     print("  which is what makes ingredient reuse actually save money rather")
     print("  than merely look cheap.")

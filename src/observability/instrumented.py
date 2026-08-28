@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import time
 from contextlib import contextmanager
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from src.models.base import ModelClient, ModelTier, T
@@ -103,6 +104,7 @@ class InstrumentedPriceRepository(PriceRepository):
         categories: list[str],
         exclude_categories: list[str],
         limit_per_category: int = 3,
+        budget_nzd: Decimal | None = None,
     ) -> list[PriceRecord]:
         with self._span("candidates_for_budget") as span:
             started = time.perf_counter()
@@ -111,14 +113,18 @@ class InstrumentedPriceRepository(PriceRepository):
                     categories=categories,
                     exclude_categories=exclude_categories,
                     limit_per_category=limit_per_category,
+                    budget_nzd=budget_nzd,
                 )
             finally:
                 self._record(started)
             # The COUNT of excluded categories, never which ones: the
             # exclusion list is derived from dietary restrictions (Req 11.5).
+            # `budget_applied` is a boolean, never the amount: a budget is the
+            # user's financial circumstances and does not belong in a trace.
             span.annotate(
                 categories=len(categories),
                 excluded_categories=len(exclude_categories),
+                budget_applied=budget_nzd is not None,
                 records=len(found),
             )
             return found

@@ -128,8 +128,8 @@ def test_price_check_emits_prose(repo):
 
 def test_meal_plan_emits_prose(repo):
     resp = run_turn(
-        _req("feed a flat of 3 for under $30", household_size=3,
-             budget_nzd=30, days=3),
+        _req("feed a flat of 3 for under $80", household_size=3,
+             budget_nzd=80, days=3),  # feasible under whole-pack pricing
         repo, ScriptedModelClient(),
     )
     tokens = [e for e in resp.events if e.type == "token"]

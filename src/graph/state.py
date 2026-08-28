@@ -174,6 +174,12 @@ class GroceryState(TurnInput, total=False):
     prose: str
     prose_error: str
 
+    # Set by retrieval when the budget cannot cover this household for this
+    # many days at the cheapest price per gram in the catalogue. Distinct from
+    # over_budget, which is about a plan that was actually costed: this one
+    # says no plan could exist, and is known before generation.
+    budget_impossible: bool
+
     # ---- validate / repair loop
     repair_attempts: int
     validation_errors: list[str]

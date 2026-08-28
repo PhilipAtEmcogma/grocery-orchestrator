@@ -53,6 +53,10 @@ from src.schemas.contract import ChatRequest
 # A message, a location and a set of dietary exclusions made of words that
 # appear nowhere else in this repository. If any of them reaches stdout, it
 # got there from the request.
+# $30 here is DELIBERATELY not affordable against whole-pack pricing: the
+# repair and exhaustion tests below need a turn whose drafts bust the
+# budget. Tests that need a delivered plan use _affordable_meal_plan_body.
+# Note the message names a budget, and a message beats a hint when both do.
 PERSONAL_MESSAGE = (
     "dinner plan for a whanau of five on $30 this week, "
     "quinoa and halloumi, absolutely no shellfish"
@@ -238,19 +242,32 @@ def every_sink(capfd, log_stream):
 @pytest.fixture
 def never_affordable(monkeypatch):
     """
-    A model whose every draft busts the budget, so the repair loop runs to
-    exhaustion instead of succeeding on the first pass.
+    A turn whose draft busts the budget, so the repair loop runs to exhaustion
+    instead of succeeding on the first pass.
 
-    `plan_packs` is the scripted client's existing knob for exactly this: a
-    real model cannot be made to overspend on demand, and a test that depends
-    on the fixture prices staying unaffordable is a test that breaks the next
-    time the fixtures change.
+    Two knobs, because one is no longer enough. `plan_packs` inflates portion
+    sizes, which raises CONSUMPTION -- and the budget check now compares
+    PAYABLE, the whole-pack cost, which portion size does not move at all. On
+    its own this fixture stopped forcing anything.
+
+    So retrieval is uncapped too. Production pre-filters candidates so that
+    buying every one of them stays inside the budget, which makes an
+    over-budget draft impossible and the repair branch unreachable. Removing
+    that filter puts the branch back in reach, which is the only way to keep
+    testing machinery that remains as defence in depth.
     """
     from decimal import Decimal
 
     import src.handler as handler_mod
     from src.models.scripted import ScriptedModelClient
+    from src.retrieval.memory import InMemoryPriceRepository
 
+    class _Uncapped(InMemoryPriceRepository):
+        def candidates_for_budget(self, **kwargs):
+            kwargs["budget_nzd"] = None
+            return super().candidates_for_budget(**kwargs)
+
+    monkeypatch.setattr(handler_mod, "_repo", _Uncapped())
     monkeypatch.setattr(
         handler_mod, "_model", ScriptedModelClient(plan_packs=Decimal("5"))
     )
@@ -325,6 +342,56 @@ def _personal_body(message: str, **extra) -> dict:
 def _meal_plan_body(**extra) -> dict:
     """A turn that exercises retrieval, plan generation and the repair loop."""
     return _personal_body(PERSONAL_MESSAGE, **extra)
+
+
+def _affordable_meal_plan_body(**extra) -> dict:
+    """
+    A plan turn that actually succeeds.
+
+    _meal_plan_body deliberately cannot be afforded, which is what the repair
+    and exhaustion tests want. Tests that need a delivered meal_plan event
+    need the opposite, and the budget has to be feasible against PAYABLE cost
+    -- whole packs, not fractional consumption. Both the message and the hint
+    carry the figure because the message wins when they disagree.
+    """
+    return _body(
+        "dinner plan for a whanau of five on $90 this week, no shellfish",
+        hints={
+            "household_size": 5,
+            "budget_nzd": 90,
+            "days": 3,
+            "dietary_exclusions": PERSONAL_EXCLUSIONS,
+        },
+        location={"lat": -41.29, "lon": 174.76, "label": PERSONAL_LABEL},
+        **extra,
+    )
+
+
+def _repairable_body(**extra) -> dict:
+    """
+    A turn that reaches generation and then busts its budget, so the repair
+    loop runs.
+
+    The window is narrow and both edges matter. Above the feasibility floor
+    (5 people x 7 days needs at least ~$33 at the cheapest price per gram), or
+    the turn is refused before a single model call. Below what the uncapped
+    candidate set costs (~$50), or the draft fits and there is nothing to
+    repair. $40 sits between the two.
+
+    Pair it with `never_affordable`, which removes the candidate cap; with the
+    cap in place no draft can exceed the budget at all.
+    """
+    return _body(
+        "dinner plan for a whanau of five on $40 this week, no shellfish",
+        hints={
+            "household_size": 5,
+            "budget_nzd": 40,
+            "days": 7,
+            "dietary_exclusions": PERSONAL_EXCLUSIONS,
+        },
+        location={"lat": -41.29, "lon": 174.76, "label": PERSONAL_LABEL},
+        **extra,
+    )
 
 
 def _invoke(body: dict | str) -> dict:
@@ -415,7 +482,12 @@ def test_no_request_content_reaches_stdout_on_a_real_turn(captured):
 
 
 def _turn_meal_plan(monkeypatch) -> None:
-    assert "meal_plan" in _types(_invoke(_meal_plan_body()))
+    # The affordable body: this scenario exists to put a DELIVERED plan in
+    # front of the log scan, and _meal_plan_body deliberately cannot be
+    # afforded. The assert above is exactly the guard described in the comment
+    # -- without it this scenario would quietly become a budget_infeasible
+    # turn and stop covering the plan path at all.
+    assert "meal_plan" in _types(_invoke(_affordable_meal_plan_body()))
 
 
 def _turn_price_check(monkeypatch) -> None:
@@ -804,7 +876,9 @@ def test_correlation_state_does_not_survive_into_the_next_invocation(captured):
 def test_subsegments_cover_retrieval_and_every_model_call(xray_segment, captured):
     from src.handler import lambda_handler
 
-    lambda_handler(_event(_meal_plan_body()))
+    # Needs a turn that actually reaches generation: the default body is
+    # below the feasibility floor and is refused before any model call.
+    lambda_handler(_event(_affordable_meal_plan_body()))
     captured()
 
     names = [sub.name for sub in _subsegments(xray_segment)]
@@ -827,7 +901,7 @@ def test_each_repair_attempt_is_its_own_subsegment(
     from src.graph.state import MAX_REPAIR_ATTEMPTS
     from src.handler import lambda_handler
 
-    lambda_handler(_event(_meal_plan_body()))
+    lambda_handler(_event(_repairable_body()))
     captured()
 
     subsegments = _subsegments(xray_segment)
@@ -844,7 +918,9 @@ def test_each_repair_attempt_is_its_own_subsegment(
 def test_model_subsegments_are_annotated_for_latency_attribution(xray_segment, captured):
     from src.handler import lambda_handler
 
-    lambda_handler(_event(_meal_plan_body()))
+    # Needs a turn that actually reaches generation: the default body is
+    # below the feasibility floor and is refused before any model call.
+    lambda_handler(_event(_affordable_meal_plan_body()))
     captured()
 
     plan = next(
@@ -905,10 +981,10 @@ def test_turn_emits_the_core_metrics(captured):
     assert _metric(emf, METRIC_TURN_LATENCY)[0][0] > 0
 
 
-def test_model_latency_is_dimensioned_by_model_and_task(captured):
+def test_model_latency_is_dimensioned_by_model_and_task(captured, never_affordable):
     from src.handler import lambda_handler
 
-    lambda_handler(_event(_meal_plan_body()))
+    lambda_handler(_event(_repairable_body()))
     _, _, emf = captured()
 
     emitted = _metric(emf, METRIC_MODEL_LATENCY)
@@ -924,7 +1000,7 @@ def test_repair_attempts_are_counted_when_the_loop_exhausts(captured, never_affo
     from src.graph.state import MAX_REPAIR_ATTEMPTS
     from src.handler import lambda_handler
 
-    lambda_handler(_event(_meal_plan_body()))
+    lambda_handler(_event(_repairable_body()))
     _, _, emf = captured()
 
     assert _metric(emf, METRIC_REPAIR_ATTEMPTS)[0][0] == float(MAX_REPAIR_ATTEMPTS)
@@ -942,7 +1018,7 @@ def test_repair_metric_matches_the_plan_that_was_returned(captured):
     """
     from src.handler import lambda_handler
 
-    result = lambda_handler(_event(_meal_plan_body()))
+    result = lambda_handler(_event(_affordable_meal_plan_body()))
     _, _, emf = captured()
 
     plans = [

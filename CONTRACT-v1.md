@@ -192,14 +192,31 @@ stale-data enforcement are planned in Pilot Task 5. Until that lands, the
 presence of a location or capture date does not prove that the server filtered
 by radius or rejected old data.
 
-### Meal-plan totals
+### Meal-plan totals — two of them, and only one answers "can I afford this"
 
-The v1 payload currently carries one `total_nzd`. Pilot Task 4 will define and
-verify the authoritative full-pack amount payable after aggregating repeated
-ingredient use. If exposing both consumption and payable totals requires new
-optional fields, that is an additive v1 change. The frontend must use the
-server-verified payable total for budget messaging and must not recompute with
-floating-point arithmetic.
+A meal plan now carries **both** figures, and they mean different things:
+
+| Field | Meaning |
+|---|---|
+| `total_nzd` | Value **consumed** — line costs at fractional pack multipliers. Using 500g of a 1kg pack contributes half that pack's price. |
+| `payable_total_nzd` | Money **payable** — every distinct pack counted once at full shelf price. Equals the sum of `baskets[].basket_total_nzd`. |
+
+**Use `payable_total_nzd` for anything the user is told about cost**, and do
+not recompute it with floating-point arithmetic. `within_budget` is computed
+from it server-side.
+
+They diverge because you cannot buy half a pack of butter. The gap is not
+small: a plan reporting `total_nzd` of `$34.39` against a `$60` budget had a
+shopping list costing `$65.01`. Until this was split, `within_budget` was
+computed from consumption, so plans reported `within_budget: true` while their
+baskets busted the budget by nearly 2x — including in
+`samples/response_meal_plan.json`, the reference example. If you built against
+that sample and rendered `total_nzd` as "your total", you were understating
+what the shopper pays; switch to `payable_total_nzd`.
+
+`total_nzd` is retained because it is the right number for "how much food value
+does this plan use", which is what the per-meal subtotals add up to. It is the
+wrong number for a budget.
 
 ### Missing meal-plan constraints
 

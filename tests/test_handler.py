@@ -75,8 +75,8 @@ def test_ids_are_echoed_back():
 
 def test_meal_plan_request_works_end_to_end():
     body = _valid_body(
-        "feed a flat of 3 for under $30 this week, no seafood",
-        hints={"household_size": 3, "budget_nzd": 30, "days": 3,
+        "feed a flat of 3 for under $80 this week, no seafood",
+        hints={"household_size": 3, "budget_nzd": 80, "days": 3,
                "dietary_exclusions": ["seafood"]},
     )
     response = _parse(lambda_handler(_event(body)))

@@ -12,7 +12,7 @@ it is exhaustively testable and cannot be wrong in the way a model can be.
 
 from __future__ import annotations
 
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 
 from src.graph.state import GroceryState, usage_from
 from src.models.base import (
@@ -45,6 +45,18 @@ def _round(value: Decimal) -> Decimal:
     return value.quantize(CENT, rounding=ROUND_HALF_UP)
 
 
+def _whole_packs(packs: Decimal) -> Decimal:
+    """
+    Packs bought for a given amount used. Always rounds UP.
+
+    Half a pack of butter still costs a whole pack, and 1.2 packs of mince
+    costs two. Rounding down, or counting one pack however much is used, would
+    understate the bill -- which is the direction that matters, because the
+    number feeds `within_budget` and a shopper acts on it at the till.
+    """
+    return packs.to_integral_value(rounding=ROUND_CEILING)
+
+
 def assemble_plan(
     draft: PlanDraft,
     citations: dict[str, Citation],
@@ -66,8 +78,15 @@ def assemble_plan(
     silently, which would produce a plan quietly missing an ingredient.
     """
     meals: list[Meal] = []
-    # store -> (location, refs, running total)
-    baskets: dict[str, tuple[str, set[str], Decimal]] = {}
+    # store key -> (location, {ref: total packs used across every meal})
+    #
+    # Packs are ACCUMULATED per product and rounded up once at the end, rather
+    # than counted as one pack the first time a product appears. Counting one
+    # was right only while no recipe used more than a whole pack of anything,
+    # and silently wrong the moment one did: a draft using five packs of mince
+    # reported a basket holding one, so a plan consuming $221 of food was
+    # delivered against a $40 budget as though it fitted.
+    baskets: dict[str, tuple[str, dict[str, Decimal]]] = {}
 
     for draft_meal in draft.meals:
         ingredients: list[Ingredient] = []
@@ -88,15 +107,11 @@ def assemble_plan(
             subtotal += line_cost
 
             key = f"{citation.store.value}#{citation.store_location}"
-            location, refs, running = baskets.get(
-                key, (citation.store_location, set(), Decimal("0"))
-            )
-            # A pack is bought once even if used across several meals, so the
-            # basket total counts each product once at full pack price.
-            if line.citation_ref not in refs:
-                running += citation.price_nzd
-            refs.add(line.citation_ref)
-            baskets[key] = (location, refs, running)
+            location, used = baskets.get(key, (citation.store_location, {}))
+            used[line.citation_ref] = used.get(
+                line.citation_ref, Decimal("0")
+            ) + line.packs
+            baskets[key] = (location, used)
 
         meals.append(
             Meal(
@@ -111,20 +126,35 @@ def assemble_plan(
 
     store_baskets = [
         StoreBasket(
-            store=citations[next(iter(refs))].store,
+            store=citations[next(iter(used))].store,
             store_location=location,
-            citation_refs=sorted(refs, key=lambda r: int(r[1:])),
-            basket_total_nzd=_round(running),
+            citation_refs=sorted(used, key=lambda r: int(r[1:])),
+            basket_total_nzd=_round(
+                sum(
+                    (
+                        _whole_packs(packs) * citations[ref].price_nzd
+                        for ref, packs in used.items()
+                    ),
+                    Decimal(0),
+                )
+            ),
         )
-        for location, refs, running in baskets.values()
+        for location, used in baskets.values()
     ]
+
+    # What the shopper actually pays: whole packs, at full shelf price, summed
+    # across stores. `total` above is what the meals CONSUME, which differs
+    # whenever a recipe uses part of a pack -- and you cannot buy part of one.
+    # Budget questions are answered with this one.
+    payable = _round(sum((b.basket_total_nzd for b in store_baskets), Decimal(0)))
 
     return MealPlan(
         household_size=household_size,
         days=days,
         budget_nzd=budget_nzd,
         total_nzd=total,
-        within_budget=total <= budget_nzd,
+        payable_total_nzd=payable,
+        within_budget=payable <= budget_nzd,
         repair_attempts=repair_attempts,
         meals=meals,
         baskets=store_baskets,
@@ -190,8 +220,12 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
         tier = ModelTier.FAST
         task = "repair_plan"
         previous = state.get("plan")
+        # How much to cut, measured in money the shopper would actually hand
+        # over. Telling the repair pass to save the consumption overage would
+        # under-ask by the difference between part-packs and whole packs, and
+        # the second attempt would land over budget again.
         over_by = (
-            _round(previous.total_nzd - budget) if previous else Decimal("0")
+            _round(previous.payable_total_nzd - budget) if previous else Decimal("0")
         )
         used = {
             i.citation_ref

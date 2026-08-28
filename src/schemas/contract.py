@@ -227,8 +227,30 @@ class MealPlan(BaseModel):
     household_size: int = Field(ge=1)
     days: int = Field(ge=1)
     budget_nzd: Decimal = Field(gt=0)
-    total_nzd: Decimal = Field(ge=0)
-    within_budget: bool
+    total_nzd: Decimal = Field(
+        ge=0,
+        description=(
+            "Value CONSUMED: line costs at fractional pack multipliers. Using "
+            "500g of a 1kg pack contributes half that pack's price. This is "
+            "not what the shopper pays and must not be used for budget "
+            "messaging -- see payable_total_nzd."
+        ),
+    )
+    payable_total_nzd: Decimal = Field(
+        ge=0,
+        description=(
+            "Money actually PAYABLE: every distinct pack counted once at its "
+            "full shelf price, because half a pack of butter cannot be "
+            "bought. Equals the sum of the store baskets, and is the "
+            "authoritative figure for anything the user is told about cost."
+        ),
+    )
+    within_budget: bool = Field(
+        description=(
+            "payable_total_nzd <= budget_nzd. Computed from what the shopper "
+            "pays, not from what the meals consume."
+        ),
+    )
     repair_attempts: int = Field(
         default=0, ge=0, description="Validate-and-repair cycles used. Observability."
     )
@@ -469,9 +491,30 @@ def assert_arithmetic(plan: MealPlan, tolerance: Decimal = Decimal("0.02")) -> N
     if abs(expected_total - plan.total_nzd) > tolerance:
         raise AssertionError(f"Plan total {plan.total_nzd} != {expected_total}")
 
-    # The within_budget flag must agree with the actual total vs. budget.
-    if (plan.total_nzd <= plan.budget_nzd) != plan.within_budget:
-        raise AssertionError("within_budget flag contradicts the arithmetic")
+    # The payable amount is the sum of the store baskets, each of which counts
+    # a pack once at full price. Verified rather than trusted for the same
+    # reason as every other figure here.
+    expected_payable = sum((b.basket_total_nzd for b in plan.baskets), Decimal(0))
+    if abs(expected_payable - plan.payable_total_nzd) > tolerance:
+        raise AssertionError(
+            f"Payable total {plan.payable_total_nzd} != {expected_payable} "
+            f"(sum of store baskets)"
+        )
+
+    # within_budget is a claim about what the shopper pays, so it is checked
+    # against the payable amount.
+    #
+    # It used to be checked against total_nzd, the CONSUMPTION figure, and a
+    # plan could therefore report within_budget=True while its shopping list
+    # cost nearly twice the budget: $34.39 "of $60" against baskets totalling
+    # $65.01. Consumption is the value the meals use; payable is the money
+    # that leaves the shopper's account, and only the second one can answer
+    # "can I afford this".
+    if (plan.payable_total_nzd <= plan.budget_nzd) != plan.within_budget:
+        raise AssertionError(
+            f"within_budget={plan.within_budget} contradicts payable "
+            f"{plan.payable_total_nzd} vs budget {plan.budget_nzd}"
+        )
 
 
 # Money-shaped strings that must never appear in user-visible prose-like fields.

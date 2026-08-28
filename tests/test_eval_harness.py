@@ -188,7 +188,9 @@ def _cited(ref: str, product_key: str) -> Citation:
 def _plan_using(ref: str) -> MealPlan:
     return MealPlan(
         household_size=2, days=1,
-        budget_nzd=Decimal("50"), total_nzd=Decimal("12.00"),
+        budget_nzd=Decimal("50"),
+        # One 1kg pack used whole, so consumption and payable coincide.
+        total_nzd=Decimal("12.00"), payable_total_nzd=Decimal("12.00"),
         within_budget=True, repair_attempts=0,
         meals=[Meal(
             name="Beef pasta", serves=2,

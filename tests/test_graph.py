@@ -100,9 +100,14 @@ def test_unknown_product_returns_no_data_not_a_guess(repo, model):
 
 def test_meal_plan_produces_a_costed_plan(repo, model):
     """The plan node is real now, so a feasible budget must yield a plan."""
+    # $80, not $30. The scripted planner buys ~16 whole packs regardless of
+    # budget, so its PAYABLE total is about $65 -- it only ever fitted $30
+    # while within_budget was computed from fractional consumption. The
+    # scenario under test is "a feasible budget yields a plan"; the number
+    # just has to actually be one.
     resp = run_turn(
-        _req("feed a flat of 3 for under $30 this week, no seafood",
-             hints={"household_size": 3, "budget_nzd": 30, "days": 3,
+        _req("feed a flat of 3 for under $80 this week, no seafood",
+             hints={"household_size": 3, "budget_nzd": 80, "days": 3,
                     "dietary_exclusions": ["seafood"]}),
         repo,
         model,

@@ -14,7 +14,7 @@ import re
 from decimal import Decimal
 from pathlib import Path
 
-from src.retrieval.base import PriceRecord, PriceRepository
+from src.retrieval.base import PriceRecord, PriceRepository, cap_to_budget
 from src.schemas.contract import Store
 
 # ---------------------------------------------------------------- synonyms
@@ -186,6 +186,7 @@ class InMemoryPriceRepository(PriceRepository):
         categories: list[str],
         exclude_categories: list[str],
         limit_per_category: int = 3,
+        budget_nzd: Decimal | None = None,
     ) -> list[PriceRecord]:
         excluded = set(exclude_categories)
         wanted = set(categories) - excluded
@@ -203,7 +204,9 @@ class InMemoryPriceRepository(PriceRepository):
                 out.append(rec)
                 if len(seen_products) >= limit_per_category:
                     break
-        return out
+        # Cap so that buying every candidate stays inside the budget; the
+        # model cannot see prices and so cannot keep itself inside one.
+        return cap_to_budget(out, budget_nzd)
 
     # ------------------------------------------------------------ helpers
 
