@@ -149,6 +149,37 @@ jobs:
       # both wrong reasons before — that command, and a baseline that was
       # gitignored, so every clean checkout regenerated the file it was
       # supposed to be compared against.
+      # Runs BEFORE the scan, because a non-canonical baseline makes the scan
+      # below fail with "a new secret was detected" for every recorded false
+      # positive — a diagnosis that sends the reader looking for a secret that
+      # is not there. Ordering it first turns that into one accurate line.
+      #
+      # WHY IT IS NEEDED HERE AND NOT ONLY IN THE HOOK. detect-secrets writes
+      # `filename` with the local os.sep, so a rescan on Windows produces
+      # `tests	est_handler.py`. Those are read correctly on any platform, but
+      # this job matches the forward-slash paths `git ls-files` emits on
+      # ubuntu, so a backslash baseline reads as all-new secrets. It passes on
+      # the author's machine and fails only in CI — which is the failure mode
+      # the pre-commit hook exists to prevent, and the hook only protects
+      # clones that ran `git config core.hooksPath scripts/hooks`.
+      #
+      # Not hypothetical: it happened twice while adopting `ruff format`.
+      #
+      # The script exits 0 when the file was already canonical and 1 when it
+      # rewrote it, so its exit status IS the check. Written as an explicit
+      # `if` rather than the `git diff --exit-code` form originally sketched in
+      # docs/CI-GATE-HEALTH.md §2, because under `bash -e` the script's own
+      # non-zero exit would end the step before any diff could report why.
+      - name: Baseline is canonical
+        run: |
+          if ! python scripts/normalise_secrets_baseline.py; then
+            echo "::error::.secrets.baseline is not in canonical form. It was"
+            echo "probably rescanned on Windows, which writes backslash paths."
+            echo "Fix: python scripts/normalise_secrets_baseline.py && git add .secrets.baseline"
+            git --no-pager diff -- .secrets.baseline | head -40
+            exit 1
+          fi
+
       - name: Secret scan
         run: |
           git ls-files -z | xargs -0 detect-secrets-hook --baseline .secrets.baseline || {
@@ -218,7 +249,12 @@ jobs:
       - name: Build
         run: python scripts/build_lambda.py
 
-      - uses: actions/upload-artifact@v5
+      # v7, not v5: v5 declares `using: node20`, which the runner force-runs
+      # on Node 24 and annotates every build about. It was the only warning on
+      # an otherwise clean run, and a warning that is always present is one
+      # nobody reads — so a genuinely new one had nowhere to be noticed.
+      # v7.0.1 declares `using: node24`; every other action here is on v7.
+      - uses: actions/upload-artifact@v7
         with:
           name: lambda-package
           path: build/lambda.zip
