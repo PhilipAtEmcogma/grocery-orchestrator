@@ -137,3 +137,118 @@ def test_gate_still_passes_a_genuinely_good_run():
 def test_gate_is_inert_without_a_floor():
     card = Scorecard("Nova Pro", [_upstream("plan-001")])
     assert _gate(card.pass_rate, None, card) == 0
+
+
+# ------------------------------------------- the dietary check must be able to fail
+#
+# _category_of read `citation.source.pk.split("#")[-1]` on the stated
+# assumption that pk is '<store>#<category>'. retrieve_prices sets pk to the
+# record's store_key, which is '<store>#<location>' -- so it returned
+# 'sylvia-park' where 'dairy' was expected, and the exclusion check compared
+# store locations against category names. Those sets never intersect, so the
+# safety invariant could not fail: a plan serving beef to someone who asked
+# for vegetarian passed. A check that cannot fail is not a check, and the only
+# test that proves one works is one that makes it fail.
+
+from datetime import date  # noqa: E402
+from decimal import Decimal  # noqa: E402
+
+from evals.run_meal_plan import _category_of, _check_invariants  # noqa: E402
+from src.retrieval.memory import InMemoryPriceRepository  # noqa: E402
+from src.schemas.contract import (  # noqa: E402
+    Citation,
+    Ingredient,
+    Meal,
+    MealPlan,
+    SourceRef,
+    Store,
+    StoreBasket,
+)
+
+
+def _cited(ref: str, product_key: str) -> Citation:
+    return Citation(
+        ref=ref,
+        store=Store.PAKNSAVE,
+        store_location="Sylvia Park",
+        product_name="Beef Mince 1kg",
+        price_nzd=Decimal("12.00"),
+        unit="1kg",
+        on_special=False,
+        valid_date=date(2026, 7, 31),
+        source=SourceRef(
+            table="grocery-products-dev",
+            # The shape that caused the bug: '<store>#<location>', NOT category.
+            pk="paknsave#sylvia-park",
+            sk=product_key,
+        ),
+    )
+
+
+def _plan_using(ref: str) -> MealPlan:
+    return MealPlan(
+        household_size=2, days=1,
+        budget_nzd=Decimal("50"), total_nzd=Decimal("12.00"),
+        within_budget=True, repair_attempts=0,
+        meals=[Meal(
+            name="Beef pasta", serves=2,
+            ingredients=[Ingredient(
+                item="beef mince", qty="1kg",
+                citation_ref=ref, line_cost_nzd=Decimal("12.00"),
+            )],
+            subtotal_nzd=Decimal("12.00"),
+        )],
+        baskets=[StoreBasket(
+            store=Store.PAKNSAVE, store_location="Sylvia Park",
+            citation_refs=[ref], basket_total_nzd=Decimal("12.00"),
+        )],
+        dietary_exclusions_applied=["vegetarian"],
+    )
+
+
+def test_category_lookup_does_not_return_a_store_location():
+    """The exact defect: 'sylvia-park' where a category was expected."""
+    citation = _cited("c1", "beef-mince-1kg")
+    assert _category_of(citation, {"beef-mince-1kg": "meat"}) == "meat"
+
+
+def test_meat_in_a_vegetarian_plan_is_reported_as_a_violation():
+    violations = _check_invariants(
+        {
+            "id": "synthetic",
+            "hints": {"household_size": 2},
+            "expect": {"exclude_categories": ["vegetarian"]},
+        },
+        _plan_using("c1"),
+        None,
+        {"c1": _cited("c1", "beef-mince-1kg")},
+        {"beef-mince-1kg": "meat"},
+    )
+    assert any("violates" in v for v in violations), (
+        "a vegetarian plan built from beef mince must fail the dietary "
+        "invariant; before the fix this returned no violations at all"
+    )
+
+
+def test_a_compliant_vegetarian_plan_still_passes():
+    """The check must fail on violations without failing on everything."""
+    violations = _check_invariants(
+        {
+            "id": "synthetic",
+            "hints": {"household_size": 2},
+            "expect": {"exclude_categories": ["vegetarian"]},
+        },
+        _plan_using("c1"),
+        None,
+        {"c1": _cited("c1", "lentils-dried-500g")},
+        {"lentils-dried-500g": "pantry"},
+    )
+    assert not any("violates" in v for v in violations)
+
+
+def test_every_fixture_product_resolves_to_a_category():
+    """A silently empty lookup would make the check vacuous a second way."""
+    repo = InMemoryPriceRepository()
+    categories = {r.product_key: r.category for r in repo.all_records}
+    assert categories
+    assert all(c for c in categories.values())

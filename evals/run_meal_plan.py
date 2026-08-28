@@ -148,7 +148,11 @@ def _measure(plan: MealPlan, citations: dict) -> PlanMetrics:
 
 
 def _check_invariants(
-    case: dict, plan: MealPlan | None, error_code: str | None, citations: dict
+    case: dict,
+    plan: MealPlan | None,
+    error_code: str | None,
+    citations: dict,
+    categories: dict[str, str],
 ) -> list[str]:
     expect = case["expect"]
     v: list[str] = []
@@ -190,7 +194,7 @@ def _check_invariants(
         for meal in plan.meals:
             for ing in meal.ingredients:
                 citation = citations.get(ing.citation_ref)
-                if citation and _category_of(citation) in banned:
+                if citation and _category_of(citation, categories) in banned:
                     v.append(
                         f"'{meal.name}' uses {citation.product_name}, "
                         f"which violates {sorted(banned)}"
@@ -211,13 +215,33 @@ def _check_invariants(
     return v
 
 
-def _category_of(citation) -> str:
-    """Fixture pk is '<store>#<category>'."""
-    return citation.source.pk.split("#")[-1]
+def _category_of(citation, categories: dict[str, str]) -> str:
+    """
+    The category of the product a citation points at.
+
+    Was `citation.source.pk.split("#")[-1]`, on the stated assumption that the
+    partition key is '<store>#<category>'. It is not: retrieve_prices sets
+    pk to the record's `store_key`, which is '<store>#<location>'. So this
+    returned 'sylvia-park' where 'dairy' was expected, and the exclusion check
+    below compared store locations against category names -- two sets that
+    never intersect.
+
+    The consequence was a safety invariant that could not fail. Every
+    meal-plan score ever recorded by this harness includes a dietary check
+    that was silently vacuous, and a plan serving beef to someone who asked
+    for vegetarian would have passed.
+
+    The category lives on PriceRecord and nowhere on the wire, so it is looked
+    up through the repository by the product key the citation already carries.
+    """
+    return categories.get(citation.source.sk, "")
 
 
 def run(model: ModelClient, label: str) -> Scorecard:
     repo = InMemoryPriceRepository()
+    # product_key -> category, so a cited product can be checked against
+    # the dietary exclusions the case asked for.
+    categories = {r.product_key: r.category for r in repo.all_records}
     data = json.loads(CASES.read_text(encoding="utf-8"))
     results: list[CaseResult] = []
 
@@ -250,7 +274,9 @@ def run(model: ModelClient, label: str) -> Scorecard:
             if e.type == "citation"
         }
 
-        violations = _check_invariants(case, plan, error_code, citations)
+        violations = _check_invariants(
+            case, plan, error_code, citations, categories
+        )
         metrics = _measure(plan, citations) if plan else PlanMetrics()
         results.append(
             CaseResult(case["id"], not violations, violations, metrics, error_code)
