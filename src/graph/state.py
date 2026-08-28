@@ -177,6 +177,15 @@ class GroceryState(TurnInput, total=False):
     # ---- validate / repair loop
     repair_attempts: int
     validation_errors: list[str]
+    # Set by validate_plan when a plan was produced and costs more than the
+    # budget. This is the ONLY condition that makes "your budget does not
+    # stretch" a true statement. Every other validation error -- a draft that
+    # failed its schema, a hallucinated citation ref, no products, broken
+    # arithmetic -- means we could not produce a valid plan, which is a
+    # different fact and is not the user's budget's fault. Kept as a flag
+    # rather than inferred from the error strings so that adding an error
+    # message cannot silently reclassify a failure.
+    over_budget: bool
     # An upstream failure — Bedrock unreachable, timed out, throttled, or
     # misconfigured. Deliberately NOT a validation error: a validation error
     # means "the model produced a plan and the plan is wrong", which the

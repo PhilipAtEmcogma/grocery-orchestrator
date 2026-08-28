@@ -376,6 +376,7 @@ Two behaviours that surprise people:
 | `INVALID_REQUEST` | ❌ | A bug on one of our sides |
 | `STALE_DATA` | ⬜ | Data too old to trust |
 | `BUDGET_INFEASIBLE` | ❌ | **Render the `message`** — it contains real alternatives ("raise the budget, reduce the days…"). Not a generic failure. |
+| `PLAN_GENERATION_FAILED` | ✅ | Our side couldn't produce a valid plan. Offer a retry. Do **not** show budget advice — the budget may be fine. |
 | `UNSUPPORTED_EXCLUSION` | ❌ | A stated dietary term we cannot safely honour (e.g. `gluten-free` while we still lack allergen tagging). Also **render the `message`** — it lists the terms we can honour, so the user has an actionable next step |
 | `GUARDRAIL_BLOCKED` | ❌ | Refused on safety grounds |
 | `OUT_OF_SCOPE` | ❌ | Not a grocery question |

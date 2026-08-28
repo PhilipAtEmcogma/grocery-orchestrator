@@ -50,6 +50,12 @@ class ErrorCode(StrEnum):
     NO_DATA = "NO_DATA"
     STALE_DATA = "STALE_DATA"
     BUDGET_INFEASIBLE = "BUDGET_INFEASIBLE"
+    # We could not build a plan we were willing to stand behind — repair
+    # exhausted on drafts that failed validation, not on price. Separate from
+    # BUDGET_INFEASIBLE because the budget may be perfectly generous, and
+    # separate from INTERNAL_ERROR because the model plane is up and
+    # answering. Additive under the v1 rules: clients tolerate unknown codes.
+    PLAN_GENERATION_FAILED = "PLAN_GENERATION_FAILED"
     # An honest refusal when the user states a dietary exclusion we cannot
     # guarantee against our current data. Additive per Req 7.9 — dropping a
     # restriction is the dangerous direction of error, so the safe response
@@ -375,8 +381,21 @@ def assert_grounded(response: ChatResponse) -> None:
        a normalized product key.
     3. Citation price_nzd and unit_price_nzd are non-negative Decimals (schema
        already enforces, but verified here for completeness).
-    4. No literal monetary value appears in any user-visible prose-like field
-       (reasoning, token text, notice messages).
+    4. A terminal 'done' event is present.
+
+    NOT enforced here: literal money in prose. That is
+    `assert_no_literal_money_in_response`, and it is deliberately a separate
+    call rather than folded in, because the two have different consequences.
+    This function runs inside `run_turn` on every response, so anything it
+    rejects fails the whole turn; a model writing a price into its prose is
+    instead handled at the prose node, which drops the sentence and still
+    delivers the cited comparison. Raising here would turn that graceful
+    degradation into a dead turn.
+
+    This docstring previously listed the money rule as enforced. It was not,
+    and had not been -- a reader following "run this in CI against every
+    response" would have believed prose was covered by it. `validate.py`
+    calls both, which is the pairing to copy.
     """
     # Track citations declared so far (order-sensitive).
     declared: dict[str, Citation] = {}

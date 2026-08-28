@@ -210,3 +210,18 @@ class InMemoryPriceRepository(PriceRepository):
     @property
     def all_categories(self) -> list[str]:
         return sorted({r.category for r in self._records})
+
+    @property
+    def all_records(self) -> list[PriceRecord]:
+        """
+        Every loaded record.
+
+        For harnesses that must check a plan against the product data rather
+        than against what a model claims. A Citation deliberately does not
+        carry `category` -- it is a wire type for the frontend, which has no
+        use for it -- so the eval needs a way back from a cited product to the
+        record it came from. Reaching into `_records` for that, or re-reading
+        the fixture file alongside the repository, both create a second source
+        of truth that can drift from this one.
+        """
+        return list(self._records)

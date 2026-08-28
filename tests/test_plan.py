@@ -483,12 +483,14 @@ class _InvalidOutputModel(ScriptedModelClient):
 
 
 def test_schema_failure_is_not_reported_as_an_outage(repo):
+    """Nor as a budget problem: it is our failure to generate, and says so."""
     model = _InvalidOutputModel()
     resp = run_turn(
         _plan_request("plan dinners", budget_nzd=30, household_size=2), repo, model
     )
-    code = next(e for e in resp.events if e.type == "error").code
-    assert code not in (ErrorCode.INTERNAL_ERROR, ErrorCode.UPSTREAM_TIMEOUT)
+    err = next(e for e in resp.events if e.type == "error")
+    assert err.code == ErrorCode.PLAN_GENERATION_FAILED
+    assert err.retryable is True
 
 
 def test_schema_failure_is_repaired_not_abandoned(repo):
@@ -573,3 +575,70 @@ def test_a_genuinely_malformed_draft_is_still_rejected():
     payload["meals"][0]["ingredients"][0]["citation_ref"] = "not-a-ref"
     with pytest.raises(ValidationError):
         PlanDraft.model_validate(payload)
+
+
+# ------------------------- exhausted repair: whose fault, and is it the budget
+#
+# Exhausting the repair loop says we failed; it does not say why. Only a plan
+# that was actually costed and came out over budget makes "your budget doesn't
+# stretch" a true sentence. Repair exhausted on drafts that never validated is
+# our failure to generate, and routing it to BUDGET_INFEASIBLE told those users
+# to raise a budget that was never the problem — the same false statement the
+# upstream path was fixed for, reached a different way.
+
+
+def test_exhausted_on_invalid_drafts_does_not_blame_the_budget(repo):
+    resp = run_turn(
+        _plan_request("plan dinners", budget_nzd=500, household_size=2),
+        repo, _InvalidOutputModel(),
+    )
+    err = next(e for e in resp.events if e.type == "error")
+    assert err.code != ErrorCode.BUDGET_INFEASIBLE
+    assert "budget" not in err.message.lower() or "not with your budget" in err.message
+
+
+def test_a_real_over_budget_plan_still_reports_budget_infeasible(repo):
+    """The discriminator must not swallow the case it was carved out of."""
+    resp = run_turn(
+        _plan_request("plan dinners", budget_nzd=5, household_size=2),
+        repo, ScriptedModelClient(plan_packs=Decimal("5")),
+    )
+    err = next(e for e in resp.events if e.type == "error")
+    assert err.code == ErrorCode.BUDGET_INFEASIBLE
+    assert err.retryable is False
+
+
+def test_generation_failure_is_retryable_but_budget_failure_is_not(repo):
+    """Retrying a budget that genuinely does not stretch cannot help."""
+    gen = next(
+        e for e in run_turn(
+            _plan_request("plan dinners", budget_nzd=500, household_size=2),
+            repo, _InvalidOutputModel(),
+        ).events if e.type == "error"
+    )
+    budget = next(
+        e for e in run_turn(
+            _plan_request("plan dinners", budget_nzd=5, household_size=2),
+            repo, ScriptedModelClient(plan_packs=Decimal("5")),
+        ).events if e.type == "error"
+    )
+    assert gen.retryable is True
+    assert budget.retryable is False
+
+
+def test_over_budget_flag_is_set_only_by_a_costed_plan():
+    """
+    Inferring the cause from error strings would let a new message silently
+    reclassify a failure, so the discriminator is a flag set where the fact is
+    actually known — validate_plan, holding the priced plan.
+    """
+    from src.graph.nodes import validate_plan
+    from src.graph.state import GroceryState
+
+    state: GroceryState = {
+        "session_id": "sess-plan01",
+        "turn_id": "turn-plan01",
+        "message": "plan dinners",
+        "plan": None,
+    }
+    assert validate_plan(state)["over_budget"] is False
