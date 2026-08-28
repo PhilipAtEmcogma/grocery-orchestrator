@@ -31,6 +31,10 @@ service into an implementation claim.
   planning path that has NOT had domain review. Self-contained, needs no
   code reading, and says what would change the answer. Read it if you know
   anything about food budgeting.
+- `docs/THROUGHPUT-AND-SCALING.md` — the measured request-per-minute ceiling
+  (~8 meal-plan turns/min), why it was accepted for workshop scale, and the two
+  options for production with their costs. Read before assuming a Bedrock quota
+  increase is available: Nova's request limits are not adjustable.
 - `docs/CI-GATE-HEALTH.md` — latent gaps in the gate: where it can go red for
   a reason unrelated to your change, and where a green local run does not mean
   a green CI run. Read before widening the evals or bumping a checker pin.
@@ -487,10 +491,37 @@ figure was measured by a scorer that was wrong in at least one way:
 These numbers supersede every earlier one and are not comparable to them.
 They are evidence the system got correct, not that the models got better.
 
-**The suite has run out of headroom.** Both models now score 100% across three
-clean reps, so it cannot rank candidates at all. Treat this as "both are good
-enough" and nothing more. Ranking needs harder cases: budgets that are
-feasible but demanding, more exclusion combinations, larger households.
+**The suite has run out of headroom, and what 100% means is narrower than it
+looks.** Both models score 100% across three clean reps, so it cannot rank
+candidates at all.
+
+Every check in it is a RULE VIOLATION check — `exclude_categories`,
+`min_budget_used`, `min_distinct_meals`, `serves_matches_household`. They ask
+"did you break a rule", and neither model breaks rules. Nothing asks "is this a
+good plan". So 100% means **both models produce valid plans**, and says nothing
+about which produces better ones. Do not cite it as evidence that two models
+are interchangeable.
+
+Coverage is not the problem: 11 cases span households of 1-5, 3-7 days, budgets
+$15-$200, and vegetarian, vegan, dairy-free, seafood, a combination, and an
+unsupported term. The gap is that there is no quality gradient to measure.
+
+When ranking does matter, two routes, and only the second is recommended:
+
+* **Promote the reported metrics to scored** (reuse ratio, budget utilisation,
+  variety). Cheapest, and argued against here: they are deliberately "reported,
+  not scored" because no threshold is right for every case — 40% of budget is
+  excellent for one request and under-feeding for another. Scoring them
+  manufactures a gradient without establishing it means anything.
+* **Add harder validity cases** — feasible but demanding budgets, three
+  simultaneous exclusions, larger households. Extends what the suite already
+  does well instead of changing its nature. Do the feasibility-floor review
+  first (`docs/OPEN-REVIEW-min-grams-per-person-day.md`), or difficulty gets
+  calibrated against a number nobody has checked.
+
+An LLM-judge on plan quality was considered and rejected: it puts a
+non-deterministic scorer inside a suite whose value is being deterministic, and
+this session was four separate cases of a scorer being confidently wrong.
 
 Local scripted baselines are 76.7% intent and 100% meal-plan (was 91%; the
 same harness fixes lifted it), plus 7/7 Guardrail must-allow structure.
@@ -512,6 +543,13 @@ are DONE — MealPlan carries payable_total_nzd and within_budget follows it);
 location/freshness; idempotency fencing/candidate scale; model qualification;
 CDK/service/API/SnapStart adoption; and deployed security, SLO, cost, recovery,
 and operations evidence.
+
+**Not a blocker, but on the record before production:** the deployment is
+capped at ~8 meal-plan turns per minute by Bedrock request quotas, and the
+binding one (Nova Lite, 20/min) cannot be raised by request. Accepted for
+workshop scale. `docs/THROUGHPUT-AND-SCALING.md` holds the measurement and
+the two options for lifting it, with their costs — read it before promising
+anyone a throughput figure.
 
 **Planned/proposed AWS learning:** local read-only MCP first. AgentCore Gateway
 with Identity/Policy and the isolated Runtime reviewer require proposed ADR 0002

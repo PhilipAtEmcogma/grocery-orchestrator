@@ -200,6 +200,32 @@ prose, ~1.5 s latency, empty usage. Use a fresh `session_id` and `turn_id` per
 manual test. The cache was working exactly as designed; the verification was
 not.
 
+## 6a. Throughput ceiling, measured
+
+The account's Bedrock request-per-minute quotas cap this deployment at roughly
+**8 meal-plan turns per minute**, service-wide across all users — about 480 an
+hour. The binding limit is Amazon Nova Lite at 20 cross-region requests per
+minute, against the 2-3 Nova Lite calls each meal-plan turn makes.
+
+**Nova's request-per-minute quotas are NOT adjustable; Claude's are.** So the
+reflex answer to a throughput problem — ask for an increase — is unavailable
+for the models this deployment actually routes to. Check `Adjustable` before
+planning around one.
+
+Accepted deliberately: the target is a workshop and a demo, where 8/min is
+ample, and a throttled call already fails honestly as a retryable
+`UPSTREAM_TIMEOUT` rather than producing anything wrong.
+
+Two options for lifting it, with costs and trade-offs, are recorded in
+`docs/THROUGHPUT-AND-SCALING.md` for whoever takes this to production. Read
+that before assuming a quota request is the fix.
+
+One operational note worth carrying: throttling hits the TAIL of a busy
+period, so errors cluster late rather than spreading evenly. In the eval
+harness that pattern read as "the model failed those cases" and cost three
+model bands before anyone checked the quota. A dashboard showing the same
+shape is throttling, not model quality.
+
 ## 7. What is still not built, and why
 
 **Live retailer acquisition stays gated** on the thirteen conditions in
