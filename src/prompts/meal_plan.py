@@ -116,9 +116,18 @@ ingredient, do not use it, and do not substitute something that violates it.
 pantry staples that are not in the table.
 - `packs` is a multiplier on the pack size shown. Using 500g from a 1kg pack \
 is 0.5. Using two 400g tins is 2.
-- Reuse ingredients across meals. Buying one 1kg pack of mince and using it \
-across two meals is cheaper than two different proteins, and reducing waste \
-matters to this user.
+- YOU BUY WHOLE PACKS. Add up everything you use of one product across the \
+whole plan, then round UP: 1.2 packs and 1.5 packs both cost two packs, and \
+2.5 costs three. A total of 1.5 wastes half a pack that is paid for in full.
+- So keep each product's TOTAL at or just under a whole number. Using 1.0 of \
+something costs the same as 1.5 of it and wastes nothing. Overshooting a \
+whole number is the most expensive mistake available to you, and it is \
+invisible in the quantities you are writing.
+- Reuse ingredients across meals, but finish the pack rather than overrun it. \
+One 1kg pack of mince across two meals beats two different proteins. The same \
+pack stretched across five meals until the total reaches 1.2 costs TWO packs \
+and is worse than either. Reuse is only cheaper while the total stays at or \
+under a whole number.
 - Serve sizes must match the household size given.
 - Keep `reasoning` to two short sentences, under {REASONING_MAX_CHARS} \
 characters. It is a note on your choices, not a write-up. Tokens spent there \
@@ -221,8 +230,17 @@ def build_repair_prompt(
         f"It used: {', '.join(previous_items)}\n\n"
         f"{cheaper_options}\n\n"
         f"Produce a revised plan covering {days} day(s) for {household_size} "
-        f"person/people that costs at least ${over_by} less. Prefer swapping "
-        f"expensive proteins for cheaper ones, reducing portion multipliers, "
-        f"and reusing a single pack across more meals. Every exclusion above "
-        f"still applies. Do not state any prices."
+        f"person/people that costs at least ${over_by} less.\n\n"
+        f"What actually reduces the bill, in order:\n"
+        f"1. Drop a product entirely. You pay for whole packs, so removing "
+        f"the last use of a product saves a whole pack.\n"
+        f"2. Bring any product whose TOTAL across the plan is just over a "
+        f"whole number back down to it. A total of 1.2 or 1.5 costs two "
+        f"packs; 1.0 costs one and saves the difference outright.\n"
+        f"3. Swap an expensive product for a cheaper one from the list above.\n\n"
+        f"Trimming portions everywhere does NOT help on its own: shaving 1.5 "
+        f"packs to 1.4 still costs two packs. Spreading one product thinly "
+        f"over more meals usually makes it worse, because the total creeps "
+        f"past a whole number. Every exclusion above still applies. Do not "
+        f"state any prices."
     )
