@@ -69,8 +69,25 @@ Enforced three ways, any one of which would suffice:
 For prose, the model writes `[[c1]]` placeholders and rejects model-supplied
 money. Pilot Task 2 changed rendering to non-monetary product/store labels,
 removed literal money from comparison reasoning, and regenerated samples.
-`assert_no_literal_money_in_response()` covers token, reasoning, and notice
-fields, but `run_turn()` does not yet call the whole-response assertion.
+
+The prose node checks for money TWICE: once on the model's template, and again
+on the rendered string, because placeholders are expanded between the two and
+the text the user reads is not the text that was validated. Both are inside the
+node's try, so a failure degrades — the sentence is dropped and the cited table
+still ships.
+
+`run_turn()` deliberately does NOT call
+`assert_no_literal_money_in_response()`, and the entry that used to list this
+as an open gap was misleading. `run_turn` raises on the assertions it calls, so
+wiring the money rule in there would turn "you lose the sentence" into "you
+lose the turn" for the one case it is most likely to fire on — contradicting
+the rule in `tests/test_prose.py` that a table with no sentence beats a
+sentence with a wrong price. It is also narrower than it sounds: prose is the
+only model-authored user-visible text in the graph. `generate_comparison` gets
+no model at all, so comparison reasoning is an f-string built in Python, and
+notice and error messages are code-written. `validate.py` runs the
+whole-response assertion over `samples/` in CI, which is where it earns its
+keep.
 
 **2. Honest failure over plausible answers (Req 4).**
 - No confident match → return nothing, never the nearest match. Substring
@@ -161,7 +178,7 @@ every active task reaches the 90% threshold.
 
 Do not describe the current reference implementation as pilot-ready. Task 2–3
 construction/rendering/propagation work is implemented, but exact immutable
-retrieved-record/value proof, `run_turn()` whole-response money enforcement,
+retrieved-record/value proof,
 and a qualifying live Guardrail result remain open. Other blockers include
 clarification, location/freshness, idempotency ownership,
 production fail-closed configuration, model qualification, CDK/API controls,
@@ -195,7 +212,7 @@ UPDATE_FIXTURES=1 python -m pytest \
 python evals/run_intent.py                       # 76.7% scripted baseline
 python evals/run_intent.py --model nova-lite     # 83.3% live (Nova Lite)
 python evals/run_intent.py --model nova-pro      # 100% live (Nova Pro)
-python evals/run_meal_plan.py                    # 91% invariants baseline
+python evals/run_meal_plan.py                    # 100% invariants baseline
 python evals/run_guardrail.py                    # must_allow structural (scripted)
 # EXPERIMENTAL/non-qualifying: --model does not yet pin the requested model
 python evals/run_guardrail.py --model nova-lite

@@ -219,7 +219,7 @@ ends by saying whether the BINDING quota can be raised, which is the only form
 of that question worth asking: a raisable limit on a model that is not the
 constraint is not a way out.
 
-Accepted deliberately: the target is a workshop and a demo, where 8/min is
+Accepted deliberately: the target is a workshop and a demo, where 5-10/min is
 ample, and a throttled call already fails honestly as a retryable
 `UPSTREAM_TIMEOUT` rather than producing anything wrong.
 
@@ -260,14 +260,22 @@ companions.
 **API Gateway execution logging is off.** It needs an account-level CloudWatch
 Logs role ARN that is not set. Stage metrics and throttling work without it.
 
-**Claude routes remain blocked.** `au.anthropic.*` inference profiles show
-ACTIVE, which is misleading — invoking returns `ResourceNotFoundException:
-Model use case details have not been submitted for this account`. Profile
-availability is not account entitlement. Nova is unaffected and is what
-`models.json` routes to.
+**Claude routes are open as of 2026-08-28.** They were blocked, and the block
+was not visible where you would look: `au.anthropic.*` inference profiles
+showed ACTIVE while invoking returned `ResourceNotFoundException: Model use
+case details have not been submitted for this account`. Profile availability is
+not account entitlement — worth remembering for the next provider.
+
+The gate was the account-wide Anthropic use case form, submitted through the
+Bedrock console's Playground (the Model access page that used to host it has
+been retired). It is one-time and account-wide, not per-model: every Anthropic
+model failed identically until it was submitted, and all of them answered
+afterwards.
+
+`models.json` still routes to Nova, which is unaffected either way.
 
 **The pilot blockers in `AGENTS.md` are not discharged by any of this.** Exact
-retrieved-record equality, `run_turn()` whole-response money enforcement, and a
+retrieved-record equality and a
 qualifying live Guardrail result all remain open. Deployment proves wiring, not
 correctness.
 

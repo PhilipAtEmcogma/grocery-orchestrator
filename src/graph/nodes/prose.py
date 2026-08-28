@@ -199,6 +199,28 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
 
         rendered = render(result.text, citation_index, figures)
 
+        # Checked AGAIN, on the other side of rendering.
+        #
+        # The check above runs on the model's template, where the money would
+        # be written as `[[total]]` rather than as a number. Between the two
+        # lines, placeholders are expanded — so the string that actually
+        # reaches the user is not the string that was validated.
+        #
+        # Nothing can put money there today: `figures` maps to the fixed words
+        # "the plan total", "your budget", "the price difference", and
+        # `_describe` emits a product and store label. That makes the guarantee
+        # true by construction, which is a property of the current code rather
+        # than a rule about it — and "show the price in the sentence" is a
+        # plausible, well-meant edit to either that nothing would catch.
+        #
+        # Inside the same try, so it degrades like every other prose failure:
+        # the sentence is dropped and the cited table still ships. That matters
+        # more than it sounds. The whole-response assertion in `validate.py`
+        # would be the obvious place to put this, but `run_turn` raises on the
+        # assertions it calls, so wiring it in there would turn "you lose the
+        # sentence" into "you lose the turn" for exactly this case.
+        assert_no_literal_money(rendered)
+
     except GuardrailBlocked:
         raise
     except (ModelError, ValueError, KeyError) as exc:

@@ -13,15 +13,22 @@ before they bite.
 
 Measured on the merged tree:
 
+Re-measured 2026-08-29:
+
 | Eval | Result | Floor | Next failure |
 |---|---|---|---|
 | `evals/run_intent.py` | 23/30 = 76.7% | 75.0% | 22/30 = 73.3% — **red** |
-| `evals/run_meal_plan.py` | 10/11 = 90.9% | 90.0% | 9/11 = 81.8% — **red** |
+| `evals/run_meal_plan.py` | 11/11 = 100% | 90.0% | 10/11 = 90.9% green; 9/11 = 81.8% **red** |
 
-Neither has a spare case. A single regression in either takes `main` down, and
-because the floors are percentages over small case counts, the drop overshoots
-badly: one meal-plan case is worth 9 percentage points against a 1-point
-margin.
+Intent still has no spare case. Meal-plan gained one: the whole-pack pricing
+work took the scripted baseline from 90.9% to 100%, so it now survives one
+failure and dies on the second. `plan-003`, named below as the boundary case,
+now passes — it was under-spending at exactly the 30% floor, and pre-filtering
+candidates to the budget lifted utilisation clear of it.
+
+The underlying problem is unchanged and is about case count, not threshold: one
+meal-plan case is worth 9 percentage points, so the drop overshoots whenever it
+comes.
 
 This is not an argument for lowering the floors — `scripts/hooks/pre-commit`
 says "Floors, not targets. Never lower one to make a commit pass," and that is
@@ -31,9 +38,13 @@ cases make each case worth 3.3 points; a hundred would make it 1.
 Recommended: grow the case files before the next behavioural change, so the
 floors measure the system rather than the sampling. `evals/cases/intent.json`
 already carries the two known failures (`oos-001`, `inj-002`) and
-`meal_plan.json` carries `plan-003`, which fails on a boundary — it under-spends
-at exactly 30% of budget against a 30% floor. Boundary cases that sit on the
-line are the ones that flip from unrelated changes.
+`plan-003` no longer sits on its boundary, but the lesson stands: boundary
+cases are the ones that flip from unrelated changes.
+
+This now overlaps a second problem from the other direction — the meal-plan
+suite at 100% for BOTH candidate models can no longer rank them, so the same
+"add harder cases" work serves both. See the eval discipline section in
+`AGENTS.md`.
 
 ## 2. `.secrets.baseline` canonical form is enforced only locally
 
@@ -113,8 +124,9 @@ surprise arriving unannounced; it does not tell you the upgrade is safe.
 
 ## 5. `ruff format` is not enforced, and the tree has drifted
 
-CI runs `ruff check` only. `ruff format --check .` reports **39 of 75 files
-would be reformatted**.
+CI runs `ruff check` only. `ruff format --check .` reports **59 of 104 files
+would be reformatted** (re-measured 2026-08-29; it was 39 of 75, so the drift
+grows as the repo does).
 
 That is not a bug — formatting was evidently never adopted — but the drift
 grows, and adopting it later means one enormous mechanical diff across most of

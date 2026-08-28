@@ -15,7 +15,7 @@ live evidence in `ap-southeast-2`.
 It is **not yet a deployable production pilot**. Pilot Tasks 2–3 corrected
 citation construction, citation ordering, money-free comparison/prose labels,
 samples, and offline Guardrail intervention propagation. Exact retrieved-record
-and value equality, whole-response runtime money enforcement, qualifying live
+and value equality, qualifying live
 Guardrail evaluation, location/freshness, production fail-closed
 startup, CDK/API controls, and deployed SLOs remain open.
 
@@ -222,9 +222,12 @@ ingestion/                   Step Functions price-scraping pipeline — not star
 - ✅ Prose generation node (`src/graph/nodes/prose.py`): the model emits
   `[[c1]]` placeholders, model-supplied money is rejected, and Pilot Task 2
   changed rendering to money-free product/store labels. Comparison reasoning is
-  money-free and samples were regenerated. The whole-response
-  `assert_no_literal_money_in_response()` covers token, reasoning, and notice
-  fields with negative controls, but `run_turn()` does not yet call it.
+  money-free and samples were regenerated. The node checks for money twice —
+  on the model's template and again on the rendered string, since placeholders
+  expand between them — and degrades rather than failing the turn.
+  `run_turn()` deliberately does not call the whole-response assertion:
+  it raises, which would cost the user the turn instead of the sentence.
+  `validate.py` runs it over `samples/` in CI with negative controls.
 - ✅ Multi-item price queries: "cheapest for butter, milk and eggs" resolves
   and compares every item asked about, with partial resolution (`no_data` per
   unresolved item) rather than silently answering about only the first one.
@@ -258,9 +261,10 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   citation order, basic source shape, and arithmetic. They do not independently
   compare citation keys/values with immutable retrieved records.
 - ✅ Local eval harnesses remain separate from unit tests. Scripted baselines:
-  76.7% intent accuracy, 91% meal-plan invariant pass rate, and 7/7 Guardrail
+  76.7% intent accuracy, 100% meal-plan invariant pass rate, and 7/7 Guardrail
   must-allow structural cases. The Guardrail live path is experimental as noted
-  above. Claude comparisons remain blocked on Anthropic account verification.
+  above. Claude access is no longer blocked; see the model evidence section in
+  `AGENTS.md`, and pace live runs — `scripts/check_quotas.py` explains why.
   Proposed Bedrock Model Evaluation and AgentCore Evaluations may add deployed
   evidence with reproducible provenance, but cannot replace these local gates
   or the 90% task floor.
@@ -294,12 +298,18 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   live contract suite; the idempotency store's five current outcomes were
   live-verified. Canonical hashing, stale-owner fencing, a shared idempotency
   suite, and idempotency-table PITR remain Pilot Task 6/9 work.
-- ✅ Bedrock adapter verified live against Nova Lite and Nova Pro in
-  `ap-southeast-2`. Intent evidence: Nova Lite 83.3%, Nova Pro 100%. Meal-plan
-  evidence: Nova Pro 64%, below the 90% pilot floor.
-- 🚧 Claude access remains pending Anthropic account verification. Haiku,
+- ✅ Bedrock adapter verified live against Nova Lite, Nova Pro, Claude Haiku
+  4.5 and Claude Sonnet 4.5 in `ap-southeast-2`. Intent evidence: Nova Lite
+  83.3%, Nova Pro 100%. Meal-plan evidence, paced to the account's request
+  quota: Nova Pro 100% and Claude Haiku 4.5 100%, both over three clean reps.
+  Sonnet is excluded on latency, not quality. Those figures supersede the
+  earlier "Nova Pro 64%" — see `AGENTS.md`, which explains why the gain is the
+  harness rather than the models.
+- 🚧 Claude access is unblocked: the account's one-time Anthropic use case form
+  was submitted on 2026-08-28 and every configured model answers. Haiku,
   Sonnet, Nova Lite, and Nova Pro are still marked `enabled` in the development
-  catalogue even though no complete task-specific scorecard set exists; that
+  catalogue even though no complete task-specific scorecard set exists — no
+  Claude model has an intent scorecard; that
   is a documented Pilot Task 7 configuration defect, not production
   qualification. Pilot routing must disable every entry that has not met its
   active task's 90% floor.
@@ -309,7 +319,7 @@ ingestion/                   Step Functions price-scraping pipeline — not star
 Planned/proposed items are not current capabilities:
 
 - **Core follow-ups (Pilot Tasks 2–7):** immutable retrieved-record/key/value
-  proof and runtime whole-response money enforcement; qualifying live Guardrail
+  proof; qualifying live Guardrail
   harness semantics/result; clarification; location/freshness;
   idempotency ownership/candidate access; qualified SSM model routing.
 - **Local read-only MCP first** (Pilot Task 8), proving coarse operation
