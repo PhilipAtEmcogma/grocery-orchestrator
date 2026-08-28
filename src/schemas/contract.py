@@ -432,9 +432,7 @@ def assert_grounded(response: ChatResponse) -> None:
             if not c.source.table:
                 violations.append(f"{c.ref}: source.table is empty")
             if "#" not in c.source.pk:
-                violations.append(
-                    f"{c.ref}: source.pk {c.source.pk!r} missing '#' separator"
-                )
+                violations.append(f"{c.ref}: source.pk {c.source.pk!r} missing '#' separator")
             if not c.source.sk:
                 violations.append(f"{c.ref}: source.sk is empty")
 
@@ -458,8 +456,7 @@ def assert_grounded(response: ChatResponse) -> None:
                 for ref in basket.citation_refs:
                     if ref not in declared:
                         violations.append(
-                            f"StoreBasket uses {ref} before it was declared "
-                            f"(or never declared)"
+                            f"StoreBasket uses {ref} before it was declared (or never declared)"
                         )
 
     if not any(isinstance(ev, DoneEvent) for ev in response.events):
@@ -482,9 +479,7 @@ def assert_arithmetic(plan: MealPlan, tolerance: Decimal = Decimal("0.02")) -> N
     for meal in plan.meals:
         expected = sum((i.line_cost_nzd for i in meal.ingredients), Decimal(0))
         if abs(expected - meal.subtotal_nzd) > tolerance:
-            raise AssertionError(
-                f"Meal '{meal.name}' subtotal {meal.subtotal_nzd} != {expected}"
-            )
+            raise AssertionError(f"Meal '{meal.name}' subtotal {meal.subtotal_nzd} != {expected}")
 
     # Same check for the plan-level total against the sum of meal subtotals.
     expected_total = sum((m.subtotal_nzd for m in plan.meals), Decimal(0))
@@ -497,8 +492,7 @@ def assert_arithmetic(plan: MealPlan, tolerance: Decimal = Decimal("0.02")) -> N
     expected_payable = sum((b.basket_total_nzd for b in plan.baskets), Decimal(0))
     if abs(expected_payable - plan.payable_total_nzd) > tolerance:
         raise AssertionError(
-            f"Payable total {plan.payable_total_nzd} != {expected_payable} "
-            f"(sum of store baskets)"
+            f"Payable total {plan.payable_total_nzd} != {expected_payable} (sum of store baskets)"
         )
 
     # within_budget is a claim about what the shopper pays, so it is checked
@@ -543,8 +537,7 @@ def assert_no_literal_money_in_response(response: ChatResponse) -> None:
             match = _LITERAL_MONEY.search(ev.text)
             if match:
                 violations.append(
-                    f"TokenEvent seq={ev.seq}: literal money "
-                    f"{match.group(0)!r} in text"
+                    f"TokenEvent seq={ev.seq}: literal money {match.group(0)!r} in text"
                 )
         elif isinstance(ev, PriceComparisonEvent):
             match = _LITERAL_MONEY.search(ev.data.reasoning)
@@ -557,8 +550,7 @@ def assert_no_literal_money_in_response(response: ChatResponse) -> None:
             match = _LITERAL_MONEY.search(ev.message)
             if match:
                 violations.append(
-                    f"NoticeEvent seq={ev.seq}: literal money "
-                    f"{match.group(0)!r} in message"
+                    f"NoticeEvent seq={ev.seq}: literal money {match.group(0)!r} in message"
                 )
 
     if violations:

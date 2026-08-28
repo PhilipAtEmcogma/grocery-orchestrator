@@ -124,9 +124,7 @@ def build_price_check_prompt(
     yourself" here and every price_check turn came back GUARDRAIL_BLOCKED.
     Instructions go in the system prompt; the tagged block carries data.
     """
-    special = (
-        "\nThe cheapest option is on special this week." if on_special else ""
-    )
+    special = "\nThe cheapest option is on special this week." if on_special else ""
     winners = ", ".join(f"[[{ref}]]" for ref in cheapest_refs)
     return (
         f"The shopper asked about: {query_item}\n\n"
@@ -157,9 +155,7 @@ def build_meal_plan_prompt(
         lines.append(f"Reused across meals: {', '.join(reused)}")
 
     return (
-        "\n".join(lines)
-        + f"\n\nAVAILABLE PLACEHOLDERS\n{placeholders}\n\n"
-        + "Explain the plan."
+        "\n".join(lines) + f"\n\nAVAILABLE PLACEHOLDERS\n{placeholders}\n\n" + "Explain the plan."
     )
 
 
@@ -172,9 +168,7 @@ def assert_no_literal_money(text: str) -> None:
     """
     match = LITERAL_MONEY.search(text)
     if match:
-        raise ValueError(
-            f"prose contains a literal monetary value: {match.group(0)!r}"
-        )
+        raise ValueError(f"prose contains a literal monetary value: {match.group(0)!r}")
 
 
 def referenced_placeholders(text: str) -> set[str]:

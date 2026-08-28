@@ -115,29 +115,45 @@ class BedrockModelClient(ModelClient):
         spec = self._spec_for(task)
         if spec.capabilities.tool_use:
             return self._structured_via_tool_use(
-                system=system, user=user, schema=schema, spec=spec,
+                system=system,
+                user=user,
+                schema=schema,
+                spec=spec,
                 max_tokens=max_tokens,
             )
         return self._structured_via_prose(
-            system=system, user=user, schema=schema, spec=spec,
+            system=system,
+            user=user,
+            schema=schema,
+            spec=spec,
             max_tokens=max_tokens,
         )
 
     def _structured_via_tool_use(
-        self, *, system: str, user: str, schema: type[T],
-        spec: ModelSpec, max_tokens: int,
+        self,
+        *,
+        system: str,
+        user: str,
+        schema: type[T],
+        spec: ModelSpec,
+        max_tokens: int,
     ) -> T:
         tool_name = schema.__name__
         raw = self._converse(
-            system=system, user=user, spec=spec, max_tokens=max_tokens,
+            system=system,
+            user=user,
+            spec=spec,
+            max_tokens=max_tokens,
             tool_config={
-                "tools": [{
-                    "toolSpec": {
-                        "name": tool_name,
-                        "description": f"Return the result as a {tool_name}.",
-                        "inputSchema": {"json": schema.model_json_schema()},
+                "tools": [
+                    {
+                        "toolSpec": {
+                            "name": tool_name,
+                            "description": f"Return the result as a {tool_name}.",
+                            "inputSchema": {"json": schema.model_json_schema()},
+                        }
                     }
-                }],
+                ],
                 "toolChoice": {"tool": {"name": tool_name}},
             },
         )
@@ -147,17 +163,20 @@ class BedrockModelClient(ModelClient):
                 try:
                     return schema.model_validate(block["toolUse"]["input"])
                 except ValidationError as exc:
-                    raise ModelOutputInvalid(
-                        f"{tool_name} failed validation: {exc}"
-                    ) from exc
+                    raise ModelOutputInvalid(f"{tool_name} failed validation: {exc}") from exc
 
         # The model replied, just not with the tool call it was forced to
         # make. Still the model answering badly, not the call failing.
         raise ModelOutputInvalid(f"model returned no {tool_name} tool call")
 
     def _structured_via_prose(
-        self, *, system: str, user: str, schema: type[T],
-        spec: ModelSpec, max_tokens: int,
+        self,
+        *,
+        system: str,
+        user: str,
+        schema: type[T],
+        spec: ModelSpec,
+        max_tokens: int,
     ) -> T:
         """Fallback for models without tool use. Schema in prompt, parse reply."""
         schema_json = json.dumps(schema.model_json_schema(), indent=2)
@@ -167,12 +186,9 @@ class BedrockModelClient(ModelClient):
             f"else. No prose, no explanation, no markdown code fences.\n\n"
             f"{schema_json}"
         )
-        raw = self._converse(
-            system=augmented_system, user=user, spec=spec, max_tokens=max_tokens
-        )
+        raw = self._converse(system=augmented_system, user=user, spec=spec, max_tokens=max_tokens)
         text = "".join(
-            b.get("text", "")
-            for b in raw.get("output", {}).get("message", {}).get("content", [])
+            b.get("text", "") for b in raw.get("output", {}).get("message", {}).get("content", [])
         )
         try:
             return schema.model_validate_json(_extract_json(text))
@@ -260,9 +276,7 @@ class BedrockModelClient(ModelClient):
             # Without it, Bedrock rejects the block with a ValidationException.
             # The tag tells the PROMPT_ATTACK filter which content is untrusted
             # user input vs our system instructions.
-            kwargs["messages"] = [
-                {"role": "user", "content": [guard_content_block(user)]}
-            ]
+            kwargs["messages"] = [{"role": "user", "content": [guard_content_block(user)]}]
         elif required:
             # Fail closed. A missing guardrail is a misconfiguration, and
             # running generation without one is exactly the state this

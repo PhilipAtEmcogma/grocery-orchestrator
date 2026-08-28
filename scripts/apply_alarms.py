@@ -152,8 +152,7 @@ def validate(cfg: dict) -> list[str]:
             )
         if alarm.get("evaluation_periods") != 1:
             problems.append(
-                f"alarm '{name}': evaluation_periods is "
-                f"{alarm.get('evaluation_periods')!r}, not 1"
+                f"alarm '{name}': evaluation_periods is {alarm.get('evaluation_periods')!r}, not 1"
             )
 
         missing = alarm.get("treat_missing_data")
@@ -177,21 +176,24 @@ def validate(cfg: dict) -> list[str]:
 
 
 def summarise(cfg: dict) -> None:
-    print(f"Config valid: {len(cfg['alarms'])} alarms, "
-          f"{len(cfg.get('metric_filters', []))} metric filters")
+    print(
+        f"Config valid: {len(cfg['alarms'])} alarms, "
+        f"{len(cfg.get('metric_filters', []))} metric filters"
+    )
     print(f"  region       {cfg['region']}")
     print(f"  topic        {cfg['notification']['topic_name']}")
     for f in cfg.get("metric_filters", []):
         print(f"  filter       {f['name']}")
-        print(f"               {f['log_group']}  ->  "
-              f"{f['namespace']}/{f['metric_name']}")
+        print(f"               {f['log_group']}  ->  {f['namespace']}/{f['metric_name']}")
     for alarm in cfg["alarms"]:
         dims = ", ".join(f"{k}={v}" for k, v in alarm.get("dimensions", {}).items())
         print(f"  alarm        {alarm['name']}")
-        print(f"               {alarm['namespace']}/{alarm['metric_name']}"
-              f"{' [' + dims + ']' if dims else ''} "
-              f"{alarm['statistic']} >= {alarm['threshold']} "
-              f"over {alarm['period']}s")
+        print(
+            f"               {alarm['namespace']}/{alarm['metric_name']}"
+            f"{' [' + dims + ']' if dims else ''} "
+            f"{alarm['statistic']} >= {alarm['threshold']} "
+            f"over {alarm['period']}s"
+        )
 
 
 def apply(cfg: dict, region: str) -> int:
@@ -235,8 +237,7 @@ def apply(cfg: dict, region: str) -> int:
                 Namespace=alarm["namespace"],
                 MetricName=alarm["metric_name"],
                 Dimensions=[
-                    {"Name": k, "Value": v}
-                    for k, v in alarm.get("dimensions", {}).items()
+                    {"Name": k, "Value": v} for k, v in alarm.get("dimensions", {}).items()
                 ],
                 Statistic=alarm["statistic"],
                 Period=alarm["period"],
@@ -256,12 +257,10 @@ def apply(cfg: dict, region: str) -> int:
 
         # The failure one level out from "an alarm with no action": a topic
         # with no subscriber. Everything above succeeds and nobody is told.
-        subs = sns.list_subscriptions_by_topic(TopicArn=topic_arn).get(
-            "Subscriptions", []
-        )
-        confirmed = [s for s in subs if not s.get("SubscriptionArn", "").endswith(
-            "PendingConfirmation"
-        )]
+        subs = sns.list_subscriptions_by_topic(TopicArn=topic_arn).get("Subscriptions", [])
+        confirmed = [
+            s for s in subs if not s.get("SubscriptionArn", "").endswith("PendingConfirmation")
+        ]
         if not confirmed:
             print(
                 f"\nWARNING: {topic_arn} has no confirmed subscribers. "

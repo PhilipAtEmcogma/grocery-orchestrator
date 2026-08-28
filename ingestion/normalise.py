@@ -46,9 +46,7 @@ def store_key(store: str, store_location: str) -> str:
 
 def gsi1_sk(price: Decimal, store: str, store_location: str) -> str:
     """Zero-padded cents, then the store key, so ties resolve deterministically."""
-    return (
-        f"{_cents(price):0{PRICE_KEY_WIDTH}d}#{store_key(store, store_location)}"
-    )
+    return f"{_cents(price):0{PRICE_KEY_WIDTH}d}#{store_key(store, store_location)}"
 
 
 def unit_price(price: Decimal, pack_grams: int) -> Decimal:

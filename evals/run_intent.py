@@ -146,8 +146,7 @@ def _check(case: dict, out: dict, repo: InMemoryPriceRepository) -> list[str]:
         wanted_set = set(wanted_cats)
         if not wanted_set.issubset(actual_set):
             failures.append(
-                f"exclusions {sorted(actual_terms)} missing "
-                f"{sorted(wanted_set - actual_set)}"
+                f"exclusions {sorted(actual_terms)} missing {sorted(wanted_set - actual_set)}"
             )
 
     if "multi_item" in expect:
@@ -157,9 +156,7 @@ def _check(case: dict, out: dict, repo: InMemoryPriceRepository) -> list[str]:
         resolved = [repo.resolve_product_key(t) for t in items]
         missing = [w for w in expect["multi_item"] if w not in resolved]
         if missing:
-            failures.append(
-                f"multi-item: resolved {resolved}, missing {missing}"
-            )
+            failures.append(f"multi-item: resolved {resolved}, missing {missing}")
 
     return failures
 
@@ -202,9 +199,7 @@ def run(model: ModelClient, label: str) -> Scorecard:
     return Scorecard(model_label=label, results=results)
 
 
-def report(
-    card: Scorecard, spec: ModelSpec | None = None, verbose: bool = False
-) -> None:
+def report(card: Scorecard, spec: ModelSpec | None = None, verbose: bool = False) -> None:
     print(f"\n=== {card.model_label} ===")
     print(f"  accuracy   {card.accuracy:.1%}  ({card.passed}/{len(card.scored)})")
     print(f"  p50 latency {card.p50_latency_ms} ms")
@@ -263,9 +258,7 @@ def main() -> int:
     cards: list[tuple[Scorecard, ModelSpec]] = []
 
     for key in keys:
-        spec = registry.route(
-            "classify_intent", policy=RoutingPolicy.PINNED, pinned_key=key
-        )
+        spec = registry.route("classify_intent", policy=RoutingPolicy.PINNED, pinned_key=key)
         client = BedrockModelClient(pinned_spec=spec)
         card = run(client, spec.display_name)
         report(card, spec, verbose=args.verbose)

@@ -328,9 +328,7 @@ table.put_item(
         "started_at": now,
         "ttl": now + 86400,
     },
-    ConditionExpression=(
-        "attribute_not_exists(pk) OR (#s = :in_progress AND started_at < :stale)"
-    ),
+    ConditionExpression=("attribute_not_exists(pk) OR (#s = :in_progress AND started_at < :stale)"),
     ExpressionAttributeNames={"#s": "status"},
     ExpressionAttributeValues={
         ":in_progress": "in_progress",

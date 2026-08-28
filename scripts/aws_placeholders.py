@@ -63,9 +63,7 @@ def substitute(obj: Any, *, account_id: str, region: str) -> Any:
     if isinstance(obj, list):
         return [substitute(i, account_id=account_id, region=region) for i in obj]
     if isinstance(obj, str):
-        return obj.replace(ACCOUNT_PLACEHOLDER, account_id).replace(
-            REGION_PLACEHOLDER, region
-        )
+        return obj.replace(ACCOUNT_PLACEHOLDER, account_id).replace(REGION_PLACEHOLDER, region)
     return obj
 
 

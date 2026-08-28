@@ -131,11 +131,7 @@ def _plan_request(exclusions: list[str]) -> ChatRequest:
 
 def _plan_categories(response) -> set[str]:
     """Categories that appear in the returned plan, via the retrieved citations."""
-    return {
-        e.citation.source.pk.split("#")[-1]
-        for e in response.events
-        if e.type == "citation"
-    }
+    return {e.citation.source.pk.split("#")[-1] for e in response.events if e.type == "citation"}
 
 
 def test_vegan_plan_contains_no_animal_products(repo):
@@ -143,9 +139,7 @@ def test_vegan_plan_contains_no_animal_products(repo):
     The end-to-end proof of the fix: a vegan user gets nothing from meat,
     seafood, dairy or chilled.
     """
-    response = run_turn(
-        _plan_request(["vegan"]), repo, ScriptedModelClient()
-    )
+    response = run_turn(_plan_request(["vegan"]), repo, ScriptedModelClient())
     categories = _plan_categories(response)
     for banned in ("meat", "seafood", "dairy", "chilled"):
         leaked = [
@@ -153,16 +147,12 @@ def test_vegan_plan_contains_no_animal_products(repo):
             for e in response.events
             if e.type == "citation" and e.citation.source.pk.endswith(banned)
         ]
-        assert banned not in categories, (
-            f"vegan plan contains {banned} products: {leaked}"
-        )
+        assert banned not in categories, f"vegan plan contains {banned} products: {leaked}"
 
 
 def test_seafood_exclusion_removes_seafood_end_to_end(repo):
     """The case the old mapping did handle — confirm it still does."""
-    response = run_turn(
-        _plan_request(["seafood"]), repo, ScriptedModelClient()
-    )
+    response = run_turn(_plan_request(["seafood"]), repo, ScriptedModelClient())
     assert "seafood" not in _plan_categories(response)
 
 
@@ -171,9 +161,7 @@ def test_shellfish_is_honoured_as_seafood(repo):
     A common lay term. Users type this rather than the category label; the
     mapping treats it as seafood.
     """
-    response = run_turn(
-        _plan_request(["shellfish"]), repo, ScriptedModelClient()
-    )
+    response = run_turn(_plan_request(["shellfish"]), repo, ScriptedModelClient())
     assert "seafood" not in _plan_categories(response)
 
 
@@ -183,9 +171,7 @@ def test_unsupported_exclusion_refuses_the_meal_plan(repo):
     graph returns an honest refusal — same principle as
     `emit_budget_infeasible` for a budget we cannot meet.
     """
-    response = run_turn(
-        _plan_request(["gluten-free"]), repo, ScriptedModelClient()
-    )
+    response = run_turn(_plan_request(["gluten-free"]), repo, ScriptedModelClient())
     types = {e.type for e in response.events}
     assert "meal_plan" not in types, "unsafe plan produced for gluten-free user"
     errors = [e for e in response.events if e.type == "error"]
@@ -203,9 +189,7 @@ def test_mixed_supported_and_unsupported_refuses(repo):
     A partial match is not enough. Producing a vegan plan for a user who
     also said gluten-free would drop half their statement silently.
     """
-    response = run_turn(
-        _plan_request(["vegan", "gluten-free"]), repo, ScriptedModelClient()
-    )
+    response = run_turn(_plan_request(["vegan", "gluten-free"]), repo, ScriptedModelClient())
     errors = [e for e in response.events if e.type == "error"]
     assert errors and errors[0].code == ErrorCode.UNSUPPORTED_EXCLUSION
     assert "meal_plan" not in {e.type for e in response.events}
@@ -216,9 +200,7 @@ def test_refusal_reaches_finalise(repo):
     The turn still ends with a done event, so the frontend's terminal-event
     handling is unchanged — Invariant 2 (honest failure), preserved.
     """
-    response = run_turn(
-        _plan_request(["nut-free"]), repo, ScriptedModelClient()
-    )
+    response = run_turn(_plan_request(["nut-free"]), repo, ScriptedModelClient())
     assert response.events[-1].type == "done"
 
 

@@ -63,9 +63,7 @@ def summarise(cfg: dict) -> None:
 
 def resolve(cfg: dict) -> dict:
     """Substitute ${AWS_ACCOUNT_ID} / ${AWS_REGION} from STS and the config."""
-    resolved = substitute(
-        cfg, account_id=current_account_id(), region=cfg["region"]
-    )
+    resolved = substitute(cfg, account_id=current_account_id(), region=cfg["region"])
     assert_resolved(resolved, cfg["role_name"])
     return resolved
 

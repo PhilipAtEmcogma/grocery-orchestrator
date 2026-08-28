@@ -188,9 +188,7 @@ def log_stream():
         handler.setStream(previous)
 
 
-def test_the_filter_matches_the_line_the_handler_actually_emits(
-    config, log_stream, monkeypatch
-):
+def test_the_filter_matches_the_line_the_handler_actually_emits(config, log_stream, monkeypatch):
     """
     THE TEST THIS FILE EXISTS FOR.
 

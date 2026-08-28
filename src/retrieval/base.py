@@ -122,9 +122,7 @@ class PriceRepository(Protocol):
         ...
 
 
-def cap_to_budget(
-    records: list[PriceRecord], budget_nzd: Decimal | None
-) -> list[PriceRecord]:
+def cap_to_budget(records: list[PriceRecord], budget_nzd: Decimal | None) -> list[PriceRecord]:
     """
     Trim a candidate set so buying ALL of it stays within budget.
 

@@ -109,9 +109,8 @@ class ModelRegistry:
             # 'apac.' or 'au.' prefix, and operators may need to switch without
             # a deploy. The default means the system works out-of-the-box once
             # the config lists valid ids for the account.
-            model_id = (
-                os.environ.get(entry["model_id_env"], "")
-                or entry.get("default_model_id", "")
+            model_id = os.environ.get(entry["model_id_env"], "") or entry.get(
+                "default_model_id", ""
             )
 
             self._specs[entry["key"]] = ModelSpec(

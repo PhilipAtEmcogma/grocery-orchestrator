@@ -35,39 +35,39 @@ STORE_FACTOR = {"paknsave": 1.00, "woolworths": 1.12, "new_world": 1.18}
 # Naming variants per store are added below to force normalisation.
 
 CATALOGUE = [
-    ("butter-500g",          "Butter 500g",              "dairy",   3.49,  "500g",  500),
-    ("milk-2l",              "Milk 2L",                  "dairy",   4.19,  "2L",   2000),
-    ("cheese-tasty-1kg",     "Tasty Cheese 1kg",         "dairy",  11.99,  "1kg",  1000),
-    ("yoghurt-plain-1kg",    "Plain Yoghurt 1kg",        "dairy",   4.99,  "1kg",  1000),
-    ("eggs-size7-dozen",     "Size 7 Eggs Dozen",        "chilled", 8.49,  "12ea",   12),
-    ("beef-mince-1kg",       "Beef Mince 1kg",           "meat",   11.99,  "1kg",  1000),
-    ("chicken-thigh-1kg",    "Chicken Thighs 1kg",       "meat",    9.99,  "1kg",  1000),
-    ("pork-sausages-500g",   "Pork Sausages 500g",       "meat",    5.49,  "500g",  500),
-    ("tuna-canned-185g",     "Canned Tuna 185g",         "seafood", 2.29,  "185g",  185),
-    ("salmon-fillet-300g",   "Salmon Fillet 300g",       "seafood",14.99,  "300g",  300),
-    ("pasta-spirals-500g",   "Pasta Spirals 500g",       "pantry",  1.29,  "500g",  500),
-    ("rice-longgrain-1kg",   "Long Grain Rice 1kg",      "pantry",  2.79,  "1kg",  1000),
-    ("tomatoes-canned-400g", "Chopped Tomatoes 400g",    "pantry",  1.10,  "400g",  400),
-    ("beans-baked-420g",     "Baked Beans 420g",         "pantry",  1.59,  "420g",  420),
-    ("lentils-dried-500g",   "Dried Red Lentils 500g",   "pantry",  3.29,  "500g",  500),
-    ("flour-plain-1-5kg",    "Plain Flour 1.5kg",        "pantry",  2.49,  "1.5kg",1500),
-    ("oats-rolled-1kg",      "Rolled Oats 1kg",          "pantry",  3.19,  "1kg",  1000),
-    ("oil-canola-750ml",     "Canola Oil 750ml",         "pantry",  5.49,  "750ml", 750),
-    ("bread-white-700g",     "White Bread 700g",         "bakery",  2.19,  "700g",  700),
-    ("onions-brown-1-5kg",   "Brown Onions 1.5kg",       "produce", 2.50,  "1.5kg",1500),
-    ("potatoes-washed-2kg",  "Washed Potatoes 2kg",      "produce", 4.49,  "2kg",  2000),
-    ("carrots-1kg",          "Carrots 1kg",              "produce", 1.99,  "1kg",  1000),
-    ("broccoli-each",        "Broccoli Head",            "produce", 2.49,  "each",    1),
-    ("bananas-1kg",          "Bananas 1kg",              "produce", 3.29,  "1kg",  1000),
-    ("frozen-mixed-veg-1kg", "Mixed Frozen Veg 1kg",     "frozen",  3.49,  "1kg",  1000),
-    ("frozen-peas-1kg",      "Frozen Peas 1kg",          "frozen",  2.99,  "1kg",  1000),
+    ("butter-500g", "Butter 500g", "dairy", 3.49, "500g", 500),
+    ("milk-2l", "Milk 2L", "dairy", 4.19, "2L", 2000),
+    ("cheese-tasty-1kg", "Tasty Cheese 1kg", "dairy", 11.99, "1kg", 1000),
+    ("yoghurt-plain-1kg", "Plain Yoghurt 1kg", "dairy", 4.99, "1kg", 1000),
+    ("eggs-size7-dozen", "Size 7 Eggs Dozen", "chilled", 8.49, "12ea", 12),
+    ("beef-mince-1kg", "Beef Mince 1kg", "meat", 11.99, "1kg", 1000),
+    ("chicken-thigh-1kg", "Chicken Thighs 1kg", "meat", 9.99, "1kg", 1000),
+    ("pork-sausages-500g", "Pork Sausages 500g", "meat", 5.49, "500g", 500),
+    ("tuna-canned-185g", "Canned Tuna 185g", "seafood", 2.29, "185g", 185),
+    ("salmon-fillet-300g", "Salmon Fillet 300g", "seafood", 14.99, "300g", 300),
+    ("pasta-spirals-500g", "Pasta Spirals 500g", "pantry", 1.29, "500g", 500),
+    ("rice-longgrain-1kg", "Long Grain Rice 1kg", "pantry", 2.79, "1kg", 1000),
+    ("tomatoes-canned-400g", "Chopped Tomatoes 400g", "pantry", 1.10, "400g", 400),
+    ("beans-baked-420g", "Baked Beans 420g", "pantry", 1.59, "420g", 420),
+    ("lentils-dried-500g", "Dried Red Lentils 500g", "pantry", 3.29, "500g", 500),
+    ("flour-plain-1-5kg", "Plain Flour 1.5kg", "pantry", 2.49, "1.5kg", 1500),
+    ("oats-rolled-1kg", "Rolled Oats 1kg", "pantry", 3.19, "1kg", 1000),
+    ("oil-canola-750ml", "Canola Oil 750ml", "pantry", 5.49, "750ml", 750),
+    ("bread-white-700g", "White Bread 700g", "bakery", 2.19, "700g", 700),
+    ("onions-brown-1-5kg", "Brown Onions 1.5kg", "produce", 2.50, "1.5kg", 1500),
+    ("potatoes-washed-2kg", "Washed Potatoes 2kg", "produce", 4.49, "2kg", 2000),
+    ("carrots-1kg", "Carrots 1kg", "produce", 1.99, "1kg", 1000),
+    ("broccoli-each", "Broccoli Head", "produce", 2.49, "each", 1),
+    ("bananas-1kg", "Bananas 1kg", "produce", 3.29, "1kg", 1000),
+    ("frozen-mixed-veg-1kg", "Mixed Frozen Veg 1kg", "frozen", 3.49, "1kg", 1000),
+    ("frozen-peas-1kg", "Frozen Peas 1kg", "frozen", 2.99, "1kg", 1000),
 ]
 
 # How each chain writes the same product. This is the messiness that matters.
 NAME_STYLE = {
-    "paknsave":   lambda c, u: f"Pams {c}",
+    "paknsave": lambda c, u: f"Pams {c}",
     "woolworths": lambda c, u: f"{c.rsplit(' ', 1)[0]}, {u}".strip(),
-    "new_world":  lambda c, u: f"Value {c.upper()}",
+    "new_world": lambda c, u: f"Value {c.upper()}",
 }
 
 # Items on special this week, by store chain.
@@ -165,6 +165,8 @@ if __name__ == "__main__":
 
     # Summary printout so a human running the script can sanity-check the output.
     stores = {(r["store"], r["store_location"]) for r in records}
-    print(f"{len(records)} records, {len(stores)} stores, "
-          f"{len({r['product_key'] for r in records})} distinct products")
+    print(
+        f"{len(records)} records, {len(stores)} stores, "
+        f"{len({r['product_key'] for r in records})} distinct products"
+    )
     print(f"wrote {out}")

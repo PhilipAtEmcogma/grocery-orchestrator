@@ -141,10 +141,7 @@ def _measure(plan: MealPlan, citations: dict) -> PlanMetrics:
     lines = [i for m in plan.meals for i in m.ingredients]
     return PlanMetrics(
         # Payable, so the reported utilisation matches the ceiling check.
-        budget_used=(
-            float(plan.payable_total_nzd / plan.budget_nzd)
-            if plan.budget_nzd else 0.0
-        ),
+        budget_used=(float(plan.payable_total_nzd / plan.budget_nzd) if plan.budget_nzd else 0.0),
         distinct_meals=len({m.name for m in plan.meals}),
         distinct_products=len({i.citation_ref for i in lines}),
         ingredient_lines=len(lines),
@@ -271,30 +268,16 @@ def run(model: ModelClient, label: str) -> Scorecard:
         try:
             response = run_turn(request, repo, model)
         except Exception as exc:
-            results.append(
-                CaseResult(case["id"], False, [f"raised {type(exc).__name__}: {exc}"])
-            )
+            results.append(CaseResult(case["id"], False, [f"raised {type(exc).__name__}: {exc}"]))
             continue
 
-        plan = next(
-            (e.data for e in response.events if e.type == "meal_plan"), None
-        )
-        error_code = next(
-            (e.code.value for e in response.events if e.type == "error"), None
-        )
-        citations = {
-            e.citation.ref: e.citation
-            for e in response.events
-            if e.type == "citation"
-        }
+        plan = next((e.data for e in response.events if e.type == "meal_plan"), None)
+        error_code = next((e.code.value for e in response.events if e.type == "error"), None)
+        citations = {e.citation.ref: e.citation for e in response.events if e.type == "citation"}
 
-        violations = _check_invariants(
-            case, plan, error_code, citations, categories
-        )
+        violations = _check_invariants(case, plan, error_code, citations, categories)
         metrics = _measure(plan, citations) if plan else PlanMetrics()
-        results.append(
-            CaseResult(case["id"], not violations, violations, metrics, error_code)
-        )
+        results.append(CaseResult(case["id"], not violations, violations, metrics, error_code))
 
     return Scorecard(label, results)
 
@@ -450,9 +433,7 @@ def main() -> int:
     registry = ModelRegistry()
     cards: list[tuple[Scorecard, ModelSpec]] = []
     for key in keys:
-        spec = registry.route(
-            "generate_plan", policy=RoutingPolicy.PINNED, pinned_key=key
-        )
+        spec = registry.route("generate_plan", policy=RoutingPolicy.PINNED, pinned_key=key)
         card = run(BedrockModelClient(pinned_spec=spec), spec.display_name)
         try:
             assert_measured(card)
@@ -464,10 +445,7 @@ def main() -> int:
 
     if len(cards) > 1:
         print("\n=== comparison ===")
-        print(
-            f"  {'model':<24} {'invariants':>11} {'budget':>8} {'variety':>8} "
-            f"{'upstream':>9}"
-        )
+        print(f"  {'model':<24} {'invariants':>11} {'budget':>8} {'variety':>8} {'upstream':>9}")
         for card, spec in sorted(cards, key=lambda c: -c[0].pass_rate):
             print(
                 f"  {spec.display_name:<24} {card.pass_rate:>10.0%} "

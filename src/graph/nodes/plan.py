@@ -108,9 +108,7 @@ def assemble_plan(
 
             key = f"{citation.store.value}#{citation.store_location}"
             location, used = baskets.get(key, (citation.store_location, {}))
-            used[line.citation_ref] = used.get(
-                line.citation_ref, Decimal("0")
-            ) + line.packs
+            used[line.citation_ref] = used.get(line.citation_ref, Decimal("0")) + line.packs
             baskets[key] = (location, used)
 
         meals.append(
@@ -131,10 +129,7 @@ def assemble_plan(
             citation_refs=sorted(used, key=lambda r: int(r[1:])),
             basket_total_nzd=_round(
                 sum(
-                    (
-                        _whole_packs(packs) * citations[ref].price_nzd
-                        for ref, packs in used.items()
-                    ),
+                    (_whole_packs(packs) * citations[ref].price_nzd for ref, packs in used.items()),
                     Decimal(0),
                 )
             ),
@@ -162,9 +157,7 @@ def assemble_plan(
     )
 
 
-def _cheaper_options(
-    citations: list[Citation], used_refs: set[str], limit: int = 6
-) -> str:
+def _cheaper_options(citations: list[Citation], used_refs: set[str], limit: int = 6) -> str:
     """Name specific cheaper products the repair pass can swap toward."""
     unused = sorted(
         (c for c in citations if c.ref not in used_refs),
@@ -173,8 +166,7 @@ def _cheaper_options(
     if not unused:
         return "No cheaper unused products are available."
     rows = "\n".join(
-        f"  {c.ref} — {c.product_name} ({c.store.value} {c.store_location})"
-        for c in unused
+        f"  {c.ref} — {c.product_name} ({c.store.value} {c.store_location})" for c in unused
     )
     return f"Cheaper products you did not use:\n{rows}"
 
@@ -224,14 +216,8 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
         # over. Telling the repair pass to save the consumption overage would
         # under-ask by the difference between part-packs and whole packs, and
         # the second attempt would land over budget again.
-        over_by = (
-            _round(previous.payable_total_nzd - budget) if previous else Decimal("0")
-        )
-        used = {
-            i.citation_ref
-            for m in (previous.meals if previous else [])
-            for i in m.ingredients
-        }
+        over_by = _round(previous.payable_total_nzd - budget) if previous else Decimal("0")
+        used = {i.citation_ref for m in (previous.meals if previous else []) for i in m.ingredients}
         user_prompt = build_repair_prompt(
             products=products,
             over_by=over_by,

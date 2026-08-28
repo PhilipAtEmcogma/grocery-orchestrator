@@ -26,16 +26,62 @@ _PRICE_WORDS = ("cheap", "price", "cost", "how much", "compare", "dearest")
 _GREETING = ("hello", "hi ", "hey", "thanks", "who are you", "what can you do")
 
 _ITEM_STOPWORDS = {
-    "what", "whats", "is", "are", "the", "a", "an", "of", "for", "me", "my",
-    "near", "nearby", "cheapest", "cheap", "price", "prices", "pricing", "cost",
-    "costs", "compare", "comparison", "how", "much", "many", "buy", "get",
-    "find", "please", "block", "some", "any", "s", "at", "in", "around", "want",
-    "need", "today", "this", "week", "dearest", "best",
+    "what",
+    "whats",
+    "is",
+    "are",
+    "the",
+    "a",
+    "an",
+    "of",
+    "for",
+    "me",
+    "my",
+    "near",
+    "nearby",
+    "cheapest",
+    "cheap",
+    "price",
+    "prices",
+    "pricing",
+    "cost",
+    "costs",
+    "compare",
+    "comparison",
+    "how",
+    "much",
+    "many",
+    "buy",
+    "get",
+    "find",
+    "please",
+    "block",
+    "some",
+    "any",
+    "s",
+    "at",
+    "in",
+    "around",
+    "want",
+    "need",
+    "today",
+    "this",
+    "week",
+    "dearest",
+    "best",
 }
 
 _WORD_NUMBERS = {
-    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
-    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
 }
 
 
@@ -148,8 +194,12 @@ class ScriptedModelClient(ModelClient):
             items = self._extract_items(msg)
             if len(items) > 1:
                 return IntentResult(
-                    intent=intent, confidence=confidence, query_items=items,
-                    household_size=household, budget_nzd=budget, days=days,
+                    intent=intent,
+                    confidence=confidence,
+                    query_items=items,
+                    household_size=household,
+                    budget_nzd=budget,
+                    days=days,
                     dietary_exclusions=exclusions,
                 )
         elif any(w in msg for w in _GREETING):
@@ -227,11 +277,8 @@ class ScriptedModelClient(ModelClient):
     @staticmethod
     def _extract_item(msg: str) -> str | None:
         cleaned = re.sub(r"[^a-z0-9\s]", " ", msg)
-        words = [
-            w for w in cleaned.split() if len(w) > 1 and w not in _ITEM_STOPWORDS
-        ]
+        words = [w for w in cleaned.split() if len(w) > 1 and w not in _ITEM_STOPWORDS]
         return " ".join(words) if words else None
-
 
     def _plan(self, user: str, tier: ModelTier) -> PlanDraft:
         """
@@ -285,13 +332,10 @@ class ScriptedModelClient(ModelClient):
 
         return PlanDraft(meals=meals, reasoning="Scripted selection.")
 
-
     def _prose(self, user: str) -> ProseResult:
         """Placeholder-only prose, mirroring what a well-behaved model returns."""
         if self.prose_writes_money:
-            return ProseResult(
-                text="Pak'nSave is cheapest at $2.97 for 500g this week."
-            )
+            return ProseResult(text="Pak'nSave is cheapest at $2.97 for 500g this week.")
         if self.prose_bad_placeholder:
             return ProseResult(text="The cheapest option is [[c99]] this week.")
 
@@ -313,7 +357,6 @@ class ScriptedModelClient(ModelClient):
             )
         return ProseResult(text="Here is what I found.")
 
-
     @staticmethod
     def _extract_items(msg: str) -> list[str]:
         """
@@ -328,9 +371,7 @@ class ScriptedModelClient(ModelClient):
 
         out: list[str] = []
         for part in parts:
-            words = [
-                w for w in part.split() if len(w) > 1 and w not in _ITEM_STOPWORDS
-            ]
+            words = [w for w in part.split() if len(w) > 1 and w not in _ITEM_STOPWORDS]
             if words:
                 out.append(" ".join(words))
         # Bounded by what the schema accepts, NOT by how many retrieval will

@@ -55,8 +55,7 @@ def store_name(value: str) -> str:
 def _describe(citation: Citation) -> str:
     """How a citation reads inside a sentence — non-monetary label only."""
     return (
-        f"{citation.product_name} at {store_name(citation.store.value)} "
-        f"{citation.store_location}"
+        f"{citation.product_name} at {store_name(citation.store.value)} {citation.store_location}"
     )
 
 
@@ -126,10 +125,7 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
             household_size=plan.household_size,
             exclusions=plan.dietary_exclusions_applied,
             placeholders=_placeholder_list(in_plan),
-            stores=[
-                f"{store_name(b.store.value)} {b.store_location}"
-                for b in plan.baskets
-            ],
+            stores=[f"{store_name(b.store.value)} {b.store_location}" for b in plan.baskets],
             reused=reused,
         )
     elif intent == Intent.PRICE_CHECK:
@@ -143,13 +139,9 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
         # same ordering, and that shared ordering is the only reason the
         # sentence and the table name the same store.
         cheapest_refs = [refs[0] for refs in groups.values() if refs]
-        cheapest = (
-            citation_index.get(cheapest_refs[0]) if cheapest_refs else None
-        ) or citations[0]
+        cheapest = (citation_index.get(cheapest_refs[0]) if cheapest_refs else None) or citations[0]
 
-        items = ", ".join(k.rsplit("-", 1)[0].replace("-", " ") for k in groups) or (
-            "that item"
-        )
+        items = ", ".join(k.rsplit("-", 1)[0].replace("-", " ") for k in groups) or ("that item")
 
         system = PRICE_CHECK_SYSTEM
         user = build_price_check_prompt(
@@ -176,9 +168,7 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
         )
         assert_no_literal_money(result.text)
 
-        unknown = referenced_placeholders(result.text) - (
-            set(citation_index) | set(figures)
-        )
+        unknown = referenced_placeholders(result.text) - (set(citation_index) | set(figures))
         if unknown:
             raise ValueError(f"prose referenced unknown placeholders: {sorted(unknown)}")
 
@@ -231,8 +221,7 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
     seq = _next_seq(state)
     sentences = [s for s in SENTENCE_END.split(rendered.strip()) if s]
     events = [
-        TokenEvent(seq=seq + i, text=s if i == 0 else f" {s}")
-        for i, s in enumerate(sentences)
+        TokenEvent(seq=seq + i, text=s if i == 0 else f" {s}") for i, s in enumerate(sentences)
     ]
 
     return {"prose": rendered, "events": events, "usage": usage_from(model, _usage_before)}

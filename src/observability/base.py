@@ -216,9 +216,7 @@ class TurnStats:
         """True once plan generation has been attempted at least once."""
         return self.plan_calls > 0
 
-    def record_model(
-        self, *, model: str, task: str, elapsed_ms: float, usage: dict
-    ) -> None:
+    def record_model(self, *, model: str, task: str, elapsed_ms: float, usage: dict) -> None:
         self.model_calls += 1
         self.model_ms += elapsed_ms
         if model not in self.models_used:

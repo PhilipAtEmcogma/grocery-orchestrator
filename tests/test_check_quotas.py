@@ -80,8 +80,7 @@ def test_other_quota_families_are_ignored():
         },
         {
             "QuotaName": (
-                "Global cross-region model inference requests per minute "
-                "for Amazon Nova Lite"
+                "Global cross-region model inference requests per minute for Amazon Nova Lite"
             ),
             "Value": 5,
             "Adjustable": False,

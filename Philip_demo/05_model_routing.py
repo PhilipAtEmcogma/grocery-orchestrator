@@ -89,9 +89,7 @@ for tier in (ModelTier.FAST, ModelTier.QUALITY):
 section("5. Pinning one model")
 print("  How the eval harness scores a single model rather than the route:\n")
 for key in ("claude-haiku", "claude-sonnet", "nova-pro"):
-    spec = registry.route(
-        "generate_plan", policy=RoutingPolicy.PINNED, pinned_key=key
-    )
+    spec = registry.route("generate_plan", policy=RoutingPolicy.PINNED, pinned_key=key)
     print(f"    pinned {key:<16} -> {spec.model_id}")
 print("\n  This is what `--model` and `--compare` do in evals/run_meal_plan.py.")
 

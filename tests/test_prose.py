@@ -30,16 +30,23 @@ def repo() -> InMemoryPriceRepository:
 
 def _citation(ref: str, price: str) -> Citation:
     return Citation(
-        ref=ref, store=Store.PAKNSAVE, store_location="Sylvia Park",
-        product_name=f"Product {ref}", price_nzd=Decimal(price), unit="500g",
-        on_special=False, valid_date=date(2026, 7, 31),
+        ref=ref,
+        store=Store.PAKNSAVE,
+        store_location="Sylvia Park",
+        product_name=f"Product {ref}",
+        price_nzd=Decimal(price),
+        unit="500g",
+        on_special=False,
+        valid_date=date(2026, 7, 31),
         source=SourceRef(table="grocery-products-dev", pk="paknsave#sylvia-park", sk=f"p-{ref}"),
     )
 
 
 def _req(message: str, **hints) -> ChatRequest:
     return ChatRequest(
-        session_id="sess-prose01", turn_id="turn-prose01", message=message,
+        session_id="sess-prose01",
+        turn_id="turn-prose01",
+        message=message,
         hints=ClientHints(**hints) if hints else None,
     )
 
@@ -116,8 +123,7 @@ def test_referenced_placeholders_are_extracted():
 
 
 def test_price_check_emits_prose(repo):
-    resp = run_turn(_req("what's the cheapest butter near me?"), repo,
-                    ScriptedModelClient())
+    resp = run_turn(_req("what's the cheapest butter near me?"), repo, ScriptedModelClient())
     tokens = [e for e in resp.events if e.type == "token"]
     assert tokens
     # Prose is now money-free — verify it contains store/product info instead
@@ -128,9 +134,11 @@ def test_price_check_emits_prose(repo):
 
 def test_meal_plan_emits_prose(repo):
     resp = run_turn(
-        _req("feed a flat of 3 for under $80", household_size=3,
-             budget_nzd=80, days=3),  # feasible under whole-pack pricing
-        repo, ScriptedModelClient(),
+        _req(
+            "feed a flat of 3 for under $80", household_size=3, budget_nzd=80, days=3
+        ),  # feasible under whole-pack pricing
+        repo,
+        ScriptedModelClient(),
     )
     tokens = [e for e in resp.events if e.type == "token"]
     assert tokens
@@ -147,12 +155,11 @@ def test_every_price_in_prose_came_from_a_citation(repo):
     """The grounding guarantee, applied to prose."""
     resp = run_turn(_req("cheapest butter"), repo, ScriptedModelClient())
 
-    prices = {
-        f"${e.citation.price_nzd}" for e in resp.events if e.type == "citation"
-    }
+    prices = {f"${e.citation.price_nzd}" for e in resp.events if e.type == "citation"}
     prose = "".join(e.text for e in resp.events if e.type == "token")
 
     import re
+
     for amount in re.findall(r"\$\d+\.\d{2}", prose):
         assert amount in prices, f"{amount} is not a retrieved price"
 
@@ -162,16 +169,14 @@ def test_every_price_in_prose_came_from_a_citation(repo):
 
 def test_model_writing_a_literal_price_degrades_to_no_prose(repo):
     """Better a table with no sentence than a sentence with a wrong price."""
-    resp = run_turn(_req("cheapest butter"), repo,
-                    ScriptedModelClient(prose_writes_money=True))
+    resp = run_turn(_req("cheapest butter"), repo, ScriptedModelClient(prose_writes_money=True))
 
     assert not [e for e in resp.events if e.type == "token"]
     assert "price_comparison" in [e.type for e in resp.events]
 
 
 def test_unknown_placeholder_degrades_rather_than_failing_the_turn(repo):
-    resp = run_turn(_req("cheapest butter"), repo,
-                    ScriptedModelClient(prose_bad_placeholder=True))
+    resp = run_turn(_req("cheapest butter"), repo, ScriptedModelClient(prose_bad_placeholder=True))
 
     assert not [e for e in resp.events if e.type == "token"]
     assert resp.events[-1].type == "done"
@@ -226,8 +231,12 @@ class _CitesRefModel(ScriptedModelClient):
             self._usage = {"model_ids": ["stub"], "latency_ms": 1}
             return schema(text=f"The cheapest option is [[{self._ref}]] this week.")
         return super().structured(
-            system=system, user=user, schema=schema, tier=tier,
-            max_tokens=max_tokens, task=task,
+            system=system,
+            user=user,
+            schema=schema,
+            tier=tier,
+            max_tokens=max_tokens,
+            task=task,
         )
 
 
@@ -267,8 +276,7 @@ def test_prose_is_dropped_when_it_cites_a_dearer_option(repo):
     resp = run_turn(_req("cheapest butter"), repo, _CitesRefModel(dearer))
 
     assert not [e for e in resp.events if e.type == "token"], (
-        f"prose citing {dearer} was published while the comparison flags "
-        f"{winner} as cheapest"
+        f"prose citing {dearer} was published while the comparison flags {winner} as cheapest"
     )
     # The turn still succeeds -- the comparison is the substance.
     assert [e for e in resp.events if e.type == "price_comparison"]
@@ -297,9 +305,9 @@ def test_money_introduced_by_rendering_is_caught(repo, monkeypatch):
 
     monkeypatch.setattr(prose_mod, "render", leaky)
     resp = run_turn(
-        _req("feed a flat of 3 for under $80", household_size=3,
-             budget_nzd=80, days=3),
-        repo, ScriptedModelClient(),
+        _req("feed a flat of 3 for under $80", household_size=3, budget_nzd=80, days=3),
+        repo,
+        ScriptedModelClient(),
     )
     assert not [e for e in resp.events if e.type == "token"]
 
@@ -319,9 +327,9 @@ def test_the_turn_survives_money_introduced_by_rendering(repo, monkeypatch):
 
     monkeypatch.setattr(prose_mod, "render", leaky)
     resp = run_turn(
-        _req("feed a flat of 3 for under $80", household_size=3,
-             budget_nzd=80, days=3),
-        repo, ScriptedModelClient(),
+        _req("feed a flat of 3 for under $80", household_size=3, budget_nzd=80, days=3),
+        repo,
+        ScriptedModelClient(),
     )
     types = [e.type for e in resp.events]
     assert "meal_plan" in types
@@ -331,8 +339,8 @@ def test_the_turn_survives_money_introduced_by_rendering(repo, monkeypatch):
 def test_clean_rendering_still_produces_prose(repo):
     """The new check must not reject the labels rendering actually emits."""
     resp = run_turn(
-        _req("feed a flat of 3 for under $80", household_size=3,
-             budget_nzd=80, days=3),
-        repo, ScriptedModelClient(),
+        _req("feed a flat of 3 for under $80", household_size=3, budget_nzd=80, days=3),
+        repo,
+        ScriptedModelClient(),
     )
     assert [e for e in resp.events if e.type == "token"]

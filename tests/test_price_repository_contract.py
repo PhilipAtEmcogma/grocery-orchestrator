@@ -142,10 +142,7 @@ class TestCheapestForProduct:
     def test_returns_prices_cheapest_first(self, repo, known_products):
         """The ordering guarantee, checked on every product the store holds."""
         for record in known_products:
-            prices = [
-                r.price_nzd
-                for r in repo.cheapest_for_product(record.product_key, limit=50)
-            ]
+            prices = [r.price_nzd for r in repo.cheapest_for_product(record.product_key, limit=50)]
             assert prices == sorted(prices), (
                 f"{record.product_key} came back unsorted: {prices}. Callers "
                 f"take element 0 as the cheapest and never re-sort."
@@ -166,9 +163,7 @@ class TestCheapestForProduct:
     def test_limit_is_respected(self, repo, a_product_key):
         assert len(repo.cheapest_for_product(a_product_key, limit=2)) <= 2
 
-    def test_limit_keeps_the_cheapest_not_an_arbitrary_slice(
-        self, repo, a_product_key
-    ):
+    def test_limit_keeps_the_cheapest_not_an_arbitrary_slice(self, repo, a_product_key):
         """
         A store that applied the limit before sorting would pass the ordering
         test and still return the wrong rows.
@@ -185,24 +180,18 @@ class TestCheapestForProduct:
         everything = repo.cheapest_for_product(a_product_key, limit=50)
         wanted = everything[0].store
 
-        filtered = repo.cheapest_for_product(
-            a_product_key, limit=50, stores=[wanted]
-        )
+        filtered = repo.cheapest_for_product(a_product_key, limit=50, stores=[wanted])
         assert filtered, "filtering to a store that stocks it returned nothing"
         assert {r.store for r in filtered} == {wanted}
 
     def test_store_filter_preserves_ordering(self, repo, a_product_key):
         prices = [
             r.price_nzd
-            for r in repo.cheapest_for_product(
-                a_product_key, limit=50, stores=list(Store)
-            )
+            for r in repo.cheapest_for_product(a_product_key, limit=50, stores=list(Store))
         ]
         assert prices == sorted(prices)
 
-    def test_empty_store_filter_is_not_treated_as_no_filter(
-        self, repo, a_product_key
-    ):
+    def test_empty_store_filter_is_not_treated_as_no_filter(self, repo, a_product_key):
         """
         An explicit empty list means "no store qualifies". Callers pass None for
         "any store" — the retrieval node does exactly that. Coercing [] to None
@@ -223,9 +212,7 @@ class TestResolveProductKey:
 
     def test_strips_noise_words(self, repo):
         """SEEDED. The model is meant to send a clean term; users do not."""
-        assert repo.resolve_product_key("what's the cheapest butter near me") == (
-            SEED_KEY
-        )
+        assert repo.resolve_product_key("what's the cheapest butter near me") == (SEED_KEY)
 
     def test_is_case_insensitive(self, repo):
         """SEEDED."""
@@ -284,8 +271,7 @@ class TestResolveProductKey:
         """Whatever the store advertises, it must be able to serve."""
         for record in known_products[:15]:
             assert repo.cheapest_for_product(record.product_key), (
-                f"{record.product_key} was returned as a candidate but has no "
-                f"retrievable prices"
+                f"{record.product_key} was returned as a candidate but has no retrievable prices"
             )
 
 
@@ -387,8 +373,7 @@ class TestRecordShape:
                 f"Parse the stored string to Decimal; do not use the numeric type."
             )
             assert isinstance(record.unit_price_nzd, Decimal), (
-                f"{record.product_key}.unit_price_nzd is "
-                f"{type(record.unit_price_nzd).__name__}"
+                f"{record.product_key}.unit_price_nzd is {type(record.unit_price_nzd).__name__}"
             )
 
     def test_money_survives_a_round_trip_exactly(self, repo, known_products):
@@ -421,9 +406,7 @@ class TestRecordShape:
         for record in known_products:
             assert isinstance(record.pack_grams, int)
 
-    def test_no_duplicate_rows_for_one_product_at_one_location(
-        self, repo, a_product_key
-    ):
+    def test_no_duplicate_rows_for_one_product_at_one_location(self, repo, a_product_key):
         """A duplicate row double-counts a store in the comparison."""
         records = repo.cheapest_for_product(a_product_key, limit=50)
         seen = [(r.store, r.store_location) for r in records]

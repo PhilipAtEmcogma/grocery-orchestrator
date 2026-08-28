@@ -100,6 +100,7 @@ def test_missing_weights_report_cannot_tell_rather_than_impossible():
     A catalogue without weights is OUR data problem. Returning a floor there
     would refuse the user's turn for it; None lets the caller carry on.
     """
+
     class _Weightless:
         price_nzd = Decimal("3.00")
         pack_grams = 0
@@ -123,9 +124,7 @@ CALIBRATION = [
 ]
 
 
-@pytest.mark.parametrize(
-    ("household", "days", "budget", "must_refuse", "why"), CALIBRATION
-)
+@pytest.mark.parametrize(("household", "days", "budget", "must_refuse", "why"), CALIBRATION)
 def test_calibration_matches_existing_expectations(
     records, household, days, budget, must_refuse, why
 ):
@@ -147,13 +146,9 @@ KNOWN_SAFE = [600, 700, 900, 1100]
 
 
 @pytest.mark.parametrize("candidate", KNOWN_SAFE)
-def test_safe_neighbours_agree_with_the_current_setting(
-    records, candidate, monkeypatch
-):
+def test_safe_neighbours_agree_with_the_current_setting(records, candidate, monkeypatch):
     """An ordinary catalogue price change must not quietly reverse a refusal."""
-    monkeypatch.setattr(
-        "src.graph.feasibility.min_grams_per_person_day", lambda: candidate
-    )
+    monkeypatch.setattr("src.graph.feasibility.min_grams_per_person_day", lambda: candidate)
     for hh, d, b, must_refuse, why in CALIBRATION:
         floor = minimum_spend(records, hh, d)
         assert floor is not None
@@ -169,9 +164,7 @@ def test_values_below_the_range_admit_a_request_that_must_be_refused(
     than a claim. 500 is included because it is closer than it looks: the
     lower edge is 525g, not 400g as first assumed.
     """
-    monkeypatch.setattr(
-        "src.graph.feasibility.min_grams_per_person_day", lambda: candidate
-    )
+    monkeypatch.setattr("src.graph.feasibility.min_grams_per_person_day", lambda: candidate)
     admitted = []
     for hh, d, b, must, why in CALIBRATION:
         if not must:
@@ -193,12 +186,8 @@ def _safe_range(records) -> tuple[Decimal, Decimal]:
     put 1500 in the "safe" list when it is not.
     """
     cheapest = min(r.price_nzd / r.pack_grams for r in records if r.pack_grams)
-    lower = max(
-        b / (cheapest * hh * d) for hh, d, b, must, _ in CALIBRATION if must
-    )
-    upper = min(
-        b / (cheapest * hh * d) for hh, d, b, must, _ in CALIBRATION if not must
-    )
+    lower = max(b / (cheapest * hh * d) for hh, d, b, must, _ in CALIBRATION if must)
+    upper = min(b / (cheapest * hh * d) for hh, d, b, must, _ in CALIBRATION if not must)
     return lower, upper
 
 

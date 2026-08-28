@@ -35,8 +35,9 @@ def _fresh_store(monkeypatch):
     monkeypatch.setattr(handler_mod, "_idempotency", None)
 
 
-def _body(session: str = "sess-idem01", turn: str = "turn-idem01",
-          message: str = "cheapest butter") -> dict:
+def _body(
+    session: str = "sess-idem01", turn: str = "turn-idem01", message: str = "cheapest butter"
+) -> dict:
     return {
         "version": "1.0",
         "session_id": session,
@@ -96,9 +97,7 @@ def test_stale_in_progress_marker_is_taken_over(store, monkeypatch):
     store.acquire(key, h)
 
     real_time = time.time
-    monkeypatch.setattr(
-        time, "time", lambda: real_time() + IN_PROGRESS_TIMEOUT_SECONDS + 1
-    )
+    monkeypatch.setattr(time, "time", lambda: real_time() + IN_PROGRESS_TIMEOUT_SECONDS + 1)
     assert store.acquire(key, h).status is AcquireStatus.ACQUIRED
 
 

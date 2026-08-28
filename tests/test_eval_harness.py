@@ -31,9 +31,7 @@ from evals.run_meal_plan import (
 
 
 def _upstream(case_id: str, code: str = "INTERNAL_ERROR") -> CaseResult:
-    return CaseResult(
-        case_id, False, [f"no plan produced (error={code})"], error_code=code
-    )
+    return CaseResult(case_id, False, [f"no plan produced (error={code})"], error_code=code)
 
 
 def _quality_failure(case_id: str) -> CaseResult:
@@ -187,23 +185,37 @@ def _cited(ref: str, product_key: str) -> Citation:
 
 def _plan_using(ref: str) -> MealPlan:
     return MealPlan(
-        household_size=2, days=1,
+        household_size=2,
+        days=1,
         budget_nzd=Decimal("50"),
         # One 1kg pack used whole, so consumption and payable coincide.
-        total_nzd=Decimal("12.00"), payable_total_nzd=Decimal("12.00"),
-        within_budget=True, repair_attempts=0,
-        meals=[Meal(
-            name="Beef pasta", serves=2,
-            ingredients=[Ingredient(
-                item="beef mince", qty="1kg",
-                citation_ref=ref, line_cost_nzd=Decimal("12.00"),
-            )],
-            subtotal_nzd=Decimal("12.00"),
-        )],
-        baskets=[StoreBasket(
-            store=Store.PAKNSAVE, store_location="Sylvia Park",
-            citation_refs=[ref], basket_total_nzd=Decimal("12.00"),
-        )],
+        total_nzd=Decimal("12.00"),
+        payable_total_nzd=Decimal("12.00"),
+        within_budget=True,
+        repair_attempts=0,
+        meals=[
+            Meal(
+                name="Beef pasta",
+                serves=2,
+                ingredients=[
+                    Ingredient(
+                        item="beef mince",
+                        qty="1kg",
+                        citation_ref=ref,
+                        line_cost_nzd=Decimal("12.00"),
+                    )
+                ],
+                subtotal_nzd=Decimal("12.00"),
+            )
+        ],
+        baskets=[
+            StoreBasket(
+                store=Store.PAKNSAVE,
+                store_location="Sylvia Park",
+                citation_refs=[ref],
+                basket_total_nzd=Decimal("12.00"),
+            )
+        ],
         dietary_exclusions_applied=["vegetarian"],
     )
 
@@ -281,9 +293,7 @@ def test_pacing_delays_calls_to_the_requested_rate(monkeypatch):
 
     slept: list[float] = []
     clock = [0.0]
-    monkeypatch.setattr(
-        "evals.run_meal_plan.time.monotonic", lambda: clock[0]
-    )
+    monkeypatch.setattr("evals.run_meal_plan.time.monotonic", lambda: clock[0])
 
     def fake_sleep(seconds: float) -> None:
         slept.append(seconds)

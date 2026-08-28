@@ -222,9 +222,19 @@ def test_ingestion_reproduces_the_seeded_records_exactly():
             item = to_item(offer)
             expected = seed[(item["store_key"], item["product_key"])]
             for field in (
-                "price_nzd", "unit_price_nzd", "gsi1_sk", "gsi1_pk", "valid_date",
-                "store", "store_location", "display_name", "canonical_name",
-                "category", "unit", "pack_grams", "on_special",
+                "price_nzd",
+                "unit_price_nzd",
+                "gsi1_sk",
+                "gsi1_pk",
+                "valid_date",
+                "store",
+                "store_location",
+                "display_name",
+                "canonical_name",
+                "category",
+                "unit",
+                "pack_grams",
+                "on_special",
             ):
                 assert str(item[field]) == str(expected[field]), (
                     f"{item['store_key']}/{item['product_key']}.{field}: "
@@ -305,7 +315,8 @@ def test_dry_run_reports_the_diff_and_writes_nothing(monkeypatch):
 
     table = _FakeTable()
     monkeypatch.setattr(
-        h.boto3, "resource",
+        h.boto3,
+        "resource",
         lambda *a, **k: type("R", (), {"Table": lambda s, n: table})(),
     )
 

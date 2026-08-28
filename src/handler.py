@@ -298,8 +298,7 @@ def handle_turn(
             session_id=request.session_id,
             turn_id=request.turn_id,
             code=ErrorCode.INTERNAL_ERROR,
-            message="I couldn't verify those prices, so I'd rather not guess. "
-            "Please try again.",
+            message="I couldn't verify those prices, so I'd rather not guess. Please try again.",
             retryable=True,
         )
 
@@ -316,18 +315,14 @@ def handle_turn(
 
 def _is_terminal(response: ChatResponse) -> bool:
     """A result worth caching: anything but a failure the client should retry."""
-    return not any(
-        e.type == "error" and getattr(e, "retryable", False) for e in response.events
-    )
+    return not any(e.type == "error" and getattr(e, "retryable", False) for e in response.events)
 
 
 def _error_codes(response: ChatResponse) -> list[str]:
     return [str(e.code) for e in response.events if e.type == "error"]
 
 
-def _emit_turn_metrics(
-    *, response: ChatResponse, stats: TurnStats, elapsed_ms: int
-) -> None:
+def _emit_turn_metrics(*, response: ChatResponse, stats: TurnStats, elapsed_ms: int) -> None:
     """
     Per-turn metrics in embedded metric format (Req 12.2).
 
@@ -575,9 +570,7 @@ def lambda_handler(event: dict[str, Any], context: Any = None) -> dict[str, Any]
     Gateway synthesises from a stack trace.
     """
     try:
-        return _observed_handler(
-            event, context if context is not None else LocalLambdaContext()
-        )
+        return _observed_handler(event, context if context is not None else LocalLambdaContext())
     except Exception as exc:
         return _last_resort(event, exc)
 

@@ -120,9 +120,7 @@ def diff_items(existing: dict[tuple[str, str], dict], items: list[dict]) -> dict
     }
 
 
-def refresh(
-    retailer: str, table_name: str = TABLE, *, dry_run: bool = False
-) -> dict[str, Any]:
+def refresh(retailer: str, table_name: str = TABLE, *, dry_run: bool = False) -> dict[str, Any]:
     """
     Fetch one retailer, report what would change, and write unless dry_run.
 
@@ -164,7 +162,5 @@ def lambda_handler(event: dict[str, Any], context: Any = None) -> dict[str, Any]
         # Raise rather than return an error shape: an unknown retailer is a
         # state-machine definition bug, and Step Functions should surface it as
         # a failed execution rather than a successful one with a sad payload.
-        raise ValueError(
-            f"retailer must be one of {KNOWN_RETAILERS}, got {retailer!r}"
-        )
+        raise ValueError(f"retailer must be one of {KNOWN_RETAILERS}, got {retailer!r}")
     return refresh(retailer, dry_run=bool(event.get("dry_run")))

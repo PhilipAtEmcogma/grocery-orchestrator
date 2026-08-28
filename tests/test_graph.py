@@ -106,9 +106,15 @@ def test_meal_plan_produces_a_costed_plan(repo, model):
     # scenario under test is "a feasible budget yields a plan"; the number
     # just has to actually be one.
     resp = run_turn(
-        _req("feed a flat of 3 for under $80 this week, no seafood",
-             hints={"household_size": 3, "budget_nzd": 80, "days": 3,
-                    "dietary_exclusions": ["seafood"]}),
+        _req(
+            "feed a flat of 3 for under $80 this week, no seafood",
+            hints={
+                "household_size": 3,
+                "budget_nzd": 80,
+                "days": 3,
+                "dietary_exclusions": ["seafood"],
+            },
+        ),
         repo,
         model,
     )
@@ -153,9 +159,7 @@ def test_dietary_exclusion_removes_seafood(repo, model):
         repo,
         model,
     )
-    products = [
-        e.citation.source.sk for e in resp.events if e.type == "citation"
-    ]
+    products = [e.citation.source.sk for e in resp.events if e.type == "citation"]
     assert not any("tuna" in p or "salmon" in p for p in products)
 
 

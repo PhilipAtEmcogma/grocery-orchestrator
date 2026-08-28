@@ -51,15 +51,13 @@ heading("DEMO 7 - Observability")
 # ------------------------------------------------------------ a plan turn
 section("1. One meal-plan turn, instrumented")
 stats = TurnStats()
-repo = InstrumentedPriceRepository(
-    InMemoryPriceRepository(), NULL_TELEMETRY, stats
-)
+repo = InstrumentedPriceRepository(InMemoryPriceRepository(), NULL_TELEMETRY, stats)
 model = InstrumentedModelClient(ScriptedModelClient(), NULL_TELEMETRY, stats)
 
 resp = run_turn(
-    request("feed 3 people for a week on $70", household_size=3,
-            budget_nzd=70, days=5),
-    repo, model,
+    request("feed 3 people for a week on $70", household_size=3, budget_nzd=70, days=5),
+    repo,
+    model,
 )
 
 print(f"  model calls        {stats.model_calls}")
@@ -83,9 +81,7 @@ print("  breakdown whose fast half reads as 0 cannot attribute anything.")
 # ------------------------------------------------------- per-turn, not global
 section("3. Per-turn, never global")
 second = TurnStats()
-repo2 = InstrumentedPriceRepository(
-    InMemoryPriceRepository(), NULL_TELEMETRY, second
-)
+repo2 = InstrumentedPriceRepository(InMemoryPriceRepository(), NULL_TELEMETRY, second)
 model2 = InstrumentedModelClient(ScriptedModelClient(), NULL_TELEMETRY, second)
 run_turn(request("cheapest milk", turn="turn-obs02"), repo2, model2)
 
@@ -110,9 +106,7 @@ print("  question the per-turn aggregate cannot answer.")
 
 # ---------------------------------------------------------- what is logged
 section("5. What gets logged about a request")
-fields = request_fields(
-    request("cheapest butter for my flat", turn="turn-obs03", household_size=3)
-)
+fields = request_fields(request("cheapest butter for my flat", turn="turn-obs03", household_size=3))
 print(f"  {json.dumps(fields, indent=2, default=str)}")
 print("\n  Note what is ABSENT: the user's message text. Counts, lengths and")
 print("  ids only. The session id is the correlation key, and the message")
