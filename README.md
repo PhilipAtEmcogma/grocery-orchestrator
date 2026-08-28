@@ -1,7 +1,7 @@
 # Smart Grocery & Meal Budget Assistant — Orchestrator
 
 A conversational assistant for New Zealand shoppers that answers "what's the
-cheapest butter near me?" and "feed a flat of 3 for under $30 this week"
+cheapest butter near me?" and "feed a flat of 3 for under $60 this week"
 questions by grounding every answer in real, retrieved supermarket price
 data. Built for the AWS AI Innovation Mentorship Workshop as a reference
 implementation of the **retrieve-then-generate** pattern on Amazon Bedrock.
@@ -15,9 +15,9 @@ live evidence in `ap-southeast-2`.
 It is **not yet a deployable production pilot**. Pilot Tasks 2–3 corrected
 citation construction, citation ordering, money-free comparison/prose labels,
 samples, and offline Guardrail intervention propagation. Exact retrieved-record
-and value equality, qualifying live
-Guardrail evaluation, location/freshness, production fail-closed
-startup, CDK/API controls, and deployed SLOs remain open.
+and value equality, qualifying live Guardrail evaluation, location/freshness,
+production fail-closed startup, CDK/API controls, and deployed SLOs remain
+open.
 
 The project also has an explicit learning objective: gain hands-on experience
 with broad relevant AWS services, especially Bedrock and AgentCore, without
@@ -114,205 +114,174 @@ generate_prose -> finalise -> END
 
 ## Repository layout
 
+Top level, with the files worth knowing about by name. `AGENTS.md` carries the
+architecture in detail; this is the map, not the territory.
+
 ```
 src/
-  schemas/contract.py     Frontend <-> orchestrator wire contract (single source of truth)
-  graph/
-    build.py              Assembles the LangGraph state machine above
-    state.py              GroceryState — what every node reads/writes
-    nodes/
-      __init__.py          Retrieval, validation, repair-loop bookkeeping, routing, finalise
-      intent.py            Intent classification + constraint extraction node
-      plan.py              Meal-plan generation + deterministic cost assembly node
-      prose.py             Placeholder-based explanatory text; renderer emits
-                            money-free product/store labels after Pilot Task 2
-  models/
-    base.py                ModelClient protocol + ModelTier policy
-    registry.py              Reads config/models.json; routes a task to a concrete
-                              model by tier, preference order and capability
-    bedrock.py              Bedrock Converse implementation; live-verified with Nova
-                              Lite/Pro, pending langchain-aws alignment and production
-                              model qualification
-    scripted.py              Deterministic stand-in model used by all current tests
-    guardrail.py             Per-request input tagging so the PROMPT_ATTACK filter
-                              actually evaluates untrusted content
-  prompts/
-    intent.py               System/user prompt + schema for intent classification
-    meal_plan.py             System/user prompt + price-free draft schema for meal planning
-    prose.py                 System/user prompt + placeholder-only schema for explanatory text
-  retrieval/
-    base.py                 PriceRepository protocol + PriceRecord type
-    memory.py                Fixture-backed repository used for all local dev and tests
-    dynamo.py                DynamoDB-backed repository — implemented, passing 31 contract tests
-  store/
-    idempotency.py           Session-scoped dedup: acquire/complete/release, in-memory
-    dynamo_idempotency.py    DynamoDB-backed idempotency store — implemented, verified live
-  observability/
-    base.py                 Telemetry protocol + no-op default, and the three
-                              functions that decide what may appear in a log (Req 11.5)
-    instrumented.py          Repository/model decorators that emit spans and
-                              per-model latency without the graph importing anything
-    powertools.py            The only module that imports aws-lambda-powertools
-  runner.py                  ChatRequest -> graph -> validated ChatResponse
-  handler.py                  Lambda entrypoint (API Gateway proxy integration) — every
-                               failure path maps to a contract-valid ErrorEvent, never a bare 500
+  schemas/contract.py      The wire contract — single source of truth
+  graph/                   LangGraph state machine
+    build.py                 Topology; the shape IS two of the invariants
+    state.py                 GroceryState — what every node reads and writes
+    dietary.py               Exclusion term -> category, or an honest refusal
+    feasibility.py           Is this budget possible at all (see docs/OPEN-REVIEW-*)
+    nodes/                   intent, plan, prose, retrieval, routing, terminals
+  models/                  Model plane: base protocol, registry, bedrock,
+                           scripted stand-in, guardrail tagging
+  prompts/                 System/user prompts and the price-free draft schemas
+  retrieval/               PriceRepository protocol; fixture and DynamoDB impls
+  store/                   Idempotency: in-memory and DynamoDB
+  observability/           Telemetry protocol, instrumented wrappers, Powertools
+  runner.py                ChatRequest -> graph -> validated ChatResponse
+  handler.py               Lambda entrypoint; no path out without a valid body
 
-tests/                      Fast, deterministic, no AWS/network — see Running it locally
-evals/
-  run_intent.py              Scores classify_intent against evals/cases/intent.json:
-                              deterministic pass/fail, since intent has a correct answer
-  run_meal_plan.py            Checks meal-plan output against evals/cases/meal_plan.json:
-                              hard invariants (budget, exclusions, grounding) scored
-                              pass/fail, plus reported-not-scored quality metrics
-                              (budget utilisation, ingredient reuse, meal variety)
-  cases/*.json                 The golden sets each harness runs against
-scripts/
-  generate_fixtures.py      Generates fixtures/products.json (deliberately messy product naming)
-  dev_server.py              Stdlib-only local HTTP server wrapping lambda_handler, so the
-                              frontend team can integrate against real responses pre-AWS
-  apply_guardrail.py         Creates/updates the Bedrock Guardrail from config/guardrail.json;
-                              --dry-run validates the policy with no AWS call (runs in CI)
-  build_lambda.py            Builds build/lambda.zip: manylinux wheels regardless of host OS,
-                              unused-transitive/runtime-provided packages excluded, size and
-                              import verified — see Task 10.1 in .kiro/specs
-validate.py                  Validates samples/*.json against the contract; runs in CI
-samples/                     Example request/response payloads used by validate.py
-fixtures/products.json       Generated seed price data (six NZ stores, ~26 products)
-config/
-  models.json                Model catalogue: ids (by env var), capabilities, cost,
-                              and per-task routing preference — read by models/registry.py
-  guardrail.json              Bedrock Guardrail policy — read by scripts/apply_guardrail.py
-CONTRACT-v1.md               Human-readable version of the wire contract, for the frontend team
-DYNAMODB-SCHEMA.md           Current products/idempotency schema plus planned meals,
-                              owner-fenced idempotency, candidate access, and CDK adoption
-AGENTS.md                    Working agreement for anyone (human or agent) picking up this repo —
-                              the three invariants, conventions, and current state at a glance
-.github/workflows/ci.yml     Lint, tests, contract/grounding validation, security scanning,
-                              eval regression floors, and the Lambda package build — all
-                              credential-free, per the protocol-boundary design above
-.kiro/specs/grocery-orchestrator/   Numbered requirements, design (incl. what was decided
-                              against and why), and task-by-task build status
-.kiro/steering/               Locked technical, security and AI-quality decisions for this project
-infra/                       AWS CDK (TypeScript) — not started yet
-ingestion/                   Step Functions price-scraping pipeline — not started yet
+ingestion/                 Price ingestion: sources, normalise, handler.
+                           Deployed to ap-southeast-2; live retailer acquisition
+                           stays gated on ACQUISITION-RISK.md §8
+Philip_demo/               Seven runnable feature demos, offline, no AWS.
+                           run_all.py exits non-zero if any drifts from the code
+tests/                     Fast, deterministic, no AWS or network
+evals/                     Scored golden sets; cases/*.json are the sets
+scripts/                   Fixture generation, dev server, Lambda build, AWS
+                           appliers (guardrail, IAM, alarms, state machine),
+                           check_quotas.py, and the pre-commit hook
+config/                    Config-as-data, applied rather than hardcoded:
+                           models, guardrail, feasibility, alarms, IAM, ingestion
+samples/                   Example payloads; validate.py checks them in CI
+fixtures/products.json     Generated seed data: 3 chains, 6 store locations,
+                           26 products, 152 records, deliberately messy naming
+datasets/                  Recipe and product source data plus its schema notes
+docs/                      Deployment record, CI gate health, throughput
+                           ceiling, an open review, ADRs — see Further reading
+infra/                     AWS CDK (TypeScript) — not started
 ```
 
 ## Progress to date
 
-- ✅ Contract v1.0 published as the compatibility baseline
-  (`src/schemas/contract.py`, `CONTRACT-v1.md`) — event shape, grounding
-  invariants, and request/response schemas. Additive pilot hardening remains;
-  breaking changes require v2.
-- ✅ Graph topology built and wired end-to-end in LangGraph
-  (`src/graph/build.py`), including the bounded repair loop.
-- ✅ Intent classification node: model-backed with keyword-heuristic
-  fallback, constraint extraction, hint reconciliation (message-wins),
-  prompt-injection defences.
-- ✅ Meal-plan generation node: price-free draft schema, deterministic
-  cost assembly in Python, tiered repair loop (quality tier first attempt,
-  fast tier for bounded repairs), honest `budget_infeasible` failure.
-- ✅ In-memory fixture price repository with deliberately inconsistent
-  cross-store product naming, used to stress-test the retrieval
-  normaliser.
-- ✅ `ScriptedModelClient` — a deterministic model stand-in that lets the
-  whole graph, including the repair loop and induced failures, be tested
-  without any AWS account or network access.
-- ✅ Multi-model routing (`src/models/registry.py`, `config/models.json`) —
-  see Design principles above for why this exists.
-- ✅ Prose generation node (`src/graph/nodes/prose.py`): the model emits
-  `[[c1]]` placeholders, model-supplied money is rejected, and Pilot Task 2
-  changed rendering to money-free product/store labels. Comparison reasoning is
-  money-free and samples were regenerated. The node checks for money twice —
-  on the model's template and again on the rendered string, since placeholders
-  expand between them — and degrades rather than failing the turn.
-  `run_turn()` deliberately does not call the whole-response assertion:
-  it raises, which would cost the user the turn instead of the sentence.
-  `validate.py` runs it over `samples/` in CI with negative controls.
-- ✅ Multi-item price queries: "cheapest for butter, milk and eggs" resolves
-  and compares every item asked about, with partial resolution (`no_data` per
-  unresolved item) rather than silently answering about only the first one.
-- 🚧 Idempotency (`src/store/idempotency.py`): the current stores replay
-  completed turns, scope keys by session, detect in-flight work, reject reused
-  ids with a different raw-body fingerprint, and cache only terminal outcomes.
-  Canonical validated-request hashing and stale-owner fencing are not yet
-  implemented; Pilot Task 6 is required before the exactly-once production
-  claim is valid.
-- 🚧 Guardrail policy/tagging and fail-closed attachment are implemented. The
-  numbered resource has basic live-invocation evidence. Pilot Task 3 proved
-  offline propagation through intent, plan, and prose and the single handler
-  mapping. `GuardrailBlocked` is now a provider-neutral subtype at
-  `src/models/base.py`; providers raise it and nodes preserve it.
-- 🚧 `evals/run_guardrail.py` provides 7/7 scripted must-allow structural
-  evidence, not live policy qualification. `--model` does not yet pin the
-  requested model, `OUT_OF_SCOPE` can count as blocked, and live must-block
-  misses do not make the process fail. Live 13/13 must-block plus 7/7
-  must-allow evidence remains open.
-- ✅ Lambda handler (`src/handler.py`) maps propagated Guardrail intervention,
-  bad input, ordinary model errors, grounding violations, and escaped failures
-  to contract-valid bodies.
-- ✅ Local dev server (`scripts/dev_server.py`): stdlib-only HTTP wrapper
-  around the same `lambda_handler`, so the frontend team can integrate
-  against real, contract-valid responses before the AWS account exists.
-- ✅ 308 passing, 31 skipped tests covering classification, extraction,
-  arithmetic, grounding, injection resistance, bounded repair, model routing,
-  multi-item queries, idempotency, Guardrail propagation/tagging, dietary
-  fail-closed behavior, and handler mappings.
-- ✅ `validate.py` and regenerated samples check contract shape, declaration,
-  citation order, basic source shape, and arithmetic. They do not independently
-  compare citation keys/values with immutable retrieved records.
-- ✅ Local eval harnesses remain separate from unit tests. Scripted baselines:
-  76.7% intent accuracy, 100% meal-plan invariant pass rate, and 7/7 Guardrail
-  must-allow structural cases. The Guardrail live path is experimental as noted
-  above. Claude access is no longer blocked; see the model evidence section in
-  `AGENTS.md`, and pace live runs — `scripts/check_quotas.py` explains why.
-  Proposed Bedrock Model Evaluation and AgentCore Evaluations may add deployed
-  evidence with reproducible provenance, but cannot replace these local gates
-  or the 90% task floor.
-- ✅ CI (`.github/workflows/ci.yml`): lint, tests, contract/grounding
-  validation, dependency and secret scanning, guardrail policy validation,
-  eval regression floors, and the Lambda package build — five jobs, all
-  credential-free, gated behind one `summary` job for branch protection.
-- ✅ Lambda deployment archive (`scripts/build_lambda.py`): cross-platform
-  build (manylinux wheels regardless of host OS), unused packages (`numpy`,
-  `zstandard`) and runtime-provided ones (`boto3`, `botocore`, `s3transfer`)
-  excluded, unzipped size measured against a 240MB budget, and the packaged
-  archive's importability verified against the archive plus *only* the
-  runtime-provided packages — so "the runtime supplies this" is a tested
-  claim rather than an assumption. ~30MB unzipped today, well under the
-  budget that justifies zip-over-container (SnapStart is zip-only).
-- ✅ Observability (`src/observability/`, Req 12.1–12.2): AWS Lambda
-  Powertools for structured JSON logs correlated by `session_id`, X-Ray
-  subsegments around retrieval and every model call — including each repair
-  attempt separately, which is what the 29-second-ceiling decision needs —
-  and EMF metrics for latency, tokens, cache reads, repair attempts,
-  guardrail interventions, idempotent replays and turns that produce no
-  content event. Powertools is imported by exactly two files; the graph and
-  both eval harnesses stay free of it, and a test walks the import graph to
-  keep it that way. Logs are asserted to contain no message text, location or
-  dietary information on a real turn (Req 11.5).
-- ✅ DynamoDB schema and migration plan documented (`DYNAMODB-SCHEMA.md`) —
-  current products/idempotency tables, planned meals catalogue, GSI/candidate
-  access, money-as-string, owner-fenced idempotency target, and CDK adoption.
-- ✅ DynamoDB tables created and seeded (`grocery-products-dev` with PITR,
-  `grocery-idempotency-dev` with TTL). The price repository passes its shared
-  live contract suite; the idempotency store's five current outcomes were
-  live-verified. Canonical hashing, stale-owner fencing, a shared idempotency
-  suite, and idempotency-table PITR remain Pilot Task 6/9 work.
-- ✅ Bedrock adapter verified live against Nova Lite, Nova Pro, Claude Haiku
-  4.5 and Claude Sonnet 4.5 in `ap-southeast-2`. Intent evidence: Nova Lite
-  83.3%, Nova Pro 100%. Meal-plan evidence, paced to the account's request
-  quota: Nova Pro 100% and Claude Haiku 4.5 100%, both over three clean reps.
-  Sonnet is excluded on latency, not quality. Those figures supersede the
-  earlier "Nova Pro 64%" — see `AGENTS.md`, which explains why the gain is the
-  harness rather than the models.
-- 🚧 Claude access is unblocked: the account's one-time Anthropic use case form
-  was submitted on 2026-08-28 and every configured model answers. Haiku,
-  Sonnet, Nova Lite, and Nova Pro are still marked `enabled` in the development
-  catalogue even though no complete task-specific scorecard set exists — no
-  Claude model has an intent scorecard; that
-  is a documented Pilot Task 7 configuration defect, not production
-  qualification. Pilot routing must disable every entry that has not met its
-  active task's 90% floor.
+✅ built and evidenced   🚧 built but not yet qualifying evidence
+
+### The contract and the graph
+
+- ✅ **Contract v1.0** (`src/schemas/contract.py`, `CONTRACT-v1.md`) — event
+  shape, grounding invariants, request/response schemas. Additive pilot
+  hardening continues; breaking changes require v2.
+- ✅ **Graph topology** wired end to end in LangGraph, including the bounded
+  repair loop. Two of the three invariants are properties of its shape.
+- ✅ **Intent classification** — model-backed with a keyword fallback,
+  constraint extraction, message-wins hint reconciliation, injection defences.
+- ✅ **Multi-item price queries** — every item asked about is resolved and
+  compared, with a `no_data` event per unresolved item rather than a silent
+  answer about only the first.
+- ✅ **Lambda handler** — Guardrail interventions, bad input, model errors,
+  grounding violations and escaped failures all map to contract-valid bodies.
+  There is no path out without one.
+
+### Money, and why it took several passes
+
+- ✅ **Prices cannot originate from the model.** Structural, three ways: the
+  topology, a draft schema with no price field, and assertions.
+- ✅ **Deterministic cost assembly** — every dollar figure is computed in
+  Python from retrieved records.
+- ✅ **Two totals, because they are different questions.** `total_nzd` is value
+  consumed at fractional pack multipliers; `payable_total_nzd` is what the
+  shopper hands over, whole packs at shelf price. `within_budget` follows the
+  second. It used to follow the first, so plans reported fitting a $60 budget
+  with a $65.01 shopping list — including in the published sample.
+- ✅ **Whole packs round up per product.** 1.2 packs costs two. A basket that
+  counted each product once shipped a plan consuming $221 of food against a
+  $40 budget.
+- ✅ **Candidates are pre-filtered to the budget**, so a price-blind model can
+  only choose from a set it can afford — the only lever available when the
+  model never sees a price.
+- ✅ **Impossible requests are refused before generation** (`graph/feasibility.py`).
+  Pre-filtering makes affordability true by construction, so it stopped being
+  evidence the request was sane; "feed 5 people for 7 days on $15" was
+  returning a tidy plan.
+- ✅ **Prose is checked for money twice** — the model's template, and the
+  rendered string, since placeholders expand between them and only the second
+  reaches the user. Both degrade: the sentence is dropped, the cited table
+  ships.
+
+### Honest failure
+
+- ✅ **Each terminal path says something true.** An unreachable model, a
+  genuinely unaffordable basket, a draft that never validated, and a dietary
+  term we cannot verify are four different facts with four different codes and
+  correct `retryable` values. They used to collapse into `BUDGET_INFEASIBLE`,
+  which told users whose Bedrock call had failed to raise their budget.
+- ✅ **Dietary exclusions fail closed** — mapped from a reviewable table or
+  refused, restated on every regeneration, verified against retrieved products
+  rather than against what the model claims.
+
+### Model plane
+
+- ✅ **Task-based routing** (`models/registry.py`, `config/models.json`) —
+  capability-aware, cost-aware, config-as-data.
+- ✅ **`ScriptedModelClient`** — deterministic stand-in that lets the whole
+  graph, including induced failures, run with no AWS account.
+- ✅ **Bedrock adapter** verified live against Nova Lite, Nova Pro, Claude
+  Haiku 4.5 and Claude Sonnet 4.5 in `ap-southeast-2`.
+- 🚧 **No route is qualified.** Meal-plan invariants, paced to the account's
+  request quota: Nova Pro 100%, Claude Haiku 4.5 100%, three clean reps each.
+  Sonnet is excluded on latency, not quality. Intent: Nova Lite 83.3%, Nova
+  Pro 100%, and **no Claude model has an intent scorecard**. Every model is
+  still marked `enabled` in the development catalogue — a known Pilot Task 7
+  configuration defect, not qualification.
+- 🚧 **Guardrail** policy, tagging and fail-closed attachment are implemented,
+  with offline propagation proven through intent, plan and prose. The numbered
+  resource has basic live-invocation evidence only; live 13/13 must-block plus
+  7/7 must-allow remains open.
+
+### Data and storage
+
+- ✅ **Fixture repository** with deliberately inconsistent cross-store naming,
+  to stress the retrieval normaliser.
+- ✅ **DynamoDB tables** created and seeded (`grocery-products-dev` with PITR,
+  `grocery-idempotency-dev` with TTL); the price repository passes its shared
+  live contract suite.
+- ✅ **Schema and migration plan** documented (`DYNAMODB-SCHEMA.md`).
+- 🚧 **Idempotency** replays completed turns, scopes keys by session, detects
+  in-flight work and rejects reused ids with a different payload. Canonical
+  request hashing and stale-owner fencing are Pilot Task 6.
+
+### Tests, evals and CI
+
+- ✅ **453 passing, 31 skipped** — classification, extraction, arithmetic,
+  grounding, injection resistance, bounded repair, routing, idempotency,
+  Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
+  the CI workflow's own wiring.
+- ✅ **Eval harnesses are separate from unit tests**, and refuse to report a
+  score they did not measure: a run where the model was never reached aborts,
+  and `--min-pass-rate` returns *inconclusive* rather than pass or fail. They
+  pace requests to the account's quota by default, because an unpaced run
+  measures the quota rather than the model.
+- ✅ **Scripted baselines** — 76.7% intent, 100% meal-plan invariants, 7/7
+  Guardrail must-allow structure.
+- ✅ **Seven runnable demos** (`Philip_demo/`), offline; `run_all.py` exits
+  non-zero if any has drifted from the code it describes.
+- ✅ **CI** — lint, format, types, tests, contract and grounding validation,
+  dependency and secret scanning, guardrail and alarm policy validation, eval
+  floors, and the Lambda package build. Five jobs behind one required
+  `summary` check, all credential-free, and a test asserts every job is
+  actually wired into it.
+- ✅ **Lambda deployment archive** — manylinux wheels regardless of host OS,
+  unused and runtime-provided packages excluded, size measured against a 240MB
+  budget, and the archive's importability verified rather than assumed. ~30MB
+  unzipped.
+
+### Deployed and observable
+
+- ✅ **Observability** (Req 12.1–12.2) — structured logs correlated by
+  `session_id`, X-Ray subsegments around retrieval and every model call
+  including each repair attempt, EMF metrics for latency, tokens, cache reads,
+  repairs, guardrail interventions, idempotent replays and contentless turns.
+  Powertools is imported by exactly two files and a test walks the import
+  graph to keep it that way. Logs are asserted to carry no message text,
+  location or dietary information.
+- ✅ **Throughput ceiling measured**: 10 meal-plan turns/minute, 5 when repair
+  fires, bound by a Nova Lite quota that **cannot be raised by request**.
+  Accepted for workshop scale; `scripts/check_quotas.py` derives it live
+  rather than trusting this paragraph.
 
 ## Not yet built
 
@@ -364,18 +333,32 @@ python -m venv .venv
 .venv\Scripts\activate        # Windows; use `source .venv/bin/activate` on macOS/Linux
 pip install -r requirements.txt -r requirements-dev.txt
 
-git config core.hooksPath scripts/hooks   # enable the pre-commit gate (once)
-
-pytest                        # run the test suite (fast, deterministic)
-python validate.py            # validate samples/*.json against the contract
-python scripts/generate_fixtures.py   # regenerate fixtures/products.json
-ruff check .                  # lint (see pyproject.toml for the enabled rule set)
-python evals/run_intent.py            # 76.7% scripted baseline
-python evals/run_meal_plan.py         # 91% scripted invariant baseline
-python evals/run_guardrail.py         # 7/7 scripted must-allow structure only
-# --model is experimental and not qualifying live evidence until Pilot Task 3 follow-up
-python scripts/build_lambda.py        # build build/lambda.zip; see Progress to date
+# Two one-off git settings. The first runs the gate before you commit rather
+# than after CI does; the second keeps `git blame` off the 2026-08-29 reformat.
+git config core.hooksPath scripts/hooks
+git config blame.ignoreRevsFile .git-blame-ignore-revs
 ```
+
+Then, to see it work:
+
+```bash
+python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
+```
+
+And to check it:
+
+```bash
+pytest                     # 453 passing, 31 skipped
+python validate.py         # samples/*.json against the contract
+ruff check . && ruff format --check .
+python evals/run_intent.py       # 76.7% scripted baseline
+python evals/run_meal_plan.py    # 100% scripted invariant baseline
+python evals/run_guardrail.py    # 7/7 scripted must-allow structure only
+```
+
+`AGENTS.md` has the full command reference, including the AWS appliers and the
+Lambda build. Deliberately not repeated here: the two lists drifted apart once
+already, and the eval baseline in this file was wrong for a day because of it.
 
 ### Running an eval against a live model
 
@@ -445,23 +428,58 @@ and `POWERTOOLS_METRICS_NAMESPACE`; `LOG_LEVEL` sets log verbosity.
 
 ## Further reading
 
-- [`AGENTS.md`](AGENTS.md) — the working agreement for this repo: the three
-  invariants the design exists to enforce, conventions, and a current-state
-  snapshot. Start here if you're picking this repo up cold.
-- [`CONTRACT-v1.md`](CONTRACT-v1.md) — the frontend-facing write-up of the
-  wire contract, including full request/response examples.
-- [`DYNAMODB-SCHEMA.md`](DYNAMODB-SCHEMA.md) — current products and
-  idempotency schemas, the planned catalogue-constrained meals domain,
-  production candidate-query options, and the CDK adoption sequence.
+**Start here if you are picking this repo up cold.**
+
+- [`AGENTS.md`](AGENTS.md) — the working agreement: the three invariants, the
+  conventions, the full command reference, eval discipline, and a current-state
+  snapshot including live model evidence.
+
+**Building against it**
+
+- [`CONTRACT-v1.md`](CONTRACT-v1.md) — the wire contract with full
+  request/response examples and the error-code table.
+- [`FRONTEND-INTEGRATION.md`](FRONTEND-INTEGRATION.md) — how to consume the
+  event stream, which totals to render, and the failure modes worth handling
+  distinctly.
+- [`samples/`](samples/) — payloads `validate.py` checks in CI.
+- [`Philip_demo/`](Philip_demo/) — seven runnable demos of the features,
+  offline, with the run instructions in each file.
+
+**How it is deployed and how it behaves**
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — the deployment record: what
+  exists in `ap-southeast-2`, its identifiers, the IAM shapes that took two
+  attempts, defects that only appeared once deployed, and the measured
+  throughput ceiling. Read before assuming a manual test result is fresh.
+- [`docs/THROUGHPUT-AND-SCALING.md`](docs/THROUGHPUT-AND-SCALING.md) — the
+  request-per-minute ceiling, why it was accepted for workshop scale, and the
+  two options for production with their costs. Read before assuming a Bedrock
+  quota increase is available; for the models in the route, it is not.
+- [`DYNAMODB-SCHEMA.md`](DYNAMODB-SCHEMA.md) — current and planned tables,
+  candidate-query options, and the CDK adoption sequence.
+
+**Judgement calls, open and closed**
+
+- [`docs/OPEN-REVIEW-min-grams-per-person-day.md`](docs/OPEN-REVIEW-min-grams-per-person-day.md)
+  — **open, and wants a human.** The one figure in the planning path that is a
+  judgement rather than derived from the catalogue. Written for a reviewer who
+  will not read code.
+- [`docs/CI-GATE-HEALTH.md`](docs/CI-GATE-HEALTH.md) — where the gate can go
+  red for reasons unrelated to your change. Five of six entries are resolved
+  and kept for their reasoning; the open one is that the eval case counts are
+  too small.
+- [`ACQUISITION-RISK.md`](ACQUISITION-RISK.md) — the terms-of-service
+  assessment gating live price acquisition. §8 is the condition list. **Read
+  before touching acquisition.**
+- [`docs/adr/`](docs/adr/) — 0001 the deterministic core, 0002 the staged
+  AgentCore proposal (proposed; mentor approval required).
+
+**Requirements and locked decisions**
+
 - [`.kiro/specs/grocery-orchestrator/`](.kiro/specs/grocery-orchestrator/) —
-  numbered requirements, the design doc (`design.md` §8 records what was
-  decided against and why — read it before proposing an alternative), and
-  `tasks.md` for build status task-by-task.
-- [`.kiro/steering/tech.md`](.kiro/steering/tech.md) — locked architecture
-  and infrastructure decisions (region, packaging, model tiering, transport
-  roadmap, forbidden approaches).
-- [`.kiro/steering/security.md`](.kiro/steering/security.md) — security
-  controls that apply to all code in this repo, and the week-by-week
-  schedule for when each lands.
-- [`.kiro/steering/ai-quality.md`](.kiro/steering/ai-quality.md) — rules for
-  model selection, capability branching, and eval/golden-set discipline.
+  numbered requirements, the design doc (§8 records what was decided against
+  and why — read it before proposing an alternative), and task-by-task status.
+- [`.kiro/steering/`](.kiro/steering/) — locked technical, security and
+  AI-quality decisions, including the formatting policy.
+- [`docs/CLAUDE-CODE-PERMISSIONS.md`](docs/CLAUDE-CODE-PERMISSIONS.md) — the
+  allowlist audit for agent tooling in this repo.
