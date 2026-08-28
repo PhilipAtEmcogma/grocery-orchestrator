@@ -7,8 +7,10 @@ go red for a reason unrelated to the change that trips it.
 Nothing here blocks a merge. They are ordered by how much warning you get
 before they bite.
 
-**Status as of 2026-08-29.** §2, §5 and §6 are resolved and kept for their
-reasoning rather than deleted. §1, §3 and §4 remain open.
+**Status as of 2026-08-29.** §2 to §6 are resolved and kept for their
+reasoning rather than deleted. **§1 remains open** — the eval case counts are
+too small, which is now also why the meal-plan suite cannot rank two models
+that both score 100%.
 
 Two of them stopped being hypothetical in the meantime, in the same afternoon:
 adopting `ruff format` moved line numbers across the tree, which invalidated
@@ -98,7 +100,7 @@ line numbers across the tree, the baseline needed a rescan (§3), and rescanning
 on Windows wrote seven backslash paths — the exact failure this section
 describes, twice in one afternoon.
 
-## 3. The baseline records line numbers, so unrelated edits move it
+## 3. The baseline records line numbers, so unrelated edits move it — RESOLVED 2026-08-29
 
 Every entry in `.secrets.baseline` carries a `line_number`. Insert a line above
 a known false positive and the recorded number is stale, the scan reports a
@@ -117,14 +119,28 @@ committed, which is the point made twice over. It is suppressed with a pragma
 in an HTML comment — invisible in rendered Markdown, honoured by
 `detect_secrets.filters.allowlist.is_line_allowlisted` all the same.
 
-Recommended: prefer an inline `# pragma: allowlist secret` on the offending
-line over a baseline entry, for the two test-file hits at least. The pragma
-travels with the line when the file is edited, so it cannot drift, and it is
-readable at the point it applies rather than in a JSON file nobody opens. Keep
-the baseline for cases where the line cannot carry a comment — the dataset
-JSON above is one.
+**Resolved: both test-file entries moved to inline pragmas**, exactly as
+recommended, and the baseline now holds one entry — the dataset JSON, which
+cannot carry a comment.
 
-## 4. Green-alone is not green-combined
+    tests/test_guardrail.py   an assertion on a "PASSWORD" guardrail action
+    tests/test_handler.py     a fake postgres:// DSN in a RuntimeError message
+
+The first is described rather than quoted, because quoting it here trips the
+scanner on this file — which is the third time this section has demonstrated
+its own subject while being edited. The other two are recorded above.
+
+The second needed the string bound to a name first: the pragma plus the
+original `raise` exceeded the 100-column limit, and wrapping the `raise` would
+have put the pragma on a line the scanner does not flag.
+
+Verified rather than assumed. Three lines were inserted at the top of both
+files — the exact edit that used to break the scan — and it still passed,
+because a pragma travels with its line. It happened a third time in the
+meantime: adopting `ruff format` moved line numbers across the tree and
+invalidated the baseline, which is what sent someone back to this section.
+
+## 4. Green-alone is not green-combined — RESOLVED 2026-08-29
 
 Dependabot #19 (`ruff` 0.16.3 → 0.16.4) had all seven checks passing, but they
 ran against `main` *without* #17's 4,443 new lines. A linter release can add
@@ -135,12 +151,37 @@ Checked explicitly before merging: `ruff` 0.16.4 against `main` + #17 is
 `All checks passed!`, matching pinned 0.16.3 on the same tree. So the
 combination was safe this time.
 
-Recommended: for any dependency bump that changes a *checker* — `ruff`,
-`pyright` — re-run the gate against the merged result rather than trusting the
-PR's own checks, whenever a substantial feature branch is open. The pins exist
-for exactly this reason; `requirements-dev.txt` already explains why
-("a checker release can turn main red with no repo change"). The pin stops the
-surprise arriving unannounced; it does not tell you the upgrade is safe.
+**Resolved: it is already enforced, by a control this section did not know
+about.** Branch protection on `main` has `strict: true` on its required status
+check:
+
+```console
+$ gh api repos/.../branches/main/protection/required_status_checks     --jq '{strict: .strict, contexts: .contexts}'
+{"contexts":["All checks"],"strict":true}
+```
+
+`strict` is "require branches to be up to date before merging". So the
+scenario in this section cannot reach `main`: once #17 merges, #19 is out of
+date, GitHub blocks its merge until it is updated, and every check re-runs
+against the combination. The manual re-run this section recommends is what the
+setting does automatically, and `enforce_admins` is on, so it cannot be waved
+through.
+
+Worth writing down because a control nobody has recorded is one somebody
+switches off.
+
+**The real hole was one layer down, and is now closed.** Protection requires
+exactly one check, `All checks`, which passes or fails on its `needs` list.
+Its own comment says a single required check means "adding a job later does not
+mean reconfiguring the protection rule" — true, and it hides a trap: a new job
+absent from `needs` runs, reports its own status, and gates nothing. The PR
+goes green with a failing job on it.
+
+`tests/test_ci_workflow.py` asserts the wiring: every job appears in `needs`,
+`needs` names no job that does not exist, the aggregate is `if: always()` so a
+failed dependency cannot skip it into reporting nothing, and it actually reads
+`needs.*.result` rather than passing unconditionally. Verified by adding a job
+outside `needs` and watching the test name it.
 
 ## 5. `ruff format` is not enforced, and the tree has drifted — RESOLVED 2026-08-29
 
