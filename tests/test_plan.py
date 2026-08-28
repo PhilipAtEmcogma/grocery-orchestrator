@@ -46,13 +46,15 @@ class _UncappedRepository(InMemoryPriceRepository):
     """
     Candidates unfiltered by budget, as retrieval behaved before pre-filtering.
 
-    Retrieval now caps the candidate set so that buying ALL of it stays within
-    budget, which means no selection can come back over budget and the repair
-    loop's budget branch is unreachable in production. It is kept as
-    defence in depth -- a future repository, or a bug in the cap, would put an
-    over-budget draft back in front of validate_plan -- and machinery that is
-    never exercised is machinery that has quietly stopped working. These tests
-    reach it by removing the thing that prevents it.
+    Retrieval caps the candidate set so that buying every product in it ONCE
+    stays within budget. That bounds the common case but is not a guarantee
+    for every plan: a draft using 1.2 packs of something buys two, so a plan
+    can still exceed the cap and reach the repair loop -- which is why the
+    budget branch is live in production rather than dead code.
+
+    Uncapping is simply the cheapest way to force that state on demand. It
+    makes the scripted planner's natural over-buying bust any budget, instead
+    of depending on a particular multi-pack draft appearing.
     """
 
     def candidates_for_budget(self, **kwargs):
