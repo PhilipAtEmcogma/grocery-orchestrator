@@ -79,9 +79,7 @@ class MalformedDraftModel(ScriptedModelClient):
 
     def structured(self, **kw):
         if kw.get("task") in ("generate_plan", "repair_plan"):
-            raise ModelOutputInvalid(
-                "PlanDraft failed validation: reasoning too long"
-            )
+            raise ModelOutputInvalid("PlanDraft failed validation: reasoning too long")
         return super().structured(**kw)
 
 
@@ -98,10 +96,16 @@ print("  request, and the contract says so explicitly.")
 # ------------------------------------------------------- unsupported exclusion
 section("2. UNSUPPORTED_EXCLUSION - a term we cannot verify")
 resp = run_turn(
-    request("gluten-free meal plan", turn="turn-fail02",
-            household_size=2, budget_nzd=60, days=3,
-            dietary_exclusions=["gluten-free"]),
-    repo, ScriptedModelClient(),
+    request(
+        "gluten-free meal plan",
+        turn="turn-fail02",
+        household_size=2,
+        budget_nzd=60,
+        days=3,
+        dietary_exclusions=["gluten-free"],
+    ),
+    repo,
+    ScriptedModelClient(),
 )
 code, retryable, message = terminal(resp)
 print(f"  {code}  retryable={retryable}")
@@ -113,9 +117,9 @@ print("  restriction is the dangerous direction of error.")
 # ------------------------------------------------------------ budget infeasible
 section("3. BUDGET_INFEASIBLE - a costed plan that genuinely will not fit")
 resp = run_turn(
-    request("plan dinners", turn="turn-fail03",
-            household_size=2, budget_nzd=5, days=3),
-    repo, ScriptedModelClient(plan_packs=Decimal("5")),
+    request("plan dinners", turn="turn-fail03", household_size=2, budget_nzd=5, days=3),
+    repo,
+    ScriptedModelClient(plan_packs=Decimal("5")),
 )
 code, retryable, message = terminal(resp)
 print(f"  {code}  retryable={retryable}")
@@ -129,9 +133,9 @@ print("  beside 'I could not make one' would be incoherent.")
 # ------------------------------------------------------- generation failure
 section("4. PLAN_GENERATION_FAILED - repair ran out on invalid drafts")
 resp = run_turn(
-    request("plan dinners", turn="turn-fail04",
-            household_size=2, budget_nzd=500, days=3),
-    repo, MalformedDraftModel(),
+    request("plan dinners", turn="turn-fail04", household_size=2, budget_nzd=500, days=3),
+    repo,
+    MalformedDraftModel(),
 )
 code, retryable, message = terminal(resp)
 print("  Budget offered: $500 - ample.")
@@ -149,9 +153,11 @@ for label, message_text in [
     ("misconfiguration", "BEDROCK_GUARDRAIL_ID is not set and REQUIRE_GUARDRAIL is on"),
 ]:
     resp = run_turn(
-        request("plan dinners", turn=f"turn-fail{label[:2]}9",
-                household_size=2, budget_nzd=60, days=3),
-        repo, UnreachableModel(message_text),
+        request(
+            "plan dinners", turn=f"turn-fail{label[:2]}9", household_size=2, budget_nzd=60, days=3
+        ),
+        repo,
+        UnreachableModel(message_text),
     )
     code, retryable, msg = terminal(resp)
     print(f"  {label:<16} -> {code:<24} retryable={retryable}")

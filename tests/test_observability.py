@@ -268,9 +268,7 @@ def never_affordable(monkeypatch):
             return super().candidates_for_budget(**kwargs)
 
     monkeypatch.setattr(handler_mod, "_repo", _Uncapped())
-    monkeypatch.setattr(
-        handler_mod, "_model", ScriptedModelClient(plan_packs=Decimal("5"))
-    )
+    monkeypatch.setattr(handler_mod, "_model", ScriptedModelClient(plan_packs=Decimal("5")))
 
 
 @pytest.fixture
@@ -420,9 +418,7 @@ def _metric(emf: list[dict], name: str) -> list[tuple[float, dict]]:
         for group in record["_aws"]["CloudWatchMetrics"]:
             if not any(m["Name"] == name for m in group["Metrics"]):
                 continue
-            dimensions = {
-                key: record[key] for names in group["Dimensions"] for key in names
-            }
+            dimensions = {key: record[key] for names in group["Dimensions"] for key in names}
             value = record[name]
             found.append((value[0] if isinstance(value, list) else value, dimensions))
     return found
@@ -494,9 +490,7 @@ def _turn_meal_plan(monkeypatch) -> None:
 def _turn_price_check(monkeypatch) -> None:
     """butter and milk are in the fixtures, so this reaches
     generate_comparison — a node the meal-plan turn never visits."""
-    result = _invoke(
-        _personal_body("whanau shopping: how much do butter and milk cost")
-    )
+    result = _invoke(_personal_body("whanau shopping: how much do butter and milk cost"))
     assert "price_comparison" in _types(result)
 
 
@@ -519,9 +513,7 @@ def _turn_budget_infeasible(monkeypatch) -> None:
     import src.handler as handler_mod
     from src.models.scripted import ScriptedModelClient
 
-    monkeypatch.setattr(
-        handler_mod, "_model", ScriptedModelClient(plan_packs=Decimal("5"))
-    )
+    monkeypatch.setattr(handler_mod, "_model", ScriptedModelClient(plan_packs=Decimal("5")))
     assert "budget_infeasible" in _codes(_invoke(_meal_plan_body()))
 
 
@@ -583,9 +575,7 @@ def _turn_model_error(monkeypatch) -> None:
 
 def _turn_invalid_request(monkeypatch) -> None:
     """Valid JSON, wrong shape — the message rides in on a rejected field."""
-    result = _invoke(
-        {"session_id": "short", "message": PERSONAL_MESSAGE, "nonsense": True}
-    )
+    result = _invoke({"session_id": "short", "message": PERSONAL_MESSAGE, "nonsense": True})
     assert result["statusCode"] == 400
 
 
@@ -614,9 +604,7 @@ def _turn_in_flight(monkeypatch) -> None:
 
     body = _meal_plan_body()
     raw = json.dumps(body)
-    _idempotency_store().acquire(
-        make_key(body["session_id"], body["turn_id"]), fingerprint(raw)
-    )
+    _idempotency_store().acquire(make_key(body["session_id"], body["turn_id"]), fingerprint(raw))
     assert _invoke(raw)["statusCode"] == 409
 
 
@@ -658,9 +646,7 @@ def test_no_personal_information_reaches_any_log_sink(turn, every_sink, monkeypa
     assert written.strip(), "the turn wrote nothing at all, so the scan proves nothing"
 
     lowered = written.lower()
-    leaked = sorted(
-        {term for term in (*FORBIDDEN, *FORBIDDEN_KEYS) if term.lower() in lowered}
-    )
+    leaked = sorted({term for term in (*FORBIDDEN, *FORBIDDEN_KEYS) if term.lower() in lowered})
     if leaked:
         offending = [
             line
@@ -690,9 +676,7 @@ def test_the_leak_scan_can_actually_see_a_leak(every_sink, monkeypatch):
     sinks = {
         "stdout": lambda: print(PERSONAL_MESSAGE),
         "stderr": lambda: sys.stderr.write(PERSONAL_MESSAGE + "\n"),
-        "powertools": lambda: powertools_logger.info(
-            "careless", extra={"m": PERSONAL_MESSAGE}
-        ),
+        "powertools": lambda: powertools_logger.info("careless", extra={"m": PERSONAL_MESSAGE}),
         # The one available to a graph node, which cannot import Powertools.
         "stdlib_logging": lambda: logging.getLogger("src.graph.nodes.plan").debug(
             "planning for %s", PERSONAL_MESSAGE
@@ -706,9 +690,9 @@ def test_the_leak_scan_can_actually_see_a_leak(every_sink, monkeypatch):
         every_sink()  # discard anything buffered from the previous sink
         leak()
         lowered = every_sink().lower()
-        assert any(
-            term.lower() in lowered for term in (*FORBIDDEN, *FORBIDDEN_KEYS)
-        ), f"a leak written to {name} was invisible to the scan"
+        assert any(term.lower() in lowered for term in (*FORBIDDEN, *FORBIDDEN_KEYS)), (
+            f"a leak written to {name} was invisible to the scan"
+        )
 
 
 def test_turn_log_reports_shape_not_content(captured):
@@ -890,9 +874,7 @@ def test_subsegments_cover_retrieval_and_every_model_call(xray_segment, captured
     assert "model.generate_plan" in names
 
 
-def test_each_repair_attempt_is_its_own_subsegment(
-    xray_segment, captured, never_affordable
-):
+def test_each_repair_attempt_is_its_own_subsegment(xray_segment, captured, never_affordable):
     """
     The repair loop spans four graph nodes, so it is traced as one subsegment
     per attempt rather than one wrapping span — which is also the more useful
@@ -924,9 +906,7 @@ def test_model_subsegments_are_annotated_for_latency_attribution(xray_segment, c
     lambda_handler(_event(_affordable_meal_plan_body()))
     captured()
 
-    plan = next(
-        sub for sub in _subsegments(xray_segment) if sub.name == "model.generate_plan"
-    )
+    plan = next(sub for sub in _subsegments(xray_segment) if sub.name == "model.generate_plan")
     annotations = plan.annotations
 
     assert annotations["task"] == "generate_plan"
@@ -1027,9 +1007,7 @@ def test_repair_metric_matches_the_plan_that_was_returned(captured):
     ]
     assert plans, "expected a meal plan on this turn"
 
-    assert _metric(emf, METRIC_REPAIR_ATTEMPTS)[0][0] == float(
-        plans[0]["data"]["repair_attempts"]
-    )
+    assert _metric(emf, METRIC_REPAIR_ATTEMPTS)[0][0] == float(plans[0]["data"]["repair_attempts"])
 
 
 def test_repair_attempts_absent_on_turns_that_never_planned(captured):

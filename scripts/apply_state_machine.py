@@ -30,11 +30,7 @@ from aws_placeholders import (
     substitute,
 )
 
-CONFIG = (
-    Path(__file__).resolve().parent.parent
-    / "config"
-    / "ingestion-state-machine.json"
-)
+CONFIG = Path(__file__).resolve().parent.parent / "config" / "ingestion-state-machine.json"
 NAME = "grocery-ingestion-dev"
 ROLE = "grocery-ingestion-sfn-dev-role"
 REGION = "ap-southeast-2"
@@ -50,11 +46,7 @@ def strip_comments(obj: Any) -> Any:
     explain itself without constraining what the service accepts.
     """
     if isinstance(obj, dict):
-        return {
-            k: strip_comments(v)
-            for k, v in obj.items()
-            if k not in ("Comment", "_comment")
-        }
+        return {k: strip_comments(v) for k, v in obj.items() if k not in ("Comment", "_comment")}
     if isinstance(obj, list):
         return [strip_comments(i) for i in obj]
     return obj
@@ -71,8 +63,9 @@ def main() -> int:
 
     states = definition["States"]["RefreshAllRetailers"]
     print(f"Config valid: {NAME}")
-    print(f"  type        {states['Type']}, mode "
-          f"{states['ItemProcessor']['ProcessorConfig']['Mode']}")
+    print(
+        f"  type        {states['Type']}, mode {states['ItemProcessor']['ProcessorConfig']['Mode']}"
+    )
     print(f"  concurrency {states.get('MaxConcurrency')}")
     print(f"  states      {', '.join(states['ItemProcessor']['States'])}")
 
@@ -89,18 +82,12 @@ def main() -> int:
     role_arn = f"arn:aws:iam::{account}:role/{ROLE}"
     body = json.dumps(definition)
 
-    existing = {
-        sm["name"] for sm in sfn.list_state_machines().get("stateMachines", [])
-    }
+    existing = {sm["name"] for sm in sfn.list_state_machines().get("stateMachines", [])}
     if NAME in existing:
-        sfn.update_state_machine(
-            stateMachineArn=arn, definition=body, roleArn=role_arn
-        )
+        sfn.update_state_machine(stateMachineArn=arn, definition=body, roleArn=role_arn)
         print(f"\nState machine {NAME} (updated)")
     else:
-        sfn.create_state_machine(
-            name=NAME, definition=body, roleArn=role_arn, type="STANDARD"
-        )
+        sfn.create_state_machine(name=NAME, definition=body, roleArn=role_arn, type="STANDARD")
         print(f"\nState machine {NAME} (created)")
     return 0
 

@@ -49,9 +49,7 @@ def build_request(cfg: dict) -> dict:
         "contentPolicyConfig": clean(cfg["contentPolicyConfig"]),
         "topicPolicyConfig": clean(cfg["topicPolicyConfig"]),
         "wordPolicyConfig": clean(cfg["wordPolicyConfig"]),
-        "sensitiveInformationPolicyConfig": clean(
-            cfg["sensitiveInformationPolicyConfig"]
-        ),
+        "sensitiveInformationPolicyConfig": clean(cfg["sensitiveInformationPolicyConfig"]),
         "tags": cfg.get("tags", []),
     }
 
@@ -60,9 +58,7 @@ def validate(request: dict) -> list[str]:
     """Catch the mistakes that produce a guardrail which silently does nothing."""
     problems: list[str] = []
 
-    filters = {
-        f["type"]: f for f in request["contentPolicyConfig"]["filtersConfig"]
-    }
+    filters = {f["type"]: f for f in request["contentPolicyConfig"]["filtersConfig"]}
     if "PROMPT_ATTACK" not in filters:
         problems.append("PROMPT_ATTACK filter missing")
     elif filters["PROMPT_ATTACK"]["inputStrength"] != "HIGH":
@@ -100,10 +96,7 @@ def main() -> int:
     print(f"Config valid: {request['name']}")
     print(f"  {len(request['contentPolicyConfig']['filtersConfig'])} content filters")
     print(f"  {len(request['topicPolicyConfig']['topicsConfig'])} denied topics")
-    print(
-        f"  {len(request['sensitiveInformationPolicyConfig']['piiEntitiesConfig'])}"
-        f" PII rules"
-    )
+    print(f"  {len(request['sensitiveInformationPolicyConfig']['piiEntitiesConfig'])} PII rules")
 
     if args.dry_run:
         print("\nDry run - no AWS calls made.")

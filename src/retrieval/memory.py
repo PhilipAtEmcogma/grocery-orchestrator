@@ -69,10 +69,35 @@ SYNONYMS: dict[str, str] = {
 
 # Words to strip before matching. "cheapest butter near me" -> "butter"
 NOISE = {
-    "cheapest", "cheap", "best", "price", "prices", "cost", "of", "the", "a",
-    "some", "near", "me", "nearby", "around", "here", "what", "whats", "is",
-    "how", "much", "for", "buy", "get", "find", "want", "need", "please",
+    "cheapest",
+    "cheap",
+    "best",
+    "price",
+    "prices",
+    "cost",
+    "of",
+    "the",
+    "a",
+    "some",
+    "near",
+    "me",
+    "nearby",
+    "around",
+    "here",
+    "what",
+    "whats",
+    "is",
+    "how",
+    "much",
+    "for",
+    "buy",
+    "get",
+    "find",
+    "want",
+    "need",
+    "please",
 }
+
 
 def normalise_term(text: str) -> str:
     """
@@ -90,9 +115,7 @@ def normalise_term(text: str) -> str:
 class InMemoryPriceRepository(PriceRepository):
     def __init__(self, fixture_path: Path | None = None) -> None:
         # Default to the repo-level fixtures/products.json unless overridden.
-        path = fixture_path or (
-            Path(__file__).resolve().parents[2] / "fixtures" / "products.json"
-        )
+        path = fixture_path or (Path(__file__).resolve().parents[2] / "fixtures" / "products.json")
         raw = json.loads(path.read_text(encoding="utf-8"))
 
         # Parse every raw JSON record into a typed, immutable PriceRecord.

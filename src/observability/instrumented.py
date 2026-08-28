@@ -50,9 +50,7 @@ class InstrumentedPriceRepository(PriceRepository):
     cannot answer. The per-turn total lands on TurnStats for the metric.
     """
 
-    def __init__(
-        self, inner: PriceRepository, telemetry: Telemetry, stats: TurnStats
-    ) -> None:
+    def __init__(self, inner: PriceRepository, telemetry: Telemetry, stats: TurnStats) -> None:
         self._inner = inner
         self._telemetry = telemetry
         self._stats = stats
@@ -71,9 +69,7 @@ class InstrumentedPriceRepository(PriceRepository):
         with self._span("cheapest_for_product") as span:
             started = time.perf_counter()
             try:
-                found = self._inner.cheapest_for_product(
-                    product_key, limit=limit, stores=stores
-                )
+                found = self._inner.cheapest_for_product(product_key, limit=limit, stores=stores)
             finally:
                 self._record(started)
             # Counts, not the product key. The key is a catalogue identifier
@@ -150,9 +146,7 @@ class InstrumentedModelClient(ModelClient):
     for.
     """
 
-    def __init__(
-        self, inner: ModelClient, telemetry: Telemetry, stats: TurnStats
-    ) -> None:
+    def __init__(self, inner: ModelClient, telemetry: Telemetry, stats: TurnStats) -> None:
         self._inner = inner
         self._telemetry = telemetry
         self._stats = stats
@@ -234,9 +228,7 @@ class InstrumentedModelClient(ModelClient):
                     usage = {}
                 model = _model_label(usage)
 
-                self._stats.record_model(
-                    model=model, task=task, elapsed_ms=elapsed_ms, usage=usage
-                )
+                self._stats.record_model(model=model, task=task, elapsed_ms=elapsed_ms, usage=usage)
                 span.annotate(
                     model=model,
                     schema=schema,
@@ -249,9 +241,7 @@ class InstrumentedModelClient(ModelClient):
                 # Dimensioned, so latency is comparable per model and per
                 # task — the number Task 10.5 needs to attribute the plan
                 # path's share of the 29-second ceiling.
-                self._telemetry.duration(
-                    METRIC_MODEL_LATENCY, elapsed_ms, model=model, task=task
-                )
+                self._telemetry.duration(METRIC_MODEL_LATENCY, elapsed_ms, model=model, task=task)
 
 
 def _elapsed_ms(started: float) -> float:

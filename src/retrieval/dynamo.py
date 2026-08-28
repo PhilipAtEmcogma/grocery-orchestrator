@@ -184,9 +184,7 @@ class DynamoPriceRepository(PriceRepository):
         response = self._table.scan()
         all_items.extend(response.get("Items", []))
         while "LastEvaluatedKey" in response:
-            response = self._table.scan(
-                ExclusiveStartKey=response["LastEvaluatedKey"]
-            )
+            response = self._table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
             all_items.extend(response.get("Items", []))
 
         # Convert and sort by price

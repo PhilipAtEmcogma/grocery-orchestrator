@@ -152,9 +152,7 @@ def install_dependencies(target: Path) -> None:
 
 def _matches(entry: Path, names: list[str]) -> bool:
     return any(
-        entry.name == name
-        or entry.name.startswith(f"{name}-")
-        or entry.name.startswith(f"{name}.")
+        entry.name == name or entry.name.startswith(f"{name}-") or entry.name.startswith(f"{name}.")
         for name in names
     )
 
@@ -304,10 +302,7 @@ def main() -> int:
     before = directory_size(STAGE_DIR)
     print(f"Pruning unused packages: {', '.join(UNUSED_TRANSITIVE)} ...")
     prune_excluded(STAGE_DIR, UNUSED_TRANSITIVE)
-    print(
-        f"Setting aside runtime-provided packages: "
-        f"{', '.join(RUNTIME_PROVIDED)} ..."
-    )
+    print(f"Setting aside runtime-provided packages: {', '.join(RUNTIME_PROVIDED)} ...")
     prune_excluded(STAGE_DIR, RUNTIME_PROVIDED, move_to=RUNTIME_DIR)
     after_prune = directory_size(STAGE_DIR)
     print(f"  {before / 1024 / 1024:.1f} MB -> {after_prune / 1024 / 1024:.1f} MB")

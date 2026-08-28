@@ -105,9 +105,7 @@ def merge_usage(left: UsageMeta | None, right: UsageMeta | None) -> UsageMeta:
         input_tokens=_sum(left.input_tokens, right.input_tokens),
         output_tokens=_sum(left.output_tokens, right.output_tokens),
         latency_ms=_sum(left.latency_ms, right.latency_ms),
-        guardrail_intervened=(
-            left.guardrail_intervened or right.guardrail_intervened
-        ),
+        guardrail_intervened=(left.guardrail_intervened or right.guardrail_intervened),
     )
 
 

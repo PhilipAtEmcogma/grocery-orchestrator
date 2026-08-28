@@ -14,9 +14,7 @@ from src.retrieval.base import PriceRepository
 from src.schemas.contract import ChatRequest, ChatResponse, assert_grounded
 
 
-def run_turn(
-    request: ChatRequest, repo: PriceRepository, model: ModelClient
-) -> ChatResponse:
+def run_turn(request: ChatRequest, repo: PriceRepository, model: ModelClient) -> ChatResponse:
     # Build a fresh graph per call, wired to this call's repo/model.
     graph = build_graph(repo, model)
 
@@ -28,9 +26,7 @@ def run_turn(
         "turn_id": request.turn_id,
         "message": request.message,
         "hints": request.hints.model_dump(mode="json") if request.hints else {},
-        "location": (
-            request.location.model_dump(mode="json") if request.location else None
-        ),
+        "location": (request.location.model_dump(mode="json") if request.location else None),
         "events": [],
     }
 

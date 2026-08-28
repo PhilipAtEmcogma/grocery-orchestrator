@@ -81,8 +81,7 @@ def quota_for(quotas: list[dict], display_name: str) -> dict | None:
     matches = [
         q
         for q in quotas
-        if q["QuotaName"].startswith(QUOTA_PREFIX)
-        and display_name in q["QuotaName"]
+        if q["QuotaName"].startswith(QUOTA_PREFIX) and display_name in q["QuotaName"]
     ]
     if not matches:
         return None

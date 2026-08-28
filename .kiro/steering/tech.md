@@ -101,6 +101,29 @@ stage fails closed unless DynamoDB, Bedrock, a numbered Guardrail version,
 stored idempotency, strict CORS, and named resources are configured. Missing
 settings must never silently select demo adapters.
 
+## Formatting
+
+`ruff format` is **adopted and gated**, decided 2026-08-29. CI runs
+`ruff format --check --diff .` beside `ruff check`, and the pre-commit hook
+checks the same thing. `line-length = 100` in `pyproject.toml` is shared by the
+formatter and the linter, so the two cannot disagree.
+
+Do not hand-format against it. If the gate fails, run `ruff format .` and
+commit — it never needs a judgement call, which is the reason for gating it
+rather than leaving it to review.
+
+Adopted rather than declined because the drift only ever grew: 39 of 75 files
+when `docs/CI-GATE-HEALTH.md` §5 first raised it, 59 of 104 by the time it was
+decided. Every week of delay made the eventual diff larger and more likely to
+collide with work in flight.
+
+The cost was real. One mechanical commit touched 59 files, and `git blame` on
+those lines points at it rather than at whoever wrote them — which matters in a
+repository whose value is mostly in comments attached to specific lines.
+`.git-blame-ignore-revs` gives that back; run
+`git config blame.ignoreRevsFile .git-blame-ignore-revs` once per clone, or use
+GitHub, which reads the file automatically.
+
 ## Dependency rules
 
 - Use `langgraph`, `langchain-core`, `langchain-aws`. Do NOT add the umbrella

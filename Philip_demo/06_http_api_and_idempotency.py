@@ -73,12 +73,16 @@ def api_event(body: dict | str) -> dict:
 
 # ------------------------------------------------------------ happy path
 section("1. A turn through the real Lambda handler")
-result = lambda_handler(api_event({
-    "version": "1.0",
-    "session_id": "sess-http01",
-    "turn_id": "turn-http01",
-    "message": "cheapest butter",
-}))
+result = lambda_handler(
+    api_event(
+        {
+            "version": "1.0",
+            "session_id": "sess-http01",
+            "turn_id": "turn-http01",
+            "message": "cheapest butter",
+        }
+    )
+)
 print(f"  HTTP {result['statusCode']}")
 body = json.loads(result["body"])
 print(f"  events: {[e['type'] for e in body['events']]}")
@@ -130,7 +134,7 @@ print("  twice, or return a different answer for the same question.")
 
 section("5. In-flight replay is a conflict, not a race")
 key2 = make_key("sess-http03", "turn-http03")
-store.acquire(key2, fingerprint(payload))          # first request, still running
+store.acquire(key2, fingerprint(payload))  # first request, still running
 inflight = store.acquire(key2, fingerprint(payload))
 print(f"  concurrent acquire: {inflight.status.value}")
 print("  -> the handler answers HTTP 409 rather than running the turn twice.")

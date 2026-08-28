@@ -53,9 +53,7 @@ def _fallback(message: str, hints: dict) -> IntentResult:
     )
 
 
-def _reconcile(
-    extracted: IntentResult, hints: dict
-) -> tuple[Constraints, list[str]]:
+def _reconcile(extracted: IntentResult, hints: dict) -> tuple[Constraints, list[str]]:
     """
     Merge extracted constraints with client hints.
 
@@ -71,18 +69,20 @@ def _reconcile(
         if extracted_value is not None:
             if hint_value is not None and str(hint_value) != str(extracted_value):
                 notices.append(
-                    f"Using {label} {extracted_value} from your message "
-                    f"rather than {hint_value}."
+                    f"Using {label} {extracted_value} from your message rather than {hint_value}."
                 )
             return extracted_value
         return hint_value
 
     household = take(
-        "household_size", extracted.household_size,
-        hints.get("household_size"), "household size",
+        "household_size",
+        extracted.household_size,
+        hints.get("household_size"),
+        "household size",
     )
     budget = take(
-        "budget_nzd", extracted.budget_nzd,
+        "budget_nzd",
+        extracted.budget_nzd,
         Decimal(str(hints["budget_nzd"])) if hints.get("budget_nzd") is not None else None,
         "budget of $",
     )
@@ -98,9 +98,7 @@ def _reconcile(
     # hints arrives as an untyped dict from the wire, so values are coerced
     # explicitly rather than trusted.
     hinted_exclusions = [str(x) for x in (hints.get("dietary_exclusions") or [])]
-    exclusions: list[str] = sorted(
-        {*(extracted.dietary_exclusions or []), *hinted_exclusions}
-    )
+    exclusions: list[str] = sorted({*(extracted.dietary_exclusions or []), *hinted_exclusions})
     constraints["dietary_exclusions"] = exclusions
 
     hinted_stores = [Store(str(s)) for s in (hints.get("preferred_stores") or [])]

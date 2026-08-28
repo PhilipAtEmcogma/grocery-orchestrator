@@ -52,9 +52,12 @@ print("User: 'feed a flat of 3 for under $90 this week'\n")
 resp = run_turn(
     request(
         "feed a flat of 3 for under $90 this week",
-        household_size=3, budget_nzd=90, days=7,
+        household_size=3,
+        budget_nzd=90,
+        days=7,
     ),
-    repo, model,
+    repo,
+    model,
 )
 show_events(resp, skip=("session", "citation", "token"))
 
@@ -62,15 +65,14 @@ plan_event = next((e for e in resp.events if e.type == "meal_plan"), None)
 if plan_event:
     plan = plan_event.data
     index = citations(resp)
-    print(f"\n  {len(plan.meals)} meals for {plan.household_size} people "
-          f"over {plan.days} days")
-    print(f"  Consumed  ${plan.total_nzd:>7}   value the meals use, at "
-          f"fractional packs")
-    print(f"  PAYABLE   ${plan.payable_total_nzd:>7}   money the shopper hands "
-          f"over")
-    print(f"  Budget    ${plan.budget_nzd:>7}   within_budget="
-          f"{plan.within_budget} "
-          f"({plan.payable_total_nzd / plan.budget_nzd:.0%} of budget)")
+    print(f"\n  {len(plan.meals)} meals for {plan.household_size} people over {plan.days} days")
+    print(f"  Consumed  ${plan.total_nzd:>7}   value the meals use, at fractional packs")
+    print(f"  PAYABLE   ${plan.payable_total_nzd:>7}   money the shopper hands over")
+    print(
+        f"  Budget    ${plan.budget_nzd:>7}   within_budget="
+        f"{plan.within_budget} "
+        f"({plan.payable_total_nzd / plan.budget_nzd:.0%} of budget)"
+    )
     print("\n  Two totals, because you cannot buy half a pack of butter. Using")
     print("  500g of a 1kg pack consumes $2.50 of value and costs $5.00 at the")
     print("  till. within_budget is computed from the payable figure; reading")
@@ -80,8 +82,10 @@ if plan_event:
         print(f"    {meal.name}  (serves {meal.serves})  ${meal.subtotal_nzd}")
         for ing in meal.ingredients:
             c = index[ing.citation_ref]
-            print(f"        {ing.qty:<8} {ing.item:<22} ${ing.line_cost_nzd:>6}  "
-                  f"[{ing.citation_ref}] {c.product_name}")
+            print(
+                f"        {ing.qty:<8} {ing.item:<22} ${ing.line_cost_nzd:>6}  "
+                f"[{ing.citation_ref}] {c.product_name}"
+            )
 
     # ------------------------------------------------------ the arithmetic
     section("2. Every number above was computed in Python")
@@ -95,12 +99,16 @@ if plan_event:
     # --------------------------------------------------------- the baskets
     section("3. What you actually buy, per store")
     for basket in plan.baskets:
-        print(f"  {basket.store.value} {basket.store_location}: "
-              f"${basket.basket_total_nzd} across "
-              f"{len(basket.citation_refs)} products")
+        print(
+            f"  {basket.store.value} {basket.store_location}: "
+            f"${basket.basket_total_nzd} across "
+            f"{len(basket.citation_refs)} products"
+        )
     total_baskets = sum(b.basket_total_nzd for b in plan.baskets)
-    print(f"  {'sum of baskets':<28} ${total_baskets}"
-          f"   == payable_total_nzd (${plan.payable_total_nzd})")
+    print(
+        f"  {'sum of baskets':<28} ${total_baskets}"
+        f"   == payable_total_nzd (${plan.payable_total_nzd})"
+    )
     print("\n  A pack is counted ONCE even when used across several meals,")
     print("  which is what makes ingredient reuse actually save money rather")
     print("  than merely look cheap.")
@@ -116,12 +124,15 @@ print("  correctness one)\n")
 over_budget_model = ScriptedModelClient(plan_packs=Decimal("5"))
 resp = run_turn(
     request("plan dinners", turn="turn-demo05", household_size=2, budget_nzd=40, days=3),
-    repo, over_budget_model,
+    repo,
+    over_budget_model,
 )
 plan_event = next((e for e in resp.events if e.type == "meal_plan"), None)
 if plan_event:
-    print(f"  Delivered after {plan_event.data.repair_attempts} repair attempt(s): "
-          f"${plan_event.data.total_nzd} of ${plan_event.data.budget_nzd}")
+    print(
+        f"  Delivered after {plan_event.data.repair_attempts} repair attempt(s): "
+        f"${plan_event.data.total_nzd} of ${plan_event.data.budget_nzd}"
+    )
 else:
     err = next(e for e in resp.events if e.type == "error")
     print(f"  Repair exhausted -> {err.code.value}")
@@ -137,10 +148,13 @@ resp = run_turn(
     request(
         "vegetarian meal plan for 2",
         turn="turn-demo06",
-        household_size=2, budget_nzd=50, days=3,
+        household_size=2,
+        budget_nzd=50,
+        days=3,
         dietary_exclusions=["vegetarian"],
     ),
-    repo, model,
+    repo,
+    model,
 )
 plan_event = next((e for e in resp.events if e.type == "meal_plan"), None)
 if plan_event:
@@ -159,7 +173,8 @@ if plan_event:
     category_by_product = {r.product_key: r.category for r in repo.all_records}
     used_categories = {
         category_by_product[index[i.citation_ref].source.sk]
-        for m in plan_event.data.meals for i in m.ingredients
+        for m in plan_event.data.meals
+        for i in m.ingredients
     }
     print(f"  Categories actually used: {sorted(used_categories)}")
     violations = used_categories & banned
@@ -176,10 +191,13 @@ resp = run_turn(
     request(
         "gluten-free meal plan",
         turn="turn-demo07",
-        household_size=2, budget_nzd=50, days=3,
+        household_size=2,
+        budget_nzd=50,
+        days=3,
         dietary_exclusions=["gluten-free"],
     ),
-    repo, model,
+    repo,
+    model,
 )
 err = next((e for e in resp.events if e.type == "error"), None)
 if err:

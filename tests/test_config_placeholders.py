@@ -58,9 +58,7 @@ def test_config_parses(path: Path):
 def test_substitution_reaches_nested_arns():
     cfg = {
         "region": "ap-southeast-2",
-        "Statement": [
-            {"Resource": ["arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/x"]}
-        ],
+        "Statement": [{"Resource": ["arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/x"]}],
     }
     out = substitute(cfg, account_id="123456789012", region="ap-southeast-2")
     assert out["Statement"][0]["Resource"][0] == (

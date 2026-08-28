@@ -75,8 +75,7 @@ class DynamoIdempotencyStore(IdempotencyStore):
                     "ttl": now + self._ttl_seconds,
                 },
                 ConditionExpression=(
-                    "attribute_not_exists(pk) OR "
-                    "(#s = :in_progress AND started_at < :stale)"
+                    "attribute_not_exists(pk) OR (#s = :in_progress AND started_at < :stale)"
                 ),
                 ExpressionAttributeNames={"#s": "status"},
                 ExpressionAttributeValues={

@@ -46,7 +46,14 @@ from src.schemas.contract import (
 MAX_ITEMS_PER_TURN = 5
 
 MEAL_CATEGORIES = [
-    "pantry", "produce", "meat", "dairy", "frozen", "bakery", "chilled", "seafood",
+    "pantry",
+    "produce",
+    "meat",
+    "dairy",
+    "frozen",
+    "bakery",
+    "chilled",
+    "seafood",
 ]
 
 
@@ -142,9 +149,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         skipped = list(requested[MAX_ITEMS_PER_TURN:])
         for term in requested[:MAX_ITEMS_PER_TURN]:
             key = repo.resolve_product_key(term)
-            found = (
-                repo.cheapest_for_product(key, limit=5, stores=stores) if key else []
-            )
+            found = repo.cheapest_for_product(key, limit=5, stores=stores) if key else []
             if key is None or not found:
                 unresolved.append(term)
                 continue
@@ -157,9 +162,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         # turn before it reaches here, so retrieval trusts that the mapping
         # exists — anything unmappable that got this far is a routing bug and
         # must fail rather than silently produce an unsafe plan.
-        exclude_categories, unsupported = map_exclusions(
-            constraints.get("dietary_exclusions", [])
-        )
+        exclude_categories, unsupported = map_exclusions(constraints.get("dietary_exclusions", []))
         if unsupported:
             raise RuntimeError(
                 f"routing bug: retrieve_prices reached with unsupported "
@@ -237,9 +240,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
 
 def emit_no_data(state: GroceryState) -> dict:
     """The 'I don't have data for that' path. A SUCCESS outcome, not an error."""
-    items = state.get("unresolved_items") or state.get("constraints", {}).get(
-        "query_items", []
-    )
+    items = state.get("unresolved_items") or state.get("constraints", {}).get("query_items", [])
     if not items:
         items = ["that item"]
 
@@ -288,9 +289,7 @@ def generate_comparison(state: GroceryState) -> dict:
                         citation_ref=c.ref,
                         is_cheapest=(c.ref == cheapest.ref),
                         savings_vs_dearest_nzd=(
-                            dearest.price_nzd - c.price_nzd
-                            if c.ref == cheapest.ref
-                            else None
+                            dearest.price_nzd - c.price_nzd if c.ref == cheapest.ref else None
                         ),
                     )
                     for c in options
@@ -395,10 +394,7 @@ def emit_upstream_failure(state: GroceryState) -> dict:
         "events": [
             ErrorEvent(
                 seq=_next_seq(state),
-                code=(
-                    ErrorCode.UPSTREAM_TIMEOUT if timed_out
-                    else ErrorCode.INTERNAL_ERROR
-                ),
+                code=(ErrorCode.UPSTREAM_TIMEOUT if timed_out else ErrorCode.INTERNAL_ERROR),
                 retryable=True,
                 message=(
                     "I couldn't reach the service that builds meal plans just "

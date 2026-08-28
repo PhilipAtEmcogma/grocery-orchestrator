@@ -58,8 +58,7 @@ def test_pinning_an_unconfigured_model_raises(registry, monkeypatch):
     monkeypatch.delenv("BEDROCK_MODEL_LLAMA", raising=False)
     fresh = ModelRegistry()
     with pytest.raises(UnroutableTask):
-        fresh.route("classify_intent", policy=RoutingPolicy.PINNED,
-                    pinned_key="llama-instruct")
+        fresh.route("classify_intent", policy=RoutingPolicy.PINNED, pinned_key="llama-instruct")
 
 
 def test_disabled_models_are_not_routed_to(registry):
@@ -120,15 +119,23 @@ _INTENT_PAYLOAD = {
 
 def test_tool_use_model_gets_a_tool_config(monkeypatch, registry):
     spec = registry.get("claude-haiku")
-    client, stub = _stub_client(monkeypatch, spec, {
-        "output": {"message": {"content": [
-            {"toolUse": {"name": "IntentResult", "input": _INTENT_PAYLOAD}}
-        ]}},
-        "usage": {"inputTokens": 100, "outputTokens": 20},
-    })
+    client, stub = _stub_client(
+        monkeypatch,
+        spec,
+        {
+            "output": {
+                "message": {
+                    "content": [{"toolUse": {"name": "IntentResult", "input": _INTENT_PAYLOAD}}]
+                }
+            },
+            "usage": {"inputTokens": 100, "outputTokens": 20},
+        },
+    )
 
     result = client.structured(
-        system="sys", user="cheapest butter", schema=IntentResult,
+        system="sys",
+        user="cheapest butter",
+        schema=IntentResult,
         tier=ModelTier.FAST,
     )
     assert result.query_items == ["butter"]
@@ -138,15 +145,23 @@ def test_tool_use_model_gets_a_tool_config(monkeypatch, registry):
 def test_model_without_tool_use_falls_back_to_prose(monkeypatch, registry):
     """Llama has no tool use. Schema goes in the prompt; reply gets parsed."""
     spec = registry.get("llama-instruct")
-    client, stub = _stub_client(monkeypatch, spec, {
-        "output": {"message": {"content": [
-            {"text": "```json\n" + json.dumps(_INTENT_PAYLOAD) + "\n```"}
-        ]}},
-        "usage": {"inputTokens": 300, "outputTokens": 40},
-    })
+    client, stub = _stub_client(
+        monkeypatch,
+        spec,
+        {
+            "output": {
+                "message": {
+                    "content": [{"text": "```json\n" + json.dumps(_INTENT_PAYLOAD) + "\n```"}]
+                }
+            },
+            "usage": {"inputTokens": 300, "outputTokens": 40},
+        },
+    )
 
     result = client.structured(
-        system="sys", user="cheapest butter", schema=IntentResult,
+        system="sys",
+        user="cheapest butter",
+        schema=IntentResult,
         tier=ModelTier.FAST,
     )
     assert result.query_items == ["butter"]
@@ -157,44 +172,59 @@ def test_model_without_tool_use_falls_back_to_prose(monkeypatch, registry):
 def test_prose_fallback_survives_preamble(monkeypatch, registry):
     """Models ignore 'no preamble' instructions. Parsing must cope."""
     spec = registry.get("llama-instruct")
-    client, _ = _stub_client(monkeypatch, spec, {
-        "output": {"message": {"content": [
-            {"text": "Sure! Here is the JSON you asked for:\n"
-                     + json.dumps(_INTENT_PAYLOAD)}
-        ]}},
-        "usage": {"inputTokens": 300, "outputTokens": 40},
-    })
-
-    result = client.structured(
-        system="sys", user="x", schema=IntentResult, tier=ModelTier.FAST
+    client, _ = _stub_client(
+        monkeypatch,
+        spec,
+        {
+            "output": {
+                "message": {
+                    "content": [
+                        {
+                            "text": "Sure! Here is the JSON you asked for:\n"
+                            + json.dumps(_INTENT_PAYLOAD)
+                        }
+                    ]
+                }
+            },
+            "usage": {"inputTokens": 300, "outputTokens": 40},
+        },
     )
+
+    result = client.structured(system="sys", user="x", schema=IntentResult, tier=ModelTier.FAST)
     assert result.intent.value == "price_check"
 
 
 def test_unparseable_prose_raises_rather_than_returning_partial(monkeypatch, registry):
     spec = registry.get("llama-instruct")
-    client, _ = _stub_client(monkeypatch, spec, {
-        "output": {"message": {"content": [{"text": "I'd rather not."}]}},
-        "usage": {"inputTokens": 300, "outputTokens": 10},
-    })
+    client, _ = _stub_client(
+        monkeypatch,
+        spec,
+        {
+            "output": {"message": {"content": [{"text": "I'd rather not."}]}},
+            "usage": {"inputTokens": 300, "outputTokens": 10},
+        },
+    )
 
     with pytest.raises(ModelError):
-        client.structured(
-            system="sys", user="x", schema=IntentResult, tier=ModelTier.FAST
-        )
+        client.structured(system="sys", user="x", schema=IntentResult, tier=ModelTier.FAST)
 
 
 def test_cache_point_omitted_for_models_without_caching(monkeypatch, registry):
     spec = registry.get("nova-lite")
-    client, stub = _stub_client(monkeypatch, spec, {
-        "output": {"message": {"content": [
-            {"toolUse": {"name": "IntentResult", "input": _INTENT_PAYLOAD}}
-        ]}},
-        "usage": {"inputTokens": 100, "outputTokens": 20},
-    })
+    client, stub = _stub_client(
+        monkeypatch,
+        spec,
+        {
+            "output": {
+                "message": {
+                    "content": [{"toolUse": {"name": "IntentResult", "input": _INTENT_PAYLOAD}}]
+                }
+            },
+            "usage": {"inputTokens": 100, "outputTokens": 20},
+        },
+    )
 
-    client.structured(system="s" * 40000, user="x", schema=IntentResult,
-                      tier=ModelTier.FAST)
+    client.structured(system="s" * 40000, user="x", schema=IntentResult, tier=ModelTier.FAST)
     blocks = stub.kwargs["system"]
     assert not any("cachePoint" in b for b in blocks)
 
@@ -202,30 +232,39 @@ def test_cache_point_omitted_for_models_without_caching(monkeypatch, registry):
 def test_cache_point_omitted_below_the_model_minimum(monkeypatch, registry):
     """Below cache_min_tokens the call succeeds but caches nothing."""
     spec = registry.get("claude-haiku")
-    client, stub = _stub_client(monkeypatch, spec, {
-        "output": {"message": {"content": [
-            {"toolUse": {"name": "IntentResult", "input": _INTENT_PAYLOAD}}
-        ]}},
-        "usage": {"inputTokens": 100, "outputTokens": 20},
-    })
+    client, stub = _stub_client(
+        monkeypatch,
+        spec,
+        {
+            "output": {
+                "message": {
+                    "content": [{"toolUse": {"name": "IntentResult", "input": _INTENT_PAYLOAD}}]
+                }
+            },
+            "usage": {"inputTokens": 100, "outputTokens": 20},
+        },
+    )
 
-    client.structured(system="short prompt", user="x", schema=IntentResult,
-                      tier=ModelTier.FAST)
+    client.structured(system="short prompt", user="x", schema=IntentResult, tier=ModelTier.FAST)
     assert not any("cachePoint" in b for b in stub.kwargs["system"])
 
 
 def test_cache_point_added_for_large_prompts_on_capable_models(monkeypatch, registry):
     spec = registry.get("claude-haiku")
-    client, stub = _stub_client(monkeypatch, spec, {
-        "output": {"message": {"content": [
-            {"toolUse": {"name": "IntentResult", "input": _INTENT_PAYLOAD}}
-        ]}},
-        "usage": {"inputTokens": 5000, "outputTokens": 20,
-                  "cacheReadInputTokens": 4200},
-    })
+    client, stub = _stub_client(
+        monkeypatch,
+        spec,
+        {
+            "output": {
+                "message": {
+                    "content": [{"toolUse": {"name": "IntentResult", "input": _INTENT_PAYLOAD}}]
+                }
+            },
+            "usage": {"inputTokens": 5000, "outputTokens": 20, "cacheReadInputTokens": 4200},
+        },
+    )
 
-    client.structured(system="s" * 40000, user="x", schema=IntentResult,
-                      tier=ModelTier.FAST)
+    client.structured(system="s" * 40000, user="x", schema=IntentResult, tier=ModelTier.FAST)
     assert any("cachePoint" in b for b in stub.kwargs["system"])
     assert client.last_usage["cache_read_tokens"] == 4200
 
@@ -233,13 +272,20 @@ def test_cache_point_added_for_large_prompts_on_capable_models(monkeypatch, regi
 def test_max_tokens_clamped_to_model_limit(monkeypatch, registry):
     """Nova's ceiling is lower than Claude's. Asking for more is an API error."""
     spec = registry.get("nova-lite")
-    client, stub = _stub_client(monkeypatch, spec, {
-        "output": {"message": {"content": [
-            {"toolUse": {"name": "IntentResult", "input": _INTENT_PAYLOAD}}
-        ]}},
-        "usage": {"inputTokens": 100, "outputTokens": 20},
-    })
+    client, stub = _stub_client(
+        monkeypatch,
+        spec,
+        {
+            "output": {
+                "message": {
+                    "content": [{"toolUse": {"name": "IntentResult", "input": _INTENT_PAYLOAD}}]
+                }
+            },
+            "usage": {"inputTokens": 100, "outputTokens": 20},
+        },
+    )
 
-    client.structured(system="s", user="x", schema=IntentResult,
-                      tier=ModelTier.FAST, max_tokens=100000)
+    client.structured(
+        system="s", user="x", schema=IntentResult, tier=ModelTier.FAST, max_tokens=100000
+    )
     assert stub.kwargs["inferenceConfig"]["maxTokens"] <= spec.max_output_tokens

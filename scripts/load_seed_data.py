@@ -71,7 +71,7 @@ def verify(table_name: str) -> None:
         price_cents = item["gsi1_sk"]["S"].split("#")[0]
         location = item["store_location"]["S"]
         store = item["store"]["S"]
-        print(f"    ${int(price_cents)/100:.2f} @ {store} {location}")
+        print(f"    ${int(price_cents) / 100:.2f} @ {store} {location}")
 
 
 def main() -> int:

@@ -62,9 +62,7 @@ def min_grams_per_person_day() -> int:
     """
     value = _load()["min_grams_per_person_day"]
     if not isinstance(value, int) or value <= 0:
-        raise ValueError(
-            f"min_grams_per_person_day must be a positive integer, got {value!r}"
-        )
+        raise ValueError(f"min_grams_per_person_day must be a positive integer, got {value!r}")
     return value
 
 
@@ -82,11 +80,7 @@ def minimum_spend(records: list, household: int, days: int) -> Decimal | None:
     "impossible": refusing a turn because the catalogue lacked a field would
     be a data problem presented to the user as their problem.
     """
-    per_gram = [
-        rec.price_nzd / rec.pack_grams
-        for rec in records
-        if getattr(rec, "pack_grams", 0)
-    ]
+    per_gram = [rec.price_nzd / rec.pack_grams for rec in records if getattr(rec, "pack_grams", 0)]
     if not per_gram:
         return None
     grams = household * days * min_grams_per_person_day()

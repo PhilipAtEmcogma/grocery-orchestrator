@@ -76,8 +76,7 @@ def test_ids_are_echoed_back():
 def test_meal_plan_request_works_end_to_end():
     body = _valid_body(
         "feed a flat of 3 for under $80 this week, no seafood",
-        hints={"household_size": 3, "budget_nzd": 80, "days": 3,
-               "dietary_exclusions": ["seafood"]},
+        hints={"household_size": 3, "budget_nzd": 80, "days": 3, "dietary_exclusions": ["seafood"]},
     )
     response = _parse(lambda_handler(_event(body)))
     assert "meal_plan" in [e.type for e in response.events]
@@ -89,16 +88,16 @@ def test_meal_plan_request_works_end_to_end():
 @pytest.mark.parametrize(
     "body",
     [
-        '{"nonsense": true}',           # valid JSON, wrong shape
-        "not json at all",              # not JSON
-        "",                             # empty
-        "{}",                           # empty object
+        '{"nonsense": true}',  # valid JSON, wrong shape
+        "not json at all",  # not JSON
+        "",  # empty
+        "{}",  # empty object
         '{"version":"1.0","session_id":"x","turn_id":"y","message":""}',  # empty msg
     ],
 )
 def test_bad_input_still_returns_a_parseable_contract_response(body):
     result = lambda_handler(_event(body))
-    response = _parse(result)          # would raise if unparseable
+    response = _parse(result)  # would raise if unparseable
     assert response.events[-1].type == "done"
 
 
@@ -128,14 +127,14 @@ def test_oversized_message_is_rejected_not_truncated():
 @pytest.mark.parametrize(
     "body",
     [
-        '{"session_id": "x",',                              # truncated mid-object
+        '{"session_id": "x",',  # truncated mid-object
         '{"session_id": "sess-abcd1234", "message": "hi",}',  # trailing comma
-        '{"session_id": "sess-abcd1234"',                   # unclosed object
-        "{",                                                # just a brace
-        "[1, 2, 3]",                                        # valid JSON, not an object
-        "null",                                             # valid JSON, not an object
-        '"just a string"',                                  # valid JSON, not an object
-        "123",                                              # valid JSON, not an object
+        '{"session_id": "sess-abcd1234"',  # unclosed object
+        "{",  # just a brace
+        "[1, 2, 3]",  # valid JSON, not an object
+        "null",  # valid JSON, not an object
+        '"just a string"',  # valid JSON, not an object
+        "123",  # valid JSON, not an object
     ],
 )
 def test_unparseable_body_still_returns_a_contract_response(body):
@@ -198,9 +197,7 @@ def test_undecodable_base64_body_still_returns_a_contract_response(body, why):
     second one. API Gateway sets isBase64Encoded on binary content types, so
     this is reachable by any client that sets the wrong Content-Type.
     """
-    result = lambda_handler(
-        {"httpMethod": "POST", "body": body, "isBase64Encoded": True}
-    )
+    result = lambda_handler({"httpMethod": "POST", "body": body, "isBase64Encoded": True})
 
     assert result["statusCode"] == 400, why
     assert _parse(result).events[-1].type == "done"
