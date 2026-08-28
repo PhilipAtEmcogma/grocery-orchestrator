@@ -195,7 +195,7 @@ UPDATE_FIXTURES=1 python -m pytest \
 python evals/run_intent.py                       # 76.7% scripted baseline
 python evals/run_intent.py --model nova-lite     # 83.3% live (Nova Lite)
 python evals/run_intent.py --model nova-pro      # 100% live (Nova Pro)
-python evals/run_meal_plan.py                    # 91% invariants baseline
+python evals/run_meal_plan.py                    # 100% invariants baseline
 python evals/run_guardrail.py                    # must_allow structural (scripted)
 # EXPERIMENTAL/non-qualifying: --model does not yet pin the requested model
 python evals/run_guardrail.py --model nova-lite

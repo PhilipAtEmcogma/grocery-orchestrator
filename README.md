@@ -258,9 +258,10 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   citation order, basic source shape, and arithmetic. They do not independently
   compare citation keys/values with immutable retrieved records.
 - ✅ Local eval harnesses remain separate from unit tests. Scripted baselines:
-  76.7% intent accuracy, 91% meal-plan invariant pass rate, and 7/7 Guardrail
+  76.7% intent accuracy, 100% meal-plan invariant pass rate, and 7/7 Guardrail
   must-allow structural cases. The Guardrail live path is experimental as noted
-  above. Claude comparisons remain blocked on Anthropic account verification.
+  above. Claude access is no longer blocked; see the model evidence section in
+  `AGENTS.md`, and pace live runs — `scripts/check_quotas.py` explains why.
   Proposed Bedrock Model Evaluation and AgentCore Evaluations may add deployed
   evidence with reproducible provenance, but cannot replace these local gates
   or the 90% task floor.
@@ -294,12 +295,18 @@ ingestion/                   Step Functions price-scraping pipeline — not star
   live contract suite; the idempotency store's five current outcomes were
   live-verified. Canonical hashing, stale-owner fencing, a shared idempotency
   suite, and idempotency-table PITR remain Pilot Task 6/9 work.
-- ✅ Bedrock adapter verified live against Nova Lite and Nova Pro in
-  `ap-southeast-2`. Intent evidence: Nova Lite 83.3%, Nova Pro 100%. Meal-plan
-  evidence: Nova Pro 64%, below the 90% pilot floor.
-- 🚧 Claude access remains pending Anthropic account verification. Haiku,
+- ✅ Bedrock adapter verified live against Nova Lite, Nova Pro, Claude Haiku
+  4.5 and Claude Sonnet 4.5 in `ap-southeast-2`. Intent evidence: Nova Lite
+  83.3%, Nova Pro 100%. Meal-plan evidence, paced to the account's request
+  quota: Nova Pro 100% and Claude Haiku 4.5 100%, both over three clean reps.
+  Sonnet is excluded on latency, not quality. Those figures supersede the
+  earlier "Nova Pro 64%" — see `AGENTS.md`, which explains why the gain is the
+  harness rather than the models.
+- 🚧 Claude access is unblocked: the account's one-time Anthropic use case form
+  was submitted on 2026-08-28 and every configured model answers. Haiku,
   Sonnet, Nova Lite, and Nova Pro are still marked `enabled` in the development
-  catalogue even though no complete task-specific scorecard set exists; that
+  catalogue even though no complete task-specific scorecard set exists — no
+  Claude model has an intent scorecard; that
   is a documented Pilot Task 7 configuration defect, not production
   qualification. Pilot routing must disable every entry that has not met its
   active task's 90% floor.

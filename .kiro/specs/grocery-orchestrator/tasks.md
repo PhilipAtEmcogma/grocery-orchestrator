@@ -295,8 +295,11 @@ and nut-free support) is future work — see Phase 11.*
 
 *3.10 was built but never specified. The adapter is verified against live
 Bedrock endpoints (Nova Lite and Nova Pro in ap-southeast-2). Current evidence:
-Nova Lite 83.3% and Nova Pro 100% on intent; Nova Pro 64% on meal-plan
-invariants. Claude access remains blocked by Anthropic verification. The
+Nova Lite 83.3% and Nova Pro 100% on intent; on meal-plan invariants, paced to
+the account's request quota, Nova Pro 100% and Claude Haiku 4.5 100% over three
+clean reps each (the earlier "Nova Pro 64%" was measured by a scorer since
+found wrong in three ways — see AGENTS.md). Claude access was unblocked on
+2026-08-28. The
 current catalogue is Nova-first, but no production route is qualified until
 Pilot Task 7 publishes task-specific scorecards, disables unscored models, and
 each enabled active route reaches 90%. Claude routing, if later selected, is an
@@ -680,8 +683,9 @@ resolves to the right piece of work.*
 What is blocked, and by what:
 
 ```
-BLOCKED ON ANTHROPIC ACCOUNT VERIFICATION
-  Claude task scoring                -> required before any Claude route can enable
+UNBLOCKED 2026-08-28 (Anthropic use case form submitted)
+  Claude intent scorecard            -> still required before any Claude route
+                                        can enable; meal-plan is done (100%)
 
 AVAILABLE NOW; EVIDENCE STILL MISSING
   3.9  cache utilisation             -> run per accessible candidate model
