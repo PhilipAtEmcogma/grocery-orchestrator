@@ -434,8 +434,31 @@ production 20s client timeout, reported from reps with zero upstream failures:
 | Model | clean band | reps | latency median / p90 | over 20s ceiling |
 |---|---|---|---|---|
 | Amazon Nova Pro | **100%** | 3/3 | 1.2s / 5.9s | 0 of 90 |
-| Claude Haiku 4.5 | **91%** | 2/3 | 2.5s / 7.8s | 0 of 83 |
+| Claude Haiku 4.5 | **100%** | 3/3 | 2.5s / 7.8s | 0 of 83 |
 | Claude Sonnet 4.5 | not requalified | — | 11.8s / 19.9s | **9 of 98** |
+
+**PACE THE HARNESS OR THE NUMBER IS THE QUOTA.** This account allows 10
+cross-region requests per minute for either Claude model and 25 for Nova Pro.
+One rep fires 25-40 requests as fast as the harness can issue them, so an
+unpaced Claude run hits the wall part-way through and the TAIL of the case
+list fails with INTERNAL_ERROR — which reads as "the model failed those cases"
+and is really "the account stopped answering". Three consecutive bands scored
+Haiku at 82-91% with every rep contaminated while Nova Pro scored 100% clean
+on the same suite; paced, Haiku scores 100% too. An unpaced comparison between
+an Anthropic and an Amazon model on this account compares their request
+budgets. `evals/run_meal_plan.py` now paces at 9/min by default.
+
+Haiku's 91% was also real, and separately fixed. Two paced 3-rep bands
+differing only in the prompt:
+
+| Prompt | band | failures |
+|---|---|---|
+| before | 91% / 91% / 91% | `plan-001` 3/3, `BUDGET_INFEASIBLE` |
+| after | 100% / 100% / 100% | none |
+
+The model was asking for fractional multi-packs — 1.5 packs is charged as two
+— because nothing had told it partial packs round up. Worth +9 points, and the
+controlled pair is the only reason that can be said rather than guessed.
 
 Both clear the 90% floor **on this task**. Sonnet is excluded on latency
 rather than quality: its p90 sat on the ceiling and roughly one plan call in
@@ -464,11 +487,10 @@ figure was measured by a scorer that was wrong in at least one way:
 These numbers supersede every earlier one and are not comparable to them.
 They are evidence the system got correct, not that the models got better.
 
-**The suite has run out of headroom.** A cheap model scoring 100% across three
-reps cannot rank candidates. Treat this as "both are good enough", never as
-"Nova Pro beats Haiku" — the eval can no longer support the second claim.
-Ranking needs harder cases: budgets that are feasible but demanding, more
-exclusion combinations, larger households.
+**The suite has run out of headroom.** Both models now score 100% across three
+clean reps, so it cannot rank candidates at all. Treat this as "both are good
+enough" and nothing more. Ranking needs harder cases: budgets that are
+feasible but demanding, more exclusion combinations, larger households.
 
 Local scripted baselines are 76.7% intent and 100% meal-plan (was 91%; the
 same harness fixes lifted it), plus 7/7 Guardrail must-allow structure.

@@ -254,3 +254,63 @@ def test_every_fixture_product_resolves_to_a_category():
     categories = {r.product_key: r.category for r in repo.all_records}
     assert categories
     assert all(c for c in categories.values())
+
+
+# ------------------------------------------------------- quota pacing
+#
+# Unpaced, one rep fires 25-40 Bedrock requests as fast as the harness can
+# issue them, against an account allowing 10/min for Claude and 25/min for
+# Nova Pro. The tail of the case list then fails with INTERNAL_ERROR, which
+# reads as "the model failed those cases" and is really "the account stopped
+# answering". Three bands scored Haiku at 82-91% that way while Nova Pro
+# scored 100% on the same suite; paced, Haiku scores 100% too.
+#
+# It is ON by default because the failure mode is a wrong number rather than
+# an error, which is the whole reason this file exists.
+
+from evals.run_meal_plan import DEFAULT_MAX_RPM, pace_bedrock_calls  # noqa: E402
+
+
+def test_pacing_is_on_by_default_and_below_the_account_limit():
+    """10/min is the Claude quota; the default must leave retry headroom."""
+    assert 0 < DEFAULT_MAX_RPM < 10
+
+
+def test_pacing_delays_calls_to_the_requested_rate(monkeypatch):
+    import src.models.bedrock as bedrock_mod
+
+    slept: list[float] = []
+    clock = [0.0]
+    monkeypatch.setattr(
+        "evals.run_meal_plan.time.monotonic", lambda: clock[0]
+    )
+
+    def fake_sleep(seconds: float) -> None:
+        slept.append(seconds)
+        clock[0] += seconds
+
+    monkeypatch.setattr("evals.run_meal_plan.time.sleep", fake_sleep)
+    monkeypatch.setattr(
+        bedrock_mod.BedrockModelClient, "_converse", lambda self, **kw: {"ok": True}
+    )
+
+    pace_bedrock_calls(30)  # one call every two seconds
+    client = object.__new__(bedrock_mod.BedrockModelClient)
+    paced = bedrock_mod.BedrockModelClient._converse
+    for _ in range(3):
+        # Called through the patched attribute, so the stub above stands in for
+        # the real signature. pyright cannot see that and would demand the
+        # production keywords for a call that never reaches production code.
+        paced(client)  # type: ignore[call-arg]
+
+    # First call is free; each subsequent one waits out the interval.
+    assert [round(s, 3) for s in slept if s > 0] == [2.0, 2.0]
+
+
+def test_pacing_can_be_disabled(monkeypatch):
+    """0 leaves the client untouched, for a model with confirmed headroom."""
+    import src.models.bedrock as bedrock_mod
+
+    sentinel = bedrock_mod.BedrockModelClient._converse
+    pace_bedrock_calls(0)
+    assert bedrock_mod.BedrockModelClient._converse is sentinel
