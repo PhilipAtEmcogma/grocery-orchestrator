@@ -201,7 +201,7 @@ def test_payment_data_is_blocked_not_masked(config):
         for e in config["sensitiveInformationPolicyConfig"]["piiEntitiesConfig"]
     }
     assert actions["CREDIT_DEBIT_CARD_NUMBER"] == "BLOCK"
-    assert actions["PASSWORD"] == "BLOCK"
+    assert actions["PASSWORD"] == "BLOCK"  # pragma: allowlist secret
 
 
 def test_blocked_messaging_offers_a_way_forward(config):

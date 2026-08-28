@@ -362,7 +362,8 @@ def test_error_message_does_not_leak_internals(monkeypatch):
     import src.handler as handler_mod
 
     def boom(*_args, **_kwargs):
-        raise RuntimeError("connection string postgres://admin:hunter2@db")
+        fake_dsn = "connection string postgres://admin:hunter2@db"  # pragma: allowlist secret
+        raise RuntimeError(fake_dsn)
 
     monkeypatch.setattr(handler_mod, "_dependencies", boom)
 
