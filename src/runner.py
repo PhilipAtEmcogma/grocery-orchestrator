@@ -14,6 +14,7 @@ from src.retrieval.base import PriceRepository
 from src.schemas.contract import (
     ChatRequest,
     ChatResponse,
+    assert_citations_match_retrieval,
     assert_grounded,
     assert_no_model_authored_money,
 )
@@ -60,4 +61,24 @@ def run_turn(request: ChatRequest, repo: PriceRepository, model: ModelClient) ->
     # "you lose the turn". Req 3.7 draws the line exactly there, and
     # `validate.py` runs the whole-response version over `samples/` in CI.
     assert_no_model_authored_money(response)
+
+    # Req 3.5, and the reason this function takes `repo` as well as the graph:
+    # it is the only place holding BOTH the finished response and the state the
+    # graph built it from. `assert_grounded` above can only see the response, so
+    # it checks that source keys are SHAPED like keys; this checks that they
+    # ARE the keys of a record retrieval actually returned, and that every
+    # published value equals the retrieved one.
+    #
+    # `record_index` is written only by `retrieve_prices` and holds frozen
+    # `PriceRecord`s, so the comparison is against something that cannot have
+    # been edited on the way here.
+    #
+    # `.get(...) or {}` is not a soft landing: an empty index with citations
+    # present fails every citation, which is the correct direction. A turn that
+    # emitted no citations has nothing to prove and passes trivially.
+    assert_citations_match_retrieval(
+        response,
+        table=repo.table_name,
+        records=final.get("record_index") or {},
+    )
     return response

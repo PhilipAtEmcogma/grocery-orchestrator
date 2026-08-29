@@ -192,13 +192,13 @@ and shall reject a response whose event ordering violates this rule.
 
 3.9 **THE SYSTEM SHALL** require every published price citation to include the
 exact source key, store location, and capture date.
-*Implemented construction after Pilot Task 2: citations use the configured
-physical table, `store_key` partition key, and normalized `product_key` sort key;
-samples were regenerated and citation-before-use is checked. Current
-`assert_grounded()` validates declaration, order, and basic source shape only.
-It does not receive immutable retrieved-record context and therefore does not
-yet prove exact key/value equality or the full altered-key/value negative
-controls required by 3.5–3.6.*
+*Implemented. Citations use the configured physical table, `store_key`
+partition key, and normalized `product_key` sort key. `assert_grounded()`
+validates declaration, order, and source shape;
+`assert_citations_match_retrieval()` (added 2026-08-29) compares each citation
+against the frozen `PriceRecord` the retrieval node kept for it, proving exact
+key and value equality. `run_turn()` calls both, and `validate.py` carries the
+wrong-key and altered-value negative controls 3.6 requires.*
 
 ---
 

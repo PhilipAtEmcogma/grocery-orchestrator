@@ -7,9 +7,9 @@ Region: `ap-southeast-2` (Sydney)
 
 The v1 event shapes remain the compatibility baseline. Pilot Tasks 2–3
 corrected citation construction, citation-before-use ordering, money-free comparison/prose labels, regenerated samples, and offline
-GuardrailBlocked propagation. Remaining release blockers include immutable
-retrieved-record/value equality and qualifying live Guardrail policy evidence.
-Runtime literal-money enforcement closed on 2026-08-29. Those changes stay
+GuardrailBlocked propagation. The remaining release blocker in this area is qualifying live Guardrail policy
+evidence. Runtime literal-money enforcement and retrieved-record/value equality
+both closed on 2026-08-29. Those changes stay
 additive within v1 where possible; breaking schema changes require v2.
 
 The generated samples now use configured table/`store_key`/normalized
@@ -181,9 +181,11 @@ record.
 **Implemented construction, incomplete final proof:** generated samples and the
 reference workflow now use the configured physical table, `store_key`, and
 normalized `product_key`; citation-before-use is checked and comparison/prose
-labels are money-free. Current final validation checks declaration, order, and
-basic source shape but lacks immutable retrieved-record context, so it does not
-independently prove key/value equality or altered-value negative controls.
+labels are money-free. Since 2026-08-29 final validation also compares every
+citation against the immutable record retrieval returned — the ref must have
+been retrieved, table/pk/sk must identify that exact record, and every published
+value must equal the retrieved one — with wrong-key and altered-value negative
+controls in CI.
 Frontend code must resolve structured prices through `citation_ref` and never
 parse prose for money.
 

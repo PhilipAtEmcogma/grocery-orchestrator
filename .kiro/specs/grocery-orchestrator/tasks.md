@@ -75,10 +75,47 @@ proposed, or gated as labelled; it is not implemented.
     by design and the reasoning is recorded in `AGENTS.md`. Offline gates
     passed: 466 passed, 31 skipped; evals unchanged at 100% meal-plan
     invariants and 76.7% intent.
-  - [ ] **Pilot Task 2 follow-up (b) — Complete Req 3.5–3.6 enforcement.** Give
-    final validation immutable retrieved-record context and prove exact PK/SK
-    and value equality with wrong-key and altered-value controls. This is the
-    remaining half of the original follow-up; the money half is (a) above.
+  - [x] **Pilot Task 2 follow-up (b) — Complete Req 3.5–3.6 enforcement.**
+    Completed 2026-08-29. `assert_citations_match_retrieval()` compares every
+    citation against the frozen `PriceRecord` the retrieval node kept for it:
+    the ref must have been retrieved at all, table/pk/sk must identify that
+    exact stored record, and all eleven published values must equal the
+    retrieved ones. `run_turn()` calls it with `repo.table_name` and the state's
+    `record_index`, which only `retrieve_prices` writes.
+
+    **Shape was standing in for identity.** `assert_grounded()` reads the
+    response alone, so it could only check that source keys LOOK like keys — a
+    non-empty table, a `#` in the pk, a non-empty sk. A citation naming the
+    right table, with a plausible partition key and a price nobody retrieved,
+    passed it cleanly. The system's central claim therefore rested on no code
+    path currently fabricating one, rather than on a check that would notice if
+    one did.
+
+    The retrieved context is immutable by type, not by convention:
+    `PriceRecord` is a frozen slots dataclass. It reaches the check through a
+    `RetrievedRecord` Protocol declared in `contract.py` rather than by
+    importing `PriceRecord`, because `retrieval/base.py` imports `Store` from
+    `contract` and the import would close a cycle. The Protocol's members are
+    read-only properties — a Protocol with mutable attributes demands settable
+    ones, which a frozen dataclass cannot satisfy.
+
+    `record_index` construction moved from `zip(..., strict=False)` to
+    `strict=True`: a length mismatch is a bug in that node, and truncating
+    silently would surface downstream as "this citation was not retrieved",
+    pointing at the wrong culprit.
+
+    19 tests in the new `tests/test_grounding.py`, including a positive control,
+    every altered field parametrised, and two end-to-end tests that tamper with
+    a citation inside the graph to prove `run_turn` actually calls the check.
+    `validate.py` now runs all four negative controls Req 3.6 names — unknown
+    reference, incorrect source key, altered value, content before its citation
+    — plus a positive control, in the CI job where a contract break is legible.
+
+    Verified by mutation: dropping the `run_turn` call, disabling value
+    comparison, and tolerating unknown refs fail 2, 14 and 2 tests respectively;
+    the value-comparison mutation also fails `validate.py` with exit 1.
+
+    Offline gates passed: 504 passed, 31 skipped; evals unchanged.
 - [x] **Pilot Task 3 — Prove offline GuardrailBlocked propagation and add an
   experimental harness.** Intent, plan, and prose nodes preserve the specialized
   exception to one handler mapping; three node propagation tests and one handler
@@ -204,8 +241,8 @@ proposed, or gated as labelled; it is not implemented.
 
 - 100% pass for grounding, literal-money rejection, arithmetic, dietary
   fail-closed, Guardrail propagation, and their negative controls. Task 2's
-  exact retrieved-record/value controls and Task 3's qualifying live Guardrail
-  controls remain explicitly open.
+  exact retrieved-record/value controls closed 2026-08-29; Task 3's qualifying
+  live Guardrail RESULT remains open (its controls closed the same day).
 - Every enabled model has a published scorecard; every active route scores at
   least 90% on its applicable golden set.
 - Measurement targets: p95 price checks under 5 seconds, p95 meal plans under
@@ -779,7 +816,7 @@ AVAILABLE NOW; EVIDENCE STILL MISSING
                                         Claude intent card is the missing one
   5.9/8.10 live Guardrail result     -> controls repaired 2026-08-29; run the
                                         20 cases per docs/LIVE-EVAL-RUNBOOK.md
-  Pilot 2 exact record/value proof   -> immutable retrieval context + negatives
+  (Pilot 2 exact record/value proof  -> CLOSED 2026-08-29)
 
 COMPLETED LIVE BASE RESOURCES
   7.1  products table created          ✓
