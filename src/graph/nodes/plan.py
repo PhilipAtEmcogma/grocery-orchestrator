@@ -102,6 +102,7 @@ def assemble_plan(
                     item=line.item,
                     qty=line.qty_display,
                     citation_ref=line.citation_ref,
+                    packs=line.packs,
                     line_cost_nzd=line_cost,
                 )
             )

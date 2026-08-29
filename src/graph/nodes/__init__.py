@@ -47,6 +47,7 @@ from src.schemas.contract import (
     SourceRef,
     UsageMeta,
     assert_arithmetic,
+    assert_costed_from_citations,
     find_literal_money_in_plan,
 )
 
@@ -445,6 +446,17 @@ def validate_plan(state: GroceryState) -> dict:
     errors: list[str] = []
     try:
         assert_arithmetic(plan)
+    except AssertionError as exc:
+        errors.append(str(exc))
+
+    # The stronger half: every figure re-derived from the cited prices rather
+    # than merely checked for internal consistency. `assert_arithmetic` proves
+    # the sums agree with each other, which a consistently wrong line cost also
+    # satisfies. This proves they follow from what retrieval returned, and it is
+    # where the reuse/multipack case is caught -- packs aggregated across meals
+    # and rounded up once, not per appearance.
+    try:
+        assert_costed_from_citations(plan, state.get("citation_index") or {})
     except AssertionError as exc:
         errors.append(str(exc))
 

@@ -853,7 +853,7 @@ Every citation is now constructed with the configured physical table,
 needs immutable retrieved-record context to prove exact key and value equality;
 that is the release-blocking follow-up, not citation construction.
 
-## 14. Payable meal-plan arithmetic (planned)
+## 14. Payable meal-plan arithmetic
 
 The user budget applies to the amount payable at checkout, not a fractional
 consumption estimate. The target design maintains two concepts:
@@ -866,8 +866,12 @@ consumption estimate. The target design maintains two concepts:
 The shopping list contains each cited product once per store, with its required
 pack count and payable line total. The plan budget check uses the payable total.
 Both figures are derived from citations in Python; neither is accepted from a
-model. The current arithmetic does not prove every reuse/multipack case and is
-not pilot-ready until Pilot Task 4 closes that gap.
+model, and since 2026-08-29 both are VERIFIED against the citations rather than
+merely checked for internal consistency. `assert_costed_from_citations()`
+re-derives each line cost, aggregates pack counts per product across meals,
+rounds up once, and recomputes every basket total at shelf price.
+`Ingredient.packs` exists so the plan carries enough information to audit
+itself.
 
 ## 15. Guardrail intervention semantics
 

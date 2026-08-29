@@ -195,6 +195,13 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
 - ✅ **Whole packs round up per product.** 1.2 packs costs two. A basket that
   counted each product once shipped a plan consuming $221 of food against a
   $40 budget.
+- ✅ **And the arithmetic is now verified against the citations, not against
+  itself.** The old check confirmed four sums agreed with each other — which a
+  consistently wrong line cost also satisfies, and which said nothing at all
+  about basket totals. Every figure is now re-derived from the cited price:
+  line cost, pack counts aggregated across meals and rounded up once, and each
+  basket at shelf price. `Ingredient` carries `packs` so the plan can audit
+  itself.
 - ✅ **Candidates are pre-filtered to the budget**, so a price-blind model can
   only choose from a set it can afford — the only lever available when the
   model never sees a price.
@@ -314,7 +321,7 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
 
 ### Tests, evals and CI
 
-- ✅ **564 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **573 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -419,7 +426,7 @@ python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
 And to check it:
 
 ```bash
-pytest                     # 564 passing, 31 skipped
+pytest                     # 573 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py       # 76.7% scripted baseline
