@@ -270,14 +270,21 @@ green because the scripted client has no guardrail.
 
 ### Current pilot blockers
 
-Do not describe the current reference implementation as pilot-ready. Task 2–3
-construction/rendering/propagation work is implemented, but exact immutable
-retrieved-record/value proof,
-and a qualifying live Guardrail result remain open. Other blockers include
-clarification, location/freshness,
-production fail-closed configuration, model qualification, CDK/API controls,
-published SnapStart alias, and deployed SLO/cost evidence. MCP, AgentCore, and
+Do not describe this as pilot-ready. Pilot Tasks 1–7 are done and evidenced,
+including the live Guardrail result; **nothing is deployed**. There is no CDK
+stack, no API Gateway, no published Lambda alias, and therefore no deployed
+SLO, cost, security or recovery evidence — every latency and throughput figure
+in this repository measures a laptop.
+
+Blockers are now entirely Tasks 8–16: local MCP, CDK and resource adoption, the
+service plane, deployment, operational gates, controlled ingestion, the recipe
+catalogue, and the integrated release run. MCP, AgentCore and the
 managed-evaluation stages are planned or proposed, not built.
+
+Three deliberate deferrals carry their reasoning in `tasks.md`: a bare
+`price of mushrooms` is still refused by the Guardrail (3d), candidate
+retrieval still Scans pending load evidence (6b), and SSM routing waits for the
+CDK stacks (7b).
 
 ---
 
@@ -678,13 +685,14 @@ scopes the topic to the ACT of gathering. **A bare `price of mushrooms` is still
 refused and remains open** — three rounds of tuning moved qualified queries but
 not the unqualified noun.
 
-**Known pilot blockers:** (Pilot Task 2 is now fully closed — the runtime
-money half and the retrieved-record/value proof both landed 2026-08-29);
-Task 3 qualifying live Guardrail follow-up; clarification (payable totals
-are DONE — MealPlan carries payable_total_nzd and within_budget follows it);
-location/freshness; idempotency fencing/candidate scale; model qualification;
-CDK/service/API/SnapStart adoption; and deployed security, SLO, cost, recovery,
-and operations evidence.
+**Known pilot blockers:** deployment, and only deployment. Pilot Tasks 1–7
+closed on 2026-08-29 — grounding proof, live Guardrail evidence, clarification,
+payable arithmetic, location and freshness, idempotency fencing, and route
+qualification. What remains is Tasks 8–16: local MCP, CDK adoption, the service
+plane, the deployment itself, operational gates, ingestion, the recipe
+catalogue, and the release run. Until those exist there is no deployed
+security, SLO, cost, recovery or operations evidence, because there is nothing
+deployed to measure.
 
 **Not a blocker, but on the record before production:** the deployment is
 capped at 10 meal-plan turns per minute, falling to 5 when the repair loop

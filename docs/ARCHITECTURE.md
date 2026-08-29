@@ -2,7 +2,16 @@
 
 Reconciliation of the reviewed architecture diagram against
 `.kiro/specs/design.md` and the `ap-southeast-2` account, plus the record of
-what is deployed. Dated 2026-08-27.
+what is deployed. Dated 2026-08-27, amended 2026-08-29.
+
+**What changed on 2026-08-29:** the Guardrail moved to **version 2** after the
+live red-team run found it refusing benign grocery queries (the foraging topic
+was scoped to an ingredient rather than an activity); PITR was enabled on the
+two upstream data tables and deliberately left off the idempotency cache; and
+the idempotency table's claims became owner-fenced, verified against the real
+table. The application-layer Pilot Tasks 1-7 are closed. **Nothing here is
+deployed as a service yet** — the Lambda, API Gateway and alias in the diagram
+below are the TARGET shape, not the current account.
 
 This file is the **deployment record**: what exists in the account, what it is
 wired to, and what was learned deploying it. `AGENTS.md` remains the working
@@ -27,7 +36,7 @@ flowchart LR
     AGW -->|invoke alias| ORC["Lambda Orchestrator<br/>grocery-orchestrator-dev:live<br/>SnapStart, deterministic LangGraph"]
     ORC -->|"query"| P[("grocery-products-dev<br/>+ GSI1")]
     ORC -->|"conditional write"| I[("grocery-idempotency-dev<br/>TTL")]
-    ORC -->|"grounded prompt/response"| BR["Bedrock<br/>Nova Lite / Nova Pro<br/>Guardrail b1xezpqe04kx v1"]
+    ORC -->|"grounded prompt/response"| BR["Bedrock<br/>Nova Lite / Nova Pro<br/>Guardrail b1xezpqe04kx v2"]
     ORC -->|EMF + traces| CW["CloudWatch<br/>Logs, Metrics, Alarms<br/>X-Ray"]
     IAM["IAM least-privilege<br/>4 roles, one per principal"] -.-> ORC
 

@@ -6,32 +6,70 @@ questions by grounding every answer in real, retrieved supermarket price
 data. Built for the AWS AI Innovation Mentorship Workshop as a reference
 implementation of the **retrieve-then-generate** pattern on Amazon Bedrock.
 
-This repository is the **orchestrator and AI application layer**. The reference
-workflow classifies a turn, retrieves prices, invokes Bedrock through a
-task-based model plane, and returns validated events. DynamoDB adapters,
-products/idempotency tables, Nova calls, and a numbered Guardrail have limited
-live evidence in `ap-southeast-2`.
+This repository is the **orchestrator and AI application layer**: it classifies
+a turn, retrieves prices, invokes Bedrock through a task-based model plane, and
+returns validated events.
 
-It is **not yet a deployable production pilot**. Pilot Tasks 2–3 corrected
-citation construction, citation ordering, money-free comparison/prose labels,
-samples, and offline Guardrail intervention propagation. Exact retrieved-record
-and value equality, qualifying live Guardrail evaluation, location/freshness,
-production fail-closed startup, CDK/API controls, and deployed SLOs remain
-open.
+---
 
-The project also has an explicit learning objective: gain hands-on experience
-with broad relevant AWS services, especially Bedrock and AgentCore, without
-collecting services for their own sake. Every service needs a product purpose,
-bounded scope, acceptance evidence, security/cost controls, and a
-rollback/removal criterion. It cannot weaken grounding, dietary, arithmetic,
-Guardrail, or honest-failure invariants.
+## Where this is right now
 
-Stages are explicit: the deterministic Lambda shopper workflow is implemented;
-local read-only MCP is planned first; AgentCore Gateway over the same coarse
-complete-application operations and a separately deployed Runtime data-quality
-reviewer are proposed and require ADR 0002 mentor approval. Bedrock Model
-Evaluation and AgentCore Evaluations are proposed companions to local tests,
-not replacements. No proposed managed service is a current capability.
+**If you are picking this up cold, read this section and nothing else until you
+need to.** Everything below it is detail.
+
+The application layer is built and evidenced. **Nothing is deployed** — there is
+no CDK stack, no API Gateway, no Lambda alias. That is the whole of what remains
+between here and a pilot.
+
+| Pilot Task | State |
+|---|---|
+| 1 · Documentation alignment | ✅ done |
+| 2 · Citation construction, money-free rendering, retrieved-record proof | ✅ done |
+| 3 · Guardrail propagation, harness, **live 13/13 + 9/9** | ✅ done · one deferral (3d) |
+| 4 · Clarification, payable arithmetic | ✅ done |
+| 5 · Location scope, freshness, named regions | ✅ done |
+| 6 · Idempotency fencing, canonical hashing, pagination, PITR | ✅ done · one deferral (6b) |
+| 7 · Scorecards, route qualification, prose/repair evals | ✅ done · one deferral (7b) |
+| **8 · Local read-only MCP** | ⬜ **not started — next** |
+| 9–12 · CDK, service plane, deploy, operations | ⬜ not started (design in `infra/`) |
+| 13 · Controlled ingestion | ⬜ not started |
+| 14 · AgentCore reviewer | ⬜ proposed, needs ADR 0002 approval |
+| 15 · Recipe catalogue | ⬜ not started |
+| 16 · Release gates | ⬜ not started |
+
+**Three deliberate deferrals**, each with the reasoning recorded in `tasks.md`:
+
+- **3d** — the Guardrail refuses a bare `price of mushrooms`. The foraging topic
+  was scoped to an ingredient rather than an activity; version 2 fixed truffle
+  oil and qualified mushrooms, but not the unqualified noun. Not tuned further
+  because loosening a safety topic by trial and error is the wrong direction.
+- **6b** — `candidates_for_budget` still `Scan`s. `DYNAMODB-SCHEMA.md` requires
+  the replacement be chosen from real access patterns and load evidence, and
+  there is neither. A test fails once the dataset outgrows a defensible Scan.
+- **7b** — SSM routing belongs with the CDK stacks, where a parameter is
+  declared as infrastructure rather than clicked into an account.
+
+**Verified live in `ap-southeast-2`** (account `097087133897`, 2026-08-29):
+Guardrail `b1xezpqe04kx` **version 2** at 13/13 must-block and 9/9 must-allow;
+intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%;
+DynamoDB products and idempotency tables with owner-fenced claims proven against
+the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
+
+**Offline gates:** 597 tests passing, 31 skipped. Five eval suites — intent
+76.7%, meal plan 100%, prose 100%, repair 100%, guardrail 9/9 must-allow — all
+gated in CI and the pre-commit hook.
+
+**Known open questions that want a human**, not more code:
+
+- `min_grams_per_person_day` decides which meal-plan requests are refused
+  outright and has never been reviewed by anyone who knows about food —
+  [`docs/OPEN-REVIEW-min-grams-per-person-day.md`](docs/OPEN-REVIEW-min-grams-per-person-day.md).
+- The frontend team's response shape in `datasets/DATA_SCHEMA.md` is flat JSON
+  with different intent names; ours is an event list. Both are reasonable, they
+  are not the same thing, and nobody has reconciled them.
+- Three of four frontend contract questions remain unanswered; question 2
+  (location shape) was resolved on our recorded default after it blocked four
+  separate pieces of work.
 
 ## The core idea
 
@@ -161,9 +199,14 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
                            stacks are stubs — nothing deployed (Pilot Tasks 9-12)
 ```
 
-## Progress to date
+## Progress to date, and what it cost
 
-✅ built and evidenced   🚧 built but not yet qualifying evidence
+**Skippable.** The table above is what exists; this is *why it looks like that*
+— the defects found, the reasoning behind each decision, and the several
+occasions a number turned out to be measuring something other than what it
+claimed. Read it before changing any of this, and not before.
+
+✅ built and evidenced   🚧 measured but deliberately not gated
 
 ### The contract and the graph
 
@@ -358,49 +401,60 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
   Accepted for workshop scale; `scripts/check_quotas.py` derives it live
   rather than trusting this paragraph.
 
-## Not yet built
+## What is left, and in what order
 
-Planned/proposed items are not current capabilities:
+Everything below is **not built**. Nothing here is a current capability.
 
-- **Core follow-ups (Pilot Tasks 4–7):** clarification; location/freshness;
-  idempotency ownership/candidate access; qualified SSM model routing. Pilot
-  Task 2 is closed; Task 3's harness controls are closed and only its live
-  result remains — see [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
-- **Local read-only MCP first** (Pilot Task 8), proving coarse operation
-  schemas, caps, audit, direct-service parity, and disable behavior.
-- **Proposed AgentCore Gateway hybrid** (Task 8 extension; ADR 0002 mentor
-  approval required): AgentCore Identity/Policy plus WAF and Cognito or approved
-  workload identity over the same coarse tools, never around LangGraph.
-- **Proposed isolated AgentCore Runtime reviewer** (Pilot Task 14; ADR 0002
-  mentor approval required): capped sanitised ingestion snapshots, cited
-  schema-checked findings, deterministic post-validation, human approval, no
-  shopper PII, writes, publication, or shopper-path authority.
-- **Proposed managed evaluation companions:** Bedrock Model Evaluation and
-  AgentCore Evaluations with versioned S3 datasets/results and reproducible
-  model/prompt/evaluator/trace/cost provenance; local tests/evals remain gates.
-- **Controlled ingestion** (Pilot Task 13): EventBridge/Step Functions and,
-  where justified, filtered DynamoDB Streams -> SQS/DLQ review triggers plus
-  SNS operator/approval notifications. No live retailer traffic.
-- **CDK/service/operations** (Pilot Tasks 9–12): adopted DynamoDB resources,
-  zip Lambda/SnapStart alias, REST controls, SSM, strict IAM/CORS, CloudWatch,
-  X-Ray, Budgets, alarms, WAF/Cognito before owned/public managed surfaces, and
-  encrypted versioned S3 artefacts. Design documentation and a reviewable CDK
-  scaffold skeleton now exist under `infra/` (see `infra/README.md` and
-  `infra/docs/`); they are design/skeleton only — no stack is implemented or
-  deployed.
-- **Catalogue** (Pilot Task 15): meals table and curated recipes. A Knowledge
-  Base may be evaluated for cited recipe/catalogue knowledge only, never price
-  authority; Automated Reasoning is advisory where supported.
-- **Gated later:** cross-Region inference profiles only with measured purpose
-  and residency/quality/cost evidence; AgentCore Memory only after Cognito,
-  consent, TTL, export/deletion, privacy review, and never for prices;
-  WebSocket, remote MCP, live acquisition, and separate environments.
+**The critical path is deployment.** Tasks 9–12 turn a working application into
+a running one, and until they are done every latency, cost and SLO figure in
+this repository is a measurement of a laptop.
 
-Moving the shopper meal path to AgentCore Runtime remains a separate p99 above
-approximately 25 seconds contingency after mitigations and separate mentor
-approval. Gateway or reviewer approval does not approve it. Guardrail version
-`1` exists only with basic invocation evidence; qualifying live policy results
-and CDK adoption remain open.
+1. **Task 8 — local read-only MCP.** Coarse operations that invoke the complete
+   deterministic service; no raw DynamoDB, SDK, filesystem, network, scraping,
+   write, citation or unguarded-generation primitive. Proves schemas, caps,
+   audit, direct-service parity and a disable path before any managed exposure.
+2. **Tasks 9–12 — CDK, service plane, deployment, operations.** Adopt the
+   existing tables without replacement; zip Lambda on a published SnapStart
+   alias; REST controls, SSM, strict IAM and CORS; then dashboards, alarms,
+   Budgets, X-Ray and the latency/cost baselines everything else is waiting on.
+   Design documentation and a reviewable scaffold already exist under
+   [`infra/`](infra/) — design only, no stack implemented.
+3. **Task 13 — controlled ingestion.** EventBridge and Step Functions over
+   fixture or recorded adapters, with provenance, partial-failure and
+   dead-letter behaviour. **No live retailer traffic**, which stays gated on
+   [`ACQUISITION-RISK.md`](ACQUISITION-RISK.md) §8.
+4. **Task 15 — recipe catalogue.** Models select recipe ids and product
+   citations; code owns scaling, safety and totals. The 175 curated recipes in
+   `datasets/` are the input.
+5. **Task 16 — release gates.** The integrated run of every gate above.
+
+**Requires mentor approval before starting** (ADR 0002, still proposed):
+
+- **Task 8 extension — AgentCore Gateway** over the same coarse tools with
+  Identity, Policy, WAF and Cognito. Never a bypass around LangGraph.
+- **Task 14 — isolated AgentCore Runtime reviewer** over capped sanitised
+  ingestion snapshots, emitting cited schema-checked findings for deterministic
+  validation and human approval. No shopper PII, no writes, no publication, no
+  shopper-path authority.
+
+**Gated until there is evidence to justify them:** cross-Region inference
+profiles; recipe/catalogue Knowledge Bases (never price authority); advisory
+Automated Reasoning; Bedrock Model Evaluation and AgentCore Evaluations as
+companions to the local suites rather than replacements; WebSocket delivery;
+remote MCP; separate environments. AgentCore Memory needs Cognito, consent, TTL,
+export and deletion, and a privacy review first, and never holds prices. Moving
+the shopper meal path onto AgentCore Runtime is a separate contingency for a p99
+above ~25 seconds, and needs its own approval.
+
+### The learning objective, and its constraint
+
+The project exists partly to gain hands-on experience with a broad set of AWS
+services — Bedrock and AgentCore especially — **without collecting services for
+their own sake**. Every service has to state a product purpose, a bounded scope,
+acceptance evidence, security and cost controls, an owner, and a
+rollback/removal criterion. None of it may weaken the grounding, dietary,
+arithmetic, Guardrail or honest-failure invariants. Where a managed service
+would replace a local gate, it accompanies it instead.
 
 ## Running it locally
 
@@ -506,11 +560,25 @@ and `POWERTOOLS_METRICS_NAMESPACE`; `LOG_LEVEL` sets log verbosity.
 
 ## Further reading
 
-**Start here if you are picking this repo up cold.**
+**Cold start:** [Where this is right now](#where-this-is-right-now) above, then
+this one file. That is enough to work; everything else is looked up when a
+specific question arises.
 
 - [`AGENTS.md`](AGENTS.md) — the working agreement: the three invariants, the
   conventions, the full command reference, eval discipline, and a current-state
-  snapshot including live model evidence.
+  snapshot including live model evidence. **Read before writing code here.**
+
+**Which file answers which question**
+
+| Question | File |
+|---|---|
+| What am I allowed to change, and what must never break? | `AGENTS.md` |
+| What does the API return? | `CONTRACT-v1.md`, `samples/` |
+| How does the frontend consume it? | `FRONTEND-INTEGRATION.md` |
+| What exists in AWS right now? | `docs/ARCHITECTURE.md` |
+| What should I build next, and how? | `.kiro/specs/.../tasks.md`, `infra/docs/` |
+| Why is this number what it is? | `config/*.json` — each carries its own reasoning |
+| Why was it done this way? | `.kiro/specs/.../design.md` §8, ADRs |
 
 **Building against it**
 
@@ -547,10 +615,11 @@ and `POWERTOOLS_METRICS_NAMESPACE`; `LOG_LEVEL` sets log verbosity.
   — **open, and wants a human.** The one figure in the planning path that is a
   judgement rather than derived from the catalogue. Written for a reviewer who
   will not read code.
-- [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md) — **the three
-  pieces of live evidence still outstanding**, batched into one credentialed
-  session. Read before running anything against Bedrock: every trap it lists
-  has already happened here.
+- [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md) — the procedure for
+  the credentialed evaluation session, and the results of the one run on
+  2026-08-29. **Read before running anything against Bedrock**: every trap it
+  lists has already happened here, and it is the checklist for the next run
+  whenever the Guardrail policy or the model catalogue changes.
 - [`docs/CI-GATE-HEALTH.md`](docs/CI-GATE-HEALTH.md) — where the gate can go
   red for reasons unrelated to your change. Five of six entries are resolved
   and kept for their reasoning; the open one is that the eval case counts are

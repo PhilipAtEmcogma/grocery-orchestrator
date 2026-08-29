@@ -82,16 +82,20 @@ comparison reasoning/prose labels, regenerated samples, and offline
    the frozen retrieved record. Wrong-key and altered-value negative controls
    run in `validate.py`. The whole-response money assertion stays in
    `validate.py` by design — see §2.4 below and `AGENTS.md`.
-2. No qualifying 13/13 plus 7/7 live Guardrail result exists. The harness's
-   controls are no longer the obstacle: pinning, block classification, exit
-   codes, pacing and its first 16 tests landed 2026-08-29. What remains is the
-   credentialed run itself — see `docs/LIVE-EVAL-RUNBOOK.md`.
-3. Location/freshness, payable totals, production fail-closed selection,
-   candidate access at scale (idempotency ownership closed 2026-08-29), and
-   complete model qualification
-   remain open.
-4. CDK adoption, least-privilege IAM, API controls, published SnapStart alias,
-   dashboards, budgets, and deployment verification are not implemented.
+2. CLOSED 2026-08-29. Live Guardrail evidence recorded: **13/13 must-block and
+   9/9 must-allow**, exit 0, against `b1xezpqe04kx` version `2`, paced. The run
+   also found and fixed an over-block of benign grocery queries; a bare
+   `price of mushrooms` is still refused and is tracked as Task 3's deferral
+   (d). Detail in `docs/LIVE-EVAL-RUNBOOK.md` §8.
+3. CLOSED 2026-08-29. Clarification, payable arithmetic verified against the
+   citations, location scope, freshness with an honest stale outcome, named
+   regions, idempotency ownership, and per-task model qualification all landed.
+   Candidate access AT SCALE remains deferred (Task 6b) pending load evidence,
+   with a test that fails once the dataset outgrows a Scan.
+4. **The remaining blocker.** CDK adoption, least-privilege IAM, API controls,
+   published SnapStart alias, dashboards, budgets, and deployment verification
+   are not implemented. Nothing is deployed, so no SLO, cost, security or
+   recovery evidence exists — Pilot Tasks 9–12.
 5. MCP, AgentCore, managed evaluations, ingestion, and companion services are
    planned/proposed only as labelled; none is a deployed capability.
 
