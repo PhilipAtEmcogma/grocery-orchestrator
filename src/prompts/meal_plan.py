@@ -190,6 +190,34 @@ def build_user_prompt(
     )
 
 
+def _constraints_block(
+    *,
+    budget: Decimal,
+    household_size: int,
+    days: int,
+    exclusions: list[str],
+) -> str:
+    """
+    The constraint restatement every regeneration must carry.
+
+    Shared rather than written per prompt, because Req 5.3 is safety-critical
+    and duplicated safety rules drift. 4.6 originally restated only the
+    budget, so a plan for a user with a stated allergy was regenerated with no
+    knowledge of the allergy; unit tests missed it and only end-to-end
+    evaluation caught it. One definition means a second repair prompt cannot
+    reintroduce that bug by omission.
+    """
+    constraints = [
+        f"Household size: {household_size}",
+        f"Days to cover: {days}",
+        f"Total budget: ${budget} NZD",
+    ]
+    if exclusions:
+        constraints.append(f"Must exclude: {', '.join(exclusions)}")
+
+    return "CONSTRAINTS (unchanged from the original request)\n" + "\n".join(constraints)
+
+
 def build_repair_prompt(
     *,
     products: str,
@@ -214,18 +242,11 @@ def build_repair_prompt(
     achieve it. A vague "too expensive, try again" wastes a full generation
     cycle and often lands over budget a second time.
     """
-    constraints = [
-        f"Household size: {household_size}",
-        f"Days to cover: {days}",
-        f"Total budget: ${budget} NZD",
-    ]
-    if exclusions:
-        constraints.append(f"Must exclude: {', '.join(exclusions)}")
-
     return (
         f"{products}\n\n"
-        f"CONSTRAINTS (unchanged from the original request)\n"
-        + "\n".join(constraints)
+        + _constraints_block(
+            budget=budget, household_size=household_size, days=days, exclusions=exclusions
+        )
         + f"\n\nYour previous plan came to ${over_by} OVER the ${budget} budget.\n\n"
         f"It used: {', '.join(previous_items)}\n\n"
         f"{cheaper_options}\n\n"
@@ -243,4 +264,56 @@ def build_repair_prompt(
         f"over more meals usually makes it worse, because the total creeps "
         f"past a whole number. Every exclusion above still applies. Do not "
         f"state any prices."
+    )
+
+
+def build_defect_repair_prompt(
+    *,
+    products: str,
+    budget: Decimal,
+    household_size: int,
+    days: int,
+    exclusions: list[str],
+    defects: list[str],
+) -> str:
+    """
+    Feedback for a repair pass that is NOT about the budget.
+
+    `build_repair_prompt` answers one question -- "you overspent, cut this
+    much" -- and every sentence of it assumes that. It was nonetheless the
+    only repair prompt, so a draft that failed its schema, referenced an
+    unknown product, or came back with broken arithmetic was told "your
+    previous plan came to $0 OVER the $X budget, produce a plan costing at
+    least $0 less". That is not a description of what went wrong, and asking a
+    model to fix a defect nobody named wastes the attempt.
+
+    This one names the defect and restates every constraint. It carries no
+    shortfall arithmetic and no cheaper-options table, because the plan's cost
+    is not what failed.
+
+    Prices are stated here because a PROMPT is not user-visible output. Req
+    3.7 governs what reaches the shopper; the model needs the budget figure to
+    plan against it.
+    """
+    listed = "\n".join(f"- {d}" for d in defects) if defects else "- the plan could not be used"
+
+    return (
+        f"{products}\n\n"
+        + _constraints_block(
+            budget=budget, household_size=household_size, days=days, exclusions=exclusions
+        )
+        + f"\n\nYour previous plan was REJECTED. What was wrong with it:\n"
+        f"{listed}\n\n"
+        f"Produce a replacement plan covering {days} day(s) for "
+        f"{household_size} person/people that does not repeat those problems.\n\n"
+        f"Reminders that matter here:\n"
+        f"1. Use ONLY citation refs from the table above. Never invent one.\n"
+        f"2. Never write a price, cost, saving or total ANYWHERE -- not in a "
+        f"meal name, not in an ingredient name, not in a quantity. Costs are "
+        f"calculated from the table after you answer, and any figure you "
+        f"write would be both wrong and unciteable. Name a meal 'Pasta Bake', "
+        f"never 'Pasta Bake for $12'.\n"
+        f"3. Quantities describe amounts of food: '500g', '2 tins', "
+        f"'1 clove'. They are not prices.\n"
+        f"4. Every exclusion above still applies."
     )

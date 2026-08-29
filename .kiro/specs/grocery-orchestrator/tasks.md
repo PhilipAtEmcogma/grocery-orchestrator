@@ -33,13 +33,52 @@ proposed, or gated as labelled; it is not implemented.
   `store_key`, and normalized `product_key`; citation-before-use and basic source
   shape are checked; reasoning and prose labels contain no literal money; samples
   were regenerated. `assert_no_literal_money_in_response()` covers token,
-  reasoning, and notice fields with three negative controls. Offline gates passed
+  reasoning, and notice fields with three negative controls, and since follow-up
+  (a) the meal plan's model-authored text as well. Offline gates passed
   on 2026-08-23.
-  - [ ] **Pilot Task 2 follow-up — Complete Req 3.5–3.7 enforcement.** Give final
-    validation immutable retrieved-record context; prove exact PK/SK and value
-    equality with wrong-key and altered-value controls; inventory every
-    prose-like field; and call whole-response literal-money validation from
-    `run_turn()`.
+  - [x] **Pilot Task 2 follow-up (a) — Close Req 3.7 for model-authored text.**
+    Completed 2026-08-29. The prose-like field inventory found three unchecked
+    MODEL-AUTHORED fields — `Meal.name`, `Ingredient.item`, `Ingredient.qty`,
+    written as `DraftMeal.name` / `DraftIngredient.item` /
+    `DraftIngredient.qty_display` and passed through `assemble_plan` untouched.
+    A plan naming a meal `Budget Pasta — only $4.99 a head` with an ingredient
+    `Butter (was 7.50, now 5.00)` cleared `assert_grounded`,
+    `assert_arithmetic` and `assert_no_literal_money_in_response` together,
+    shipping a fabricated "was" price. `find_literal_money_in_plan()` now feeds
+    `validate_plan`, so a violation is a validation error routed through the
+    bounded repair loop to `emit_plan_generation_failed` — never to
+    `emit_budget_infeasible`, which would blame the shopper's budget.
+    `run_turn()` calls the narrow `assert_no_model_authored_money()` as a
+    boundary backstop; the wide whole-response assertion stays in `validate.py`
+    because raising on prose would convert the prose node's degradation into a
+    dead turn. `LITERAL_MONEY` is now defined once and imported.
+
+    Two pre-existing defects were fixed on the way. `build_repair_prompt` was
+    the ONLY repair prompt and answers only "you overspent, cut this much", so
+    every non-budget rejection — invalid draft, unknown ref, broken arithmetic
+    — was told "your plan came to $0 OVER the $X budget, cut at least $0 less".
+    `build_defect_repair_prompt` now names the actual defect; both share
+    `_constraints_block`, so the Req 5.3 restatement that 4.6 once omitted
+    lives in one place. The budget prompt was proved byte-identical to its
+    pre-refactor output. Separately, `samples/response_budget_infeasible.json`
+    published an uncited "$41.20" the code never emits, and
+    `FRONTEND-INTEGRATION.md` still showed money in prose and reasoning under a
+    note calling it "scheduled for Pilot Task 2"; both were corrected, the
+    frontend example by capture from the handler rather than by hand.
+
+    13 tests added, including per-field negative controls, the clean-plan
+    positive, and two end-to-end repair-routing tests. Those two exist because
+    the routing branch was initially unpinned — inverting it left the whole
+    suite green. Verified by mutation: inverting the branch, deleting the money
+    check, and making the money error set `over_budget` fail 1, 3 and 3 tests
+    respectively. `ErrorEvent.message` and `NoDataEvent.message` are excluded
+    by design and the reasoning is recorded in `AGENTS.md`. Offline gates
+    passed: 466 passed, 31 skipped; evals unchanged at 100% meal-plan
+    invariants and 76.7% intent.
+  - [ ] **Pilot Task 2 follow-up (b) — Complete Req 3.5–3.6 enforcement.** Give
+    final validation immutable retrieved-record context and prove exact PK/SK
+    and value equality with wrong-key and altered-value controls. This is the
+    remaining half of the original follow-up; the money half is (a) above.
 - [x] **Pilot Task 3 — Prove offline GuardrailBlocked propagation and add an
   experimental harness.** Intent, plan, and prose nodes preserve the specialized
   exception to one handler mapping; three node propagation tests and one handler

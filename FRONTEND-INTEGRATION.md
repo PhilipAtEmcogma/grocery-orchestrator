@@ -86,42 +86,66 @@ property is production-ready.
         "ref": "c1", "store": "paknsave", "store_location": "Mangere",
         "product_name": "Pams Butter 500g", "price_nzd": "2.97", "unit": "500g",
         "unit_price_nzd": "5.94", "on_special": true, "valid_date": "2026-07-31",
-        "source": { "table": "Products", "pk": "paknsave#dairy", "sk": "butter-500g" } } },
+        "source": { "table": "grocery-products-dev", "pk": "paknsave#mangere", "sk": "butter-500g" } } },
     { "seq": 3, "type": "citation", "citation": {
         "ref": "c2", "store": "paknsave", "store_location": "Sylvia Park",
         "product_name": "Pams Butter 500g", "price_nzd": "2.97", "unit": "500g",
         "unit_price_nzd": "5.94", "on_special": true, "valid_date": "2026-07-31",
-        "source": { "table": "Products", "pk": "paknsave#dairy", "sk": "butter-500g" } } },
-    { "seq": 4, "type": "token", "text": "The cheapest option is $2.97 at Pak'nSave Mangere." },
-    { "seq": 5, "type": "token", "text": " That is the best price across the stores near you." },
-    { "seq": 6, "type": "price_comparison", "data": {
+        "source": { "table": "grocery-products-dev", "pk": "paknsave#sylvia-park", "sk": "butter-500g" } } },
+    { "seq": 4, "type": "citation", "citation": {
+        "ref": "c3", "store": "woolworths", "store_location": "Mt Wellington",
+        "product_name": "Butter, 500g", "price_nzd": "3.91", "unit": "500g",
+        "unit_price_nzd": "7.82", "on_special": false, "valid_date": "2026-07-31",
+        "source": { "table": "grocery-products-dev", "pk": "woolworths#mt-wellington", "sk": "butter-500g" } } },
+    { "seq": 5, "type": "citation", "citation": {
+        "ref": "c4", "store": "woolworths", "store_location": "Ponsonby",
+        "product_name": "Butter, 500g", "price_nzd": "3.91", "unit": "500g",
+        "unit_price_nzd": "7.82", "on_special": false, "valid_date": "2026-07-31",
+        "source": { "table": "grocery-products-dev", "pk": "woolworths#ponsonby", "sk": "butter-500g" } } },
+    { "seq": 6, "type": "citation", "citation": {
+        "ref": "c5", "store": "new_world", "store_location": "Devonport",
+        "product_name": "Value BUTTER 500G", "price_nzd": "4.12", "unit": "500g",
+        "unit_price_nzd": "8.24", "on_special": false, "valid_date": "2026-07-31",
+        "source": { "table": "grocery-products-dev", "pk": "new_world#devonport", "sk": "butter-500g" } } },
+    { "seq": 7, "type": "token", "text": "The cheapest option is Pams Butter 500g at Pak'nSave Mangere." },
+    { "seq": 8, "type": "token", "text": " That is the best price across the stores near you." },
+    { "seq": 9, "type": "price_comparison", "data": {
         "query_item": "butter-500g",
         "options": [
-          { "citation_ref": "c1", "is_cheapest": true,  "savings_vs_dearest_nzd": "0.00" },
-          { "citation_ref": "c2", "is_cheapest": false, "savings_vs_dearest_nzd": null }
+          { "citation_ref": "c1", "is_cheapest": true,  "savings_vs_dearest_nzd": "1.15" },
+          { "citation_ref": "c2", "is_cheapest": false, "savings_vs_dearest_nzd": null },
+          { "citation_ref": "c3", "is_cheapest": false, "savings_vs_dearest_nzd": null },
+          { "citation_ref": "c4", "is_cheapest": false, "savings_vs_dearest_nzd": null },
+          { "citation_ref": "c5", "is_cheapest": false, "savings_vs_dearest_nzd": null }
         ],
-        "reasoning": "Paknsave Mangere is cheapest at $2.97 for 500g." } },
-    { "seq": 7, "type": "done", "server_time": "2026-08-10T05:44:49.113992Z",
-      "usage": { "model_ids": [], "input_tokens": null, "output_tokens": null,
-                 "latency_ms": null, "guardrail_intervened": false } }
+        "reasoning": "Paknsave Mangere is cheapest for Pams Butter 500g (on special)." } },
+    { "seq": 10, "type": "done", "server_time": "2026-08-29T01:17:34.913566Z",
+      "usage": { "model_ids": ["scripted-fast"], "input_tokens": 607, "output_tokens": 80,
+                 "latency_ms": 2, "guardrail_intervened": false } }
   ]
 }
 ```
 
-Read that shape as a captured reference response, not as proof of the target
-invariants. It contains two known defects scheduled for Pilot Task 2:
+Captured from the handler on 2026-08-29, not hand-written. The two defects
+this section used to flag are fixed:
 
-- Options correctly carry `citation_ref`, but `reasoning` and token text still
-  contain literal money. Frontends must resolve structured prices from
-  citations and must not parse prose for monetary truth.
-- Citation source fields currently use the logical label `Products` and
-  `<store>#<category>` rather than the exact configured physical table name,
-  `<store>#<location-slug>` base PK, and normalized product SK. The target
-  contract example in `CONTRACT-v1.md` is authoritative for exact provenance.
+- **Prose and `reasoning` carry no money.** The sentence names the product and
+  store; every figure lives in a `citation` or in a structured field beside a
+  `citation_ref`. Resolve prices from citations and never parse prose for
+  monetary truth — that rule has not changed, but the example now demonstrates
+  it rather than contradicting it.
+- **Citation `source` is the real provenance**: the configured physical table
+  name, a `<store>#<location-slug>` partition key, and a normalized product
+  sort key.
 
-The intended streaming property remains that citations arrive before any
-structured content event that references them. Pilot Task 2 broadens final
-validation and regenerates these captured samples after implementation.
+Citations arrive before any structured content event that references them, and
+`assert_grounded` rejects a response where they do not.
+
+One thing the example cannot show you: money is also rejected inside the plan's
+model-authored text — `meals[].name`, `meals[].ingredients[].item` and
+`.qty`. If the model writes a price there the plan is regenerated, and refused
+outright if regeneration cannot fix it, so a `meal_plan` payload you receive
+never carries a figure that did not come from a citation.
 
 ---
 

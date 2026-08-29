@@ -512,7 +512,19 @@ def assert_arithmetic(plan: MealPlan, tolerance: Decimal = Decimal("0.02")) -> N
 
 
 # Money-shaped strings that must never appear in user-visible prose-like fields.
-_LITERAL_MONEY = re.compile(
+#
+# THE single definition. `src/prompts/prose.py` imports this one rather than
+# keeping its own -- it previously held a byte-for-byte equivalent copy, and
+# two copies of a safety rule drift the moment one of them is tuned. The prose
+# node's check is what lets prose degrade; this module's check is what refuses
+# a response. They must agree by construction, not by review.
+#
+# Deliberately narrow: "3 meals", "500g" and "2 people" are legitimate and must
+# pass. Known over-match: a two-decimal number before a space and a unit
+# ("1.25 kg") reads as money. Nothing in `fixtures/` or in the 585 records
+# under `datasets/` matches it, and the fields where an over-match would be
+# expensive are the ones that degrade rather than fail.
+LITERAL_MONEY = re.compile(
     r"""
     \$\s*\d              # $3, $ 4.99
     | \d+\.\d{2}\b       # 3.49, 12.00
@@ -522,36 +534,130 @@ _LITERAL_MONEY = re.compile(
 )
 
 
+def find_literal_money_in_plan(plan: MealPlan) -> list[str]:
+    """
+    Model-authored text inside a plan that carries a money-shaped string.
+
+    `PlanDraft` has no price field, so the model cannot put a price in a
+    STRUCTURED slot. It can still write one into free text: `DraftMeal.name`,
+    `DraftIngredient.item` and `DraftIngredient.qty_display` pass through
+    `assemble_plan` unchanged and reach the user.
+
+    Those three were unchecked. A plan naming a meal "Budget Pasta - only
+    $4.99 a head" with an ingredient "Butter (was 7.50, now 5.00)" passed
+    assert_grounded, assert_arithmetic and assert_no_literal_money_in_response
+    together, shipping two invented figures -- one of them a fabricated "was"
+    price -- through a system whose central claim is that a price the user
+    sees was retrieved. SYSTEM_PROMPT already forbids it ("NEVER state a
+    price"), and nothing verified the instruction was obeyed. An instruction a
+    model can ignore is exactly what this codebase replaces with a check
+    everywhere else; this closes the last place it had not.
+
+    Returns descriptions rather than raising. The caller is `validate_plan`,
+    and the right response is a repair cycle: Req 3.7 says essential
+    structured content fails rather than degrading, and in this graph
+    "fails" means bounded repair and then an honest terminal, not an
+    exception thrown at a user who asked for a meal plan.
+    """
+    violations: list[str] = []
+    for meal in plan.meals:
+        match = LITERAL_MONEY.search(meal.name)
+        if match:
+            violations.append(f"meal name {meal.name!r} states {match.group(0)!r}")
+        for ing in meal.ingredients:
+            for field, value in (("item", ing.item), ("qty", ing.qty)):
+                match = LITERAL_MONEY.search(value)
+                if match:
+                    violations.append(f"ingredient {field} {value!r} states {match.group(0)!r}")
+    return violations
+
+
+def assert_no_model_authored_money(response: ChatResponse) -> None:
+    """
+    Response-boundary backstop over model-authored text in a meal plan.
+
+    `run_turn` calls this. It can only fire on a bug: `validate_plan` rejects
+    these fields, and a plan that never came back clean is discarded in favour
+    of `emit_plan_generation_failed` rather than emitted. Reaching here means
+    the repair loop or the router let one through, and shipping an invented
+    price is worse than losing the turn.
+
+    Deliberately NARROWER than `assert_no_literal_money_in_response`: it does
+    not look at token text. Prose is model-authored too, but it is
+    non-essential, and the prose node already drops the sentence and ships the
+    table when it finds money -- raising here would convert that degradation
+    into a dead turn, contradicting the rule in `tests/test_prose.py` that a
+    table with no sentence beats a sentence with a wrong price. Req 3.7 draws
+    exactly this line: non-essential text is discarded, essential structured
+    content fails.
+    """
+    violations: list[str] = []
+    for ev in response.events:
+        if isinstance(ev, MealPlanEvent):
+            violations.extend(find_literal_money_in_plan(ev.data))
+
+    if violations:
+        raise AssertionError(
+            f"Model-authored money in plan ({len(violations)}):\n"
+            + "\n".join(f"  - {v}" for v in violations)
+        )
+
+
 def assert_no_literal_money_in_response(response: ChatResponse) -> None:
     """
     Reject any literal monetary value in user-visible prose-like fields.
 
-    Checks: token text, comparison reasoning, and notice messages.
-    Prices must live only in citation events and structured fields that carry
-    a citation_ref — never in free text where provenance cannot be verified.
+    Checks: token text, comparison reasoning, notice messages, and the
+    model-authored text inside a meal plan (meal names, ingredient labels and
+    quantities). Prices must live only in citation events and structured
+    fields that carry a citation_ref -- never in free text where provenance
+    cannot be verified.
+
+    The whole-response call belongs to `validate.py` and CI. `run_turn` calls
+    the narrower `assert_no_model_authored_money` instead; see its docstring
+    for why the two differ.
+
+    DELIBERATELY NOT CHECKED, and the exclusion is the interesting part:
+
+    * `ErrorEvent.message` restates the user's OWN budget -- "I couldn't build
+      a plan within $15 using current prices". That figure is the constraint
+      they supplied, not a price we are claiming, and dropping it makes the
+      refusal harder to act on. The rule is about prices presented as prices,
+      not about digits.
+    * `NoDataEvent.message` and `.requested_item` echo the user's own search
+      term. Same reasoning, plus a blanket check here would let a user fail
+      their own turn by typing a dollar sign.
+
+    Both exclusions are safe only while those messages stay code-authored. A
+    model-written error or no-data message would need this rule extended to
+    it, because the argument above is entirely about who wrote the text.
     """
     violations: list[str] = []
 
     for ev in response.events:
         if isinstance(ev, TokenEvent):
-            match = _LITERAL_MONEY.search(ev.text)
+            match = LITERAL_MONEY.search(ev.text)
             if match:
                 violations.append(
                     f"TokenEvent seq={ev.seq}: literal money {match.group(0)!r} in text"
                 )
         elif isinstance(ev, PriceComparisonEvent):
-            match = _LITERAL_MONEY.search(ev.data.reasoning)
+            match = LITERAL_MONEY.search(ev.data.reasoning)
             if match:
                 violations.append(
                     f"PriceComparison '{ev.data.query_item}': literal money "
                     f"{match.group(0)!r} in reasoning"
                 )
         elif isinstance(ev, NoticeEvent):
-            match = _LITERAL_MONEY.search(ev.message)
+            match = LITERAL_MONEY.search(ev.message)
             if match:
                 violations.append(
                     f"NoticeEvent seq={ev.seq}: literal money {match.group(0)!r} in message"
                 )
+        elif isinstance(ev, MealPlanEvent):
+            violations.extend(
+                f"MealPlan seq={ev.seq}: {v}" for v in find_literal_money_in_plan(ev.data)
+            )
 
     if violations:
         raise AssertionError(

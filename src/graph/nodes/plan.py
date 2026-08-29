@@ -25,6 +25,7 @@ from src.models.base import (
 from src.prompts.meal_plan import (
     SYSTEM_PROMPT,
     PlanDraft,
+    build_defect_repair_prompt,
     build_repair_prompt,
     build_user_prompt,
     render_products,
@@ -207,6 +208,23 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
             budget_nzd=budget,
             exclusions=exclusions,
             products=products,
+        )
+    elif not state.get("over_budget"):
+        # A rejection that is NOT about money: a draft that failed its schema,
+        # an unknown citation ref, broken arithmetic, or a meal name carrying
+        # an invented price. These all used to receive the budget prompt --
+        # "your plan came to $0 OVER the $X budget, cut at least $0" -- which
+        # describes none of them, so the attempt was spent asking the model to
+        # fix a defect nobody had named.
+        tier = ModelTier.FAST
+        task = "repair_plan"
+        user_prompt = build_defect_repair_prompt(
+            products=products,
+            budget=budget,
+            household_size=household,
+            days=days,
+            exclusions=exclusions,
+            defects=state.get("validation_errors") or [],
         )
     else:
         tier = ModelTier.FAST

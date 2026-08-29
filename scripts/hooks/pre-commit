@@ -137,8 +137,37 @@ say "${GREEN}ok${RESET} ruff"
 # package uses the system Node if it finds one and downloads it once if not.
 # That download happens on a fresh venv only, never afterwards.
 
+# --pythonpath, and why the hook needs it when CI does not.
+#
+# Pyright resolves imports against a Python interpreter, and finds one by
+# looking for a venv it recognises. It did not find this one: on a machine
+# where the venv is activated by PATH rather than by a name pyright infers, it
+# fell through to the system install at C:\Python313 and reported
+# `aws_lambda_powertools` unresolved -- a package that IS installed, in .venv.
+#
+# The effect was that THIS HOOK COULD NOT PASS ON MAIN. Four errors, on a
+# clean checkout, unrelated to whatever was being committed. A gate that fails
+# on everything is a gate whose output stops being read, and this repository
+# has already paid for that once: see the four red commits in tasks.md 8.3.
+#
+# The interpreter is passed explicitly rather than fixed in pyproject.toml,
+# and the distinction matters. CI installs into the runner's system Python
+# with no .venv at all, so a `venv = ".venv"` in shared config would point the
+# CI step at a directory that does not exist. That is precisely the failure
+# mode the Type check step's own comment warns about -- a config that resolves
+# to nothing looks exactly like a passing type check. Local resolution is a
+# local fact, so it is stated locally.
 step="pyright"
-pyright >/dev/null 2>&1 || fail "type errors. Run: pyright"
+# Branch rather than build an argument string: this repository's own path
+# contains spaces ("AWS AI Innovation Mentorship Workshop"), so an unquoted
+# $args splits mid-path and pyright is handed a directory that does not exist
+# -- which fails identically to a real type error and is far harder to read.
+if [ -n "$venv_bin" ]; then
+    pyright --pythonpath "$venv_bin/python" >/dev/null 2>&1 ||
+        fail "type errors. Run: pyright --pythonpath \"$venv_bin/python\""
+else
+    pyright >/dev/null 2>&1 || fail "type errors. Run: pyright"
+fi
 say "${GREEN}ok${RESET} pyright"
 
 # --------------------------------------------------------------- tests

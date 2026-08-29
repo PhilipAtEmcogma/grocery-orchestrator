@@ -102,6 +102,7 @@ class ScriptedModelClient(ModelClient):
         hallucinate_ref: str | None = None,
         prose_writes_money: bool = False,
         prose_bad_placeholder: bool = False,
+        plan_money_attempts: int = 0,
     ) -> None:
         self.force_error = force_error
         self.overrides = overrides or {}
@@ -114,7 +115,19 @@ class ScriptedModelClient(ModelClient):
         # literal price on demand, so the rejection cannot otherwise be tested.
         self.prose_writes_money = prose_writes_money
         self.prose_bad_placeholder = prose_bad_placeholder
+        # How many of the FIRST plan attempts write a price into the meal
+        # name. Same rationale as prose_writes_money: a real model cannot be
+        # made to disobey 'NEVER state a price' on demand, so the rejection
+        # and the repair that follows it cannot otherwise be driven. Set it
+        # above MAX_REPAIR_ATTEMPTS to exercise exhaustion instead.
+        self.plan_money_attempts = plan_money_attempts
+        self._plan_calls = 0
         self.calls: list[tuple[ModelTier, str]] = []
+        # Prompts as sent, so a test can assert WHICH prompt a repair used.
+        # `calls` records tier and schema only, which cannot distinguish the
+        # budget repair prompt from the defect one -- and inverting that
+        # branch used to leave the whole suite green.
+        self.prompts: list[tuple[str, str]] = []
         self._usage: dict = {}
 
     # ------------------------------------------------------------ interface
@@ -130,6 +143,7 @@ class ScriptedModelClient(ModelClient):
         task: str = "classify_intent",
     ) -> T:
         self.calls.append((tier, schema.__name__))
+        self.prompts.append((schema.__name__, user))
         if self.force_error:
             raise ModelError("scripted failure")
 
@@ -289,6 +303,9 @@ class ScriptedModelClient(ModelClient):
         rather than one meal repeated. Repair passes (FAST tier) shrink
         portions, mimicking a real model responding to "cut $X" feedback.
         """
+        self._plan_calls += 1
+        writes_money = self._plan_calls <= self.plan_money_attempts
+
         refs = re.findall(r"^(c\d+) \|", user, flags=re.MULTILINE)
         if not refs:
             refs = ["c1"]
@@ -316,7 +333,11 @@ class ScriptedModelClient(ModelClient):
             chosen = refs[start : start + per_meal] or refs[:per_meal]
             meals.append(
                 DraftMeal(
-                    name=f"Scripted Dinner {day + 1}",
+                    name=(
+                        f"Scripted Dinner {day + 1} for $9.99"
+                        if writes_money
+                        else f"Scripted Dinner {day + 1}"
+                    ),
                     serves=serves,
                     ingredients=[
                         DraftIngredient(
