@@ -75,11 +75,12 @@ corrected citation construction, citation-before-use ordering, money-free
 comparison reasoning/prose labels, regenerated samples, and offline
 `GuardrailBlocked` propagation. Remaining blockers include:
 
-1. Final grounding lacks immutable retrieved-record context, exact key/value
-   equality proof, and wrong-key/altered-value controls. The literal-money half
-   is CLOSED: `run_turn()` calls `assert_no_model_authored_money()` and
-   `validate_plan` rejects money in the plan's model-authored text (Pilot Task
-   2 follow-up (a), 2026-08-29). The whole-response assertion stays in
+1. CLOSED 2026-08-29. `run_turn()` now calls three checks:
+   `assert_grounded()` for declaration/order/shape,
+   `assert_no_model_authored_money()` for the plan's model-authored text, and
+   `assert_citations_match_retrieval()` for exact key and value equality against
+   the frozen retrieved record. Wrong-key and altered-value negative controls
+   run in `validate.py`. The whole-response money assertion stays in
    `validate.py` by design — see §2.4 below and `AGENTS.md`.
 2. No qualifying 13/13 plus 7/7 live Guardrail result exists. The harness's
    controls are no longer the obstacle: pinning, block classification, exit
@@ -131,11 +132,16 @@ use and basic source shape using the configured physical table, `store_key`,
 and normalized `product_key`. Unknown references, ordering violations, and
 malformed source keys fail.
 
-This is not full Req 3.5–3.6 proof. The assertion does not receive immutable
-retrieved-record context, so it cannot independently prove that citation keys
-and monetary values equal the actual retrieved record. Wrong-key and
-altered-value negative controls remain an explicit follow-up. Response
-self-consistency is necessary but not sufficient for exact provenance.
+Response self-consistency is necessary but not sufficient for exact
+provenance, and for a long time it was all there was. Since 2026-08-29
+`assert_citations_match_retrieval()` closes the gap by comparing each citation
+against the frozen `PriceRecord` the retrieval node kept for it — the ref must
+have been retrieved, table/pk/sk must identify that exact stored record, and
+every published value must equal the retrieved one. The record reaches it
+through a read-only `RetrievedRecord` Protocol rather than an import, because
+`retrieval/base.py` imports `Store` from `contract` and the reverse import
+would close a cycle. Wrong-key and altered-value negative controls run in
+`validate.py`.
 
 ### 2.4 Free text (Req 3.7)
 

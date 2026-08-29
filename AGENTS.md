@@ -60,11 +60,18 @@ Enforced three ways, any one of which would suffice:
   `retrieve_prices`. No edge skips it.
 - *Schema*: `PlanDraft` has no price field. The model returns citation refs
   and pack multipliers; every dollar figure is computed in Python.
-- *Assertion today*: Pilot Task 2 added declaration-before-use and basic source
-  checks using configured table, `store_key`, and normalized `product_key`.
-  `assert_grounded()` still has no immutable retrieved-record context, so it
-  does not independently prove exact key/value equality or satisfy all Req
-  3.5–3.6 negative controls.
+- *Assertion*: two checks, and the split matters. `assert_grounded()` reads the
+  response alone — declaration-before-use, ordering, and that source keys are
+  SHAPED like keys. `assert_citations_match_retrieval()` compares every citation
+  against the frozen `PriceRecord` retrieval kept for it: the ref was retrieved
+  at all, table/pk/sk identify that exact record, and every published value
+  equals the retrieved one. `run_turn` calls both.
+
+  **Shape is not identity, and for a long time only shape was checked.** A
+  citation naming the right table with a plausible partition key and a price
+  nobody retrieved passed cleanly, so the central claim rested on no code path
+  fabricating one rather than on a check that would notice. Closed 2026-08-29
+  (Req 3.5–3.6) with 19 tests and five negative controls in `validate.py`.
 
 For prose, the model writes `[[c1]]` placeholders and rejects model-supplied
 money. Pilot Task 2 changed rendering to non-monetary product/store labels,
@@ -249,7 +256,7 @@ managed-evaluation stages are planned or proposed, not built.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 485 passed, 31 skipped, no AWS
+python -m pytest -q                              # 504 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -493,8 +500,10 @@ idempotency; Powertools observability; handler; local server; CI; zip build.
 **Live verified in `ap-southeast-2`:** products and idempotency DynamoDB tables;
 152 seeded records; Dynamo price repository contract; five current stored
 idempotency outcomes; Nova Lite/Pro invocation; and Guardrail
-`b1xezpqe04kx` version `1` basic attachment. This does not prove exact retrieved
-record/value equality, stale ownership, or live red-team quality.
+`b1xezpqe04kx` version `1` basic attachment. This is evidence about the
+resources, not about behaviour: it does not prove stale ownership or live
+red-team quality. (Retrieved-record/value equality is now proven offline on
+every turn, against the record the repository returned.)
 
 **Model evidence (meal-plan invariants, 2026-08-28).** Anthropic access is no
 longer blocked: the account's one-time Anthropic use case form was submitted
@@ -610,8 +619,8 @@ trustworthy; the runs have not been done. **`docs/LIVE-EVAL-RUNBOOK.md` is the
 runbook**: preconditions, exit-code meanings, the five traps that have already
 cost this project time, and where to write the result down.
 
-**Known pilot blockers:** Task 2 exact record/value follow-up (the runtime
-money half closed 2026-08-29);
+**Known pilot blockers:** (Pilot Task 2 is now fully closed — the runtime
+money half and the retrieved-record/value proof both landed 2026-08-29);
 Task 3 qualifying live Guardrail follow-up; clarification (payable totals
 are DONE — MealPlan carries payable_total_nzd and within_budget follows it);
 location/freshness; idempotency fencing/candidate scale; model qualification;

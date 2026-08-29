@@ -23,10 +23,11 @@ Owner: Backend/Orchestration + AI/Prompt Lead
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -465,6 +466,126 @@ def assert_grounded(response: ChatResponse) -> None:
     if violations:
         raise AssertionError(
             f"Grounding violations ({len(violations)}):\n"
+            + "\n".join(f"  - {v}" for v in violations)
+        )
+
+
+class RetrievedRecord(Protocol):
+    """
+    The retrieved-record shape `assert_citations_match_retrieval` compares
+    against. `src.retrieval.base.PriceRecord` satisfies it structurally.
+
+    Declared as a Protocol rather than imported, and that is not stylistic:
+    `retrieval/base.py` imports `Store` from this module, so importing
+    PriceRecord here would close a cycle. A Protocol states exactly the fields
+    the equality proof needs and nothing else, which also documents the
+    coupling instead of hiding it behind a concrete class.
+
+    Members are read-only properties rather than plain attributes, which is
+    load-bearing: `PriceRecord` is a FROZEN dataclass, and a Protocol declaring
+    mutable attributes demands settable ones, so the concrete type would not
+    satisfy it. Read-only is also the honest declaration — this rule compares
+    retrieved values, it never assigns them.
+    """
+
+    @property
+    def product_key(self) -> str: ...
+    @property
+    def store(self) -> Store: ...
+    @property
+    def store_location(self) -> str: ...
+    @property
+    def display_name(self) -> str: ...
+    @property
+    def price_nzd(self) -> Decimal: ...
+    @property
+    def unit(self) -> str: ...
+    @property
+    def unit_price_nzd(self) -> Decimal: ...
+    @property
+    def on_special(self) -> bool: ...
+    @property
+    def valid_date(self) -> str: ...
+    @property
+    def store_key(self) -> str: ...
+
+
+def assert_citations_match_retrieval(
+    response: ChatResponse,
+    *,
+    table: str,
+    records: Mapping[str, RetrievedRecord],
+) -> None:
+    """
+    Req 3.5: every citation must BE a record that was actually retrieved.
+
+    `assert_grounded` cannot do this and never could. It sees only the
+    response, so it can check that a ref was declared before use and that the
+    source keys are shaped like keys -- `table` non-empty, a `#` in the pk, a
+    non-empty sk. Shape is not identity. A citation naming the right table with
+    a plausible pk and a price nobody retrieved passed it cleanly, which meant
+    the system's central claim rested on the fact that no code path currently
+    fabricates one, rather than on a check that would notice if one did.
+
+    This closes that by comparing each Citation against the immutable
+    `PriceRecord` the retrieval node kept for it:
+
+    * the ref was retrieved at all (an unknown ref is a fabricated citation)
+    * table, partition key and sort key identify that exact stored record
+    * every published value equals the retrieved value
+
+    `records` is keyed by citation ref and comes from `GroceryState`'s
+    `record_index`, which only `retrieve_prices` writes. `PriceRecord` is a
+    frozen slots dataclass, so what is compared cannot have been edited between
+    retrieval and here -- "immutable retrieved context" is a property of the
+    type, not a convention.
+
+    Raises rather than returning findings: Req 3.5 says refuse the response,
+    and by the time this runs there is no repair available. `run_turn` calls
+    it, which is the only place holding both the response and the state.
+
+    NOT called by `validate.py` over `samples/`, because a committed sample has
+    no retrieval context to compare against -- the samples prove shape, this
+    proves identity, and conflating the two is what let shape stand in for
+    identity in the first place. `validate.py` carries the wrong-key and
+    altered-value negative controls Req 3.6 names, built against a stub record.
+    """
+    violations: list[str] = []
+
+    for ev in response.events:
+        if not isinstance(ev, CitationEvent):
+            continue
+        c = ev.citation
+        rec = records.get(c.ref)
+
+        if rec is None:
+            # The dangerous one. Not "a payload referenced an undeclared ref"
+            # (assert_grounded's check) but "a citation exists that retrieval
+            # never produced" -- a fabricated price, correctly shaped.
+            violations.append(f"{c.ref}: no retrieved record — this citation was not retrieved")
+            continue
+
+        for label, published, retrieved in (
+            ("source.table", c.source.table, table),
+            ("source.pk", c.source.pk, rec.store_key),
+            ("source.sk", c.source.sk, rec.product_key),
+            ("store", c.store, rec.store),
+            ("store_location", c.store_location, rec.store_location),
+            ("product_name", c.product_name, rec.display_name),
+            ("price_nzd", c.price_nzd, rec.price_nzd),
+            ("unit", c.unit, rec.unit),
+            ("unit_price_nzd", c.unit_price_nzd, rec.unit_price_nzd),
+            ("on_special", c.on_special, rec.on_special),
+            ("valid_date", c.valid_date.isoformat(), rec.valid_date),
+        ):
+            if published != retrieved:
+                violations.append(
+                    f"{c.ref}: {label} is {published!r}, retrieved record has {retrieved!r}"
+                )
+
+    if violations:
+        raise AssertionError(
+            f"Citations do not match retrieval ({len(violations)}):\n"
             + "\n".join(f"  - {v}" for v in violations)
         )
 

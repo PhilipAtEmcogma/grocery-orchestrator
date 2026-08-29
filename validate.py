@@ -1,13 +1,23 @@
 """Validates the sample payloads against the contract. Run in CI."""
 
 import sys
+from datetime import UTC, date, datetime
+from decimal import Decimal
 from pathlib import Path
 
+from src.retrieval.base import PriceRecord
 from src.schemas.contract import (
     ChatRequest,
     ChatResponse,
+    Citation,
+    CitationEvent,
+    DoneEvent,
+    Event,
     MealPlanEvent,
+    SourceRef,
+    Store,
     assert_arithmetic,
+    assert_citations_match_retrieval,
     assert_grounded,
     assert_no_literal_money_in_response,
 )
@@ -183,6 +193,99 @@ try:
     failures.append(("negative_money_test", "did not reject literal money"))
 except AssertionError as e:
     print(f"  Correctly rejected: {e}")
+
+# Negative tests: a citation must BE the record it names (Req 3.5-3.6).
+#
+# The three checks above all read the response alone, which is why they cannot
+# catch these two. `assert_grounded` accepts a wrong partition key -- it still
+# contains a '#' -- and accepts any price at all, because it has nothing to
+# compare one to. Shape is not identity.
+#
+# The samples carry no retrieval context, so these are built against a stub
+# record here rather than run over `samples/`. Req 3.6 names four negative
+# cases; unknown references and content-before-citation are covered above, and
+# these are the remaining two.
+STUB_TABLE = "grocery-products-dev"
+STUB_RECORD = PriceRecord(
+    product_key="butter-500g",
+    store=Store.PAKNSAVE,
+    store_location="Mangere",
+    display_name="Pams Butter 500g",
+    canonical_name="butter",
+    category="dairy",
+    price_nzd=Decimal("2.97"),
+    unit="500g",
+    unit_price_nzd=Decimal("5.94"),
+    pack_grams=500,
+    on_special=True,
+    valid_date="2026-07-31",
+    lat=-36.98,
+    lon=174.80,
+    store_key="paknsave#mangere",
+)
+
+
+def _cited(**overrides) -> ChatResponse:
+    """A one-citation response matching STUB_RECORD unless told otherwise."""
+    source = SourceRef(
+        table=overrides.pop("table", STUB_TABLE),
+        pk=overrides.pop("pk", "paknsave#mangere"),
+        sk=overrides.pop("sk", "butter-500g"),
+    )
+    fields = {
+        "ref": "c1",
+        "store": Store.PAKNSAVE,
+        "store_location": "Mangere",
+        "product_name": "Pams Butter 500g",
+        "price_nzd": Decimal("2.97"),
+        "unit": "500g",
+        "unit_price_nzd": Decimal("5.94"),
+        "on_special": True,
+        "valid_date": date(2026, 7, 31),
+    }
+    events: list[Event] = []
+    events.append(CitationEvent(seq=0, citation=Citation(**{**fields, **overrides}, source=source)))
+    events.append(DoneEvent(seq=1, server_time=datetime(2026, 7, 30, 19, 45, tzinfo=UTC)))
+    return ChatResponse(session_id="sess-negctl01", turn_id="turn-negctl01", events=events)
+
+
+def _expect_rejected(label: str, response: ChatResponse, key: str) -> None:
+    print(f"\nNegative test — {label} must fail:")
+    # It must pass the shape check first, or the new rule is not what caught it.
+    try:
+        assert_grounded(response)
+    except AssertionError:
+        print("  SETUP ERROR — assert_grounded rejected it, so this proves nothing")
+        failures.append((key, "negative case was caught by the shape check"))
+        return
+    try:
+        assert_citations_match_retrieval(response, table=STUB_TABLE, records={"c1": STUB_RECORD})
+        print("  UNEXPECTED PASS — retrieved-record equality is broken!")
+        failures.append((key, f"did not reject {label}"))
+    except AssertionError as e:
+        print(f"  Correctly rejected: {str(e).splitlines()[1].strip()}")
+
+
+_expect_rejected(
+    "an incorrect source key",
+    _cited(pk="paknsave#sylvia-park"),
+    "negative_source_key_test",
+)
+_expect_rejected(
+    "an altered value",
+    _cited(price_nzd=Decimal("0.99")),
+    "negative_altered_value_test",
+)
+
+# Positive control: the same construction, untampered, must pass. A rule that
+# rejects everything is as useless as one that rejects nothing.
+print("\nPositive control — a citation matching its record must pass:")
+try:
+    assert_citations_match_retrieval(_cited(), table=STUB_TABLE, records={"c1": STUB_RECORD})
+    print("  OK  matching citation accepted")
+except AssertionError as e:
+    print(f"  UNEXPECTED FAIL — the rule rejects a correct citation: {e}")
+    failures.append(("positive_control", str(e)))
 
 # Non-zero exit code fails the CI step if anything above did not behave as expected.
 sys.exit(1 if failures else 0)
