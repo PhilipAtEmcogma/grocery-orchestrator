@@ -201,8 +201,53 @@
     },
     "_unscored_tasks": {
       "_comment": "Tasks no eval measures, named rather than hidden. The test treats these as accepted gaps; deleting a task from here without adding a scorecard makes the build fail, which is the point.",
-      "repair_plan": "Exercised INSIDE the meal-plan eval -- repair fires during those runs and its output is scored through the same invariants -- but never scored on its own. A repair-specific regression would show up only as a lower meal-plan score.",
-      "generate_prose": "No eval measures prose at all. Legacy 5.6 (subjective quality scoring) is unchecked, so prose is routed to models nothing has scored for prose. Bounded by construction rather than by measurement: the node rejects money, rejects unknown placeholders, verifies the cheapest claim against retrieved records, and degrades to the structured payload on any failure."
+      "repair_plan": "MEASURED but not gated -- see scorecards._measured_not_gated.repair_plan for the numbers and the reason. Listed here so `unscored_routes()` does not gate on a six-case suite; it is no longer true that nothing measures it."
+    },
+    "generate_prose": {
+      "_source": "evals/run_prose.py, 11 cases, guardrail version 2, paced 9/min",
+      "_measured": "2026-08-29",
+      "_note": "Rule compliance, not literary merit. The node imposes a protocol -- placeholders only, no money, correct cheapest attribution -- and DEGRADES silently on any breach, dropping the sentence and shipping the bare table. So what is scored is whether a model can follow the protocol; a model that cannot produces a product with no prose in it and no error to show for it. Legacy 5.6 (subjective quality) stays open.",
+      "nova-lite": {
+        "rate": 1.0,
+        "scored": 11,
+        "delivery": 1.0
+      },
+      "nova-pro": {
+        "rate": 1.0,
+        "scored": 11,
+        "delivery": 1.0
+      },
+      "claude-haiku": {
+        "rate": 0.909,
+        "scored": 11,
+        "delivery": 0.889
+      }
+    },
+    "_measured_not_gated": {
+      "_comment": "Measured, reported, and deliberately NOT used to gate routing, because the suite is too small for any threshold on it to mean anything. Distinct from _unscored_tasks, which is for tasks nothing measures at all. Expand the case set before gating.",
+      "repair_plan": {
+        "_source": "evals/run_repair.py, 6 cases (4 budget, 2 defect), guardrail version 2",
+        "_measured": "2026-08-29",
+        "_why_not_gated": "Six cases: one failure is 16.7 points. All three routable models scored 83.3%, and each failed a DIFFERENT case -- the signature of variance rather than a weakness any of them has. A 90% floor on this suite would fail every model for noise, and a lower floor chosen to make them pass would be a number picked to fit the answer. Same argument as docs/CI-GATE-HEALTH.md section 1.",
+        "nova-lite": {
+          "rate": 0.833,
+          "scored": 6,
+          "budget": 1.0,
+          "defect": 0.5
+        },
+        "claude-haiku": {
+          "rate": 0.833,
+          "scored": 6,
+          "budget": 0.75,
+          "defect": 1.0
+        },
+        "nova-pro": {
+          "rate": 0.833,
+          "scored": 6,
+          "budget": 0.75,
+          "defect": 1.0
+        }
+      }
     }
   }
 }

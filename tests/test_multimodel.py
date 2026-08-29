@@ -339,7 +339,11 @@ def test_the_unmeasured_tasks_are_named_and_reasoned():
     failing -- which is the intended direction.
     """
     gaps = ModelRegistry().unscored_tasks()
-    assert set(gaps) == {"repair_plan", "generate_prose"}
+    # generate_prose left this list on 2026-08-29 when evals/run_prose.py gave
+    # it a scorecard. repair_plan is still here, but for a different reason than
+    # it used to be: it IS measured now (evals/run_repair.py), and is ungated
+    # only because six cases cannot support a threshold.
+    assert set(gaps) == {"repair_plan"}
     for task, reason in gaps.items():
         assert len(reason) > 80, f"{task} needs a real reason, not a label"
 

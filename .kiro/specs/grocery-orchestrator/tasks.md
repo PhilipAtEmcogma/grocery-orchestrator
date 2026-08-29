@@ -246,6 +246,39 @@ proposed, or gated as labelled; it is not implemented.
     nothing measures prose at all (legacy 5.6), and repair is only ever scored
     through the meal-plan invariants. Offline gates passed: 511 passed, 31
     skipped.
+  - [x] **7a-ii — Measure the two tasks nothing measured.** Completed
+    2026-08-29. Recording the scorecards forced the admission that
+    `generate_prose` and `repair_plan` were routed to models nothing had scored
+    for either. `evals/run_prose.py` (11 cases) scores whether a model can
+    follow the prose protocol — the node degrades silently on any breach, so a
+    model that cannot produces a product with no prose and no error to show for
+    it. `evals/run_repair.py` (6 cases) scores the repair pass, budget and
+    defect kinds separately, because the graph feeds it both and they need
+    different prompts and different checks. Both gated in CI and the hook at
+    0.90 against 100% scripted baselines.
+
+    Live, guardrail v2: prose — Nova Lite 100%, Nova Pro 100%, Claude Haiku 4.5
+    90.9%; all gated. Repair — all three at 83.3%, each failing a DIFFERENT
+    case, which is variance on six cases (one failure is 16.7 points) rather
+    than a weakness. Recorded in `scorecards._measured_not_gated` with that
+    reasoning rather than gated on a threshold the suite cannot support.
+
+    **The repair suite immediately found a live defect this session introduced.**
+    `build_defect_repair_prompt` shipped phrased as a stack of imperatives
+    ("Never write a price ... ANYWHERE", "Use ONLY citation refs"), and the
+    Guardrail's PROMPT_ATTACK filter refused it outright — so every non-budget
+    repair returned GUARDRAIL_BLOCKED to the user instead of a repaired plan.
+    Offline tests could not see it: the scripted client has no guardrail. The
+    prompt was rewritten into the budget prompt's descriptive register and
+    verified allowed. `run_repair.py` now scores a blocked repair prompt as a
+    FAILURE rather than excusing it, since a prompt built entirely from our own
+    code should never read as an attack — that is the regression test.
+
+    Also fixed in the harness itself before any number was recorded: `_citations`
+    passed `exclude_categories=[]` and `budget_nzd=None`, so a vegetarian case
+    handed the model meat and dairy from an unfiltered candidate list. Two
+    models "failed" by exceeding the 12-ingredient cap, and that would have been
+    recorded as a weakness in the models rather than in the helper.
   - [ ] **7b — Move the catalogue toward SSM**, align the adapter with
     `langchain-aws`, and evaluate cross-Region inference profiles only for a
     measured purpose.
@@ -533,6 +566,9 @@ enforcement from `run_turn()` remains the explicit Task 2 follow-up.*
 - [x] **5.4** Meal plan cases with invariants and reported metrics — *Req 10.2*
 - [x] **5.5** Budget floor check, not only the ceiling
 - [ ] **5.6** Subjective quality scoring for variety and appeal
+  — *deliberately still open; `evals/run_prose.py` (2026-08-29) scores RULE
+  COMPLIANCE only. An LLM judge would put a non-deterministic scorer inside a
+  suite whose value is being deterministic.*
 - [x] **5.7** Score every candidate model and publish the comparison
   — *Req 9.5* — **[current blocker: model-specific access and missing scorecards]**
 - [x] **5.8** Red-team case set for content safety, covering both content that

@@ -302,18 +302,15 @@ def build_defect_repair_prompt(
         + _constraints_block(
             budget=budget, household_size=household_size, days=days, exclusions=exclusions
         )
-        + f"\n\nYour previous plan was REJECTED. What was wrong with it:\n"
+        + f"\n\nThe previous plan could not be used. What needs to change:\n"
         f"{listed}\n\n"
-        f"Produce a replacement plan covering {days} day(s) for "
-        f"{household_size} person/people that does not repeat those problems.\n\n"
-        f"Reminders that matter here:\n"
-        f"1. Use ONLY citation refs from the table above. Never invent one.\n"
-        f"2. Never write a price, cost, saving or total ANYWHERE -- not in a "
-        f"meal name, not in an ingredient name, not in a quantity. Costs are "
-        f"calculated from the table after you answer, and any figure you "
-        f"write would be both wrong and unciteable. Name a meal 'Pasta Bake', "
-        f"never 'Pasta Bake for $12'.\n"
-        f"3. Quantities describe amounts of food: '500g', '2 tins', "
-        f"'1 clove'. They are not prices.\n"
+        f"Produce a revised plan covering {days} day(s) for "
+        f"{household_size} person/people.\n\n"
+        f"What to keep in mind while you do:\n"
+        f"1. Every ingredient takes a citation ref from the table above.\n"
+        f"2. Meal names and ingredient names describe food rather than cost. "
+        f"A name like 'Pasta Bake' works; one carrying an amount does not, "
+        f"because costs are calculated from the table after you answer.\n"
+        f"3. Quantities describe amounts of food: '500g', '2 tins', '1 clove'.\n"
         f"4. Every exclusion above still applies."
     )

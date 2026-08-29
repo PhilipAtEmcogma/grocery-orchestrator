@@ -246,13 +246,24 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
   Nova Pro 100.0% (28/28), Claude Haiku 4.5 96.4% (27/28), Nova Lite 92.9%
   (26/28). Meal-plan invariants, paced, three clean reps each: Nova Pro 100%,
   Claude Haiku 4.5 100%. All clear the 90% floor.
-- 🚧 **Two tasks are routed with nothing measuring them**, named in
-  `scorecards._unscored_tasks` rather than left implicit: `repair_plan` is
-  exercised inside the meal-plan eval but never scored alone, and
-  `generate_prose` has no eval at all (legacy 5.6). Prose is bounded by
-  construction — money rejected, placeholders verified, cheapest claim checked
-  against retrieved records, degrading to the structured payload on failure —
-  which is not the same as being measured.
+- ✅ **Prose and repair are now measured**, closing the two tasks that were
+  routed with nothing scoring them. `evals/run_prose.py` (11 cases) asks whether
+  a model can follow the prose protocol at all — the node degrades silently on
+  any breach, so a model that cannot produces a product with no prose in it and
+  no error to show for it. Nova Lite 100%, Nova Pro 100%, Claude Haiku 4.5
+  90.9%. `evals/run_repair.py` (6 cases) scores the repair pass, separating
+  budget repairs from defect repairs because the graph feeds it both and they
+  need different prompts. Both are gated in CI and the pre-commit hook.
+- 🚧 **Repair is measured but not gated on model choice.** All three routable
+  models scored 83.3%, each failing a *different* case — variance on a six-case
+  suite where one failure is 16.7 points, not a weakness any of them has. A 90%
+  floor there would fail every model for noise; a lower one would be a number
+  picked to fit the answer. Recorded in `scorecards._measured_not_gated` with
+  that reasoning. Expand the case set before gating.
+- 🚧 **Subjective prose quality is still unmeasured** (legacy 5.6). Everything
+  the prose suite checks is a rule violation, deliberately: an LLM judge would
+  put a non-deterministic scorer inside a suite whose value is being
+  deterministic.
 - ✅ **Guardrail verified live: 13/13 must-block, 9/9 must-allow**, exit 0,
   against `b1xezpqe04kx` **version 2** on 2026-08-29. Getting there took fixing
   the harness first — `--model` did not pin, `OUT_OF_SCOPE` counted as a block,
@@ -277,7 +288,7 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
 
 ### Tests, evals and CI
 
-- ✅ **511 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **514 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -382,7 +393,7 @@ python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
 And to check it:
 
 ```bash
-pytest                     # 511 passing, 31 skipped
+pytest                     # 514 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py       # 76.7% scripted baseline

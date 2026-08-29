@@ -1,0 +1,68 @@
+{
+  "_comment": "Repair golden set. Two kinds, because the graph feeds the repair pass two kinds of failure and they need different prompts and different checks. Budget cases seed a deliberately over-budget previous plan and ask whether the repair brings it under. Defect cases hand it a non-monetary rejection and ask whether it stops repeating it. Every case also re-checks the brief - household, days, exclusions - because a repair that drops the allergy to hit a number is not a repair.",
+  "version": "1.0",
+  "cases": [
+    {
+      "id": "rb-001",
+      "kind": "budget",
+      "message": "feed 2 people for 3 days on $45",
+      "household_size": 2,
+      "days": 3,
+      "budget_nzd": "45.00",
+      "note": "The ordinary case: an over-buying first draft, a generous-but-finite budget."
+    },
+    {
+      "id": "rb-002",
+      "kind": "budget",
+      "message": "dinner for 4 for 4 days on $80",
+      "household_size": 4,
+      "days": 4,
+      "budget_nzd": "80.00"
+    },
+    {
+      "id": "rb-003",
+      "kind": "budget",
+      "message": "meals for 3 people for 5 days, $90, no dairy",
+      "household_size": 3,
+      "days": 5,
+      "budget_nzd": "90.00",
+      "exclusions": ["dairy"],
+      "note": "Cutting cost while holding an exclusion. Req 5.3 exists because a repair pass once regenerated without the allergy it was never told about."
+    },
+    {
+      "id": "rb-004",
+      "kind": "budget",
+      "message": "feed 1 person for 7 days on $55",
+      "household_size": 1,
+      "days": 7,
+      "budget_nzd": "55.00",
+      "note": "Long horizon, small household - the shape where whole-pack rounding hurts most, since one person rarely finishes a pack."
+    },
+    {
+      "id": "rd-001",
+      "kind": "defect",
+      "message": "feed 2 people for 3 days on $60",
+      "household_size": 2,
+      "days": 3,
+      "budget_nzd": "60.00",
+      "validation_errors": [
+        "meal name 'Budget Pasta - only $4.99 a head' states '$4'"
+      ],
+      "note": "An invented price in a meal name. The plan was affordable and arithmetically sound; what was wrong was a figure no citation backs."
+    },
+    {
+      "id": "rd-002",
+      "kind": "defect",
+      "message": "dinner for 4 for 3 days on $75, vegetarian",
+      "household_size": 4,
+      "days": 3,
+      "budget_nzd": "75.00",
+      "exclusions": ["vegetarian"],
+      "validation_errors": [
+        "ingredient qty '500g for $5' states '$5'",
+        "ingredient item 'Butter (was 7.50, now 5.00)' states '7.50'"
+      ],
+      "note": "Two defects at once, plus an exclusion to hold. Repair must fix both without dropping the vegetarian constraint."
+    }
+  ]
+}

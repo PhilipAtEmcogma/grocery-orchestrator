@@ -269,6 +269,10 @@ python evals/run_intent.py --min-accuracy 0.75 >/dev/null \
     || fail "intent accuracy fell below the floor"
 python evals/run_meal_plan.py --min-pass-rate 0.90 >/dev/null \
     || fail "meal plan invariants fell below the floor"
+python evals/run_prose.py --min-pass-rate 0.90 >/dev/null \
+    || fail "prose rule compliance fell below the floor"
+python evals/run_repair.py --min-pass-rate 0.90 >/dev/null \
+    || fail "repair pass success fell below the floor"
 say "${GREEN}ok${RESET} eval floors"
 
 printf '%spre-commit passed%s (pip-audit and the package build run in CI only)\n' \
