@@ -67,6 +67,7 @@ class InstrumentedPriceRepository(PriceRepository):
         limit: int = 5,
         stores: list[Store] | None = None,
         near: NearFilter | None = None,
+        locations: frozenset[str] | None = None,
         freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         with self._span("cheapest_for_product") as span:
@@ -77,6 +78,7 @@ class InstrumentedPriceRepository(PriceRepository):
                     limit=limit,
                     stores=stores,
                     near=near,
+                    locations=locations,
                     freshness=freshness,
                 )
             finally:
@@ -111,6 +113,7 @@ class InstrumentedPriceRepository(PriceRepository):
         limit_per_category: int = 3,
         budget_nzd: Decimal | None = None,
         near: NearFilter | None = None,
+        locations: frozenset[str] | None = None,
         freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         with self._span("candidates_for_budget") as span:
@@ -122,6 +125,7 @@ class InstrumentedPriceRepository(PriceRepository):
                     limit_per_category=limit_per_category,
                     budget_nzd=budget_nzd,
                     near=near,
+                    locations=locations,
                     freshness=freshness,
                 )
             finally:

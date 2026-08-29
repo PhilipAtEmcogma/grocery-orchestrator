@@ -61,6 +61,7 @@ def build_graph(repo: PriceRepository, model: ModelClient):
     g.add_node("retrieve_prices", partial(nodes.retrieve_prices, repo=repo))
     g.add_node("emit_no_data", nodes.emit_no_data)
     g.add_node("emit_stale_data", nodes.emit_stale_data)
+    g.add_node("emit_unknown_region", nodes.emit_unknown_region)
     g.add_node("emit_dietary_unsupported", nodes.emit_dietary_unsupported)
     g.add_node("emit_clarification", nodes.emit_clarification)
     g.add_node("generate_comparison", nodes.generate_comparison)
@@ -95,6 +96,7 @@ def build_graph(repo: PriceRepository, model: ModelClient):
         {
             "no_data": "emit_no_data",
             "stale": "emit_stale_data",
+            "unknown_region": "emit_unknown_region",
             "comparison": "generate_comparison",
             "plan": "generate_plan",
             "infeasible": "emit_budget_infeasible",
@@ -103,6 +105,7 @@ def build_graph(repo: PriceRepository, model: ModelClient):
 
     g.add_edge("emit_no_data", "finalise")
     g.add_edge("emit_stale_data", "finalise")
+    g.add_edge("emit_unknown_region", "finalise")
     g.add_edge("generate_comparison", "generate_prose")
     g.add_edge("generate_plan", "validate_plan")
 

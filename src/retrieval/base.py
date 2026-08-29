@@ -64,6 +64,7 @@ class PriceRepository(Protocol):
         limit: int = 5,
         stores: list[Store] | None = None,
         near: NearFilter | None = None,
+        locations: frozenset[str] | None = None,
         freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         """
@@ -114,6 +115,7 @@ class PriceRepository(Protocol):
         limit_per_category: int = 3,
         budget_nzd: Decimal | None = None,
         near: NearFilter | None = None,
+        locations: frozenset[str] | None = None,
         freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         """

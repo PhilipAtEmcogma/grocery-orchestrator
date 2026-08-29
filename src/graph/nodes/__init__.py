@@ -20,6 +20,7 @@ from src.graph.feasibility import minimum_spend
 from src.graph.nodes.intent import classify_intent as classify_intent
 from src.graph.nodes.plan import generate_plan as generate_plan
 from src.graph.nodes.prose import generate_prose as generate_prose
+from src.graph.regions import known_regions, locations_for, resolve_region
 from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState
 from src.retrieval.base import PriceRepository
 from src.retrieval.filters import (
@@ -105,14 +106,69 @@ def _near_filter(state: GroceryState) -> NearFilter | None:
     Req 1.6 is explicit that no location means national results rather than a
     refusal, so None here is a legitimate answer and not a missing value.
     """
-    location = state.get("location")
-    if not location:
+    location = state.get("location") or {}
+    lat, lon = location.get("lat"), location.get("lon")
+    # Coordinates are OPTIONAL since regions became expressible. A location
+    # carrying only a region has no point to measure from, and the contract
+    # already refuses a location that expresses neither.
+    if lat is None or lon is None:
         return None
     return NearFilter(
-        lat=float(location["lat"]),
-        lon=float(location["lon"]),
+        lat=float(lat),
+        lon=float(lon),
         radius_km=float(location.get("radius_km") or 10.0),
     )
+
+
+def _location_scope(state: GroceryState) -> tuple[frozenset[str] | None, str | None]:
+    """
+    The store-location scope for this turn, and any region we could not map.
+
+    Two ways a region arrives. A client may send one structurally
+    (`location.region`), which is the shape a dropdown produces. Or the shopper
+    may simply say it — "cheapest milk near Albany" — which is what the demo
+    scenarios do, so the message is searched too.
+
+    A region we cannot map returns its name rather than None-meaning-no-filter.
+    Silently ignoring it would answer a question about Whangarei with Auckland
+    prices and give no sign the location was dropped, which is the same failure
+    as widening a radius back to national.
+    """
+    location = state.get("location") or {}
+    named = location.get("region")
+    if named:
+        scope = locations_for(named)
+        return (scope, None) if scope else (None, named)
+
+    # Only the message is left. An unrecognised place name here is NOT an
+    # error: most messages mention no region at all, and treating every
+    # unmatched word as a failed region would refuse ordinary requests.
+    region = resolve_region(state.get("message", ""))
+    return (region.store_locations if region else None, None)
+
+
+def emit_unknown_region(state: GroceryState) -> dict:
+    """
+    The shopper named a place we cannot map to stores.
+
+    Refused rather than ignored, and it names what we DO cover, so the reply is
+    actionable instead of merely apologetic — the same shape as
+    `emit_dietary_unsupported`.
+    """
+    return {
+        "terminated": True,
+        "events": [
+            ErrorEvent(
+                seq=_next_seq(state),
+                code=ErrorCode.INVALID_REQUEST,
+                retryable=False,
+                message=(
+                    f"I don't have stores mapped for {state.get('unknown_region')}. "
+                    f"I can look in: {_join(known_regions())}."
+                ),
+            )
+        ],
+    }
 
 
 def current_freshness(as_of: date | None = None) -> FreshnessFilter:
@@ -195,6 +251,11 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
     # No location means national results (Req 1.6), never a refusal. A location
     # narrows and must never silently widen back.
     near = _near_filter(state)
+    locations, unknown_region = _location_scope(state)
+    if unknown_region:
+        # Nothing is retrieved for a place we cannot map. Returning national
+        # prices instead would answer a question the shopper did not ask.
+        return {"unknown_region": unknown_region, "citations": [], "records": [], "events": []}
     freshness = current_freshness()
 
     records: list = []
@@ -244,7 +305,12 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
             key = repo.resolve_product_key(term)
             found = (
                 repo.cheapest_for_product(
-                    key, limit=5, stores=stores, near=near, freshness=freshness
+                    key,
+                    limit=5,
+                    stores=stores,
+                    near=near,
+                    locations=locations,
+                    freshness=freshness,
                 )
                 if key
                 else []
@@ -255,7 +321,9 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
                 # hold is out of date". A second query costs one round trip on
                 # a path that is already returning nothing, and it buys the
                 # difference between an honest refusal and a misleading one.
-                aged = repo.cheapest_for_product(key, limit=1, stores=stores, near=near)
+                aged = repo.cheapest_for_product(
+                    key, limit=1, stores=stores, near=near, locations=locations
+                )
                 if aged:
                     stale_only[term] = aged[0].valid_date
                     continue
@@ -291,6 +359,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
             limit_per_category=3,
             budget_nzd=budget,
             near=near,
+            locations=locations,
             freshness=freshness,
         )
         if not candidates:
@@ -303,6 +372,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
                 limit_per_category=1,
                 budget_nzd=budget,
                 near=near,
+                locations=locations,
             )
             if aged:
                 stale_only["your meal plan"] = max(r.valid_date for r in aged)
@@ -727,6 +797,10 @@ def route_after_intent(state: GroceryState) -> str:
 
 
 def route_after_retrieval(state: GroceryState) -> str:
+    # Checked first: a place we cannot map is a different answer from "nothing
+    # in range", and the shopper needs to know which of the two happened.
+    if state.get("unknown_region"):
+        return "unknown_region"
     if not state.get("citations"):
         # Checked before no_data: "everything I have is out of date" is a
         # different and truer statement than "I have nothing", and only one of

@@ -29,7 +29,7 @@ from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 from enum import StrEnum
 from typing import Annotated, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 CONTRACT_VERSION = "1.0"
 
@@ -81,13 +81,49 @@ class Store(StrEnum):
 
 # The user's approximate location, used to scope which stores are relevant.
 class Location(BaseModel):
+    """
+    Where the shopper is, expressed as coordinates OR as a named region.
+
+    `lat`/`lon` were required, which meant a client could not say "North Shore"
+    at all — and four of the five demo scenarios in `datasets/DATA_SCHEMA.md`
+    ask exactly that. Worse, the 3,000-record dataset carries no coordinates on
+    any row, so a radius filter cannot run against it however well the client
+    specifies one.
+
+    Both are now optional and at least one is required: a `Location` that
+    expresses no place is a client bug, and accepting it would silently widen
+    the request back to national results — the direction Req 1.5 forbids.
+
+    Additive under the v1 rules: every previously valid request is still valid,
+    since coordinates alone still satisfy the validator.
+    """
+
     # Reject unknown fields instead of silently ignoring them.
     model_config = ConfigDict(extra="forbid")
 
-    lat: float = Field(ge=-90, le=90)
-    lon: float = Field(ge=-180, le=180)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lon: float | None = Field(default=None, ge=-180, le=180)
+    region: str | None = Field(
+        default=None,
+        max_length=60,
+        description="A named area, e.g. 'North Shore'. See config/regions.json.",
+    )
     label: str | None = Field(default=None, max_length=120)
     radius_km: float = Field(default=10.0, gt=0, le=50)
+
+    @model_validator(mode="after")
+    def _must_express_a_place(self) -> Location:
+        has_point = self.lat is not None and self.lon is not None
+        if not has_point and not self.region:
+            raise ValueError(
+                "location needs coordinates (lat and lon) or a region; "
+                "omit `location` entirely for national results"
+            )
+        if (self.lat is None) != (self.lon is None):
+            # Half a coordinate is not a place, and guessing the other half
+            # would put the shopper somewhere they are not.
+            raise ValueError("lat and lon must be given together")
+        return self
 
 
 class ClientHints(BaseModel):
