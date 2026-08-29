@@ -230,6 +230,17 @@ jobs:
       - name: Meal plan invariants
         run: python evals/run_meal_plan.py --min-pass-rate 0.90
 
+      # Both added 2026-08-29, when recording scorecards showed generate_prose
+      # and repair_plan were routed to models nothing had scored. Scripted
+      # baselines are 100%, so 0.90 leaves one case of headroom on each -- and
+      # the prose suite has 11 cases, the repair suite 6, so read a drop as a
+      # signal to look rather than a precise measurement.
+      - name: Prose rule compliance
+        run: python evals/run_prose.py --min-pass-rate 0.90
+
+      - name: Repair pass
+        run: python evals/run_repair.py --min-pass-rate 0.90
+
   package:
     name: Lambda deployment package
     runs-on: ubuntu-latest

@@ -1090,7 +1090,16 @@ def test_a_non_budget_rejection_is_repaired_with_the_defect_prompt(repo):
     assert len(plan_prompts) == 2, "expected one repair attempt"
     repair = plan_prompts[1]
 
-    assert "was REJECTED" in repair
+    # Phrasing matters here in a way it usually does not. This prompt originally
+    # opened "Your previous plan was REJECTED" and stacked imperatives ("Never
+    # write a price ... ANYWHERE", "Use ONLY citation refs"), and the Guardrail's
+    # PROMPT_ATTACK filter refused it outright -- so every defect repair came
+    # back GUARDRAIL_BLOCKED against a live model while passing offline, where
+    # the scripted client has no guardrail. evals/run_repair.py is the
+    # regression test, and it scores a blocked repair prompt as a failure
+    # precisely because a prompt built entirely from our own code should never
+    # read as an attack.
+    assert "could not be used" in repair
     assert "$9.99" in repair, "the repair pass was not told which text was rejected"
     assert "OVER the" not in repair, "budget feedback on a failure that was not about money"
 

@@ -233,12 +233,24 @@ and reports any pair with no qualifying evidence.
 model, enabling one, or adding a task forces a scorecard or an explicit,
 reasoned exemption.
 
-Two tasks have no eval at all and are named in `scorecards._unscored_tasks`
-rather than quietly exempted: `repair_plan` (exercised inside the meal-plan eval,
-never scored alone) and `generate_prose` (nothing measures prose; legacy 5.6).
-`unevidenced_models()` stops that exemption becoming a hole — a model may be
-unscored for a task nobody evaluates, but not unscored everywhere and still
+Both previously unmeasured tasks now have suites. `evals/run_prose.py` scores
+whether a model can follow the prose protocol; `evals/run_repair.py` scores the
+repair pass, budget and defect kinds separately. Prose is gated on model choice;
+repair is measured but NOT gated, because six cases cannot support a threshold —
+all three routable models scored 83.3% and each failed a different case. That
+distinction lives in `scorecards._measured_not_gated`.
+
+`unevidenced_models()` stops the remaining exemption becoming a hole — a model
+may be unscored for a task nobody gates, but not unscored everywhere and still
 routable.
+
+**A repair prompt must never read as an attack.** It is assembled entirely from
+our own code, config and validation errors, so `run_repair.py` scores a
+Guardrail block as a FAILURE rather than excusing it the way the intent and
+prose suites do. That rule exists because `build_defect_repair_prompt` shipped
+as a stack of imperatives ("Never write a price ... ANYWHERE") and PROMPT_ATTACK
+refused every defect repair against a live model, while offline tests stayed
+green because the scripted client has no guardrail.
 
 ### Current pilot blockers
 
@@ -270,7 +282,7 @@ managed-evaluation stages are planned or proposed, not built.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 511 passed, 31 skipped, no AWS
+python -m pytest -q                              # 514 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \

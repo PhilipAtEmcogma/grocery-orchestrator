@@ -660,3 +660,88 @@ def test_run_records_a_guardrail_block_rather_than_a_wrong_answer():
     assert len(card.blocked) == len(card.results), "every case should be recorded as blocked"
     assert card.scored == [], "blocked cases must not be scored as wrong answers"
     assert not any("raised GuardrailBlocked" in f for r in card.results for f in r.failures)
+
+
+# ======================================== prose and repair suites (Pilot Task 7)
+#
+# Both exist because recording scorecards forced an admission: generate_prose
+# and repair_plan were routed to models nothing had scored for either task.
+
+
+def test_the_prose_suite_fails_a_model_that_breaks_the_protocol():
+    """
+    The prose node degrades silently on any breach — it drops the sentence and
+    ships the bare table — so a model that cannot follow the placeholder
+    protocol produces a product with no prose in it and no error to show for it.
+    The suite has to notice that, or it measures nothing.
+    """
+    import sys
+
+    sys.argv = ["run_prose"]
+    from evals.run_prose import run as run_prose
+    from src.models.scripted import ScriptedModelClient
+
+    clean = run_prose(ScriptedModelClient(), "clean")
+    assert clean.pass_rate == 1.0
+    assert clean.delivery_rate == 1.0
+
+    for broken, knob in (
+        (run_prose(ScriptedModelClient(prose_writes_money=True), "money"), "prose_writes_money"),
+        (
+            run_prose(ScriptedModelClient(prose_bad_placeholder=True), "placeholder"),
+            "prose_bad_placeholder",
+        ),
+    ):
+        assert broken.delivery_rate == 0.0, f"{knob} should deliver no prose"
+        assert broken.pass_rate < 0.5, f"{knob} should fail most cases"
+
+
+def test_the_repair_suite_separates_budget_failures_from_defect_failures():
+    """
+    The two kinds need different prompts and different checks, so the suite has
+    to tell them apart. A model that keeps overspending must fail the budget
+    cases only; one that keeps writing prices must fail the defect cases only.
+    """
+    import sys
+    from decimal import Decimal
+
+    sys.argv = ["run_repair"]
+    from evals.run_repair import run as run_repair
+    from src.models.scripted import ScriptedModelClient
+
+    overspending = run_repair(ScriptedModelClient(plan_packs=Decimal("3")), "overspends")
+    assert overspending.rate_for("budget") == 0.0
+    assert overspending.rate_for("defect") == 1.0
+
+    inventing = run_repair(ScriptedModelClient(plan_money_attempts=99), "invents prices")
+    assert inventing.rate_for("budget") == 1.0
+    assert inventing.rate_for("defect") == 0.0
+
+
+def test_a_blocked_repair_prompt_is_a_failure_not_an_exclusion():
+    """
+    Unlike the intent and prose suites, the repair suite does NOT excuse a
+    Guardrail block.
+
+    A repair prompt is assembled entirely from our own code, config and
+    validation errors — there is no untrusted user content in it — so nothing
+    in it should ever legitimately trip a content filter. When
+    build_defect_repair_prompt shipped as a stack of imperatives, PROMPT_ATTACK
+    refused every defect repair against a live model while offline tests stayed
+    green, because the scripted client has no guardrail.
+    """
+    import sys
+
+    sys.argv = ["run_repair"]
+    from evals.run_repair import CaseResult as RepairCase
+    from evals.run_repair import Scorecard as RepairCard
+
+    card = RepairCard(
+        "probe",
+        [
+            RepairCase("rd-001", "defect", False, ["refused"], guardrail_blocked=True),
+            RepairCase("rb-001", "budget", True),
+        ],
+    )
+    assert len(card.scored) == 2, "a blocked repair prompt must stay in the denominator"
+    assert card.pass_rate == 0.5
