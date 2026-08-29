@@ -17,6 +17,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 from src.graph.dietary import map_exclusions
+from src.graph.regions import strip_region
 from src.graph.state import Constraints, GroceryState, usage_from
 from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier
 from src.prompts.intent import (
@@ -132,7 +133,12 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
     try:
         extracted = model.structured(
             system=SYSTEM_PROMPT,
-            user=build_user_prompt(message),
+            # The region is resolved separately, from the ORIGINAL message, and
+            # removed here so it cannot end up inside the item name. Without
+            # this "cheapest butter near Albany" extracts "butter albany",
+            # which resolves to nothing and returns no_data for a stocked
+            # product.
+            user=build_user_prompt(strip_region(message)),
             schema=IntentResult,
             tier=ModelTier.FAST,
             max_tokens=512,

@@ -94,6 +94,7 @@ class DynamoPriceRepository(PriceRepository):
         limit: int = 5,
         stores: list[Store] | None = None,
         near: NearFilter | None = None,
+        locations: frozenset[str] | None = None,
         freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         """
@@ -129,7 +130,12 @@ class DynamoPriceRepository(PriceRepository):
         # exactly as the store filter already does. Filtering one page and
         # returning what survives is the truncation defect that reported
         # `no_data` for a stocked product.
-        filtering = allowed is not None or near is not None or freshness is not None
+        filtering = (
+            allowed is not None
+            or near is not None
+            or locations is not None
+            or freshness is not None
+        )
         fetch_limit = limit * 5 if filtering else limit
 
         records: list[PriceRecord] = []
@@ -154,6 +160,8 @@ class DynamoPriceRepository(PriceRepository):
                 page = [r for r in page if r.store in allowed]
             if near is not None:
                 page = [r for r in page if near.covers(r.lat, r.lon)]
+            if locations is not None:
+                page = [r for r in page if r.store_location in locations]
             if freshness is not None:
                 page = [r for r in page if freshness.is_fresh(r.valid_date)]
             records.extend(page)
@@ -216,6 +224,7 @@ class DynamoPriceRepository(PriceRepository):
         limit_per_category: int = 3,
         budget_nzd: Decimal | None = None,
         near: NearFilter | None = None,
+        locations: frozenset[str] | None = None,
         freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         """
@@ -245,6 +254,8 @@ class DynamoPriceRepository(PriceRepository):
         # per-category selection, never after.
         if near is not None:
             all_records = [r for r in all_records if near.covers(r.lat, r.lon)]
+        if locations is not None:
+            all_records = [r for r in all_records if r.store_location in locations]
         if freshness is not None:
             all_records = [r for r in all_records if freshness.is_fresh(r.valid_date)]
         all_records.sort(key=lambda r: r.price_nzd)

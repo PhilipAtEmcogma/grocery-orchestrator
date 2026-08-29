@@ -167,6 +167,7 @@ class InMemoryPriceRepository(PriceRepository):
         limit: int = 5,
         stores: list[Store] | None = None,
         near: NearFilter | None = None,
+        locations: frozenset[str] | None = None,
         freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         # _by_product entries are pre-sorted cheapest-first, so every filter
@@ -181,6 +182,8 @@ class InMemoryPriceRepository(PriceRepository):
             recs = [r for r in recs if r.store in allowed]
         if near is not None:
             recs = [r for r in recs if near.covers(r.lat, r.lon)]
+        if locations is not None:
+            recs = [r for r in recs if r.store_location in locations]
         if freshness is not None:
             recs = [r for r in recs if freshness.is_fresh(r.valid_date)]
         return recs[:limit]
@@ -219,6 +222,7 @@ class InMemoryPriceRepository(PriceRepository):
         limit_per_category: int = 3,
         budget_nzd: Decimal | None = None,
         near: NearFilter | None = None,
+        locations: frozenset[str] | None = None,
         freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         excluded = set(exclude_categories)
@@ -234,6 +238,8 @@ class InMemoryPriceRepository(PriceRepository):
         pool = self._records
         if near is not None:
             pool = [r for r in pool if near.covers(r.lat, r.lon)]
+        if locations is not None:
+            pool = [r for r in pool if r.store_location in locations]
         if freshness is not None:
             pool = [r for r in pool if freshness.is_fresh(r.valid_date)]
 

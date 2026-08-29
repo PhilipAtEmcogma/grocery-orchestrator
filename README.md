@@ -321,7 +321,7 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
 
 ### Tests, evals and CI
 
-- ✅ **573 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **597 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -426,7 +426,7 @@ python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
 And to check it:
 
 ```bash
-pytest                     # 573 passing, 31 skipped
+pytest                     # 597 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py       # 76.7% scripted baseline

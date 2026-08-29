@@ -328,11 +328,39 @@ proposed, or gated as labelled; it is not implemented.
     harmless only because the filter did not exist; and `Philip_demo/06` still
     used the pre-fencing `complete()` signature from Task 6, caught by
     `run_all.py`'s drift gate.
-  - [ ] **5b — Named regions, still blocked on the frontend.** The teammate's
-    scenarios ask for "near Albany", "North Shore", "West Auckland" in 4 of 5
-    cases, and `Location` cannot express a place without coordinates. This is
-    frontend question 2 in `CONTRACT-v1.md`, proposed default recorded, awaiting
-    an answer.
+  - [x] **5b — Named regions.** Completed 2026-08-29 on the proposed default
+    recorded in `CONTRACT-v1.md`, since the teammate's scenarios ask for "near
+    Albany", "North Shore" or "West Auckland" in 4 of 5 cases and the frontend
+    answer had not arrived.
+
+    `Location.lat`/`lon` are now optional with a validator requiring EITHER
+    coordinates OR a region — additive, because coordinates alone still
+    validate, and a location expressing neither is refused rather than silently
+    widening back to national.
+
+    A region resolves to a SET OF STORE LOCATIONS, not a centre and a radius.
+    Two reasons, and the second is binding. "North Shore" means the shops on the
+    Shore, not everything within N km of a midpoint — a radius around Takapuna
+    reaches across the harbour bridge. And the 3,000-record dataset carries NO
+    lat or lon on any row, so a coordinate filter cannot run against it however
+    well specified. `config/regions.json` holds the mapping as reviewable data;
+    the repository gained a `locations` scope alongside `near`, since its
+    existing `stores` filter is by CHAIN rather than location.
+
+    Regions arrive two ways: structurally (`location.region`, the shape a
+    dropdown produces) or spoken ("cheapest butter near Albany"), which is what
+    the scenarios do. An unmappable region is REFUSED and names what we do
+    cover, rather than being ignored — ignoring it would answer a question about
+    Whangarei with Auckland prices and give no sign the location was dropped.
+
+    **A latent defect surfaced immediately.** "cheapest butter near Albany"
+    extracted the item as "butter albany", which resolves to nothing, so the
+    turn returned `no_data` for a stocked product. The region is now stripped
+    from the message before the classifier sees it, resolved separately from the
+    original. Nobody had noticed because there was no way to ask for a region.
+
+    22 tests; 575 -> 597 passing. Verified by mutation: ignoring an unmappable
+    region fails 1, dropping region scope entirely fails 5.
 - [ ] **Pilot Task 6 — Harden DynamoDB access and idempotency.** Hash the
   canonical validated request; owner-fence acquire/takeover/complete/release;
   add shared contract/race/pagination tests, all-table PITR evidence, and a

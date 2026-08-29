@@ -1,0 +1,37 @@
+{
+  "_comment": "Named shopping regions, mapped to the store locations that sit in them. Data rather than code, like feasibility.json and freshness.json: which suburb belongs to which part of Auckland is local knowledge, not a fact derivable from the catalogue, and someone who knows the city should be able to correct it without reading Python.",
+  "version": "1.0",
+
+  "_why_locations_and_not_coordinates": "A region resolves to a SET OF STORE LOCATIONS, not to a centre and a radius. Two reasons, and the second is the binding one. First, a shopper saying 'North Shore' means the shops on the Shore, not everything within N kilometres of an arbitrary midpoint — a radius drawn around Takapuna reaches across the harbour bridge. Second, the 3,000-record dataset in datasets/ carries no lat or lon at all, only store_name, so a coordinate filter cannot run against it however well specified. Radius scope still exists for clients that DO send coordinates; the two intersect when both are given.",
+
+  "_source": "datasets/DATA_SCHEMA.md section 1 pairs ten Auckland stores 1:1 across five regions. The fixture catalogue uses six different suburbs, so both sets are mapped here — a region must resolve against whichever catalogue is loaded, or it works in the demo and fails in production.",
+
+  "_matching": "Aliases are matched against the user's message case-insensitively on word boundaries. A suburb name is an alias for its own region, so 'near Albany' and 'North Shore' both resolve, which is what the demo scenarios actually ask.",
+
+  "regions": {
+    "north shore": {
+      "aliases": ["north shore", "albany", "devonport", "takapuna"],
+      "store_locations": ["Albany", "Devonport"]
+    },
+    "central auckland": {
+      "aliases": ["central auckland", "city centre", "newmarket", "mt albert", "ponsonby", "grey lynn"],
+      "store_locations": ["Newmarket", "Mt Albert", "Ponsonby"]
+    },
+    "west auckland": {
+      "aliases": ["west auckland", "lincoln road", "new lynn", "henderson"],
+      "store_locations": ["Lincoln Road", "New Lynn"]
+    },
+    "east auckland": {
+      "aliases": ["east auckland", "sylvia park", "remuera", "mt wellington", "botany"],
+      "store_locations": ["Sylvia Park", "Remuera", "Mt Wellington"]
+    },
+    "south auckland": {
+      "aliases": ["south auckland", "manukau", "papakura", "mangere", "otara"],
+      "store_locations": ["Manukau", "Papakura", "Mangere"]
+    }
+  },
+
+  "_on_unknown_regions": "A region we cannot map is NOT silently ignored. Ignoring it would answer a request about Whangarei with prices from Auckland and give no sign that the location was dropped — the same failure shape as widening a radius back to national. An unrecognised region is reported to the user.",
+
+  "_review": "Not reviewed by anyone with local knowledge of Auckland retail geography. The pairings come from DATA_SCHEMA.md and the suburb-to-region assignments from general knowledge; Mt Wellington and Remuera in particular sit near boundaries people argue about. Correcting an entry here needs no code change, which is the point."
+}

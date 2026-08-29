@@ -262,7 +262,21 @@ what you actually said: "3 university flatmates" is a household of three, and
 
 ### Location scope and price freshness
 
-`location` narrows results to stores within `radius_km`; omitting it returns
+`location` accepts **either coordinates or a named region**:
+
+```json
+{ "location": { "region": "North Shore" } }
+{ "location": { "lat": -36.98, "lon": 174.78, "radius_km": 5 } }
+```
+
+At least one is required — a `location` expressing no place is refused, because
+accepting it would silently widen the request back to national. Omitting
+`location` entirely is how you ask for national results. Region names and their
+aliases live in `config/regions.json`; a region we cannot map is refused with
+the list of those we can. A region may also simply be said — "cheapest butter
+near Albany" — and is resolved from the message.
+
+Coordinates narrow to stores within `radius_km`; omitting `location` returns
 national results rather than a refusal. A location **never silently widens back
 to national** — if nothing is in range you get `no_data` for that item, because
 a shopper who asked for prices near them and received prices 500km away has been
@@ -396,12 +410,18 @@ option this question offers is not implementable as the schema stands.
 It is also the primary input to Pilot Task 5 (location, store scope and
 freshness), which cannot be designed against a shape nobody has agreed.
 
-**Proposed default:** omit `location` entirely when permission is denied and
-accept national rather than local pricing for that turn — the behaviour the
-Request table above already documents. Suburb fallback then becomes an additive
-v1.x change: `lat`/`lon` become optional under a validator requiring either
-coordinates or a resolvable `label`, so a client can send one or the other but
-never neither.
+**RESOLVED 2026-08-29, on the proposed default.** Shipped, because the
+teammate's demo scenarios ask for a named place in four cases out of five and
+the answer had not arrived. `lat`/`lon` are optional under a validator requiring
+either coordinates or a `region`; omitting `location` entirely still means
+national. Everything previously valid stays valid.
+
+The fallback resolves to a set of STORE LOCATIONS rather than a synthesised
+coordinate, which is both truer to what "North Shore" means and the only option
+that works — the 3,000-record dataset carries no `lat`/`lon` at all.
+
+**Override if** you would rather send a synthesised centroid; say so and this
+becomes a client-side concern instead.
 
 **Override if** suburb fallback matters during the pilot rather than after it.
 Tell us early — this is the one answer that changes an executable schema rather

@@ -165,6 +165,9 @@ class GroceryState(TurnInput, total=False):
     # that" and "everything I hold is six weeks old" are different facts, and
     # collapsing them would make the honest answer the false one.
     stale_only: dict[str, str]
+    # A region the user named that config/regions.json cannot map. Kept so the
+    # router can refuse honestly rather than answering about somewhere else.
+    unknown_region: str
     # items the user asked about that we never looked up, because the request
     # exceeded MAX_ITEMS_PER_TURN. Distinct from unresolved_items: we may well
     # have prices for these, we just did not check. Saying "no data" about them
