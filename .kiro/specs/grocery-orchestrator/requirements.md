@@ -192,13 +192,13 @@ and shall reject a response whose event ordering violates this rule.
 
 3.9 **THE SYSTEM SHALL** require every published price citation to include the
 exact source key, store location, and capture date.
-*Implemented construction after Pilot Task 2: citations use the configured
-physical table, `store_key` partition key, and normalized `product_key` sort key;
-samples were regenerated and citation-before-use is checked. Current
-`assert_grounded()` validates declaration, order, and basic source shape only.
-It does not receive immutable retrieved-record context and therefore does not
-yet prove exact key/value equality or the full altered-key/value negative
-controls required by 3.5–3.6.*
+*Implemented. Citations use the configured physical table, `store_key`
+partition key, and normalized `product_key` sort key. `assert_grounded()`
+validates declaration, order, and source shape;
+`assert_citations_match_retrieval()` (added 2026-08-29) compares each citation
+against the frozen `PriceRecord` the retrieval node kept for it, proving exact
+key and value equality. `run_turn()` calls both, and `validate.py` carries the
+wrong-key and altered-value negative controls 3.6 requires.*
 
 ---
 
@@ -271,10 +271,20 @@ plan, and prose nodes to one handler mapping, with three node propagation tests
 and one handler mapping test. The provider-neutral subtype is defined at the
 `src/models/base.py` `ModelError` protocol boundary; concrete providers raise
 it and nodes preserve it. The scripted harness proves 7/7 must-allow
-structure only. Its `--model` option does not yet truly pin the selected model,
-`OUT_OF_SCOPE` may be counted as blocked, and a live must-block failure does not
-make the process exit nonzero. A live 13/13 must-block plus 7/7 must-allow result
-is therefore not qualifying evidence until the harness is repaired and tested.*
+structure only.
+
+Its controls were repaired and tested on 2026-08-29: `--model` pins through
+`RoutingPolicy.PINNED` and the pin survives the per-case reset, only a Guardrail
+intervention counts as a block (`OUT_OF_SCOPE` is now `refused_other`), and exit
+codes are 0 pass / 1 fail / 2 inconclusive so a live must-block miss fails the
+process. An upstream failure makes the run inconclusive rather than a policy
+result, because on this suite an unanswered case would otherwise read as content
+the Guardrail let through. The harness is now paced, and has 16 tests where it
+previously had none.
+
+The live 13/13 must-block plus 7/7 must-allow result has still not been taken.
+It is batched with the other credentialed work in `docs/LIVE-EVAL-RUNBOOK.md`,
+and until it is recorded this criterion has no qualifying live evidence.*
 
 5.6 **IF** a stated dietary exclusion cannot be reliably mapped to the
 retrieval filter **THEN THE SYSTEM SHALL** refuse the meal plan and report

@@ -27,12 +27,12 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from evals._pacing import DEFAULT_MAX_RPM, pace_bedrock_calls
 from src.models.base import ModelClient
 from src.models.registry import ModelSpec
 from src.models.scripted import ScriptedModelClient
@@ -340,49 +340,10 @@ def report(card: Scorecard, spec: ModelSpec | None = None) -> None:
                 print(f"      ... and {len(r.violations) - 3} more")
 
 
-DEFAULT_MAX_RPM = 9
-
-
-def pace_bedrock_calls(max_rpm: int) -> None:
-    """
-    Admit at most `max_rpm` Bedrock requests per minute, process-wide.
-
-    ON BY DEFAULT, because the failure it prevents is a silently wrong result
-    rather than an error. This account allows 10 cross-region requests per
-    minute for both Claude models and 25 for Nova Pro. One rep of this suite
-    fires 25-40 requests as fast as the harness can issue them, so an unpaced
-    Claude run hits the wall part-way through and the TAIL of the case list
-    fails with INTERNAL_ERROR -- which reads as "the model failed those cases"
-    and is really "the account stopped answering".
-
-    That is not hypothetical. Three consecutive bands scored Claude Haiku 4.5
-    at 82-91% with every rep contaminated, while Nova Pro scored 100% clean on
-    the same suite. Paced, Haiku scores 100% too. The gap was the quota, and
-    comparing the two unpaced compares their request budgets rather than their
-    planning.
-
-    9/min rather than 10 leaves room for the retry the Bedrock client makes
-    internally, which also counts against the limit.
-    """
-    if max_rpm <= 0:
-        return
-
-    import src.models.bedrock as bedrock_mod
-
-    interval = 60.0 / max_rpm
-    # -inf, not 0.0: the first call has nothing to wait for, and starting
-    # at zero made it sleep a full interval before the run even began.
-    last = [float("-inf")]
-    original = bedrock_mod.BedrockModelClient._converse
-
-    def paced(self, **kwargs):
-        wait = interval - (time.monotonic() - last[0])
-        if wait > 0:
-            time.sleep(wait)
-        last[0] = time.monotonic()
-        return original(self, **kwargs)
-
-    bedrock_mod.BedrockModelClient._converse = paced
+# Pacing lives in `evals/_pacing.py`, imported at the top of this module. It
+# was defined here and the guardrail suite needed the identical rule against
+# the identical 10/min ceiling; a second copy is a rule that can be tuned in
+# one file and left stale in the other.
 
 
 def main() -> int:

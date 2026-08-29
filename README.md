@@ -47,11 +47,12 @@ ignore:
   references and pack quantities; every price, subtotal and total is
   computed afterwards in plain Python from the retrieved records.
 - Every structured priced item carries a `citation_ref` to a declared
-  `Citation`. Pilot Task 2 added citation-before-use and basic source-shape
-  checks using configured table, `store_key`, and normalized `product_key`.
-  `assert_grounded()` still lacks immutable retrieved-record context and cannot
-  independently prove exact key/value equality; wrong-key and altered-value
-  controls remain open.
+  `Citation`, and every `Citation` is compared against the frozen record
+  retrieval actually returned — the ref must have been retrieved, its
+  table/partition/sort keys must identify that exact stored record, and every
+  published value must equal the retrieved one. Until 2026-08-29 only the
+  *shape* of those keys was checked, so a citation naming the right table with
+  a plausible key and a price nobody retrieved passed cleanly.
 - If a product genuinely can't be found, the assistant says so
   (`no_data` / `budget_infeasible`) instead of guessing. Honest failure is a
   first-class outcome, not an error to paper over.
@@ -153,7 +154,9 @@ fixtures/products.json     Generated seed data: 3 chains, 6 store locations,
 datasets/                  Recipe and product source data plus its schema notes
 docs/                      Deployment record, CI gate health, throughput
                            ceiling, an open review, ADRs — see Further reading
-infra/                     AWS CDK (TypeScript) — not started
+infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
+                           and a reviewable scaffold skeleton now exist; the
+                           stacks are stubs — nothing deployed (Pilot Tasks 9-12)
 ```
 
 ## Progress to date
@@ -239,7 +242,11 @@ infra/                     AWS CDK (TypeScript) — not started
 - 🚧 **Guardrail** policy, tagging and fail-closed attachment are implemented,
   with offline propagation proven through intent, plan and prose. The numbered
   resource has basic live-invocation evidence only; live 13/13 must-block plus
-  7/7 must-allow remains open.
+  7/7 must-allow remains open. The harness that will produce it had three
+  defects making any result unquotable — `--model` did not pin, `OUT_OF_SCOPE`
+  counted as a block, and a must-block miss exited zero — all fixed and pinned
+  by tests on 2026-08-29. The run itself is batched with the other live work:
+  see [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
 ### Data and storage
 
@@ -255,7 +262,7 @@ infra/                     AWS CDK (TypeScript) — not started
 
 ### Tests, evals and CI
 
-- ✅ **466 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **504 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -296,10 +303,10 @@ infra/                     AWS CDK (TypeScript) — not started
 
 Planned/proposed items are not current capabilities:
 
-- **Core follow-ups (Pilot Tasks 2–7):** immutable retrieved-record/key/value
-  proof; qualifying live Guardrail
-  harness semantics/result; clarification; location/freshness;
-  idempotency ownership/candidate access; qualified SSM model routing.
+- **Core follow-ups (Pilot Tasks 4–7):** clarification; location/freshness;
+  idempotency ownership/candidate access; qualified SSM model routing. Pilot
+  Task 2 is closed; Task 3's harness controls are closed and only its live
+  result remains — see [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 - **Local read-only MCP first** (Pilot Task 8), proving coarse operation
   schemas, caps, audit, direct-service parity, and disable behavior.
 - **Proposed AgentCore Gateway hybrid** (Task 8 extension; ADR 0002 mentor
@@ -318,7 +325,10 @@ Planned/proposed items are not current capabilities:
 - **CDK/service/operations** (Pilot Tasks 9–12): adopted DynamoDB resources,
   zip Lambda/SnapStart alias, REST controls, SSM, strict IAM/CORS, CloudWatch,
   X-Ray, Budgets, alarms, WAF/Cognito before owned/public managed surfaces, and
-  encrypted versioned S3 artefacts.
+  encrypted versioned S3 artefacts. Design documentation and a reviewable CDK
+  scaffold skeleton now exist under `infra/` (see `infra/README.md` and
+  `infra/docs/`); they are design/skeleton only — no stack is implemented or
+  deployed.
 - **Catalogue** (Pilot Task 15): meals table and curated recipes. A Knowledge
   Base may be evaluated for cited recipe/catalogue knowledge only, never price
   authority; Automated Reasoning is advisory where supported.
@@ -357,7 +367,7 @@ python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
 And to check it:
 
 ```bash
-pytest                     # 466 passing, 31 skipped
+pytest                     # 504 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py       # 76.7% scripted baseline
@@ -466,6 +476,11 @@ and `POWERTOOLS_METRICS_NAMESPACE`; `LOG_LEVEL` sets log verbosity.
   quota increase is available; for the models in the route, it is not.
 - [`DYNAMODB-SCHEMA.md`](DYNAMODB-SCHEMA.md) — current and planned tables,
   candidate-query options, and the CDK adoption sequence.
+- [`infra/`](infra/) — the Infrastructure-as-Code plan: design docs
+  (`infra/docs/00-09`), a reviewable CDK **scaffold skeleton**, and
+  [`docs/adr/0003`](docs/adr/0003-infrastructure-as-code-and-resource-adoption.md).
+  Read before starting Pilot Tasks 9–12 — it says what to build and in what
+  order. Design/skeleton only; nothing is deployed from it yet.
 
 **Judgement calls, open and closed**
 
@@ -473,6 +488,10 @@ and `POWERTOOLS_METRICS_NAMESPACE`; `LOG_LEVEL` sets log verbosity.
   — **open, and wants a human.** The one figure in the planning path that is a
   judgement rather than derived from the catalogue. Written for a reviewer who
   will not read code.
+- [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md) — **the three
+  pieces of live evidence still outstanding**, batched into one credentialed
+  session. Read before running anything against Bedrock: every trap it lists
+  has already happened here.
 - [`docs/CI-GATE-HEALTH.md`](docs/CI-GATE-HEALTH.md) — where the gate can go
   red for reasons unrelated to your change. Five of six entries are resolved
   and kept for their reasoning; the open one is that the eval case counts are

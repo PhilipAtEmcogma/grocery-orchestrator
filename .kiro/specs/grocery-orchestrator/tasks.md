@@ -75,19 +75,101 @@ proposed, or gated as labelled; it is not implemented.
     by design and the reasoning is recorded in `AGENTS.md`. Offline gates
     passed: 466 passed, 31 skipped; evals unchanged at 100% meal-plan
     invariants and 76.7% intent.
-  - [ ] **Pilot Task 2 follow-up (b) — Complete Req 3.5–3.6 enforcement.** Give
-    final validation immutable retrieved-record context and prove exact PK/SK
-    and value equality with wrong-key and altered-value controls. This is the
-    remaining half of the original follow-up; the money half is (a) above.
+  - [x] **Pilot Task 2 follow-up (b) — Complete Req 3.5–3.6 enforcement.**
+    Completed 2026-08-29. `assert_citations_match_retrieval()` compares every
+    citation against the frozen `PriceRecord` the retrieval node kept for it:
+    the ref must have been retrieved at all, table/pk/sk must identify that
+    exact stored record, and all eleven published values must equal the
+    retrieved ones. `run_turn()` calls it with `repo.table_name` and the state's
+    `record_index`, which only `retrieve_prices` writes.
+
+    **Shape was standing in for identity.** `assert_grounded()` reads the
+    response alone, so it could only check that source keys LOOK like keys — a
+    non-empty table, a `#` in the pk, a non-empty sk. A citation naming the
+    right table, with a plausible partition key and a price nobody retrieved,
+    passed it cleanly. The system's central claim therefore rested on no code
+    path currently fabricating one, rather than on a check that would notice if
+    one did.
+
+    The retrieved context is immutable by type, not by convention:
+    `PriceRecord` is a frozen slots dataclass. It reaches the check through a
+    `RetrievedRecord` Protocol declared in `contract.py` rather than by
+    importing `PriceRecord`, because `retrieval/base.py` imports `Store` from
+    `contract` and the import would close a cycle. The Protocol's members are
+    read-only properties — a Protocol with mutable attributes demands settable
+    ones, which a frozen dataclass cannot satisfy.
+
+    `record_index` construction moved from `zip(..., strict=False)` to
+    `strict=True`: a length mismatch is a bug in that node, and truncating
+    silently would surface downstream as "this citation was not retrieved",
+    pointing at the wrong culprit.
+
+    19 tests in the new `tests/test_grounding.py`, including a positive control,
+    every altered field parametrised, and two end-to-end tests that tamper with
+    a citation inside the graph to prove `run_turn` actually calls the check.
+    `validate.py` now runs all four negative controls Req 3.6 names — unknown
+    reference, incorrect source key, altered value, content before its citation
+    — plus a positive control, in the CI job where a contract break is legible.
+
+    Verified by mutation: dropping the `run_turn` call, disabling value
+    comparison, and tolerating unknown refs fail 2, 14 and 2 tests respectively;
+    the value-comparison mutation also fails `validate.py` with exit 1.
+
+    Offline gates passed: 504 passed, 31 skipped; evals unchanged.
 - [x] **Pilot Task 3 — Prove offline GuardrailBlocked propagation and add an
   experimental harness.** Intent, plan, and prose nodes preserve the specialized
   exception to one handler mapping; three node propagation tests and one handler
   mapping test pass. The scripted harness gives 7/7 must-allow structural evidence. Offline gates
   passed on 2026-08-23.
-  - [ ] **Pilot Task 3 follow-up — Make live Guardrail evaluation qualifying.**
-    Make `--model` pin the requested route; stop counting `OUT_OF_SCOPE` as a
-    block; fail the process on any live must-block/must-allow miss; test those
-    controls; then record live 13/13 must-block and 7/7 must-allow evidence.
+  - [x] **Pilot Task 3 follow-up (a) — Make the harness's controls
+    trustworthy.** Completed 2026-08-29. All three named defects fixed and
+    pinned by tests that fail when each is reintroduced.
+
+    `--model` now resolves a spec through `RoutingPolicy.PINNED` and installs a
+    pinned `BedrockModelClient` into the handler, which the per-case reset
+    preserves. It previously set `USE_BEDROCK=1` and relabelled the report while
+    the registry routed per task, so any earlier scorecard headed with a model
+    name may have measured a different model.
+
+    `OUT_OF_SCOPE` is no longer a block. Outcomes are now four-way — `blocked`,
+    `allowed`, `refused_other`, `upstream` — and only a Guardrail intervention
+    counts as a block. Folding a classifier's "out of scope" into `blocked`
+    credited the policy with refusals it never made, on the thirteen prompts a
+    classifier is most likely to wave away. `must_allow` deliberately still
+    passes on anything that is not an intervention: a legitimate question
+    answered `BUDGET_INFEASIBLE` was not refused on safety grounds, and scoring
+    it as an over-block would report the planner's behaviour as the Guardrail's.
+    Those cases are counted separately as `answered_cleanly` and reported.
+
+    Exit codes are now 0 pass / 1 fail / 2 inconclusive, and a live must-block
+    miss returns 1. Previously `main()` gated only on the allow rate, so a live
+    run could print "FAIL: must_block rate 0%" and exit 0 — the one gate proving
+    the Guardrail blocks anything could not fail a build.
+
+    Two defects found while fixing those. The suite had NO tests at all, while
+    the meal-plan harness had 19; it now has 16. And it had no pacing: 20 cases
+    against a 10/min ceiling would fail the tail upstream, which on this suite
+    reads as the Guardrail letting unsafe content through. Pacing moved to
+    `evals/_pacing.py` and is shared by all three harnesses.
+
+    Separately hardened `run_intent.py`, because it produces the Claude
+    scorecard that Pilot Task 7 needs and was blind in a worse way:
+    `classify_intent` DEGRADES to keyword matching rather than raising, so an
+    unpaced run answers all 30 cases from the fallback and prints a plausible
+    accuracy for a model that answered a third of them. It now records
+    `intent_degraded` per case and returns exit 2 rather than a score.
+
+    Offline gates passed: 485 passed, 31 skipped; scripted baselines unchanged
+    at 7/7 must-allow, 76.7% intent, 100% meal-plan invariants.
+  - [ ] **Pilot Task 3 follow-up (b) — Record the live Guardrail result.**
+    Deferred to the batched live-AWS session, not because it is optional but
+    because it needs credentials and should happen alongside the Claude intent
+    scorecard and cache-utilisation evidence rather than in three separate
+    sittings. Acceptance is exit code 0 with 13/13 must-block and 7/7
+    must-allow against guardrail `b1xezpqe04kx` version `1`, paced.
+    **Runbook: `docs/LIVE-EVAL-RUNBOOK.md`** — preconditions, exit-code
+    meanings, the five traps that have already cost this project time, and
+    where to record the result.
 - [ ] **Pilot Task 4 — Correct request semantics and payable arithmetic.** Ask
   for missing required constraints and define verified consumption and
   full-pack payable totals.
@@ -159,8 +241,8 @@ proposed, or gated as labelled; it is not implemented.
 
 - 100% pass for grounding, literal-money rejection, arithmetic, dietary
   fail-closed, Guardrail propagation, and their negative controls. Task 2's
-  exact retrieved-record/value controls and Task 3's qualifying live Guardrail
-  controls remain explicitly open.
+  exact retrieved-record/value controls closed 2026-08-29; Task 3's qualifying
+  live Guardrail RESULT remains open (its controls closed the same day).
 - Every enabled model has a published scorecard; every active route scores at
   least 90% on its applicable golden set.
 - Measurement targets: p95 price checks under 5 seconds, p95 meal plans under
@@ -401,12 +483,14 @@ must-block half — over-blocking is the usual failure mode of an aggressive
 policy, and a filter that refuses ordinary grocery questions is a broken
 product rather than a safe one.*
 
-*5.9's historical live-policy evidence remains incomplete. Pilot Task 3 added
-the harness and proved 7/7 scripted must-allow structure plus node-level
-exception propagation, but did not produce qualifying live 13/13 must-block and
-7/7 must-allow evidence. `--model` does not yet truly pin the requested model,
-`OUT_OF_SCOPE` can count as blocked, and a live must-block miss does not drive a
-nonzero exit. The Pilot Task 3 follow-up owns those repairs and the live result.*
+*5.9's controls are now trustworthy; its live result is not yet taken. Pilot
+Task 3 added the harness and proved 7/7 scripted must-allow structure plus
+node-level exception propagation. Its follow-up (a) then repaired the three
+defects that made a live run unquotable — `--model` not pinning, `OUT_OF_SCOPE`
+counting as a block, and a must-block miss exiting 0 — added the suite's first
+16 tests, and added pacing. Follow-up (b) owns the live 13/13 plus 7/7 result
+and is batched into the credentialed session described in
+`docs/LIVE-EVAL-RUNBOOK.md`.*
 
 ---
 
@@ -727,10 +811,12 @@ UNBLOCKED 2026-08-28 (Anthropic use case form submitted)
                                         can enable; meal-plan is done (100%)
 
 AVAILABLE NOW; EVIDENCE STILL MISSING
-  3.9  cache utilisation             -> run per accessible candidate model
-  5.7  task-specific scorecards      -> required for every enabled route
-  5.9/8.10 live Guardrail result     -> repair harness controls, then run 20 cases
-  Pilot 2 exact record/value proof   -> immutable retrieval context + negatives
+  3.9  cache utilisation             -> read CacheReadTokens off a live run
+  5.7  task-specific scorecards      -> required for every enabled route; the
+                                        Claude intent card is the missing one
+  5.9/8.10 live Guardrail result     -> controls repaired 2026-08-29; run the
+                                        20 cases per docs/LIVE-EVAL-RUNBOOK.md
+  (Pilot 2 exact record/value proof  -> CLOSED 2026-08-29)
 
 COMPLETED LIVE BASE RESOURCES
   7.1  products table created          ✓

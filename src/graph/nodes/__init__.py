@@ -230,7 +230,12 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         "records": records,
         "citations": citations,
         "citation_index": {c.ref: c for c in citations},
-        "record_index": dict(zip([c.ref for c in citations], records, strict=False)),
+        # strict=True: `add()` appends to both lists in lockstep, so a length
+        # mismatch is a bug in this node. Under strict=False it truncated
+        # silently, and a short index now surfaces downstream as "this
+        # citation was not retrieved" -- a grounding violation pointing at
+        # the wrong culprit. Fail where the mistake is.
+        "record_index": dict(zip([c.ref for c in citations], records, strict=True)),
         "item_groups": item_groups,
         "unresolved_items": unresolved,
         "skipped_items": skipped,
