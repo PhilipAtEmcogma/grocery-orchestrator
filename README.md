@@ -65,6 +65,7 @@ validate_input
 classify_intent
   |--- general_chat / out_of_scope ------------------> finalise
   |--- meal_plan + unsupported exclusion ------------> emit_dietary_unsupported -> finalise
+  |--- meal_plan + missing constraint ---------------> emit_clarification -------> finalise
   v
 retrieve_prices            <-- the ONLY source of prices
   |--- no citations -----> emit_no_data -------------> finalise
@@ -298,7 +299,7 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
 
 ### Tests, evals and CI
 
-- ✅ **531 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **545 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -403,7 +404,7 @@ python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
 And to check it:
 
 ```bash
-pytest                     # 531 passing, 31 skipped
+pytest                     # 545 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py       # 76.7% scripted baseline

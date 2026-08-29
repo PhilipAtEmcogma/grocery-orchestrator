@@ -318,6 +318,45 @@ class NoticeEvent(_Event):
     message: str
 
 
+class MissingConstraint(StrEnum):
+    """
+    A required planning constraint the user did not supply.
+
+    Named to match `ClientHints` exactly, so a frontend can raise the control
+    that collects it — the budget slider, the household stepper — instead of
+    parsing English out of the message.
+    """
+
+    HOUSEHOLD_SIZE = "household_size"
+    BUDGET_NZD = "budget_nzd"
+    DAYS = "days"
+
+
+class ClarificationEvent(_Event):
+    """
+    We understood the request and cannot answer it without one more fact.
+
+    A SEPARATE event type rather than an error, and the distinction is not
+    cosmetic. Nothing failed: the request was valid and the intent was
+    classified. `ErrorEvent.retryable` cannot express "retry with more
+    information" either — a client that reads `retryable: true` resends the
+    identical request and loops forever. A `notice` is equally wrong, because a
+    notice accompanies a result and this one REPLACES it.
+
+    Additive under the v1 rules: clients are already required to ignore unknown
+    event types, so an older client degrades to "no plan and no error", which is
+    the same thing it would have shown before this existed.
+
+    Emitted BEFORE retrieval. There is no point pricing a basket for a plan we
+    have already decided we cannot build — the same reasoning that puts
+    `emit_dietary_unsupported` ahead of retrieval.
+    """
+
+    type: Literal["clarification"] = "clarification"
+    missing: list[MissingConstraint] = Field(min_length=1)
+    message: str
+
+
 class NoDataEvent(_Event):
     """
     The explicit "I don't have data for that" outcome.
@@ -368,6 +407,7 @@ Event = Annotated[
     | PriceComparisonEvent
     | MealPlanEvent
     | NoticeEvent
+    | ClarificationEvent
     | NoDataEvent
     | ErrorEvent
     | DoneEvent,
@@ -748,6 +788,11 @@ def assert_no_literal_money_in_response(response: ChatResponse) -> None:
     * `NoDataEvent.message` and `.requested_item` echo the user's own search
       term. Same reasoning, plus a blanket check here would let a user fail
       their own turn by typing a dollar sign.
+    * `ClarificationEvent.message` shows an EXAMPLE budget when asking for one
+      -- "dinner for 3 people for 5 days on $80". It is code-authored, and the
+      figure is an illustration of the syntax rather than a claim about any
+      product's price. Asking someone for a budget without showing what one
+      looks like is worse guidance for a strictly notional gain.
 
     Both exclusions are safe only while those messages stay code-authored. A
     model-written error or no-data message would need this rule extended to

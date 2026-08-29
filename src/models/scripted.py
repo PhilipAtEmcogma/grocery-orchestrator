@@ -255,13 +255,27 @@ class ScriptedModelClient(ModelClient):
 
     @staticmethod
     def _extract_household(msg: str) -> int | None:
-        m = re.search(r"(?:flat of|family of|household of|for)\s+(\d+)", msg)
+        # The bare `for N` branch must not swallow a DURATION. "dinners for 5
+        # days on $90" was read as a household of five: a constraint the
+        # user never gave, invented from a phrase that means something else,
+        # which is precisely what Req 6.3 forbids.
+        m = re.search(
+            r"(?:flat of|family of|household of|for)\s+(\d+)"
+            r"(?!\s*(?:days?|nights?|dinners?|weeks?|meals?))",
+            msg,
+        )
         if m:
             return int(m.group(1))
         m = re.search(r"(?:flat of|family of|for)\s+([a-z]+)", msg)
         if m and m.group(1) in _WORD_NUMBERS:
             return _WORD_NUMBERS[m.group(1)]
-        m = re.search(r"(\d+)\s*(?:people|persons|of us)", msg)
+        # "3 flatmates", "2 adults", "4 of us". The dataset's own demo
+        # scenarios open with "We are 3 university flatmates", and clarifying
+        # something the user plainly said is worse than defaulting it.
+        m = re.search(
+            r"(\d+)\s+(?:\w+\s+)?(?:people|persons|of us|flatmates|adults|kids|children)",
+            msg,
+        )
         return int(m.group(1)) if m else None
 
     @staticmethod
@@ -271,6 +285,12 @@ class ScriptedModelClient(ModelClient):
             return int(m.group(1))
         if "this week" in msg or "a week" in msg or "for the week" in msg:
             return 7
+        # A single meal IS a stated duration, not a missing one. Every scenario
+        # in datasets/DATA_SCHEMA.md is one dinner and none says "1 day"; asking
+        # "how many days?" about "dinner tonight" interrogates the user over a
+        # fact they supplied in the first three words.
+        if re.search(r"tonight|this evening|one (?:meal|dinner|night)", msg):
+            return 1
         return None
 
     @staticmethod

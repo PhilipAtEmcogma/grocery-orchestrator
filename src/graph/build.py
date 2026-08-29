@@ -8,6 +8,7 @@ Graph assembly.
   classify_intent
       |--- general_chat / out_of_scope --------------------------> finalise
       |--- meal_plan + unsupported exclusion --> emit_dietary_unsupported -> finalise
+      |--- meal_plan + missing constraint -----> emit_clarification ------> finalise
       v
   retrieve_prices            <-- the ONLY source of prices
       |--- no citations -----> emit_no_data ---------------------> finalise
@@ -59,6 +60,7 @@ def build_graph(repo: PriceRepository, model: ModelClient):
     g.add_node("retrieve_prices", partial(nodes.retrieve_prices, repo=repo))
     g.add_node("emit_no_data", nodes.emit_no_data)
     g.add_node("emit_dietary_unsupported", nodes.emit_dietary_unsupported)
+    g.add_node("emit_clarification", nodes.emit_clarification)
     g.add_node("generate_comparison", nodes.generate_comparison)
     g.add_node("generate_plan", partial(nodes.generate_plan, model=model))
     g.add_node("validate_plan", nodes.validate_plan)
@@ -78,10 +80,12 @@ def build_graph(repo: PriceRepository, model: ModelClient):
         {
             "retrieve": "retrieve_prices",
             "dietary_unsupported": "emit_dietary_unsupported",
+            "clarify": "emit_clarification",
             "finalise": "finalise",
         },
     )
     g.add_edge("emit_dietary_unsupported", "finalise")
+    g.add_edge("emit_clarification", "finalise")
 
     g.add_conditional_edges(
         "retrieve_prices",
