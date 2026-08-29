@@ -219,6 +219,36 @@ proposed, or gated as labelled; it is not implemented.
 - [ ] **Pilot Task 7 — Reconcile, qualify, and evaluate the model plane.** Align
   the adapter with `langchain-aws`, move routing toward SSM, disable unscored
   models, publish task scorecards, and preserve local evals as release gates.
+  - [x] **7a — Publish scorecards and stop unscored models being routable.**
+    Completed 2026-08-29. `enabled` meant "listed in the config", not "has
+    evidence": every model carried `enabled: true` regardless of what it had
+    been scored on. `claude-sonnet` was second preference for `generate_plan`
+    while being documented as excluded on LATENCY (p50 11.8s / p90 19.9s against
+    the production 20s client timeout, 9 of 98 plan calls over the ceiling), so
+    a Nova Pro outage failed over to a model already known to be unfit. Broader
+    than the preference list: `route()` falls through to `available(tier)`
+    sorted by cost, and `claude-sonnet` declared BOTH tiers, so it was a live
+    fallback candidate for every task in the graph.
+
+    Scorecards are now data in `config/models.json` with source, date and
+    guardrail version — an intent score measures the classifier AND the policy
+    in front of it, and version 2 unblocked cases version 1 refused.
+    `claude-sonnet` is disabled with the reason recorded.
+    `ModelRegistry.unscored_routes()` walks every task against every model that
+    could actually reach it and returns the pairs with no qualifying evidence;
+    `unevidenced_models()` stops the unmeasured-task exemption becoming a hole.
+    Four tests fail the build on either. Verified by mutation: re-enabling
+    `claude-sonnet` fails three, dropping a scorecard fails one, and a rate
+    below the floor fails one.
+
+    `repair_plan` and `generate_prose` are recorded in
+    `scorecards._unscored_tasks` with reasons rather than quietly exempted —
+    nothing measures prose at all (legacy 5.6), and repair is only ever scored
+    through the meal-plan invariants. Offline gates passed: 511 passed, 31
+    skipped.
+  - [ ] **7b — Move the catalogue toward SSM**, align the adapter with
+    `langchain-aws`, and evaluate cross-Region inference profiles only for a
+    measured purpose.
   Evaluate Bedrock cross-Region inference profiles only for a measured purpose;
   stage Bedrock Model Evaluation as companion evidence with reproducible
   dataset/model/prompt provenance. Knowledge Bases are gated to cited recipe or

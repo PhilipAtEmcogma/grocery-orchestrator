@@ -289,3 +289,68 @@ def test_max_tokens_clamped_to_model_limit(monkeypatch, registry):
         system="s", user="x", schema=IntentResult, tier=ModelTier.FAST, max_tokens=100000
     )
     assert stub.kwargs["inferenceConfig"]["maxTokens"] <= spec.max_output_tokens
+
+
+# ============================================== Pilot Task 7: route qualification
+#
+# `enabled` used to mean "listed in the config", not "has evidence". Every model
+# carried enabled=true regardless of what it had been scored on, and
+# claude-sonnet was second preference for generate_plan while being documented
+# as excluded on LATENCY -- p50 11.8s / p90 19.9s against the production 20s
+# client timeout, 9 of 98 plan calls over the ceiling. A Nova Pro outage failed
+# over to it.
+#
+# Worse than the preference list suggests: route() falls through to
+# available(tier) sorted by cost when no preferred model is eligible, and
+# claude-sonnet declared BOTH the quality and fast tiers, so it was a live
+# fallback candidate for every task in the graph.
+
+
+def test_no_routable_model_serves_a_task_it_was_never_scored_on():
+    """
+    The gate. Adding a model, enabling one, or adding a task fails the build
+    until someone records a scorecard or names the gap deliberately.
+    """
+    registry = ModelRegistry()
+    unscored = registry.unscored_routes()
+    assert unscored == [], (
+        "these (task, model) pairs are reachable with no qualifying evidence: "
+        f"{unscored}. Record a scorecard in config/models.json, disable the "
+        "model, or name the task in scorecards._unscored_tasks with a reason."
+    )
+
+
+def test_no_enabled_model_is_wholly_unevidenced():
+    """
+    Complements the above, which skips tasks nobody evaluates.
+
+    Nothing measures prose, so that exemption would otherwise let a model with
+    zero evidence anywhere serve every prose turn. Unscored for an unmeasured
+    task is acceptable; unscored everywhere and still routable is not.
+    """
+    unevidenced = ModelRegistry().unevidenced_models()
+    assert unevidenced == [], f"enabled with no qualifying scorecard on any task: {unevidenced}"
+
+
+def test_the_unmeasured_tasks_are_named_and_reasoned():
+    """
+    An accepted gap must be a decision on the record, not an omission. If a task
+    disappears from this list without gaining a scorecard, the gate above starts
+    failing -- which is the intended direction.
+    """
+    gaps = ModelRegistry().unscored_tasks()
+    assert set(gaps) == {"repair_plan", "generate_prose"}
+    for task, reason in gaps.items():
+        assert len(reason) > 80, f"{task} needs a real reason, not a label"
+
+
+def test_a_model_excluded_on_latency_is_not_a_silent_fallback():
+    """
+    Regression guard for the specific defect. claude-sonnet must not be
+    reachable for any task while it has no scorecard.
+    """
+    registry = ModelRegistry()
+    for task in ("classify_intent", "generate_plan", "repair_plan", "generate_prose"):
+        assert "claude-sonnet" not in registry.routable_models(task), (
+            f"claude-sonnet is reachable for {task} despite having no scorecard"
+        )

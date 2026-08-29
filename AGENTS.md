@@ -222,9 +222,23 @@ only other module that imports the library. Protocol wrappers carry tracing
 inside the graph without node imports.
 
 **Model plane, not a Claude endpoint.** Nodes request a task and the registry
-routes from `config/models.json`. Capability-aware routing exists, but the
-production route is not approved until every enabled model has a scorecard and
-every active task reaches the 90% threshold.
+routes from `config/models.json`.
+
+**A model may not serve a task it was never scored on.** Scorecards are data in
+that same file, and `ModelRegistry.unscored_routes()` is the gate: it walks
+every task and every model that could actually reach it — the `prefer` list AND
+the cheapest-first `available(tier)` fallback, which is the part that bites —
+and reports any pair with no qualifying evidence.
+`tests/test_multimodel.py` fails the build when it is non-empty, so adding a
+model, enabling one, or adding a task forces a scorecard or an explicit,
+reasoned exemption.
+
+Two tasks have no eval at all and are named in `scorecards._unscored_tasks`
+rather than quietly exempted: `repair_plan` (exercised inside the meal-plan eval,
+never scored alone) and `generate_prose` (nothing measures prose; legacy 5.6).
+`unevidenced_models()` stops that exemption becoming a hole — a model may be
+unscored for a task nobody evaluates, but not unscored everywhere and still
+routable.
 
 ### Current pilot blockers
 
@@ -256,7 +270,7 @@ managed-evaluation stages are planned or proposed, not built.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 504 passed, 31 skipped, no AWS
+python -m pytest -q                              # 511 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
