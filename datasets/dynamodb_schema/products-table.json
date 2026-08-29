@@ -47,6 +47,10 @@
     {
       "Key": "Owner",
       "Value": "AUT-AWS-DataPipeline"
+    },
+    {
+      "Key": "Role",
+      "Value": "raw-upstream-dataset-see-ADR-0003"
     }
   ]
 }
