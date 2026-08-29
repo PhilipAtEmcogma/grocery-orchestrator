@@ -28,6 +28,7 @@ from boto3.dynamodb.conditions import Key
 from botocore.config import Config
 
 from src.retrieval.base import PriceRecord, PriceRepository, cap_to_budget
+from src.retrieval.filters import FreshnessFilter, NearFilter
 from src.retrieval.memory import SYNONYMS, normalise_term
 from src.schemas.contract import Store
 
@@ -87,7 +88,13 @@ class DynamoPriceRepository(PriceRepository):
         return self._table_name
 
     def cheapest_for_product(
-        self, product_key: str, *, limit: int = 5, stores: list[Store] | None = None
+        self,
+        product_key: str,
+        *,
+        limit: int = 5,
+        stores: list[Store] | None = None,
+        near: NearFilter | None = None,
+        freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         """
         GSI1 query: partition by product_key, sorted by gsi1_sk (price first).
@@ -116,7 +123,14 @@ class DynamoPriceRepository(PriceRepository):
         # It fires at real scale, where a popular product spans three chains
         # and many stores.
         allowed = set(stores) if stores is not None else None
-        fetch_limit = limit * 5 if allowed is not None else limit
+        # None of these is expressible as a GSI1 key condition -- distance is
+        # geometry and freshness is a non-key attribute -- so all three are
+        # applied after the query returns, which means over-fetching and paging
+        # exactly as the store filter already does. Filtering one page and
+        # returning what survives is the truncation defect that reported
+        # `no_data` for a stocked product.
+        filtering = allowed is not None or near is not None or freshness is not None
+        fetch_limit = limit * 5 if filtering else limit
 
         records: list[PriceRecord] = []
         start_key: dict | None = None
@@ -138,6 +152,10 @@ class DynamoPriceRepository(PriceRepository):
             page = [_to_record(item) for item in response.get("Items", [])]
             if allowed is not None:
                 page = [r for r in page if r.store in allowed]
+            if near is not None:
+                page = [r for r in page if near.covers(r.lat, r.lon)]
+            if freshness is not None:
+                page = [r for r in page if freshness.is_fresh(r.valid_date)]
             records.extend(page)
 
             start_key = response.get("LastEvaluatedKey")
@@ -197,6 +215,8 @@ class DynamoPriceRepository(PriceRepository):
         exclude_categories: list[str],
         limit_per_category: int = 3,
         budget_nzd: Decimal | None = None,
+        near: NearFilter | None = None,
+        freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         """
         Cheapest distinct products per category, excluding dietary categories.
@@ -221,6 +241,12 @@ class DynamoPriceRepository(PriceRepository):
 
         # Convert and sort by price
         all_records = [_to_record(item) for item in all_items]
+        # Same reasoning as the in-memory implementation: filter the pool before
+        # per-category selection, never after.
+        if near is not None:
+            all_records = [r for r in all_records if near.covers(r.lat, r.lon)]
+        if freshness is not None:
+            all_records = [r for r in all_records if freshness.is_fresh(r.valid_date)]
         all_records.sort(key=lambda r: r.price_nzd)
 
         # Pick cheapest distinct products per category

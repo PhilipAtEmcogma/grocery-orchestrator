@@ -1,0 +1,18 @@
+{
+  "_comment": "Freshness policy: at what age does a stored price stop being something a shopper can act on? Data rather than code, for the same reason as feasibility.json — this is a judgement about groceries, not a fact derivable from the catalogue, and it should be reviewable by someone who knows about supermarket pricing rather than someone who knows about Python.",
+  "version": "1.0",
+
+  "max_price_age_days": 14,
+
+  "_why_this_exists": "The product's claim is not 'here is a price' but 'here is the CHEAPEST price'. A price can be merely out of date; a COMPARISON drawn from out-of-date prices can be actively wrong, because the winner changes when a special rotates. ACQUISITION-RISK.md finds the binding legal constraint is the Fair Trading Act, and that it attaches to the comparison we publish rather than to the fetch. So staleness is not a display problem, it is a claim we stop being entitled to make.",
+
+  "_what_happens": "Records older than this are excluded before any comparison is built. If some are fresh, the comparison is made from those alone. If EVERY record for a request is stale, the turn returns STALE_DATA naming the newest capture date it found, rather than presenting an old comparison as current.",
+
+  "_calibration": "14 days. Supermarket specials in New Zealand rotate weekly, so a fortnight spans roughly two cycles: long enough that a normal refresh gap or a weekend outage does not refuse every shopper, short enough that a price which has since changed twice is not presented as today's. It is a starting position, not a measured one.",
+
+  "_what_it_is_not": "Not a statement about how often ingestion SHOULD run — that is Req 8.4 and Pilot Task 13. This is the point past which the data we happen to hold stops being usable, which is a different question and deliberately a more forgiving number than the refresh interval.",
+
+  "_on_the_reference_date": "Age is measured against an injectable reference date, not against the wall clock directly. Production passes today; tests pin a date at which the committed fixtures are fresh. Without that, fixtures captured on a fixed day drift into staleness as calendar time passes and every demo turns red on a date nobody chose — a test suite whose result depends on when you run it is not a test suite.",
+
+  "_review": "This number has NOT been reviewed by anyone with domain expertise in grocery retail. Like min_grams_per_person_day it was set by reasoning rather than by evidence, and it decides which requests get refused outright, so it should not stay unreviewed indefinitely. Revisit it when real ingestion cadence is known: if refresh runs daily, 14 days is far more generous than it needs to be."
+}

@@ -23,6 +23,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.handler import lambda_handler
+from src.retrieval.filters import pin_to_fixture_snapshot
 
 PORT = 8000
 
@@ -79,7 +80,13 @@ def main() -> None:
     print(f"Smart Grocery orchestrator — dev server on http://localhost:{PORT}")
     print("  POST /chat     contract v1.0")
     print("  GET  /health")
+    # Fixtures are a captured SNAPSHOT, so freshness is judged as of the
+    # capture rather than today. Against the wall clock every price reads as
+    # stale once the snapshot ages past the threshold, and the server would
+    # answer STALE_DATA to everything for a reason unrelated to the code.
+    as_of = pin_to_fixture_snapshot()
     print("\nUsing fixtures + scripted model. No AWS credentials needed.")
+    print(f"Price freshness judged as of the fixture capture, {as_of}.")
     print("Ctrl+C to stop.\n")
     HTTPServer(("0.0.0.0", PORT), DevHandler).serve_forever()  # noqa: S104
 

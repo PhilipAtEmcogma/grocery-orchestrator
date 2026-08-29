@@ -36,6 +36,7 @@ from evals._pacing import DEFAULT_MAX_RPM, pace_bedrock_calls
 from src.models.base import ModelClient
 from src.models.registry import ModelSpec
 from src.models.scripted import ScriptedModelClient
+from src.retrieval.filters import pin_to_fixture_snapshot
 from src.retrieval.memory import InMemoryPriceRepository
 from src.runner import run_turn
 from src.schemas.contract import ChatRequest, ClientHints, MealPlan
@@ -347,6 +348,10 @@ def report(card: Scorecard, spec: ModelSpec | None = None) -> None:
 
 
 def main() -> int:
+    # Freshness is judged as of the fixture capture, not the wall clock: these
+    # run against a committed SNAPSHOT, and judging a snapshot against today
+    # makes every price stale on a date nobody chose. See filters.py.
+    pin_to_fixture_snapshot()
     parser = argparse.ArgumentParser()
     parser.add_argument("--model")
     parser.add_argument("--compare", nargs="+")

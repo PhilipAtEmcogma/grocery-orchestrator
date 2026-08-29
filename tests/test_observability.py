@@ -62,6 +62,15 @@ PERSONAL_MESSAGE = (
     "quinoa and halloumi, absolutely no shellfish"
 )
 PERSONAL_LABEL = "Aro Valley"
+# Coordinates NEAR THE FIXTURE STORES. These tests are about location not
+# leaking into logs, not about geography — but since Pilot Task 5 the radius
+# filter is real, and the Wellington coordinates this used to carry are ~490km
+# from every fixture store, so every turn now correctly returns nothing. That is
+# the filter working; it just makes these turns useless for testing what they
+# test. The label stays personal, because the label is the thing that must not
+# leak.
+PERSONAL_LOCATION = {"lat": -36.8712, "lon": 174.8200, "label": PERSONAL_LABEL}
+
 PERSONAL_EXCLUSIONS = ["shellfish", "dairy-free"]
 FORBIDDEN = [
     "quinoa",
@@ -332,7 +341,7 @@ def _personal_body(message: str, **extra) -> dict:
             "days": 3,
             "dietary_exclusions": PERSONAL_EXCLUSIONS,
         },
-        location={"lat": -41.29, "lon": 174.76, "label": PERSONAL_LABEL},
+        location=PERSONAL_LOCATION,
         **extra,
     )
 
@@ -360,7 +369,7 @@ def _affordable_meal_plan_body(**extra) -> dict:
             "days": 3,
             "dietary_exclusions": PERSONAL_EXCLUSIONS,
         },
-        location={"lat": -41.29, "lon": 174.76, "label": PERSONAL_LABEL},
+        location=PERSONAL_LOCATION,
         **extra,
     )
 
@@ -388,7 +397,7 @@ def _repairable_body(**extra) -> dict:
             "days": 7,
             "dietary_exclusions": PERSONAL_EXCLUSIONS,
         },
-        location={"lat": -41.29, "lon": 174.76, "label": PERSONAL_LABEL},
+        location=PERSONAL_LOCATION,
         **extra,
     )
 

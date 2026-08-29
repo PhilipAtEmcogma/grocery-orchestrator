@@ -160,6 +160,11 @@ class GroceryState(TurnInput, total=False):
     item_groups: dict[str, list[str]]
     # items the user asked about that we have no data for
     unresolved_items: list[str]
+    # item -> newest capture date, for items whose ONLY prices are too old to
+    # stand behind. Distinct from unresolved_items because "I hold nothing for
+    # that" and "everything I hold is six weeks old" are different facts, and
+    # collapsing them would make the honest answer the false one.
+    stale_only: dict[str, str]
     # items the user asked about that we never looked up, because the request
     # exceeded MAX_ITEMS_PER_TURN. Distinct from unresolved_items: we may well
     # have prices for these, we just did not check. Saying "no data" about them

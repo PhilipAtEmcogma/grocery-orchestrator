@@ -14,7 +14,15 @@ from pathlib import Path
 # The demos live in a subfolder, so the repo root has to be importable.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from src.retrieval.filters import pin_to_fixture_snapshot
 from src.schemas.contract import ChatRequest, ChatResponse, ClientHints
+
+# Every demo reads the committed fixture catalogue, which is a snapshot
+# with a fixed capture date. Judged against the wall clock it goes stale on
+# a day nobody chose and every demo starts answering STALE_DATA. Pinned here
+# rather than in run_all.py because each demo is documented as runnable on
+# its own, and run_all only spawns subprocesses.
+pin_to_fixture_snapshot()
 
 RULE = "=" * 74
 

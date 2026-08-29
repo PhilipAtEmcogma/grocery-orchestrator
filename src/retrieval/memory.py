@@ -15,6 +15,7 @@ from decimal import Decimal
 from pathlib import Path
 
 from src.retrieval.base import PriceRecord, PriceRepository, cap_to_budget
+from src.retrieval.filters import FreshnessFilter, NearFilter
 from src.schemas.contract import Store
 
 # ---------------------------------------------------------------- synonyms
@@ -165,9 +166,12 @@ class InMemoryPriceRepository(PriceRepository):
         *,
         limit: int = 5,
         stores: list[Store] | None = None,
+        near: NearFilter | None = None,
+        freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
-        # _by_product entries are pre-sorted cheapest-first, so filtering by
-        # store and slicing to `limit` is all that's needed here.
+        # _by_product entries are pre-sorted cheapest-first, so every filter
+        # applies to the full list and the slice happens LAST. Slicing first
+        # would drop an in-radius, in-date price behind five that are neither.
         recs = self._by_product.get(product_key, [])
         # `is not None`, not truthiness: an explicit [] means nothing qualifies.
         # `if stores:` would treat it as "no filter" and return every store —
@@ -175,6 +179,10 @@ class InMemoryPriceRepository(PriceRepository):
         if stores is not None:
             allowed = set(stores)
             recs = [r for r in recs if r.store in allowed]
+        if near is not None:
+            recs = [r for r in recs if near.covers(r.lat, r.lon)]
+        if freshness is not None:
+            recs = [r for r in recs if freshness.is_fresh(r.valid_date)]
         return recs[:limit]
 
     def resolve_product_key(self, user_term: str) -> str | None:
@@ -210,6 +218,8 @@ class InMemoryPriceRepository(PriceRepository):
         exclude_categories: list[str],
         limit_per_category: int = 3,
         budget_nzd: Decimal | None = None,
+        near: NearFilter | None = None,
+        freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         excluded = set(exclude_categories)
         wanted = set(categories) - excluded
@@ -217,10 +227,20 @@ class InMemoryPriceRepository(PriceRepository):
         # For each remaining category, take the cheapest distinct products
         # up to limit_per_category (a product may have multiple store
         # records; only the first, cheapest one per product is kept).
+        # Filters apply to the CANDIDATE POOL, before per-category selection.
+        # A plan built from out-of-radius or out-of-date prices is wrong in the
+        # same way a comparison is: it sends the shopper somewhere they cannot
+        # go, or quotes a price that has since moved.
+        pool = self._records
+        if near is not None:
+            pool = [r for r in pool if near.covers(r.lat, r.lon)]
+        if freshness is not None:
+            pool = [r for r in pool if freshness.is_fresh(r.valid_date)]
+
         out: list[PriceRecord] = []
         for category in sorted(wanted):
             seen_products: set[str] = set()
-            for rec in sorted(self._records, key=lambda r: r.price_nzd):
+            for rec in sorted(pool, key=lambda r: r.price_nzd):
                 if rec.category != category or rec.product_key in seen_products:
                     continue
                 seen_products.add(rec.product_key)
