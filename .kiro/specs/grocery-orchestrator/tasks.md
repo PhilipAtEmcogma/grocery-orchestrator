@@ -216,6 +216,54 @@ proposed, or gated as labelled; it is not implemented.
   canonical validated request; owner-fence acquire/takeover/complete/release;
   add shared contract/race/pagination tests, all-table PITR evidence, and a
   queryable candidate pattern.
+  - [x] **6a — Canonical fingerprint, owner fencing, pagination, PITR.**
+    Completed 2026-08-29.
+
+    **The fingerprint hashed raw HTTP bytes.** It is now taken over the
+    validated request, so whitespace, JSON object-key order and
+    omitted-versus-explicit-null cannot cause a false mismatch. Trailing zeros
+    on money were an unlisted case found while writing the vectors: `30` and
+    `30.00` are the same budget and produced different fingerprints, so a
+    client sending the second got a 400 it is not allowed to retry, from the
+    mechanism that exists to help it recover from a timeout.
+
+    **`complete()` and `release()` had no owner fence.** An invocation that
+    stalled past the in-progress timeout, watched another legitimately take
+    over its claim, and then woke up could overwrite the newer claim with its
+    older answer — served to the next retry as cached truth — or delete the
+    newer marker, letting a third invocation start the same turn. Every claim
+    now carries a token rotated on acquire AND on takeover, and both writes are
+    conditional on it. Verified against the live table, not only in memory:
+    acquire, duplicate, payload mismatch, takeover with rotation, both fenced
+    writes refused, and the replay returning the newer answer.
+
+    **`cheapest_for_product` could report `no_data` for a stocked product.** It
+    issued one GSI query with `Limit=limit * 5` and ignored `LastEvaluatedKey`.
+    DynamoDB applies `Limit` to items READ, before the application-side store
+    filter, so when none of the first page was at the requested store it
+    returned `[]` — which the graph reads as "I don't have price data for
+    that". Invisible on fixtures at six records per product; live at real
+    scale. Now follows pages until enough matches are held, bounded by
+    `MAX_QUERY_PAGES` for latency.
+
+    PITR enabled on `smart-grocery-products-dev` and `smart-grocery-recipes-dev`.
+    Deliberately NOT on `grocery-idempotency-dev`: a 24-hour TTL cache holding
+    no source of truth, where restoring stale claim tokens over live ones is
+    worse than starting empty. Recorded in `DYNAMODB-SCHEMA.md`.
+
+    31 tests added (14 -> 27 idempotency, 31 -> 35 repository). Verified by
+    mutation: dropping the fence fails 3, reusing the token on takeover fails 3,
+    reverting to raw-body hashing fails 1, and single-page querying fails 2.
+    Offline gates passed: 531 passed, 31 skipped.
+  - [ ] **6b — Queryable candidate pattern, DEFERRED with a forcing test.**
+    `candidates_for_budget` still Scans the products table on every meal-plan
+    turn. `DYNAMODB-SCHEMA.md` requires the replacement to be chosen from real
+    access patterns and load evidence, and there is currently neither: 152 rows
+    and no deployment. Choosing a GSI partition key now would be guessing from
+    zero traffic, and a GSI is expensive to change once written.
+    `test_the_scan_ceiling_is_asserted_rather_than_assumed` fails once the
+    dataset passes `SCAN_CEILING_RECORDS`, so the decision is forced by data
+    rather than forgotten.
 - [ ] **Pilot Task 7 — Reconcile, qualify, and evaluate the model plane.** Align
   the adapter with `langchain-aws`, move routing toward SSM, disable unscored
   models, publish task scorecards, and preserve local evals as release gates.

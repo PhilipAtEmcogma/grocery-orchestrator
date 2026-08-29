@@ -75,11 +75,14 @@ serves this frontend contract.
 The target idempotency guarantee returns the same completed answer without a
 second generation. Canonicalization treats insignificant whitespace, object-key
 order, and omitted-versus-explicit-null optional fields as equivalent.
-**Current pilot blockers:** the handler still fingerprints the raw request body,
-and stale takeover does not yet fence `complete()`/`release()` with an owner
-token. Formatting-equivalent retries can therefore mismatch, and an old owner
-can race a newer claim. Pilot Task 6 updates both stores and their shared
-canonicalization/race/contract tests.
+**Implemented 2026-08-29.** The fingerprint is taken over the validated
+request, so whitespace, object-key order and omitted-versus-null cannot cause a
+false mismatch — and neither can trailing zeros on money, since `30` and `30.00`
+are the same budget. Every claim carries an owner token, rotated on acquire and
+on takeover, and `complete()`/`release()` are conditional on it: an invocation
+whose claim was taken over while it was working cannot overwrite the newer claim
+with an older answer, nor delete it. Verified against the live table, not only
+in memory.
 
 **On `hints`:** these *supplement* natural-language extraction, they don't
 replace it. If the user types "actually make it $50" while the budget slider

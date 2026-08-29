@@ -64,6 +64,7 @@ from src.observability import (
 from src.observability.base import (
     METRIC_CACHE_READ_TOKENS,
     METRIC_GUARDRAIL_INTERVENED,
+    METRIC_IDEMPOTENCY_CLAIM_LOST,
     METRIC_IDEMPOTENCY_UNAVAILABLE,
     METRIC_IDEMPOTENT_REPLAY,
     METRIC_INPUT_TOKENS,
@@ -101,7 +102,7 @@ from src.schemas.contract import (
 from src.store.idempotency import (
     AcquireStatus,
     IdempotencyStore,
-    fingerprint,
+    fingerprint_request,
     make_key,
 )
 
@@ -437,7 +438,12 @@ def _observed_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     # Idempotency. A client that timed out and retried must not trigger a
     # second generation — the first is often still running.
     key = make_key(request.session_id, request.turn_id)
-    payload_hash = fingerprint(raw_body)
+    # The VALIDATED request, not the raw bytes. Hashing the body made the
+    # fingerprint sensitive to whitespace, JSON key order, and omitted-versus-
+    # explicit-null, so a client whose retry serialised differently was told its
+    # correct retry was a client bug -- a 400 it is not allowed to retry, from
+    # the mechanism built to help it recover from a timeout.
+    payload_hash = fingerprint_request(request)
     store = _idempotency_store()
 
     try:
@@ -506,10 +512,23 @@ def _observed_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         # was only acquire() that was protected, which left the store able to
         # fail the turn from two lines further down.
         try:
+            # Owner-fenced. `acquire` returned a token; if another invocation
+            # took over this claim while the turn was running, the write is
+            # refused rather than overwriting the newer claim with an older
+            # answer. Losing the fence does NOT cost this client its response:
+            # the work was valid and it is returned below regardless. What is
+            # lost is only the right to cache it.
+            token = acquired.claim_token or ""
             if _is_terminal(response):
-                store.complete(key, response.model_dump_json())
+                stored = store.complete(key, token, response.model_dump_json())
             else:
-                store.release(key)
+                stored = store.release(key, token)
+            if not stored:
+                logger.warning(
+                    "idempotency_claim_lost",
+                    extra={"correlation_id": request.session_id, "turn_id": request.turn_id},
+                )
+                TELEMETRY.count(METRIC_IDEMPOTENCY_CLAIM_LOST)
         except Exception as exc:
             logger.error("idempotency_unavailable", extra=exception_fields(exc))
             TELEMETRY.count(METRIC_IDEMPOTENCY_UNAVAILABLE)

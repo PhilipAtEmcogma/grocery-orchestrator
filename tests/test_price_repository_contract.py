@@ -45,19 +45,26 @@ import pytest
 
 from src.graph.nodes import MEAL_CATEGORIES
 from src.retrieval.base import PriceRecord
+from src.retrieval.dynamo import MAX_QUERY_PAGES, DynamoPriceRepository
+from src.retrieval.memory import InMemoryPriceRepository
 from src.schemas.contract import Store
+
+# The row count past which a full-table Scan per meal-plan turn stops being
+# defensible. Not a DynamoDB limit — a judgement, set an order of magnitude
+# above the current fixture set so ordinary growth does not trip it, and far
+# below the point where the read cost of scanning a real catalogue to return
+# fifteen rows becomes the dominant cost of a turn.
+SCAN_CEILING_RECORDS = 1000
 
 # --------------------------------------------------------------- registry
 
 
 def _in_memory():
-    from src.retrieval.memory import InMemoryPriceRepository
 
     return InMemoryPriceRepository()
 
 
 def _dynamo():
-    from src.retrieval.dynamo import DynamoPriceRepository
 
     table = os.environ.get("PRICE_REPO_DYNAMO_TABLE")
     if not table:
@@ -411,3 +418,140 @@ class TestRecordShape:
         records = repo.cheapest_for_product(a_product_key, limit=50)
         seen = [(r.store, r.store_location) for r in records]
         assert len(seen) == len(set(seen)), f"duplicate location rows: {seen}"
+
+
+# ================================= Pilot Task 6: query pagination and scan scale
+#
+# `cheapest_for_product` issued ONE query with `Limit=limit * 5` and ignored
+# `LastEvaluatedKey`. DynamoDB applies `Limit` to items READ, before any
+# application-side filter, so when a store filter was supplied and none of the
+# first page happened to be at those stores, the method returned an empty list.
+#
+# The graph reads an empty list as `no_data` and tells the shopper "I don't have
+# price data for butter" — about a product that store stocks. An honest-failure
+# outcome produced by a silent truncation is worse than a loud error, because it
+# is indistinguishable from the truth.
+#
+# It cannot fire on the fixtures: six records per product is a single page. It
+# fires at real scale, where a popular product spans three chains and many
+# stores.
+
+
+def _item(ref: int, store: str, location: str, price: str) -> dict:
+    return {
+        "product_key": "butter-500g",
+        "store": store,
+        "store_location": location,
+        "display_name": f"Butter {ref}",
+        "canonical_name": "butter",
+        "category": "dairy",
+        "price_nzd": Decimal(price),
+        "unit": "500g",
+        "unit_price_nzd": Decimal(price) * 2,
+        "pack_grams": 500,
+        "on_special": False,
+        "valid_date": "2026-07-31",
+        "lat": Decimal("-36.9"),
+        "lon": Decimal("174.8"),
+        "store_key": f"{store}#{location}",
+    }
+
+
+class _PagingTable:
+    """A GSI that hands back one page at a time, as DynamoDB does."""
+
+    def __init__(self, pages: list[list[dict]]) -> None:
+        self._pages = pages
+        self.queries = 0
+
+    def query(self, **kwargs):
+        self.queries += 1
+        index = int(kwargs.get("ExclusiveStartKey", {}).get("n", 0))
+        page = self._pages[index] if index < len(self._pages) else []
+        response: dict = {"Items": page}
+        if index + 1 < len(self._pages):
+            response["LastEvaluatedKey"] = {"n": index + 1}
+        return response
+
+
+def _repo_with(pages: list[list[dict]]) -> tuple[DynamoPriceRepository, _PagingTable]:
+    """A repository wired to a fake table, without touching AWS."""
+    repo = object.__new__(DynamoPriceRepository)
+    table = _PagingTable(pages)
+    repo._table = table  # type: ignore[attr-defined]
+    repo._table_name = "grocery-products-dev"  # type: ignore[attr-defined]
+    return repo, table
+
+
+def test_a_store_filter_does_not_report_no_data_for_a_stocked_product():
+    """
+    The defect, stated as the shopper sees it.
+
+    Page one is entirely PAK'nSAVE; the Woolworths price the shopper asked for
+    is on page two. Before pagination this returned [] and the graph said "I
+    don't have price data for that".
+    """
+    pages = [
+        [_item(i, "paknsave", "mangere", "2.9") for i in range(5)],
+        [_item(9, "woolworths", "ponsonby", "3.5")],
+    ]
+    repo, table = _repo_with(pages)
+
+    found = repo.cheapest_for_product("butter-500g", limit=5, stores=[Store.WOOLWORTHS])
+
+    assert len(found) == 1, "the second page holds the only matching store"
+    assert found[0].store is Store.WOOLWORTHS
+    assert table.queries == 2, "the first page was short of matches; follow the key"
+
+
+def test_paging_stops_as_soon_as_enough_matches_are_held():
+    """Bounded work: no reason to read page two when page one satisfied the limit."""
+    pages = [
+        [_item(i, "paknsave", "mangere", "2.9") for i in range(5)],
+        [_item(9, "paknsave", "albany", "3.5")],
+    ]
+    repo, table = _repo_with(pages)
+
+    found = repo.cheapest_for_product("butter-500g", limit=3)
+
+    assert len(found) == 3
+    assert table.queries == 1, "stop once the limit is satisfied"
+
+
+def test_paging_is_bounded_when_nothing_ever_matches():
+    """
+    Latency has to stay bounded against the gateway ceiling. Exhausting the cap
+    is the honest `no_data` case: this store has nothing near the cheapest end.
+    """
+    pages = [[_item(i, "paknsave", "mangere", "2.9")] for i in range(50)]
+    repo, table = _repo_with(pages)
+
+    found = repo.cheapest_for_product("butter-500g", limit=5, stores=[Store.NEW_WORLD])
+
+    assert found == []
+    assert table.queries == MAX_QUERY_PAGES, "must not walk the whole index"
+
+
+def test_the_scan_ceiling_is_asserted_rather_than_assumed():
+    """
+    `candidates_for_budget` SCANS the products table on every meal-plan turn.
+
+    That is defensible at fixture scale — 152 records is one page — and
+    indefensible at pilot scale, where a scan reads the entire catalogue to
+    return about fifteen rows. DYNAMODB-SCHEMA.md says the replacement (a
+    category index, or a materialised candidate view) must be chosen from real
+    access patterns and load evidence, and there is currently neither: no
+    deployment, no traffic.
+
+    So the decision is deferred deliberately, and this test is what stops
+    "accepted for the fixture dataset" quietly becoming production. When the
+    seed set grows past the ceiling, this fails and forces the choice.
+    """
+    records = InMemoryPriceRepository().all_records
+    assert len(records) <= SCAN_CEILING_RECORDS, (
+        f"the products dataset has {len(records)} records, past the {SCAN_CEILING_RECORDS} "
+        f"at which a full-table Scan per meal-plan turn stops being defensible. "
+        f"Pilot Task 6 requires choosing a queryable candidate pattern before "
+        f"going further — see DYNAMODB-SCHEMA.md, 'Location, freshness and "
+        f"meal-candidate access patterns'."
+    )

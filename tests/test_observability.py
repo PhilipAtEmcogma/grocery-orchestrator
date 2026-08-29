@@ -600,11 +600,15 @@ def _turn_id_reused(monkeypatch) -> None:
 
 def _turn_in_flight(monkeypatch) -> None:
     from src.handler import _idempotency_store
-    from src.store.idempotency import fingerprint, make_key
+    from src.schemas.contract import ChatRequest
+    from src.store.idempotency import fingerprint_request, make_key
 
     body = _meal_plan_body()
     raw = json.dumps(body)
-    _idempotency_store().acquire(make_key(body["session_id"], body["turn_id"]), fingerprint(raw))
+    _idempotency_store().acquire(
+        make_key(body["session_id"], body["turn_id"]),
+        fingerprint_request(ChatRequest.model_validate(body)),
+    )
     assert _invoke(raw)["statusCode"] == 409
 
 

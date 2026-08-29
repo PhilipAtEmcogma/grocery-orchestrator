@@ -58,6 +58,11 @@ METRIC_IDEMPOTENT_REPLAY = "IdempotentReplay"
 METRIC_TURN_WITHOUT_CONTENT = "TurnWithoutContent"
 METRIC_TURN_ID_REUSED = "TurnIdReused"
 METRIC_IDEMPOTENCY_UNAVAILABLE = "IdempotencyUnavailable"
+# A turn finished but another invocation had taken over its claim, so the result
+# could not be cached. Worth a metric rather than a silent log line: a sustained
+# rate means invocations are routinely running past the in-progress timeout,
+# which is a latency problem wearing an idempotency costume.
+METRIC_IDEMPOTENCY_CLAIM_LOST = "IdempotencyClaimLost"
 METRIC_INVALID_REQUEST = "InvalidRequest"
 METRIC_TURN_ERROR = "TurnError"
 METRIC_PREFLIGHT = "PreflightRequests"
