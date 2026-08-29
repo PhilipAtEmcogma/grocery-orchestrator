@@ -76,8 +76,11 @@ comparison reasoning/prose labels, regenerated samples, and offline
 `GuardrailBlocked` propagation. Remaining blockers include:
 
 1. Final grounding lacks immutable retrieved-record context, exact key/value
-   equality proof, and wrong-key/altered-value controls; `run_turn()` does not
-   call the whole-response literal-money assertion.
+   equality proof, and wrong-key/altered-value controls. The literal-money half
+   is CLOSED: `run_turn()` calls `assert_no_model_authored_money()` and
+   `validate_plan` rejects money in the plan's model-authored text (Pilot Task
+   2 follow-up (a), 2026-08-29). The whole-response assertion stays in
+   `validate.py` by design — see §2.4 below and `AGENTS.md`.
 2. The live Guardrail harness is experimental: `--model` does not pin the
    requested model, `OUT_OF_SCOPE` can count as blocked, and live must-block
    misses do not fail the process. No qualifying 13/13 plus 7/7 live result
@@ -160,9 +163,24 @@ before text is delivered:
 **Implemented scope:** Pilot Task 2 changed rendering to non-monetary labels,
 removed literal money from comparison reasoning, regenerated samples, and added
 `assert_no_literal_money_in_response()` over token text, reasoning, and notice
-messages with three negative controls. The remaining gap is runtime integration:
-`run_turn()` does not yet call the whole-response assertion, and the field
-inventory must stay complete as the contract evolves.
+messages with three negative controls.
+
+Follow-up (a) completed the field inventory and closed what it found. Three
+MODEL-AUTHORED fields were unchecked — `Meal.name`, `Ingredient.item` and
+`Ingredient.qty`, which `assemble_plan` copies from the draft untouched — and a
+plan carrying invented figures in them passed every assertion the system had.
+The rule is now split by author and by essentiality, as Req 3.7 always
+specified: prose degrades at its node, the plan's model-authored text is a
+validation error routed through bounded repair to
+`emit_plan_generation_failed`, and `run_turn()` carries the narrow
+`assert_no_model_authored_money()` as a backstop that can only fire on a bug.
+The whole-response assertion deliberately stays in `validate.py`: raising on
+prose inside `run_turn` would convert the prose node's degradation into a dead
+turn. `ErrorEvent.message` and `NoDataEvent.message` are excluded because they
+restate the user's own budget or search term rather than claiming a price.
+
+The field inventory must stay complete as the contract evolves; a new
+model-authored string field is the way this reopens.
 
 **Failure degrades rather than propagating.** All three checks discard the
 prose and let the turn deliver its structured payload. A comparison table with
@@ -943,7 +961,7 @@ A release candidate requires:
 
 - 100% pass for grounding, literal-money, arithmetic, dietary fail-closed, and
   Guardrail propagation controls, including negative tests. Exact immutable
-  retrieved-record/value proof and whole-response runtime money enforcement
+  retrieved-record/value proof (runtime money enforcement is closed)
   remain explicit Task 2 follow-ups.
 - Repaired live Guardrail evaluation controls and qualifying 13/13 must-block
   plus 7/7 must-allow evidence; the current scripted 7/7 is structural only.

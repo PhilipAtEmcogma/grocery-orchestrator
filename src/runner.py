@@ -11,7 +11,12 @@ from src.graph.build import build_graph
 from src.graph.state import GroceryState
 from src.models.base import ModelClient
 from src.retrieval.base import PriceRepository
-from src.schemas.contract import ChatRequest, ChatResponse, assert_grounded
+from src.schemas.contract import (
+    ChatRequest,
+    ChatResponse,
+    assert_grounded,
+    assert_no_model_authored_money,
+)
 
 
 def run_turn(request: ChatRequest, repo: PriceRepository, model: ModelClient) -> ChatResponse:
@@ -43,4 +48,16 @@ def run_turn(request: ChatRequest, repo: PriceRepository, model: ModelClient) ->
     # this becomes a caught exception that emits INTERNAL_ERROR, but during
     # development a crash is the correct, visible behaviour.
     assert_grounded(response)
+
+    # Backstop over the model-authored free text in a plan. This can only fire
+    # on a bug: validate_plan rejects these fields and the router discards a
+    # plan that never came back clean, so reaching here means something let one
+    # through -- and shipping an invented price is worse than losing the turn.
+    #
+    # NARROWER than assert_no_literal_money_in_response, deliberately. That one
+    # also covers prose, which is non-essential and already degrades at the
+    # prose node; raising on it here would turn "you lose the sentence" into
+    # "you lose the turn". Req 3.7 draws the line exactly there, and
+    # `validate.py` runs the whole-response version over `samples/` in CI.
+    assert_no_model_authored_money(response)
     return response

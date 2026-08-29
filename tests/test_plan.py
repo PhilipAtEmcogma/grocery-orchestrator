@@ -7,13 +7,14 @@ values are produced, so if it is right, no plan can show a wrong price.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 import pytest
 from pydantic import ValidationError
 
 from src.graph.nodes.plan import assemble_plan
+from src.graph.state import MAX_REPAIR_ATTEMPTS
 from src.models.base import ModelError, ModelOutputInvalid, ModelTier
 from src.models.scripted import ScriptedModelClient
 from src.prompts.meal_plan import (
@@ -24,6 +25,7 @@ from src.prompts.meal_plan import (
     DraftIngredient,
     DraftMeal,
     PlanDraft,
+    build_defect_repair_prompt,
     build_user_prompt,
     render_products,
 )
@@ -31,14 +33,22 @@ from src.retrieval.memory import InMemoryPriceRepository
 from src.runner import run_turn
 from src.schemas.contract import (
     ChatRequest,
+    ChatResponse,
     Citation,
     ClientHints,
+    DoneEvent,
     ErrorCode,
+    Event,
     MealPlan,
+    MealPlanEvent,
     SourceRef,
     Store,
+    TokenEvent,
     assert_arithmetic,
     assert_grounded,
+    assert_no_literal_money_in_response,
+    assert_no_model_authored_money,
+    find_literal_money_in_plan,
 )
 
 
@@ -70,6 +80,10 @@ def uncapped_repo() -> _UncappedRepository:
 @pytest.fixture(scope="module")
 def repo() -> InMemoryPriceRepository:
     return InMemoryPriceRepository()
+
+
+# Any fixed instant; these tests assert on money, never on the clock.
+_FIXED_TIME = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 def _citation(ref: str, price: str, store: Store = Store.PAKNSAVE) -> Citation:
@@ -847,3 +861,261 @@ def test_the_repair_loop_fires_on_payable_overspend(repo):
     plan = next((e.data for e in resp.events if e.type == "meal_plan"), None)
     if plan is not None:
         assert plan.payable_total_nzd <= plan.budget_nzd
+
+
+# --------------------------------- model-authored money in a plan's free text
+#
+# `PlanDraft` has no price field, so the model cannot put a price in a
+# STRUCTURED slot -- that is Invariant 1 and it holds. It can still write one
+# into free text: `DraftMeal.name`, `DraftIngredient.item` and
+# `DraftIngredient.qty_display` pass through `assemble_plan` unchanged and are
+# rendered to the user.
+#
+# Those three were unchecked. A plan naming a meal "Budget Pasta - only $4.99
+# a head" with an ingredient "Butter (was 7.50, now 5.00)" cleared
+# assert_grounded, assert_arithmetic AND assert_no_literal_money_in_response
+# together, shipping two invented figures -- one of them a fabricated "was"
+# price -- from a system whose central claim is that a price the user sees was
+# retrieved. SYSTEM_PROMPT already said "NEVER state a price"; nothing checked
+# that it was obeyed.
+
+
+def _text_draft(*, name: str = "Test Meal", item: str = "item c1", qty: str = "some") -> PlanDraft:
+    """One meal, one ingredient, with the three free-text fields injectable."""
+    return PlanDraft(
+        meals=[
+            DraftMeal(
+                name=name,
+                serves=2,
+                ingredients=[
+                    DraftIngredient(
+                        citation_ref="c1", packs=Decimal("1"), qty_display=qty, item=item
+                    )
+                ],
+            )
+        ],
+        reasoning="test",
+    )
+
+
+def _text_plan(**kwargs) -> MealPlan:
+    return assemble_plan(
+        _text_draft(**kwargs),
+        {"c1": _citation("c1", "10.00")},
+        household_size=2,
+        days=1,
+        budget_nzd=Decimal("60"),
+        exclusions=[],
+        repair_attempts=0,
+    )
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "expected"),
+    [
+        ({"name": "Budget Pasta - only $4.99 a head"}, "$4"),
+        ({"item": "Butter (was 7.50, now 5.00)"}, "7.50"),
+        ({"qty": "500g for $5"}, "$5"),
+    ],
+    ids=["meal-name", "ingredient-item", "ingredient-qty"],
+)
+def test_find_literal_money_in_plan_catches_every_free_text_field(kwargs, expected):
+    violations = find_literal_money_in_plan(_text_plan(**kwargs))
+    assert len(violations) == 1
+    assert expected in violations[0]
+
+
+def test_find_literal_money_in_plan_passes_an_ordinary_plan():
+    """
+    The negative half. A check that cannot pass is as useless as one that
+    cannot fail -- "500g", "2 tins" and a plain meal name must survive it, or
+    the rule would reject every valid plan and be turned off within a day.
+    """
+    assert find_literal_money_in_plan(_text_plan(qty="500g", item="beef mince")) == []
+
+
+def test_money_in_plan_text_is_a_validation_error_and_not_a_budget_verdict():
+    """
+    It must reach the repair loop WITHOUT setting over_budget.
+
+    over_budget is the only flag that licenses "your budget does not stretch".
+    A plan carrying an invented figure is our failure to generate; telling that
+    shopper to raise their budget is the same false statement the
+    upstream-failure split already fixed once.
+    """
+    from src.graph.nodes import validate_plan
+    from src.graph.state import GroceryState
+
+    state: GroceryState = {
+        "session_id": "sess-plan01",
+        "turn_id": "turn-plan01",
+        "message": "plan dinners",
+        "plan": _text_plan(name="Pasta for $12"),
+    }
+    result = validate_plan(state)
+
+    assert result["over_budget"] is False
+    assert any("$12" in e for e in result["validation_errors"])
+
+
+def test_exhausted_repair_on_plan_text_lands_on_generation_failed():
+    """The terminal must say what is true: we could not build a plan we trust."""
+    from src.graph.nodes import route_after_validation
+    from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState
+
+    state: GroceryState = {
+        "session_id": "sess-plan01",
+        "turn_id": "turn-plan01",
+        "message": "plan dinners",
+        "validation_errors": ["meal name 'Pasta for $12' states '$12'"],
+        "over_budget": False,
+        "repair_attempts": MAX_REPAIR_ATTEMPTS,
+    }
+    assert route_after_validation(state) == "generation_failed"
+
+
+def test_response_boundary_refuses_model_authored_money():
+    """run_turn's backstop. It can only fire on a bug, and must fire then."""
+    events: list[Event] = [
+        MealPlanEvent(seq=0, data=_text_plan(name="Pasta for $12")),
+        DoneEvent(seq=1, server_time=_FIXED_TIME),
+    ]
+    response = ChatResponse(session_id="sess-plan01", turn_id="turn-plan01", events=events)
+    with pytest.raises(AssertionError, match="Model-authored money"):
+        assert_no_model_authored_money(response)
+
+
+def test_response_boundary_leaves_prose_alone():
+    """
+    Deliberately NARROWER than assert_no_literal_money_in_response.
+
+    Prose is model-authored too, but non-essential: the prose node already
+    drops the sentence and ships the table. Raising here would convert that
+    degradation into a dead turn, contradicting the rule in test_prose.py that
+    a table with no sentence beats a sentence with a wrong price. Req 3.7 draws
+    the line here, and validate.py runs the wider check over samples/ in CI.
+    """
+    events: list[Event] = [
+        TokenEvent(seq=0, text="Butter is 2.97 at the cheapest store."),
+        DoneEvent(seq=1, server_time=_FIXED_TIME),
+    ]
+    response = ChatResponse(session_id="sess-plan01", turn_id="turn-plan01", events=events)
+    assert_no_model_authored_money(response)
+
+    with pytest.raises(AssertionError, match="Literal money in prose"):
+        assert_no_literal_money_in_response(response)
+
+
+# ------------------------------------------------------- defect repair prompt
+
+
+def test_defect_repair_prompt_restates_dietary_exclusions():
+    """
+    Req 5.3 applies to EVERY regeneration, not just the budget one.
+
+    A second repair prompt is a second place to forget the allergy that 4.6
+    already forgot once, which is why both share _constraints_block.
+    """
+    prompt = build_defect_repair_prompt(
+        products="PRODUCTS",
+        budget=Decimal("60"),
+        household_size=3,
+        days=7,
+        exclusions=["dairy", "seafood"],
+        defects=["meal name 'Pasta for $12' states '$12'"],
+    )
+    assert "Must exclude: dairy, seafood" in prompt
+    assert "Household size: 3" in prompt
+    assert "Days to cover: 7" in prompt
+
+
+def test_defect_repair_prompt_names_the_defect_and_drops_budget_arithmetic():
+    """
+    The reason this prompt exists. Every non-budget failure used to receive the
+    budget prompt -- "your plan came to $0 OVER the $60 budget, cut at least $0
+    less" -- which describes none of them and spends the attempt asking the
+    model to fix a defect nobody named.
+    """
+    prompt = build_defect_repair_prompt(
+        products="PRODUCTS",
+        budget=Decimal("60"),
+        household_size=3,
+        days=7,
+        exclusions=[],
+        defects=["meal name 'Pasta for $12' states '$12'"],
+    )
+    assert "Pasta for $12" in prompt
+    assert "OVER the" not in prompt
+    assert "costs at least" not in prompt
+    # The instruction that would have prevented the defect in the first place.
+    assert "meal name" in prompt
+
+
+# --------------------------------------- which repair prompt a failure gets
+#
+# `build_repair_prompt` answers exactly one question -- "you overspent, cut
+# this much" -- and it was the ONLY repair prompt. Every other rejection got it
+# too: a draft that failed its schema, an unknown citation ref, broken
+# arithmetic, and now a meal name carrying an invented price. With no plan to
+# measure, `over_by` is 0, so the feedback read "your previous plan came to $0
+# OVER the $40 budget ... produce a revised plan that costs at least $0 less".
+# That describes none of those failures, and an attempt spent asking a model to
+# fix a defect nobody named is an attempt wasted against a bounded budget of
+# two.
+#
+# These two tests exist because the branch that fixes it was, when first
+# written, completely unpinned: inverting `elif not state.get("over_budget")`
+# left all 464 tests passing.
+
+
+def _money_plan_turn(model: ScriptedModelClient, repo) -> tuple:
+    """One meal-plan turn, returning the response and the plan prompts sent."""
+    response = run_turn(_plan_request("plan dinners", budget_nzd=40, household_size=2), repo, model)
+    plan_prompts = [user for schema, user in model.prompts if schema == "PlanDraft"]
+    return response, plan_prompts
+
+
+def test_a_non_budget_rejection_is_repaired_with_the_defect_prompt(repo):
+    """
+    The first draft names a meal "... for $9.99"; the second does not.
+
+    The repair must be told what was actually wrong. Asserting on the prompt
+    rather than on the outcome is deliberate: the turn recovers either way, so
+    an outcome-only test passes with the budget prompt in place and certifies
+    nothing.
+    """
+    model = ScriptedModelClient(plan_money_attempts=1)
+    response, plan_prompts = _money_plan_turn(model, repo)
+
+    assert len(plan_prompts) == 2, "expected one repair attempt"
+    repair = plan_prompts[1]
+
+    assert "was REJECTED" in repair
+    assert "$9.99" in repair, "the repair pass was not told which text was rejected"
+    assert "OVER the" not in repair, "budget feedback on a failure that was not about money"
+
+    # And the turn recovers: the second draft is clean, so a plan still ships.
+    assert any(e.type == "meal_plan" for e in response.events)
+
+
+def test_money_in_plan_text_that_repair_cannot_fix_fails_honestly(repo):
+    """
+    Exhausted repair must say we could not build a plan -- not that the budget
+    was too small.
+
+    BUDGET_INFEASIBLE here would tell a shopper whose $40 was never the problem
+    to raise it, which is the same false statement the upstream-failure split
+    already fixed once. The discriminator is `over_budget`, which this failure
+    deliberately does not set.
+    """
+    model = ScriptedModelClient(plan_money_attempts=99)
+    response, plan_prompts = _money_plan_turn(model, repo)
+
+    assert len(plan_prompts) == 1 + MAX_REPAIR_ATTEMPTS, "repair was not bounded"
+
+    codes = [e.code for e in response.events if e.type == "error"]
+    assert codes == [ErrorCode.PLAN_GENERATION_FAILED]
+    assert ErrorCode.BUDGET_INFEASIBLE not in codes
+
+    # The failing draft is discarded, never shown.
+    assert not any(e.type == "meal_plan" for e in response.events)

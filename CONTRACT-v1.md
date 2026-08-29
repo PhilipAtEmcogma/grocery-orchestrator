@@ -8,8 +8,8 @@ Region: `ap-southeast-2` (Sydney)
 The v1 event shapes remain the compatibility baseline. Pilot Tasks 2–3
 corrected citation construction, citation-before-use ordering, money-free comparison/prose labels, regenerated samples, and offline
 GuardrailBlocked propagation. Remaining release blockers include immutable
-retrieved-record/value equality, whole-response runtime literal-money
-integration, and qualifying live Guardrail policy evidence. Those changes stay
+retrieved-record/value equality and qualifying live Guardrail policy evidence.
+Runtime literal-money enforcement closed on 2026-08-29. Those changes stay
 additive within v1 where possible; breaking schema changes require v2.
 
 The generated samples now use configured table/`store_key`/normalized
@@ -309,10 +309,81 @@ rather than throwing.**
 
 ## Open questions for the frontend team
 
-1. Do you want `token` events for the meal-plan explanation, or only the
-   structured `meal_plan` payload? Streaming prose is nicer but more work.
-2. How do you want `location` handled when permission is denied — omit, or
-   fall back to a user-typed suburb?
-3. Any UI need for conversation history replay, or is `session_id` continuity
-   enough?
-4. Preferred `session_id` / `turn_id` format — UUIDv4 is fine, just confirm.
+**Status: proposed defaults, awaiting confirmation.** Each question below now
+carries a default the orchestrator adopts if we have not heard otherwise by
+**Friday 2026-09-11**. Nothing here is decided — a default is what happens on
+silence, not an answer we received. Confirm or override; both are cheap now and
+expensive once the pilot deploys.
+
+Two of the four are cheaper than they read, because the implementation already
+answers them. One has a real cost and a schema gap behind it.
+
+### 1. `token` events, or only the structured payload?
+
+**Already emitted.** `generate_prose` splits the explanation into sentences and
+emits one `TokenEvent` each; four of the nine files in `samples/` contain them.
+Over REST they arrive pre-joined, in the same response as everything else.
+
+**Proposed default:** we keep emitting them, you render the structured
+`meal_plan` payload, and `token` events stay ignorable until the WebSocket
+upgrade makes them arrive one at a time. The versioning rule already requires
+your client to ignore unknown event types, so this costs you nothing today.
+
+**Override if** you want the prose rendered now. It is the same text either way;
+only the delivery timing changes later.
+
+### 2. `location` when permission is denied — omit, or fall back to a suburb?
+
+**The one worth a conversation**, and the only question with a defect behind it:
+`Location` currently requires `lat` and `lon`, so **the contract cannot express a
+user-typed suburb at all**. `label` is optional and decorative. The fallback
+option this question offers is not implementable as the schema stands.
+
+It is also the primary input to Pilot Task 5 (location, store scope and
+freshness), which cannot be designed against a shape nobody has agreed.
+
+**Proposed default:** omit `location` entirely when permission is denied and
+accept national rather than local pricing for that turn — the behaviour the
+Request table above already documents. Suburb fallback then becomes an additive
+v1.x change: `lat`/`lon` become optional under a validator requiring either
+coordinates or a resolvable `label`, so a client can send one or the other but
+never neither.
+
+**Override if** suburb fallback matters during the pilot rather than after it.
+Tell us early — this is the one answer that changes an executable schema rather
+than a document.
+
+### 3. Conversation history replay, or `session_id` continuity?
+
+**Proposed default: continuity only.** Replay is not a toggle on our side. It
+pulls in conversation memory, which is deferred, and beyond that AgentCore
+Memory, which is gated behind Cognito, consent, TTL, deletion/export and a
+privacy review. "Yes" is a substantially larger commitment than the question
+makes it sound, which is why we are proposing an answer rather than asking
+open-endedly.
+
+**Override if** the UI genuinely cannot work without it. It then becomes a scoped
+requirement carrying those gates, not a contract field.
+
+### 4. `session_id` / `turn_id` format
+
+**Proposed default: no format constraint. Do not adopt a UUIDv4 requirement.**
+
+Both fields are validated as 8–64 characters and nothing else. Every example in
+this document, all nine files in `samples/`, and the dev-server command in the
+README use `sess-7f3a9c21` / `turn-0001-a4b8` — **none of which is a UUIDv4**.
+Confirming "UUIDv4 is fine" and then enforcing it would invalidate our own
+published samples and every example a frontend developer has already copied.
+
+UUIDv4 is a good thing for you to *generate*. It is a bad thing for us to
+*require*. Idempotency needs uniqueness per turn and stability per session; the
+format is not the contract's business.
+
+**Override if** you want malformed ids rejected at the boundary. Name the shape,
+and it lands as a v2 change rather than a v1 tightening.
+
+### Resolving these
+
+Answers are recorded here with their date, replacing the proposal. Question 2
+additionally needs its schema gap closed whichever way it goes — the current
+`Location` can express only one of the two options it offers.

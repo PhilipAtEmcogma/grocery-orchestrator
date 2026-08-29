@@ -24,20 +24,15 @@ import re
 
 from pydantic import BaseModel, ConfigDict, Field
 
+# Imported, not redefined. The check that DEGRADES prose (here) and the check
+# that REFUSES a response (in the contract module) must never disagree. This
+# file held an equivalent copy until they were reconciled -- the copies
+# matched, which is exactly why a later drift would not have been noticed.
+from src.schemas.contract import LITERAL_MONEY
+
 # Distinct enough that a model will not produce it by accident, and unlike
 # single braces it does not collide with JSON the model might emit.
 PLACEHOLDER = re.compile(r"\[\[(c\d+|total|budget|savings)\]\]")
-
-# Money-shaped strings. Deliberately narrow: "3 meals", "500g" and "2 people"
-# are legitimate and must pass. What must not appear is a currency figure.
-LITERAL_MONEY = re.compile(
-    r"""
-    \$\s*\d
-    | \d+\.\d{2}\b
-    | \b\d+\s*(?:dollars?|bucks|cents?)\b
-    """,
-    re.IGNORECASE | re.VERBOSE,
-)
 
 
 class ProseResult(BaseModel):

@@ -344,3 +344,17 @@ def test_clean_rendering_still_produces_prose(repo):
         ScriptedModelClient(),
     )
     assert [e for e in resp.events if e.type == "token"]
+
+
+def test_the_money_pattern_has_exactly_one_definition():
+    """
+    The prose node DEGRADES on money; the contract module REFUSES a response
+    over it. Those two decisions have to be made about the same set of
+    strings, and they were made by two byte-for-byte equivalent regexes in two
+    files. Equivalent copies are the dangerous kind: nothing was wrong, so
+    nothing would have flagged the day one of them was tuned.
+    """
+    from src.prompts import prose
+    from src.schemas import contract
+
+    assert prose.LITERAL_MONEY is contract.LITERAL_MONEY

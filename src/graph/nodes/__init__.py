@@ -39,6 +39,7 @@ from src.schemas.contract import (
     SourceRef,
     UsageMeta,
     assert_arithmetic,
+    find_literal_money_in_plan,
 )
 
 # A pathological request ("prices for fifty things") would blow the latency
@@ -318,6 +319,19 @@ def validate_plan(state: GroceryState) -> dict:
         assert_arithmetic(plan)
     except AssertionError as exc:
         errors.append(str(exc))
+
+    # Model-authored free text inside the plan. `PlanDraft` has no price
+    # field, so a price cannot reach a STRUCTURED slot -- but meal names,
+    # ingredient names and quantities are free text the model writes and the
+    # user reads, and nothing checked them. A plan naming a meal "Pasta -
+    # only $4.99 a head" cleared every assertion the system had.
+    #
+    # Deliberately NOT folded into `over_budget`: a plan carrying an invented
+    # figure is our failure to generate, not a fact about the shopper's
+    # budget, and routing it to emit_budget_infeasible would tell them to
+    # raise a budget that was never the problem -- the same false statement
+    # the upstream-failure split already fixed once.
+    errors.extend(find_literal_money_in_plan(plan))
 
     # Against PAYABLE, not consumption. Checking total_nzd here meant the
     # repair loop never fired for a plan whose shopping list busted the budget

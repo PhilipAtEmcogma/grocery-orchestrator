@@ -76,18 +76,51 @@ the text the user reads is not the text that was validated. Both are inside the
 node's try, so a failure degrades — the sentence is dropped and the cited table
 still ships.
 
-`run_turn()` deliberately does NOT call
-`assert_no_literal_money_in_response()`, and the entry that used to list this
-as an open gap was misleading. `run_turn` raises on the assertions it calls, so
-wiring the money rule in there would turn "you lose the sentence" into "you
-lose the turn" for the one case it is most likely to fire on — contradicting
+**Where money is rejected, and what happens when it is found.** One rule; the
+consequence depends on who wrote the text and whether it is essential. That
+split is what Req 3.7 states, and neither this file nor `tasks.md` implemented
+it until the two were reconciled:
+
+| Text | Author | On a violation |
+|---|---|---|
+| Prose sentence (`TokenEvent.text`) | model | drop the sentence, ship the table (`generate_prose`) |
+| `Meal.name`, `Ingredient.item`, `Ingredient.qty` | model | validation error → bounded repair → `emit_plan_generation_failed` |
+| Comparison reasoning, notice messages | code | CI, via `validate.py` over `samples/` |
+| `ErrorEvent.message`, `NoDataEvent.message` | code | **not checked, deliberately** |
+
+`run_turn()` calls `assert_no_model_authored_money()`, NOT the wider
+`assert_no_literal_money_in_response()`. The narrow one covers the plan's
+model-authored free text and can only fire on a bug, because `validate_plan`
+already rejects those fields and the router discards a plan that never came
+back clean. The wide one also covers prose, and raising on prose in `run_turn`
+would turn "you lose the sentence" into "you lose the turn" — contradicting
 the rule in `tests/test_prose.py` that a table with no sentence beats a
-sentence with a wrong price. It is also narrower than it sounds: prose is the
-only model-authored user-visible text in the graph. `generate_comparison` gets
-no model at all, so comparison reasoning is an f-string built in Python, and
-notice and error messages are code-written. `validate.py` runs the
-whole-response assertion over `samples/` in CI, which is where it earns its
-keep.
+sentence with a wrong price. `validate.py` runs the wide one over `samples/`
+in CI, which is where it earns its keep.
+
+**This file previously claimed prose was "the only model-authored user-visible
+text in the graph". That was false**, and the false claim was the argument for
+leaving the plan's own text unchecked. `DraftMeal.name`,
+`DraftIngredient.item` and `DraftIngredient.qty_display` are model-authored
+free text that `assemble_plan` passes through untouched. A plan naming a meal
+`Budget Pasta — only $4.99 a head` with an ingredient `Butter (was 7.50, now
+5.00)` cleared `assert_grounded`, `assert_arithmetic` and
+`assert_no_literal_money_in_response` together, shipping a fabricated "was"
+price. `SYSTEM_PROMPT` already said "NEVER state a price"; nothing verified
+it, and an instruction a model can ignore is precisely what this codebase
+replaces with a check everywhere else.
+
+The two exclusions are exclusions, not oversights. `ErrorEvent.message`
+restates the user's OWN budget — "I couldn't build a plan within $15" — the
+constraint they supplied, not a price we are claiming, and dropping it makes
+the refusal harder to act on. `NoDataEvent` echoes their search term; a
+blanket check there would also let a user fail their own turn by typing a
+dollar sign. Both are safe only while those messages stay code-authored.
+
+`LITERAL_MONEY` has exactly one definition, in `src/schemas/contract.py`;
+`src/prompts/prose.py` imports it. It used to hold a byte-for-byte equivalent
+copy — equivalent copies being the dangerous kind, since nothing is wrong and
+so nothing flags the day one of them is tuned.
 
 **2. Honest failure over plausible answers (Req 4).**
 - No confident match → return nothing, never the nearest match. Substring
@@ -216,7 +249,7 @@ managed-evaluation stages are planned or proposed, not built.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 453 passed, 31 skipped, no AWS
+python -m pytest -q                              # 466 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -570,7 +603,8 @@ fixtures, not by anyone who knows about food. Bounded by tests to a
 get refused outright, so it should not stay unreviewed indefinitely. Brief:
 `docs/OPEN-REVIEW-min-grams-per-person-day.md`.
 
-**Known pilot blockers:** Task 2 exact record/value and runtime money follow-up;
+**Known pilot blockers:** Task 2 exact record/value follow-up (the runtime
+money half closed 2026-08-29);
 Task 3 qualifying live Guardrail follow-up; clarification (payable totals
 are DONE — MealPlan carries payable_total_nzd and within_budget follows it);
 location/freshness; idempotency fencing/candidate scale; model qualification;

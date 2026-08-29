@@ -201,6 +201,15 @@ infra/                     AWS CDK (TypeScript) — not started
   rendered string, since placeholders expand between them and only the second
   reaches the user. Both degrade: the sentence is dropped, the cited table
   ships.
+- ✅ **A meal name is model-authored text too.** `PlanDraft` has no price
+  field, so a price cannot reach a *structured* slot — but the meal name, the
+  ingredient name and the quantity are free text the model writes and the user
+  reads, and nothing checked them. A plan naming a meal `Budget Pasta — only
+  $4.99 a head` with an ingredient `Butter (was 7.50, now 5.00)` passed every
+  assertion in the system, shipping a fabricated "was" price. The prompt had
+  said "NEVER state a price" since the beginning; that is the kind of promise
+  this codebase replaces with a check. Now a validation error, repaired
+  through the bounded loop, and refused honestly if repair cannot fix it.
 
 ### Honest failure
 
@@ -246,7 +255,7 @@ infra/                     AWS CDK (TypeScript) — not started
 
 ### Tests, evals and CI
 
-- ✅ **453 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **466 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -348,7 +357,7 @@ python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
 And to check it:
 
 ```bash
-pytest                     # 453 passing, 31 skipped
+pytest                     # 466 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py       # 76.7% scripted baseline

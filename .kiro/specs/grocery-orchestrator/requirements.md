@@ -175,11 +175,17 @@ prices remain in citation events and structured content with `citation_ref`.
 Non-essential text that violates this rule shall be discarded. Essential
 structured content that violates it shall fail the response rather than
 degrade.
-*Implemented scope after Pilot Task 2: renderer labels and deterministic
-comparison reasoning are money-free, generated samples were regenerated, and
-`assert_no_literal_money_in_response()` covers token text, comparison reasoning,
-and notice messages with negative controls. Whole-response runtime enforcement
-remains a gap because `run_turn()` does not yet call that assertion.*
+*Implemented after Pilot Task 2 and its follow-up (a), 2026-08-29. Renderer
+labels and deterministic comparison reasoning are money-free and the samples
+were regenerated. The essential/non-essential split this criterion states is
+now what the code does: prose is discarded at `generate_prose`, and money in
+the plan's model-authored text (`Meal.name`, `Ingredient.item`,
+`Ingredient.qty`) is a validation error that fails the plan through the bounded
+repair loop rather than degrading. `run_turn()` calls
+`assert_no_model_authored_money()`; `validate.py` runs the whole-response
+assertion over `samples/` in CI. `ErrorEvent.message` and `NoDataEvent.message`
+are excluded by design: they restate the user's own budget or search term, not
+a price the system is claiming.*
 
 3.8 **THE SYSTEM SHALL** emit a citation before every event that references it
 and shall reject a response whose event ordering violates this rule.
