@@ -47,6 +47,7 @@ from src.graph.nodes.plan import generate_plan
 from src.graph.state import GroceryState
 from src.models.base import GuardrailBlocked, ModelClient, ModelError
 from src.models.registry import ModelSpec
+from src.retrieval.filters import pin_to_fixture_snapshot
 from src.retrieval.memory import InMemoryPriceRepository
 from src.schemas.contract import Citation, MealPlan, SourceRef, find_literal_money_in_plan
 
@@ -327,6 +328,10 @@ def _gate(card: Scorecard, floor: float | None) -> int:
 
 
 def main() -> int:
+    # Freshness is judged as of the fixture capture, not the wall clock: these
+    # run against a committed SNAPSHOT, and judging a snapshot against today
+    # makes every price stale on a date nobody chose. See filters.py.
+    pin_to_fixture_snapshot()
     parser = argparse.ArgumentParser(description="Repair-pass eval")
     parser.add_argument("--model", help="Model key to pin, e.g. nova-lite")
     parser.add_argument("--min-pass-rate", type=float)

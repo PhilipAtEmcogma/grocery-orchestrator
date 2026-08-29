@@ -69,6 +69,7 @@ classify_intent
   v
 retrieve_prices            <-- the ONLY source of prices
   |--- no citations -----> emit_no_data -------------> finalise
+  |--- all prices stale --> emit_stale_data ---------> finalise
   |--- price_check ------> generate_comparison -> generate_prose -> finalise
   v (meal_plan)
 generate_plan  <----------------+
@@ -279,6 +280,20 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
 
 - ✅ **Fixture repository** with deliberately inconsistent cross-store naming,
   to stress the retrieval normaliser.
+- ✅ **Location and freshness are enforced in the repository, not after it.**
+  A radius filter and a capture-date filter are parameters of
+  `cheapest_for_product` and `candidates_for_budget`, applied *before* the
+  limit. Filtering afterwards would return nothing for a product whose five
+  cheapest rows are all out of radius or out of date — and the graph reads
+  nothing as "I don't have price data for that", about a product stocked fresh
+  down the road. Both were previously declared and unread: a shopper in
+  Wellington got Auckland prices.
+- ✅ **Stale-only data is refused, not presented.** `STALE_DATA` naming the
+  capture date, retryable. The claim is not "here is a price" but "here is the
+  *cheapest* price", and that comparison can be wrong in a way a stale price
+  alone is not, because the winner changes when a special rotates. Freshness is
+  judged against an injectable date, so the committed fixture snapshot does not
+  rot into staleness on a day nobody chose.
 - ✅ **DynamoDB tables** created and seeded (`grocery-products-dev` with PITR,
   `grocery-idempotency-dev` with TTL); the price repository passes its shared
   live contract suite.
@@ -299,7 +314,7 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
 
 ### Tests, evals and CI
 
-- ✅ **545 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **564 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -404,7 +419,7 @@ python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
 And to check it:
 
 ```bash
-pytest                     # 545 passing, 31 skipped
+pytest                     # 564 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py       # 76.7% scripted baseline

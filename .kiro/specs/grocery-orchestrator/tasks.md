@@ -251,6 +251,57 @@ proposed, or gated as labelled; it is not implemented.
     it); what remains is the verified-consumption definition.
 - [ ] **Pilot Task 5 — Enforce location, store scope, and freshness.** Extend
   repository contracts and route stale-only data to an honest outcome.
+  - [x] **5a — Radius scope and freshness, enforced in the repository.**
+    Completed 2026-08-29. Both were DECLARED and unimplemented: `Location`
+    carried `lat`, `lon` and `radius_km`, `PriceRecord` carried `lat` and `lon`,
+    and nothing read either — a shopper in Wellington was served Auckland
+    prices. `STALE_DATA` existed in the error enum and appeared nowhere in
+    `src/`.
+
+    `PriceRepository` now takes `near` and `freshness` on both
+    `cheapest_for_product` and `candidates_for_budget`, and all three
+    implementations — in-memory, DynamoDB and the instrumented wrapper — apply
+    them BEFORE the limit. That ordering is the requirement, not an
+    optimisation: filtering afterwards returns nothing for a product whose five
+    cheapest rows are all out of radius or out of date, and the graph reads
+    nothing as `no_data`, telling a shopper we have no price for something
+    stocked fresh down the road. It is the same truncation defect Task 6 fixed
+    for the store filter, pushed down the same seam so it cannot come back.
+
+    Stale-only data returns `STALE_DATA` naming the capture date, retryable
+    because ingestion resolves it. Distinguished from `no_data` by a second
+    unfiltered query issued ONLY when the filtered one is empty: "everything I
+    hold is out of date" and "I hold nothing" are different facts and only one
+    is about the product. No location still means national results (Req 1.6),
+    and a location never silently widens back.
+
+    **The threshold is config** (`config/freshness.json`, 14 days) and is
+    measured against an INJECTABLE reference date. That is not a testing
+    convenience. Committed fixtures carry a fixed capture date, so under a wall
+    clock they drift into staleness as calendar time passes: judged against
+    today the meal-plan eval dropped to 18% and a demo failed, for reasons
+    nothing to do with the code. `pin_to_fixture_snapshot()` derives the date
+    from the fixture data itself — not a duplicated constant that can go stale —
+    and is called explicitly by the eval harnesses, the demos and the dev
+    server. Production sets nothing and gets the wall clock.
+
+    17 tests added; 547 -> 564 passing. Verified by mutation: ignoring the
+    location fails 3, presenting stale data fails 5, and filtering after the
+    limit fails 1 — that last one only after the test was strengthened to use
+    Devonport, the DEAREST butter, because the original used Mangere which
+    happens to hold the national cheapest and so passed against a deliberately
+    broken implementation.
+
+    Two pieces of collateral honesty: the observability tests carried a
+    Wellington location ~490km from every fixture store, which had been
+    harmless only because the filter did not exist; and `Philip_demo/06` still
+    used the pre-fencing `complete()` signature from Task 6, caught by
+    `run_all.py`'s drift gate.
+  - [ ] **5b — Named regions, still blocked on the frontend.** The teammate's
+    scenarios ask for "near Albany", "North Shore", "West Auckland" in 4 of 5
+    cases, and `Location` cannot express a place without coordinates. This is
+    frontend question 2 in `CONTRACT-v1.md`, proposed default recorded, awaiting
+    an answer.
 - [ ] **Pilot Task 6 — Harden DynamoDB access and idempotency.** Hash the
   canonical validated request; owner-fence acquire/takeover/complete/release;
   add shared contract/race/pagination tests, all-table PITR evidence, and a

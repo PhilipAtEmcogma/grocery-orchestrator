@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Protocol
 
+from src.retrieval.filters import FreshnessFilter, NearFilter
 from src.schemas.contract import Store
 
 
@@ -62,6 +63,8 @@ class PriceRepository(Protocol):
         *,
         limit: int = 5,
         stores: list[Store] | None = None,
+        near: NearFilter | None = None,
+        freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         """
         All stores' prices for one product, CHEAPEST FIRST.
@@ -81,6 +84,15 @@ class PriceRepository(Protocol):
         intersection ("preferred AND nearby" matching nothing) would return the
         very stores the user ruled out. Callers wanting "any store" pass None
         explicitly — see the retrieval node.
+
+        `near` and `freshness` are applied BEFORE `limit`, and that ordering is
+        the requirement rather than an optimisation. Filtering after the limit
+        would return nothing for a product whose five cheapest rows all happen
+        to be out of radius or out of date, and the graph reads nothing as
+        `no_data` — telling a shopper we have no price for something stocked
+        fresh at the shop down the road. Implementations that cannot push these
+        down to the query must over-fetch and page until the limit is satisfied
+        from records that pass both.
         """
         ...
 
@@ -101,6 +113,8 @@ class PriceRepository(Protocol):
         exclude_categories: list[str],
         limit_per_category: int = 3,
         budget_nzd: Decimal | None = None,
+        near: NearFilter | None = None,
+        freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         """
         Affordable options across categories, used to build a meal-plan basket.

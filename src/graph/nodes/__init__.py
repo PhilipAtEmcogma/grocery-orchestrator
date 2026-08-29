@@ -12,7 +12,7 @@ own mapping.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 
 from src.graph.dietary import map_exclusions, supported_terms
@@ -22,6 +22,12 @@ from src.graph.nodes.plan import generate_plan as generate_plan
 from src.graph.nodes.prose import generate_prose as generate_prose
 from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState
 from src.retrieval.base import PriceRepository
+from src.retrieval.filters import (
+    FreshnessFilter,
+    NearFilter,
+    max_price_age_days,
+    reference_date,
+)
 from src.schemas.contract import (
     Citation,
     CitationEvent,
@@ -91,6 +97,74 @@ def validate_input(state: GroceryState) -> dict:
     }
 
 
+def _near_filter(state: GroceryState) -> NearFilter | None:
+    """
+    The request's location as a repository filter, or None for national.
+
+    Req 1.6 is explicit that no location means national results rather than a
+    refusal, so None here is a legitimate answer and not a missing value.
+    """
+    location = state.get("location")
+    if not location:
+        return None
+    return NearFilter(
+        lat=float(location["lat"]),
+        lon=float(location["lon"]),
+        radius_km=float(location.get("radius_km") or 10.0),
+    )
+
+
+def current_freshness(as_of: date | None = None) -> FreshnessFilter:
+    """
+    The staleness rule, from config, against an injectable reference date.
+
+    `as_of` is a parameter rather than a call to `date.today()` inside because
+    the committed fixtures carry a fixed capture date. Under a wall clock they
+    drift into staleness as calendar time passes and every demo turns red on a
+    day nobody chose; a suite whose result depends on when you run it is not a
+    suite.
+    """
+    return FreshnessFilter(as_of=as_of or reference_date(), max_age_days=max_price_age_days())
+
+
+def emit_stale_data(state: GroceryState) -> dict:
+    """
+    Everything we hold for this request is too old to stand behind.
+
+    Not a `no_data`: we HAVE prices, and saying otherwise would be false. Not a
+    silent answer either. The product's claim is not "here is a price" but
+    "here is the CHEAPEST price", and a comparison drawn from stale rows can be
+    wrong in a way a stale price alone is not, because the winner changes when a
+    special rotates. ACQUISITION-RISK.md finds the binding constraint is the
+    Fair Trading Act and that it attaches to the comparison published rather
+    than to the fetch, which is what makes this a refusal rather than a
+    disclaimer.
+
+    The capture date is named so the answer is checkable rather than merely
+    apologetic.
+    """
+    stale = state.get("stale_only") or {}
+    newest = max(stale.values(), default="")
+    items = _join(sorted(stale))
+    return {
+        "terminated": True,
+        "events": [
+            ErrorEvent(
+                seq=_next_seq(state),
+                code=ErrorCode.STALE_DATA,
+                # The data may well refresh; this is worth trying again later,
+                # unlike a budget that genuinely does not stretch.
+                retryable=True,
+                message=(
+                    f"My prices for {items} were last checked on {newest}, which is "
+                    f"too long ago to compare them fairly — specials change weekly. "
+                    f"I'd rather say so than quote you a price that has moved."
+                ),
+            )
+        ],
+    }
+
+
 def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
     """
     The grounding node. The ONLY place Citations are created.
@@ -112,9 +186,24 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
     days_covered = constraints.get("days", 1)
     infeasible_upfront = False
 
+    # Req 1.5/1.6 and 8.4. Both filters are handed to the REPOSITORY rather
+    # than applied to what it returns: filtering afterwards would drop an
+    # in-radius, in-date price behind five that are neither, and the graph reads
+    # an empty list as `no_data`.
+    #
+    # No location means national results (Req 1.6), never a refusal. A location
+    # narrows and must never silently widen back.
+    near = _near_filter(state)
+    freshness = current_freshness()
+
     records: list = []
     item_groups: dict[str, list[str]] = {}
     unresolved: list[str] = []
+    # Items that HAVE prices, all of them too old to stand behind. Kept apart
+    # from `unresolved` because "I have nothing for that" and "everything I have
+    # is six weeks old" are different facts and only one of them is about the
+    # product.
+    stale_only: dict[str, str] = {}
     skipped: list[str] = []
     citations: list[Citation] = []
     events: list = []
@@ -152,7 +241,23 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         skipped = list(requested[MAX_ITEMS_PER_TURN:])
         for term in requested[:MAX_ITEMS_PER_TURN]:
             key = repo.resolve_product_key(term)
-            found = repo.cheapest_for_product(key, limit=5, stores=stores) if key else []
+            found = (
+                repo.cheapest_for_product(
+                    key, limit=5, stores=stores, near=near, freshness=freshness
+                )
+                if key
+                else []
+            )
+            if key is not None and not found:
+                # Nothing fresh. Ask again without the freshness filter, ONLY
+                # to tell "we hold nothing for this" apart from "everything we
+                # hold is out of date". A second query costs one round trip on
+                # a path that is already returning nothing, and it buys the
+                # difference between an honest refusal and a misleading one.
+                aged = repo.cheapest_for_product(key, limit=1, stores=stores, near=near)
+                if aged:
+                    stale_only[term] = aged[0].valid_date
+                    continue
             if key is None or not found:
                 unresolved.append(term)
                 continue
@@ -184,7 +289,22 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
             exclude_categories=exclude_categories,
             limit_per_category=3,
             budget_nzd=budget,
+            near=near,
+            freshness=freshness,
         )
+        if not candidates:
+            # Same question as the price-check path: is the catalogue empty for
+            # this request, or merely out of date? A plan costed from stale
+            # prices is a shopping list whose total is fiction.
+            aged = repo.candidates_for_budget(
+                categories=MEAL_CATEGORIES,
+                exclude_categories=exclude_categories,
+                limit_per_category=1,
+                budget_nzd=budget,
+                near=near,
+            )
+            if aged:
+                stale_only["your meal plan"] = max(r.valid_date for r in aged)
 
         # Refuse before generating when the budget cannot cover the request at
         # any price. Checked here rather than after costing a draft because
@@ -229,6 +349,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         )
 
     return {
+        "stale_only": stale_only,
         "records": records,
         "citations": citations,
         "citation_index": {c.ref: c for c in citations},
@@ -595,6 +716,11 @@ def route_after_intent(state: GroceryState) -> str:
 
 def route_after_retrieval(state: GroceryState) -> str:
     if not state.get("citations"):
+        # Checked before no_data: "everything I have is out of date" is a
+        # different and truer statement than "I have nothing", and only one of
+        # them is about the product.
+        if state.get("stale_only"):
+            return "stale"
         return "no_data"
     # Checked before "plan": there is no point spending a model call on a
     # request the catalogue's own cheapest prices say is impossible.

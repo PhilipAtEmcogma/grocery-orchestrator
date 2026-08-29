@@ -260,6 +260,25 @@ one day. That is a real answer to a question nobody asked. What we DO read is
 what you actually said: "3 university flatmates" is a household of three, and
 "tonight" is one day — a single meal is a stated duration, not a missing one.
 
+### Location scope and price freshness
+
+`location` narrows results to stores within `radius_km`; omitting it returns
+national results rather than a refusal. A location **never silently widens back
+to national** — if nothing is in range you get `no_data` for that item, because
+a shopper who asked for prices near them and received prices 500km away has been
+answered confidently and uselessly.
+
+Every citation carries `valid_date`, and prices older than the configured
+threshold are excluded before any comparison is built. If some are fresh, the
+comparison is made from those alone. If **every** price for the request is
+stale, the turn returns `STALE_DATA` naming the newest capture date it found,
+and it is **retryable** — ingestion resolves it.
+
+That is a refusal rather than a disclaimer because the product's claim is not
+"here is a price" but "here is the *cheapest* price", and a comparison drawn
+from stale rows can be wrong in a way a stale price alone is not: the winner
+changes when a special rotates.
+
 ### Money is sent as a string
 
 `"price_nzd": "3.49"` — a **string**, not a float. Parse with a decimal library,

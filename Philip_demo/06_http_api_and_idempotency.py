@@ -41,6 +41,7 @@ from pathlib import Path
 
 from _demo_support import heading, section
 
+import src.store.idempotency as idempotency
 from src.handler import lambda_handler
 from src.schemas.contract import (
     ChatRequest,
@@ -124,13 +125,35 @@ print(f"  key = {key}")
 
 first = store.acquire(key, fingerprint(payload))
 print(f"  first acquire:  {first.status.value}")
-store.complete(key, '{"events": ["... the original response ..."]}')
+print(f"  claim token:    {(first.claim_token or '')[:8]}...")
+# complete() is owner-conditional: it takes the token acquire() handed back.
+store.complete(key, first.claim_token or "", '{"events": ["... the original response ..."]}')
 
 second = store.acquire(key, fingerprint(payload))
 print(f"  second acquire: {second.status.value}")
 print(f"  cached body returned: {second.cached_response}")
 print("\n  A retry after a client timeout must not plan the meals twice, bill")
 print("  twice, or return a different answer for the same question.")
+
+section("4b. A superseded invocation cannot overwrite the newer claim")
+fenced = InMemoryIdempotencyStore()
+key3 = make_key("sess-http04", "turn-http04")
+slow = fenced.acquire(key3, fingerprint(payload))
+print(f"  invocation A acquires:      {(slow.claim_token or '')[:8]}...")
+
+# A stalls past the in-progress timeout and B legitimately takes the claim over.
+idempotency.IN_PROGRESS_TIMEOUT_SECONDS = -1
+took_over = fenced.acquire(key3, fingerprint(payload))
+idempotency.IN_PROGRESS_TIMEOUT_SECONDS = 60
+print(f"  invocation B takes over:    {(took_over.claim_token or '')[:8]}...  (token rotated)")
+
+print(f"  A tries to complete:        {fenced.complete(key3, slow.claim_token or '', '{}')}")
+print(f"  A tries to release:         {fenced.release(key3, slow.claim_token or '')}")
+b_wrote = fenced.complete(key3, took_over.claim_token or "", '{"fresh": 1}')
+print(f"  B completes:                {b_wrote}")
+print("\n  Without the fence, A's older answer would overwrite B's claim and be")
+print("  served to the next retry as cached truth - or A's release would delete")
+print("  B's marker and let a third invocation start the same turn again.")
 
 section("5. In-flight replay is a conflict, not a race")
 key2 = make_key("sess-http03", "turn-http03")

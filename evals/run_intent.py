@@ -46,6 +46,7 @@ from src.graph.state import GroceryState
 from src.models.base import GuardrailBlocked, ModelClient
 from src.models.registry import ModelSpec
 from src.models.scripted import ScriptedModelClient
+from src.retrieval.filters import pin_to_fixture_snapshot
 from src.retrieval.memory import InMemoryPriceRepository
 
 CASES = Path(__file__).parent / "cases" / "intent.json"
@@ -274,6 +275,10 @@ def report(card: Scorecard, spec: ModelSpec | None = None, verbose: bool = False
 
 
 def main() -> int:
+    # Freshness is judged as of the fixture capture, not the wall clock: these
+    # run against a committed SNAPSHOT, and judging a snapshot against today
+    # makes every price stale on a date nobody chose. See filters.py.
+    pin_to_fixture_snapshot()
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", help="Model key to pin, e.g. claude-haiku")
     parser.add_argument("--compare", nargs="+", help="Compare several model keys")

@@ -39,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from evals._pacing import DEFAULT_MAX_RPM, pace_bedrock_calls
 from src.handler import lambda_handler
+from src.retrieval.filters import pin_to_fixture_snapshot
 
 CASES_PATH = Path(__file__).parent / "cases" / "guardrail.json"
 
@@ -342,6 +343,10 @@ def verdict(card: Scorecard) -> int:
 
 
 def main() -> int:
+    # Freshness is judged as of the fixture capture, not the wall clock: these
+    # run against a committed SNAPSHOT, and judging a snapshot against today
+    # makes every price stale on a date nobody chose. See filters.py.
+    pin_to_fixture_snapshot()
     parser = argparse.ArgumentParser(description="Guardrail red-team eval")
     parser.add_argument(
         "--model",

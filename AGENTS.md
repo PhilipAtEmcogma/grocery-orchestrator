@@ -171,6 +171,7 @@ validate_input -> classify_intent
                     +-- meal_plan + missing constraint ---> emit_clarification
                     `-- retrieve_prices
                          +-- no citations -------> emit_no_data
+                         +-- all prices stale ---> emit_stale_data
                          +-- budget impossible --> emit_budget_infeasible
                          +-- price_check -> generate_comparison -> generate_prose
                          `-- meal_plan -> generate_plan -> validate_plan
@@ -188,6 +189,20 @@ always emits `done` — including after an error. The four terminals differ
 because they are four different facts: the budget genuinely does not stretch,
 we could not build a plan we trust, the model plane failed, or the request was
 impossible before we started.
+
+**Location and freshness are repository parameters, not post-filters.** `near`
+and `freshness` go into `cheapest_for_product` and `candidates_for_budget` and
+are applied BEFORE the limit, by all three implementations. Filtering the
+returned list instead would drop an in-radius, in-date price behind five that
+are neither, and the graph reads an empty list as `no_data` — the same
+truncation defect Task 6 fixed for the store filter.
+
+Freshness is judged against an INJECTABLE date (`FRESHNESS_AS_OF`), not the wall
+clock. The committed fixtures are a snapshot with a fixed capture date; judged
+against today they rot, and the meal-plan eval drops to 18% for reasons nothing
+to do with the code. `pin_to_fixture_snapshot()` derives the date from the
+fixture data and is called by the evals, the demos and the dev server.
+Production sets nothing.
 
 **Three protocol boundaries** make everything testable without AWS:
 - `src/retrieval/base.py` — `PriceRepository`; fixture and DynamoDB
@@ -283,7 +298,7 @@ managed-evaluation stages are planned or proposed, not built.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 545 passed, 31 skipped, no AWS
+python -m pytest -q                              # 564 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \

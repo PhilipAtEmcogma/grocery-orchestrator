@@ -36,6 +36,7 @@ from src.observability.base import (
     TurnStats,
 )
 from src.retrieval.base import PriceRecord, PriceRepository
+from src.retrieval.filters import FreshnessFilter, NearFilter
 
 if TYPE_CHECKING:
     from src.schemas.contract import Store
@@ -65,11 +66,19 @@ class InstrumentedPriceRepository(PriceRepository):
         *,
         limit: int = 5,
         stores: list[Store] | None = None,
+        near: NearFilter | None = None,
+        freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         with self._span("cheapest_for_product") as span:
             started = time.perf_counter()
             try:
-                found = self._inner.cheapest_for_product(product_key, limit=limit, stores=stores)
+                found = self._inner.cheapest_for_product(
+                    product_key,
+                    limit=limit,
+                    stores=stores,
+                    near=near,
+                    freshness=freshness,
+                )
             finally:
                 self._record(started)
             # Counts, not the product key. The key is a catalogue identifier
@@ -101,6 +110,8 @@ class InstrumentedPriceRepository(PriceRepository):
         exclude_categories: list[str],
         limit_per_category: int = 3,
         budget_nzd: Decimal | None = None,
+        near: NearFilter | None = None,
+        freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         with self._span("candidates_for_budget") as span:
             started = time.perf_counter()
@@ -110,6 +121,8 @@ class InstrumentedPriceRepository(PriceRepository):
                     exclude_categories=exclude_categories,
                     limit_per_category=limit_per_category,
                     budget_nzd=budget_nzd,
+                    near=near,
+                    freshness=freshness,
                 )
             finally:
                 self._record(started)
