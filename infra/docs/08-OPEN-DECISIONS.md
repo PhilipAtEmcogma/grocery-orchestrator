@@ -1,0 +1,231 @@
+# 08 — Open Decisions
+
+> **Status: Design documentation. Not yet implemented.**
+>
+> These are the choices the team (and, where noted, the mentor) must settle
+> before or during implementation of the CDK app. Each states the question, the
+> options, the trade-off, and a **recommendation** — but the decision is yours.
+> Record the outcomes as ADRs or in the Kiro spec so they don't get re-litigated.
+
+## 1. Which DynamoDB tables are authoritative? — ✅ DECIDED (2026-08-29)
+
+**The problem.** Two naming lineages exist:
+
+- The **running service** uses `grocery-products-dev` (base + GSI `GSI1`) and
+  `grocery-idempotency-dev` — proven by the orchestrator IAM policy and the
+  README's "deployed" section.
+- [`datasets/dynamodb_schema/`](../../datasets/dynamodb_schema/) describes
+  `SmartGroceryProducts` (PK `primary_key`, GSI `CategoryPriceIndex`) and
+  `SmartGroceryRecipes`, tagged `Owner: AUT-AWS-DataPipeline`.
+
+These are **not the same tables named differently — they are two different data
+*models*, built by two sub-teams for two jobs** (confirmed by reading the
+retrieval code, the seed loader, and the actual data batches):
+
+- **Lineage A — the orchestrator *serving* schema (`grocery-*-dev`).** Authored
+  in [`DYNAMODB-SCHEMA.md`](../../DYNAMODB-SCHEMA.md). `grocery-products-dev`:
+  PK `store_key`, SK `product_key`, **GSI1** (`product_key`/`gsi1_sk` =
+  zero-padded price), money as a **String**, rich attributes (`canonical_name`,
+  `unit_price_nzd`, `pack_grams`, `lat`/`lon`, `valid_date`, `on_special`).
+  **Every line of running code reads this** — `src/retrieval/dynamo.py`,
+  `ingestion/handler.py`, both IAM roles, the tests, the citation/grounding
+  logic. Seeded today from `fixtures/products.json` (~150 curated items).
+- **Lineage B — the data team's *raw collected dataset* (`SmartGrocery*`).**
+  Described in [`datasets/DATA_SCHEMA.md`](../../datasets/DATA_SCHEMA.md).
+  `SmartGroceryProducts`: PK `primary_key`, GSI `CategoryPriceIndex`
+  (`category`/`price`), money as a **Number**, flat fields. Holds the **real**
+  collected data — 285 Pak'nSave + 300 New World products + 175 TheMealDB
+  recipes — in `batch-write-item` format. **No orchestrator code reads it.**
+
+**The relationship is input → serving store, not two candidates for one slot.**
+B is the real upstream data; A is the schema the orchestrator can actually
+serve from.
+
+**Consequences of the choice:**
+
+- **Adopt Lineage A (recommended).** The existing service runs **unchanged**;
+  IAM, retrieval, ingestion, citations, GSI1 cheapest-first, string-money
+  exactness and meal-plan candidate search already target it. The real data in
+  B becomes an **ingestion input**: transform B→A (map `primary_key`→
+  `store_key`/`product_key`, `price` Number→String, derive `gsi1_sk`/
+  `canonical_name`/`pack_grams`, etc.) in `ingestion/normalise.py`, then load.
+  **Low risk.**
+- **Adopt Lineage B.** You'd hold the real data in-table immediately, but you'd
+  have to **rewrite the backend**: new retrieval keys, no GSI1 cheapest-first,
+  reintroduce/fight the **float-money bug** (price is a Number), and **lose**
+  `canonical_name`/`unit_price`/`pack_grams`/`lat`/`lon`/`valid_date`/
+  `on_special` that grounding, location filtering, freshness and the meal
+  planner require; citations (exact table+PK+SK) need re-specifying.
+  **High cost; contradicts the authored schema and the grounding invariants.**
+
+**Decision (Philip, 2026-08-29).** Adopt **Lineage A** as authoritative
+(`grocery-products-dev`, `grocery-idempotency-dev`, later `grocery-meals-dev`).
+**Use Lineage B as the raw upstream dataset now** — its value is the 585 real
+products + 175 recipes — routed in through a **B→A transform in ingestion** (see
+[03 → IngestionStack → Data source](03-STACK-SPECS.md)), not as a serving table.
+If the physical `SmartGrocery*` tables exist in AWS, keep them as a raw-data
+staging store or export to S3 and retire them; the CDK **does not** adopt
+`SmartGrocery*` as serving tables. Rationale: this is a demo with a path to
+production, so pulling in the real data early (via the transform) is worth it,
+while the serving schema and all grounding invariants stay on Lineage A.
+
+**Still required before Task 9 (implementation, not decision):** confirm the
+live key schema with `aws dynamodb describe-table` and confirm which physical
+tables exist with `aws dynamodb list-tables` ([06 §0](06-DEPLOYMENT-GUIDE.md)).
+
+**Decided by:** Philip (service owner). Recorded in
+[ADR 0003](../../docs/adr/0003-infrastructure-as-code-and-resource-adoption.md).
+
+## 2. Table adoption strategy: reference (A) or `cdk import` (B)? (Task 9)
+
+**Options** (full detail in [03 StatefulStack](03-STACK-SPECS.md)):
+
+- **A — `fromTableAttributes`, unmanaged.** CDK only holds handles; zero
+  replacement risk; not "full IaC" for the tables.
+- **B — real `Table` + `RETAIN` + `cdk import`.** Full IaC; the tables are in
+  CloudFormation; higher risk if the CDK definition doesn't exactly match the
+  live schema.
+
+**Recommendation.** **A for the pilot**, upgrade to **B later** once the team has
+run `cdk import` on something disposable first. A delivers everything the CDK
+needs from the tables (grantable handles) with no chance of data loss.
+
+**Decision needed from:** the implementing engineer + reviewer.
+
+## 3. Guardrail: create new in CDK (A) or adopt existing `b1xezpqe04kx` (B)? (Task 10)
+
+**Options** (see [03 Guardrail](03-STACK-SPECS.md), [04 §8](04-SECURITY.md)):
+
+- **A — CDK creates and owns a new Guardrail** from `config/guardrail.json`. New
+  id; IAM follows the CDK token automatically; the existing `b1xezpqe04kx` is
+  retired after cutover.
+- **B — adopt the existing Guardrail id** and keep the hardcoded ARN.
+
+**Recommendation.** **A.** The Guardrail is cheap to recreate, and CDK ownership
+means the security policy is versioned with the stack and reproducible in
+another account — which is the whole point of IaC. Retire the old one once the
+new one is verified (13/13 must-block, 7/7 must-allow — Pilot Task 3 follow-up).
+
+**Decision needed from:** security reviewer.
+
+## 4. Step Functions: reuse the ASL JSON (A) or rebuild with L2 constructs (B)? (Task 13)
+
+**Options** (see [03 IngestionStack](03-STACK-SPECS.md)):
+
+- **A — pass [`config/ingestion-state-machine.json`](../../config/ingestion-state-machine.json)
+  through as an ASL string**, substituting `${AWS_*}` with CDK tokens. Reuses the
+  carefully-commented definition verbatim.
+- **B — rebuild with `stepfunctions` / `stepfunctions-tasks` L2 API.**
+  Type-checked, but re-expresses logic that already exists and is commented.
+
+**Recommendation.** **A**, at least initially — the JSON's comments encode
+*why* the Catch is inside the item processor and *why* `ResultPath` is null;
+re-deriving that in TypeScript risks losing the reasoning. Move to B only if the
+definition starts changing often.
+
+**Decision needed from:** the implementing engineer.
+
+## 5. Config-as-data: read `config/*.json` at synth (A) or port into TypeScript (B)?
+
+**Options** (see [02 §6](02-CDK-SCAFFOLD.md)):
+
+- **A — CDK reads the JSON at synth**, keeping one reviewable source of truth
+  shared with the (still-present) apply scripts.
+- **B — port policies/guardrail into TypeScript** and delete the JSON + apply
+  scripts.
+
+**Recommendation.** **A during migration** (both paths agree on one file), then
+**B once the apply scripts are retired**, so there's no dead code. Don't do B
+while the scripts are still the fallback — you'd have two sources drifting.
+
+**Decision needed from:** the implementing engineer.
+
+## 6. Does the running code read model ids / feasibility from SSM or env today?
+
+**The question.** [03 ServiceStack](03-STACK-SPECS.md) writes `config/models.json`
+and the feasibility floor to **SSM** (as the file headers predict). But the code
+today reads model ids from **env vars** (`BEDROCK_MODEL_*`) and may read
+feasibility from the bundled `config/feasibility.json`. If so, "operators retune
+via SSM without a deploy" isn't true yet — it needs a small application change to
+read from SSM at cold start.
+
+**Recommendation.** For the pilot, **bake the values as env vars** (simple, works
+with today's code) **and also publish them to SSM** as the forward path. Wire the
+code to read SSM as a **separate, small application task** (not infra), then flip
+the source. Track it as a follow-up on Pilot Task 7 (model plane) / Task 10.
+
+**Decision needed from:** the application owner.
+
+## 7. Frontend framework for the S3 + CloudFront chat UI (later)
+
+The UI doesn't exist yet (there's a `FRONTEND-INTEGRATION.md` contract only).
+Options, all static-hostable on S3+CloudFront (no server cost):
+
+| Option | Pros | Cons |
+|--------|------|------|
+| **Static HTML/JS** | matches the original architecture doc; zero build; cheapest; fastest to demo | least structure; hand-rolled state |
+| **React SPA (Vite)** | component structure; good DX; still a static export | a build step; more deps |
+| **Next.js static export + Tailwind** | matches the boilerplate brief; Tailwind; familiar | heaviest tooling for a single chat page; static-export caveats |
+
+**Recommendation (research-backed — full analysis in
+[09-FRONTEND](09-FRONTEND.md)).** A **React (Vite) SPA**, or **plain static
+HTML/JS** for the absolute minimum. Both are single-bundle SPAs that host on
+S3+CloudFront (OAC, SPA error-response fallback) at $0. **Next.js static export
+is the weakest fit** for a single anonymous chat page: its value is
+SSR/SSG/SEO/routing (none needed here) and its multi-file export forces a
+CloudFront URL-rewrite you'd otherwise avoid ([09 §2, §4](09-FRONTEND.md)).
+Whatever the choice, it consumes the `POST /chat` contract in
+[`FRONTEND-INTEGRATION.md`](../../FRONTEND-INTEGRATION.md) and its CloudFront
+domain becomes the API's `CORS_ORIGIN`.
+
+**Decision needed from:** Philip / the team (this was one of the original
+clarifying questions). See [09-FRONTEND](09-FRONTEND.md) for the researched
+comparison and references.
+
+## 8. CI/CD: GitHub Actions + OIDC (A), CodePipeline (B), or both (C)?
+
+**Options (research-backed — full spectrum + references in
+[05-CICD §5](05-CICD.md)):**
+
+- **A — hand-written GitHub Actions + OIDC.** Free; no long-lived keys; stable;
+  most widely understood; reuses the existing credential-free CI.
+- **B — `cdk-pipelines-github`.** Pipeline defined in CDK but *synthesised into*
+  GitHub Actions workflows, still $0 + OIDC — but **experimental** (API may
+  change).
+- **C — CodePipeline / CDK Pipelines.** In the brief; ~$1/mo + build minutes;
+  AWS-native; best for multi-account promotion at market stage.
+
+**Recommendation.** Implement **A now** (free; adds OIDC to the team's AWS
+experience; current best-practice consensus favours it over self-mutating CDK
+Pipelines for most teams). Keep **C** documented ([05 §4](05-CICD.md)) for the
+market build, and note **B** as the CDK-native $0 path to graduate to once the
+team wants the pipeline in TypeScript and can track an experimental API.
+
+**Decision needed from:** Philip / DevOps owner. See [05-CICD §5](05-CICD.md).
+
+## 9. When does Cognito / WAF land?
+
+Not in the pilot (anonymous). `security.md` gates them *before* any user-owned
+or public managed surface. The API's authorizer seam is left explicit so adding
+a Cognito authorizer later is a one-line method change ([03 API Gateway](03-STACK-SPECS.md)).
+
+**Recommendation.** Defer both to the first non-anonymous milestone; note the
+cost of WAF ([07 §4](07-COST-AND-SCALING.md)). No action now beyond keeping the seam.
+
+**Decision needed from:** product owner / mentor, at the public-launch milestone.
+
+---
+
+## Decision log (fill in as you go)
+
+| # | Decision | Choice | Date | By | Recorded in |
+|---|----------|--------|------|-----|-------------|
+| 1 | Authoritative tables | Lineage A serving; B = upstream via B→A transform | 2026-08-29 | Philip | ADR 0003, §1, [03 IngestionStack](03-STACK-SPECS.md) |
+| 2 | Adoption strategy | | | | |
+| 3 | Guardrail create vs adopt | | | | |
+| 4 | Step Functions ASL vs L2 | | | | |
+| 5 | Config read vs port | | | | |
+| 6 | SSM vs env for model/feasibility | | | | |
+| 7 | Frontend framework | | | | |
+| 8 | CI/CD approach | | | | |
+| 9 | Cognito/WAF timing | | | | |

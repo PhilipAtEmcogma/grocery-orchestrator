@@ -1,0 +1,30 @@
+{
+  "_comment": "SCAFFOLD — reviewable skeleton for the Smart Grocery CDK app. NOT wired to deploy anything yet (the stacks are stubs; see lib/*.ts and infra/docs/). Pins are indicative; run `npm install` to resolve the latest compatible 2.x before implementing. Node 20+.",
+  "name": "grocery-infra",
+  "version": "0.0.0",
+  "private": true,
+  "bin": {
+    "grocery": "bin/grocery.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "deploy": "cdk deploy"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.0",
+    "aws-cdk": "^2.160.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.5.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.160.0",
+    "constructs": "^10.3.0"
+  }
+}
