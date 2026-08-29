@@ -225,10 +225,40 @@ wrong number for a budget.
 
 ### Missing meal-plan constraints
 
-Budget, household size, and duration are required to produce a meaningful
-plan. The target behavior is a contract-valid clarification when one is
-missing. The exact additive v1 event/message representation will be agreed with
-the frontend before Pilot Task 4 changes the executable schema.
+Budget, household size and duration are all required to produce a meaningful
+plan. When any is missing the turn returns a **`clarification` event** instead
+of a plan, and no error:
+
+```json
+{
+  "seq": 2,
+  "type": "clarification",
+  "missing": ["days", "budget_nzd"],
+  "message": "Happy to plan that — I just need to know how many days it needs to cover and what you'd like to spend. For example: \"dinner for 3 people for 5 days on $80\"."
+}
+```
+
+`missing` names **`hints` fields exactly**, so you can raise the control that
+collects the value — the budget slider, the household stepper — rather than
+parsing the sentence. Send the next turn with those hints populated, or let the
+user restate it in words; either satisfies it.
+
+**It is not an error, and that is deliberate.** Nothing failed: the request was
+valid and we understood it. An `ErrorEvent` would make `retryable` the only
+signal, and a client reading `retryable: true` resends the identical request
+and loops forever. A `notice` would be wrong too, since a notice accompanies a
+result and this one replaces it.
+
+Additive under the v1 rules — your client already ignores unknown event types,
+so an older client sees a turn with no plan and no error, exactly what it saw
+before this existed. `samples/response_clarification.json` is the worked
+example.
+
+**We do not guess.** `household_size` and `days` used to default silently to 1,
+which meant an under-specified request got a confident plan for one person for
+one day. That is a real answer to a question nobody asked. What we DO read is
+what you actually said: "3 university flatmates" is a household of three, and
+"tonight" is one day — a single meal is a stated duration, not a missing one.
 
 ### Money is sent as a string
 

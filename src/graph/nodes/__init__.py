@@ -25,11 +25,13 @@ from src.retrieval.base import PriceRepository
 from src.schemas.contract import (
     Citation,
     CitationEvent,
+    ClarificationEvent,
     DoneEvent,
     ErrorCode,
     ErrorEvent,
     Intent,
     MealPlanEvent,
+    MissingConstraint,
     NoDataEvent,
     NoticeEvent,
     PriceComparison,
@@ -513,6 +515,65 @@ def finalise(state: GroceryState) -> dict:
 # --------------------------------------------------------------- routing
 
 
+# The three facts a meal plan cannot be built without. Ordered as a person
+# would ask for them: who am I feeding, for how long, and for how much.
+REQUIRED_FOR_PLAN: tuple[MissingConstraint, ...] = (
+    MissingConstraint.HOUSEHOLD_SIZE,
+    MissingConstraint.DAYS,
+    MissingConstraint.BUDGET_NZD,
+)
+
+_CONSTRAINT_QUESTIONS = {
+    MissingConstraint.HOUSEHOLD_SIZE: "how many people you're feeding",
+    MissingConstraint.DAYS: "how many days it needs to cover",
+    MissingConstraint.BUDGET_NZD: "what you'd like to spend",
+}
+
+
+def missing_plan_constraints(state: GroceryState) -> list[MissingConstraint]:
+    """
+    Which required planning facts the user has not supplied.
+
+    Reads absence rather than inferring a value, which is only possible because
+    `classify_intent` stopped defaulting household size and duration to 1. A
+    silent default is not a smaller version of this function -- it is this
+    function always returning an empty list, and answering a question nobody
+    asked.
+    """
+    constraints = state.get("constraints", {})
+    return [field for field in REQUIRED_FOR_PLAN if constraints.get(field.value) is None]
+
+
+def emit_clarification(state: GroceryState) -> dict:
+    """
+    Ask for what is missing instead of guessing it.
+
+    Before retrieval, for the same reason as `emit_dietary_unsupported`: there
+    is no point pricing a basket for a plan we have already decided we cannot
+    build, and a model call spent on an under-specified request is a model call
+    wasted against the latency budget.
+
+    The message names every missing fact at once. Asking for them one per turn
+    would be three round trips for a request the user could have completed in
+    one sentence.
+    """
+    missing = missing_plan_constraints(state)
+    asks = [_CONSTRAINT_QUESTIONS[field] for field in missing]
+    return {
+        "terminated": True,
+        "events": [
+            ClarificationEvent(
+                seq=_next_seq(state),
+                missing=missing,
+                message=(
+                    f"Happy to plan that — I just need to know {_join(asks)}. "
+                    f'For example: "dinner for 3 people for 5 days on $80".'
+                ),
+            )
+        ],
+    }
+
+
 def route_after_intent(state: GroceryState) -> str:
     intent = state.get("intent")
     # An unsupported dietary exclusion refuses the plan BEFORE retrieval:
@@ -522,6 +583,11 @@ def route_after_intent(state: GroceryState) -> str:
     # blocking it would refuse a legitimate query for no safety benefit.
     if intent == Intent.MEAL_PLAN and state.get("unsupported_exclusions"):
         return "dietary_unsupported"
+    # Checked after the dietary refusal: an exclusion we cannot honour is a
+    # safety matter and stays the reported reason even when the request is also
+    # under-specified. Asking for a budget first would bury it.
+    if intent == Intent.MEAL_PLAN and missing_plan_constraints(state):
+        return "clarify"
     if intent in (Intent.PRICE_CHECK, Intent.MEAL_PLAN):
         return "retrieve"
     return "finalise"

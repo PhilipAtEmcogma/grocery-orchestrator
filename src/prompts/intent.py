@@ -66,7 +66,16 @@ class IntentResult(BaseModel):
     )
     household_size: int | None = Field(default=None, ge=1, le=20)
     budget_nzd: Decimal | None = Field(default=None, gt=0, le=10000)
-    days: int | None = Field(default=None, ge=1, le=14)
+    days: int | None = Field(
+        default=None,
+        ge=1,
+        le=14,
+        description=(
+            "Days the plan must cover. A single meal IS a stated duration: "
+            "'tonight', 'this evening', 'a dinner' all mean 1. Null only when "
+            "the user said nothing about how long the plan should last."
+        ),
+    )
     dietary_exclusions: list[str] = Field(
         default_factory=list,
         description=(

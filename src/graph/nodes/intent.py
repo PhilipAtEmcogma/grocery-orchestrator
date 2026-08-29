@@ -88,8 +88,20 @@ def _reconcile(extracted: IntentResult, hints: dict) -> tuple[Constraints, list[
     )
     days = take("days", extracted.days, hints.get("days"), "duration of")
 
-    constraints["household_size"] = household if household is not None else 1
-    constraints["days"] = days if days is not None else 1
+    # Absent means ABSENT. These used to be silently defaulted to 1, which
+    # contradicts Req 6.3 -- "reject inference of unstated constraints" -- and,
+    # worse, destroyed the only evidence that the user had not said. A plan for
+    # one person over one day is a real answer to a question nobody asked, and
+    # it is indistinguishable downstream from a plan the user actually
+    # requested.
+    #
+    # Read sites that legitimately do not care keep their own `.get(..., 1)`:
+    # a price check needs no household size. The meal-plan path instead routes
+    # to `emit_clarification`, which is the whole point of knowing.
+    if household is not None:
+        constraints["household_size"] = household
+    if days is not None:
+        constraints["days"] = days
     if budget is not None:
         constraints["budget_nzd"] = budget
 

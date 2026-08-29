@@ -179,6 +179,7 @@ function handleEvent(ev, ui) {
     case "meal_plan":        ui.renderPlan(ev.data); break;
     case "notice":           ui.addInlineNote(ev.message); break;
     case "no_data":          ui.addAssistantReply(ev.message); break;
+    case "clarification":    ui.askFor(ev.missing, ev.message); break;
     case "error":            ui.showError(ev.code, ev.message, ev.retryable); break;
     case "done":             ui.stopSpinner(); break;
     default:                 break;   // see 2.3
@@ -321,7 +322,33 @@ That whole response is committed as
 [`samples/response_multi_comparison.json`](samples/response_multi_comparison.json)
 — load it as a fixture and check you get three cards.
 
-### 3.2 `no_data` and `notice` can appear *alongside* results, not only instead of them
+### 3.2 `clarification` asks for one more fact, and is not an error
+
+A meal plan needs three things: household size, duration and budget. When the
+message and `hints` between them do not supply all three, the turn returns a
+`clarification` event instead of a plan — **and no error**.
+
+```json
+{ "seq": 2, "type": "clarification",
+  "missing": ["days", "budget_nzd"],
+  "message": "Happy to plan that — I just need to know how many days it needs to cover and what you'd like to spend. For example: \"dinner for 3 people for 5 days on $80\"." }
+```
+
+`missing` names `hints` fields **exactly**, which is the point of it: raise the
+budget slider or the household stepper rather than parsing the sentence. Resend
+with those hints populated, or let the user restate it in words.
+
+Do not route this through your error UI. Nothing failed, and there is nothing to
+retry as-is — a client that resends the identical request will get the identical
+question back forever. Treat it as the assistant asking, because that is what it
+is.
+
+**We do not guess on your behalf.** `household_size` and `days` used to default
+silently to 1, so an under-specified request came back as a confident plan for
+one person for one day. What we DO read is what the user actually said: "3
+university flatmates" is a household of three, and "tonight" is one day.
+
+### 3.3 `no_data` and `notice` can appear *alongside* results, not only instead of them
 
 The original contract table describes `no_data` as "when we have no data", and
 `samples/response_no_data.json` shows it as the only content event in the turn.
@@ -383,7 +410,8 @@ other was ever heard — which reads as the app ignoring them.
 | `price_comparison` | `price_check` turns | Render a comparison table. **Possibly several per turn — append, don't replace.** Resolve each `citation_ref` against your citation map for the prices. |
 | `meal_plan` | `meal_plan` turns | Render meals plus the per-store shopping list. All prices via `citation_ref`. `repair_attempts` is observability — don't show it. |
 | `notice` | Occasionally, mid-turn | Small inline note: data age, an overridden hint, items we didn't check. Non-fatal, non-blocking. |
-| `no_data` | We have no data for an item | Render as a **normal assistant reply, not an error**. May appear alongside results (§3.2), and more than once. |
+| `clarification` | A plan needs one more fact | **Not an error.** Raise the control named in `missing` (a `hints` field) and resend; see §3.2. |
+| `no_data` | We have no data for an item | Render as a **normal assistant reply, not an error**. May appear alongside results (§3.3), and more than once. |
 | `error` | On failure | Show `ev.message` — it's already written to be user-safe. Offer retry if `ev.retryable`. |
 | `done` | Always last | Stop the spinner. **Emitted even after an `error`** — so `done` is the only reliable "turn finished" signal. |
 
@@ -451,7 +479,8 @@ are validated in CI, so if they drift from the implementation the build breaks.
 | [`samples/response_unsupported_exclusion.json`](samples/response_unsupported_exclusion.json) | **Failure case** — `UNSUPPORTED_EXCLUSION` for a dietary term we cannot honour (e.g. gluten-free) |
 | [`samples/response_guardrail_blocked.json`](samples/response_guardrail_blocked.json) | **Failure case** — `GUARDRAIL_BLOCKED` |
 | [`samples/response_multi_comparison.json`](samples/response_multi_comparison.json) | **§3.1** — three items, three `price_comparison` events, 15 citations |
-| [`samples/response_partial.json`](samples/response_partial.json) | **§3.2** — a partial answer: `no_data` at `seq 7`, results at `seq 10` |
+| [`samples/response_clarification.json`](samples/response_clarification.json) | **§3.2** — a plan request missing its duration and budget |
+| [`samples/response_partial.json`](samples/response_partial.json) | **§3.3** — a partial answer: `no_data` at `seq 7`, results at `seq 10` |
 
 The last two are captured verbatim from the dev server for the queries in §3, so
 they're the exact bytes your handler will see. Use them as the fixtures for your

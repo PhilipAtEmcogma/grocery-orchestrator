@@ -122,11 +122,21 @@ def _draft(*lines: tuple[str, str]) -> PlanDraft:
 
 
 def _plan_request(message: str, **hints) -> ChatRequest:
+    """
+    A COMPLETE planning request, unless a test says otherwise.
+
+    `days` is supplied by default because these tests exercise the planner, and
+    since Pilot Task 4 a meal-plan turn missing any required constraint is
+    answered with a clarification and never reaches `generate_plan`. Leaving it
+    out would make every test here silently assert against the clarification
+    path instead of the one it names.
+    """
+    hints.setdefault("days", 1)
     return ChatRequest(
         session_id="sess-plan01",
         turn_id="turn-plan01",
         message=message,
-        hints=ClientHints(**hints) if hints else None,
+        hints=ClientHints(**hints),
     )
 
 

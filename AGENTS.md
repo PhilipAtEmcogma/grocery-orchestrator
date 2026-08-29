@@ -168,6 +168,7 @@ and final emission.
 ```text
 validate_input -> classify_intent
                     +-- meal_plan + unsupported exclusion -> emit_dietary_unsupported
+                    +-- meal_plan + missing constraint ---> emit_clarification
                     `-- retrieve_prices
                          +-- no citations -------> emit_no_data
                          +-- budget impossible --> emit_budget_infeasible
@@ -282,7 +283,7 @@ managed-evaluation stages are planned or proposed, not built.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 531 passed, 31 skipped, no AWS
+python -m pytest -q                              # 545 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \

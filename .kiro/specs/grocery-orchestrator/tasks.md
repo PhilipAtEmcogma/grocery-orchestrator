@@ -210,6 +210,45 @@ proposed, or gated as labelled; it is not implemented.
 - [ ] **Pilot Task 4 — Correct request semantics and payable arithmetic.** Ask
   for missing required constraints and define verified consumption and
   full-pack payable totals.
+  - [x] **4a — Ask for a missing constraint instead of guessing it.** Completed
+    2026-08-29. `classify_intent` wrote `constraints["household_size"] =
+    household if household is not None else 1`, and the same for `days`. That
+    contradicts Req 6.3 — reject inference of unstated constraints — and worse,
+    it destroyed the only evidence the user had not said. A plan for one person
+    over one day is a real answer to a question nobody asked, and downstream it
+    is indistinguishable from a plan the shopper requested.
+
+    A new additive `clarification` event carries `missing`, naming `ClientHints`
+    fields exactly so a frontend can raise the control that collects the value
+    rather than parsing English. Deliberately NOT an `ErrorEvent`: nothing
+    failed, and `retryable` cannot express "retry with more information" — a
+    client reading `retryable: true` resends the identical request and loops.
+    Emitted before retrieval, like the dietary refusal, so no model call is
+    spent on a plan we have already decided we cannot build. An unsupported
+    dietary exclusion still takes precedence, because a restriction we cannot
+    honour is the more important thing to report.
+
+    **The teammate's dataset made the gap concrete.** `datasets/DATA_SCHEMA.md`
+    Scenario 5 — "Plan a quick dinner for 2 people that is completely
+    dairy-free" — states no budget and returned `PLAN_GENERATION_FAILED`, "I
+    couldn't put together a plan I trust this time", blaming us for a request
+    that was merely incomplete. It now asks.
+
+    Two pre-existing extraction defects fixed on the way, both of which would
+    have made clarification fire on facts the user plainly stated. "We are 3
+    university flatmates" extracted no household at all, because an adjective
+    sat between the number and the noun. And "dinners for 5 days on $90"
+    extracted a household of FIVE from the phrase "for 5 days" — inventing a
+    constraint from words that mean something else, the same Req 6.3 violation
+    from the other direction. Extraction also now reads a single meal as a
+    stated duration: "tonight" is one day, so Scenarios 2 and 4 still plan in a
+    single turn.
+
+    14 tests added; 531 -> 545 passing. All five eval baselines unchanged.
+    `samples/response_clarification.json` added and validated in CI.
+  - [ ] **4b — Verified consumption and payable arithmetic.** Payable totals are
+    already implemented (`MealPlan.payable_total_nzd`, `within_budget` follows
+    it); what remains is the verified-consumption definition.
 - [ ] **Pilot Task 5 — Enforce location, store scope, and freshness.** Extend
   repository contracts and route stale-only data to an honest outcome.
 - [ ] **Pilot Task 6 — Harden DynamoDB access and idempotency.** Hash the
