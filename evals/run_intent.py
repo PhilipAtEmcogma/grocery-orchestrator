@@ -40,6 +40,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from evals._pacing import DEFAULT_MAX_RPM, pace_bedrock_calls
 from src.graph.nodes.intent import classify_intent
 from src.graph.state import GroceryState
 from src.models.base import ModelClient
@@ -59,12 +60,23 @@ class CaseResult:
     latency_ms: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
+    # The model call failed and `classify_intent` fell back to keyword
+    # heuristics. Recorded because this harness CANNOT see such a failure any
+    # other way: the node degrades rather than raising, so a throttled run
+    # still produces a classification for every case and still reports a tidy
+    # accuracy -- one that measures the keyword fallback, not the model.
+    degraded: bool = False
 
 
 @dataclass
 class Scorecard:
     model_label: str
     results: list[CaseResult]
+
+    @property
+    def degraded(self) -> list[CaseResult]:
+        """Cases scored on the keyword fallback rather than on the model."""
+        return [r for r in self.results if r.degraded]
 
     @property
     def scored(self) -> list[CaseResult]:
@@ -176,8 +188,10 @@ def run(model: ModelClient, label: str) -> Scorecard:
         }
 
         started = time.perf_counter()
+        degraded = False
         try:
             out = classify_intent(state, model)
+            degraded = bool(out.get("intent_degraded"))
             failures = _check(case, out, repo)
         except Exception as exc:
             failures = [f"raised {type(exc).__name__}: {exc}"]
@@ -190,6 +204,7 @@ def run(model: ModelClient, label: str) -> Scorecard:
                 passed=not failures,
                 known_gap=case.get("known_gap"),
                 failures=failures,
+                degraded=degraded,
                 latency_ms=elapsed,
                 input_tokens=usage.get("input_tokens") or 0,
                 output_tokens=usage.get("output_tokens") or 0,
@@ -231,6 +246,18 @@ def main() -> int:
     parser.add_argument("--compare", nargs="+", help="Compare several model keys")
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument(
+        "--max-rpm",
+        type=int,
+        default=DEFAULT_MAX_RPM,
+        help=(
+            f"Bedrock requests per minute (default {DEFAULT_MAX_RPM}). This "
+            f"suite is 30 cases against a 10/min account limit for Claude. "
+            f"Unpaced, the tail is classified by the keyword FALLBACK rather "
+            f"than by the model, and the run reports a plausible accuracy for "
+            f"a model that answered a third of it. 0 disables pacing."
+        ),
+    )
+    parser.add_argument(
         "--min-accuracy",
         type=float,
         help=(
@@ -249,11 +276,12 @@ def main() -> int:
             "\nBaseline only. The scripted client is rule-based, so this measures "
             "the harness, not a model. Pass --model once Bedrock is configured."
         )
-        return _gate(card.accuracy, args.min_accuracy, "accuracy")
+        return _gate(card.accuracy, args.min_accuracy, "accuracy", card)
 
     from src.models.bedrock import BedrockModelClient
     from src.models.registry import ModelRegistry, RoutingPolicy
 
+    pace_bedrock_calls(args.max_rpm)
     registry = ModelRegistry()
     cards: list[tuple[Scorecard, ModelSpec]] = []
 
@@ -277,8 +305,22 @@ def main() -> int:
     return _gate(best, args.min_accuracy, "accuracy")
 
 
-def _gate(actual: float, floor: float | None, label: str) -> int:
+def _gate(actual: float, floor: float | None, label: str, card: Scorecard | None = None) -> int:
     """Regression floor. Absent a floor, reporting is the only job."""
+    # A degraded case was classified by the keyword fallback because the model
+    # call failed, so the accuracy is part model and part heuristic. Unlike the
+    # meal-plan harness, nothing here errors: `classify_intent` degrades by
+    # design, so an unpaced run against a 10/min quota still answers all 30
+    # cases and still prints a plausible percentage. That number is not a
+    # measurement of the model, and it is not a pass or a failure either.
+    if card is not None and card.degraded:
+        print(
+            f"\nINCONCLUSIVE: {len(card.degraded)}/{len(card.results)} cases fell back "
+            f"to keyword matching because the model call failed, so {actual:.1%} is "
+            f"partly the fallback's score. Re-run, and pace it (--max-rpm).",
+            file=sys.stderr,
+        )
+        return 2
     if floor is None:
         return 0
     if actual < floor:

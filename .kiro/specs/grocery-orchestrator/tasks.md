@@ -84,10 +84,55 @@ proposed, or gated as labelled; it is not implemented.
   exception to one handler mapping; three node propagation tests and one handler
   mapping test pass. The scripted harness gives 7/7 must-allow structural evidence. Offline gates
   passed on 2026-08-23.
-  - [ ] **Pilot Task 3 follow-up — Make live Guardrail evaluation qualifying.**
-    Make `--model` pin the requested route; stop counting `OUT_OF_SCOPE` as a
-    block; fail the process on any live must-block/must-allow miss; test those
-    controls; then record live 13/13 must-block and 7/7 must-allow evidence.
+  - [x] **Pilot Task 3 follow-up (a) — Make the harness's controls
+    trustworthy.** Completed 2026-08-29. All three named defects fixed and
+    pinned by tests that fail when each is reintroduced.
+
+    `--model` now resolves a spec through `RoutingPolicy.PINNED` and installs a
+    pinned `BedrockModelClient` into the handler, which the per-case reset
+    preserves. It previously set `USE_BEDROCK=1` and relabelled the report while
+    the registry routed per task, so any earlier scorecard headed with a model
+    name may have measured a different model.
+
+    `OUT_OF_SCOPE` is no longer a block. Outcomes are now four-way — `blocked`,
+    `allowed`, `refused_other`, `upstream` — and only a Guardrail intervention
+    counts as a block. Folding a classifier's "out of scope" into `blocked`
+    credited the policy with refusals it never made, on the thirteen prompts a
+    classifier is most likely to wave away. `must_allow` deliberately still
+    passes on anything that is not an intervention: a legitimate question
+    answered `BUDGET_INFEASIBLE` was not refused on safety grounds, and scoring
+    it as an over-block would report the planner's behaviour as the Guardrail's.
+    Those cases are counted separately as `answered_cleanly` and reported.
+
+    Exit codes are now 0 pass / 1 fail / 2 inconclusive, and a live must-block
+    miss returns 1. Previously `main()` gated only on the allow rate, so a live
+    run could print "FAIL: must_block rate 0%" and exit 0 — the one gate proving
+    the Guardrail blocks anything could not fail a build.
+
+    Two defects found while fixing those. The suite had NO tests at all, while
+    the meal-plan harness had 19; it now has 16. And it had no pacing: 20 cases
+    against a 10/min ceiling would fail the tail upstream, which on this suite
+    reads as the Guardrail letting unsafe content through. Pacing moved to
+    `evals/_pacing.py` and is shared by all three harnesses.
+
+    Separately hardened `run_intent.py`, because it produces the Claude
+    scorecard that Pilot Task 7 needs and was blind in a worse way:
+    `classify_intent` DEGRADES to keyword matching rather than raising, so an
+    unpaced run answers all 30 cases from the fallback and prints a plausible
+    accuracy for a model that answered a third of them. It now records
+    `intent_degraded` per case and returns exit 2 rather than a score.
+
+    Offline gates passed: 485 passed, 31 skipped; scripted baselines unchanged
+    at 7/7 must-allow, 76.7% intent, 100% meal-plan invariants.
+  - [ ] **Pilot Task 3 follow-up (b) — Record the live Guardrail result.**
+    Deferred to the batched live-AWS session, not because it is optional but
+    because it needs credentials and should happen alongside the Claude intent
+    scorecard and cache-utilisation evidence rather than in three separate
+    sittings. Acceptance is exit code 0 with 13/13 must-block and 7/7
+    must-allow against guardrail `b1xezpqe04kx` version `1`, paced.
+    **Runbook: `docs/LIVE-EVAL-RUNBOOK.md`** — preconditions, exit-code
+    meanings, the five traps that have already cost this project time, and
+    where to record the result.
 - [ ] **Pilot Task 4 — Correct request semantics and payable arithmetic.** Ask
   for missing required constraints and define verified consumption and
   full-pack payable totals.
@@ -401,12 +446,14 @@ must-block half — over-blocking is the usual failure mode of an aggressive
 policy, and a filter that refuses ordinary grocery questions is a broken
 product rather than a safe one.*
 
-*5.9's historical live-policy evidence remains incomplete. Pilot Task 3 added
-the harness and proved 7/7 scripted must-allow structure plus node-level
-exception propagation, but did not produce qualifying live 13/13 must-block and
-7/7 must-allow evidence. `--model` does not yet truly pin the requested model,
-`OUT_OF_SCOPE` can count as blocked, and a live must-block miss does not drive a
-nonzero exit. The Pilot Task 3 follow-up owns those repairs and the live result.*
+*5.9's controls are now trustworthy; its live result is not yet taken. Pilot
+Task 3 added the harness and proved 7/7 scripted must-allow structure plus
+node-level exception propagation. Its follow-up (a) then repaired the three
+defects that made a live run unquotable — `--model` not pinning, `OUT_OF_SCOPE`
+counting as a block, and a must-block miss exiting 0 — added the suite's first
+16 tests, and added pacing. Follow-up (b) owns the live 13/13 plus 7/7 result
+and is batched into the credentialed session described in
+`docs/LIVE-EVAL-RUNBOOK.md`.*
 
 ---
 
@@ -727,9 +774,11 @@ UNBLOCKED 2026-08-28 (Anthropic use case form submitted)
                                         can enable; meal-plan is done (100%)
 
 AVAILABLE NOW; EVIDENCE STILL MISSING
-  3.9  cache utilisation             -> run per accessible candidate model
-  5.7  task-specific scorecards      -> required for every enabled route
-  5.9/8.10 live Guardrail result     -> repair harness controls, then run 20 cases
+  3.9  cache utilisation             -> read CacheReadTokens off a live run
+  5.7  task-specific scorecards      -> required for every enabled route; the
+                                        Claude intent card is the missing one
+  5.9/8.10 live Guardrail result     -> controls repaired 2026-08-29; run the
+                                        20 cases per docs/LIVE-EVAL-RUNBOOK.md
   Pilot 2 exact record/value proof   -> immutable retrieval context + negatives
 
 COMPLETED LIVE BASE RESOURCES
