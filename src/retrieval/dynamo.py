@@ -33,6 +33,11 @@ from src.schemas.contract import Store
 
 REGION = "ap-southeast-2"
 
+# Worst-case pages followed for one product lookup. Bounds latency against the
+# gateway's 29-second ceiling; GSI1 is price-ordered so the useful results are
+# in the earliest pages.
+MAX_QUERY_PAGES = 5
+
 
 def _to_record(item: dict) -> PriceRecord:
     """Convert a DynamoDB item (resource API, already deserialized) to PriceRecord."""
@@ -95,22 +100,49 @@ class DynamoPriceRepository(PriceRepository):
         if stores is not None and len(stores) == 0:
             return []
 
-        # Query GSI1. Over-fetch when filtering by store, since the filter
-        # is applied after the key condition and we still need `limit` results.
-        fetch_limit = limit * 5 if stores is not None else limit
+        # Query GSI1, following pages until `limit` MATCHING records are in
+        # hand or the index is exhausted.
+        #
+        # The previous version issued one query with `Limit=limit * 5` and
+        # ignored `LastEvaluatedKey`. DynamoDB applies `Limit` to items READ,
+        # before any application-side filter, so when `stores` was set and none
+        # of the first page happened to be at those stores, this returned an
+        # empty list -- and the graph reads an empty list as `no_data`, telling
+        # a shopper "I don't have price data for butter" about a product that
+        # store stocks. A short page is also normal at a 1MB boundary, with
+        # `LastEvaluatedKey` set and more results waiting.
+        #
+        # It cannot fire on the fixtures: six records per product is one page.
+        # It fires at real scale, where a popular product spans three chains
+        # and many stores.
+        allowed = set(stores) if stores is not None else None
+        fetch_limit = limit * 5 if allowed is not None else limit
 
-        response = self._table.query(
-            IndexName="GSI1",
-            KeyConditionExpression=Key("product_key").eq(product_key),
-            ScanIndexForward=True,
-            Limit=fetch_limit,
-        )
+        records: list[PriceRecord] = []
+        start_key: dict | None = None
+        # GSI1 is price-ordered, so the pages we want are the first ones. The
+        # cap bounds worst-case latency against the gateway ceiling rather than
+        # correctness: exhausting it means this store genuinely has nothing
+        # near the cheapest end, which is the honest `no_data` case.
+        for _page in range(MAX_QUERY_PAGES):
+            kwargs: dict = {
+                "IndexName": "GSI1",
+                "KeyConditionExpression": Key("product_key").eq(product_key),
+                "ScanIndexForward": True,
+                "Limit": fetch_limit,
+            }
+            if start_key is not None:
+                kwargs["ExclusiveStartKey"] = start_key
 
-        records = [_to_record(item) for item in response.get("Items", [])]
+            response = self._table.query(**kwargs)
+            page = [_to_record(item) for item in response.get("Items", [])]
+            if allowed is not None:
+                page = [r for r in page if r.store in allowed]
+            records.extend(page)
 
-        if stores is not None:
-            allowed = set(stores)
-            records = [r for r in records if r.store in allowed]
+            start_key = response.get("LastEvaluatedKey")
+            if len(records) >= limit or start_key is None:
+                break
 
         return records[:limit]
 

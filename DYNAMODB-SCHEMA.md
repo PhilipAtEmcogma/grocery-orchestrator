@@ -7,8 +7,12 @@ Region: `ap-southeast-2` (Sydney)
 
 The current account contains `grocery-products-dev` and
 `grocery-idempotency-dev`; the products table is seeded and both adapters have
-been live-verified. `grocery-meals-dev`, the production candidate-query access
-pattern, claim-owner idempotency hardening, and the CDK definitions are planned.
+been live-verified. Claim-owner idempotency hardening landed 2026-08-29 and was
+verified against the live table. `grocery-meals-dev`, the production
+candidate-query access pattern, and the CDK definitions are planned; the
+candidate pattern is deliberately deferred until there is load evidence to
+choose from, and `tests/test_price_repository_contract.py` fails once the
+dataset outgrows a defensible Scan.
 
 Further resources must be defined in TypeScript CDK. Existing stateful tables
 are adopted/imported rather than recreated. Manual console creation is no
@@ -374,6 +378,15 @@ over its stale claim.
 way releases its own claim instead of completing it. Caching a transient
 failure would make the client's retry permanently useless — it would receive
 the same failure forever, from a mechanism built to help it recover.
+
+### Point-in-time recovery, as at 2026-08-29
+
+| Table | PITR | Reasoning |
+|---|---|---|
+| `grocery-products-dev` | ENABLED | Serving data |
+| `smart-grocery-products-dev` | ENABLED | Upstream dataset, 3000 items |
+| `smart-grocery-recipes-dev` | ENABLED | Upstream dataset, 175 items |
+| `grocery-idempotency-dev` | **DISABLED, deliberately** | A 24-hour TTL cache holding no source of truth. Restoring it would replay stale claim tokens and cached responses over live ones, which is worse than starting empty. Enabling it would claim recoverability for state that should never be recovered. |
 
 ### Console settings that are NOT on by default
 

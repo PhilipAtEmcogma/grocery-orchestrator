@@ -258,7 +258,7 @@ Do not describe the current reference implementation as pilot-ready. Task 2–3
 construction/rendering/propagation work is implemented, but exact immutable
 retrieved-record/value proof,
 and a qualifying live Guardrail result remain open. Other blockers include
-clarification, location/freshness, idempotency ownership,
+clarification, location/freshness,
 production fail-closed configuration, model qualification, CDK/API controls,
 published SnapStart alias, and deployed SLO/cost evidence. MCP, AgentCore, and
 managed-evaluation stages are planned or proposed, not built.
@@ -282,7 +282,7 @@ managed-evaluation stages are planned or proposed, not built.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 514 passed, 31 skipped, no AWS
+python -m pytest -q                              # 531 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -527,8 +527,8 @@ idempotency; Powertools observability; handler; local server; CI; zip build.
 152 seeded records; Dynamo price repository contract; five current stored
 idempotency outcomes; Nova Lite/Pro invocation; and Guardrail
 `b1xezpqe04kx` version `2` verified 13/13 + 9/9. This is evidence about the
-resources, not about behaviour: it does not prove stale ownership or live
-red-team quality. (Retrieved-record/value equality is now proven offline on
+resources, not about behaviour: it does not prove live red-team quality.
+(Stale-claim ownership IS now proven against the live idempotency table.) (Retrieved-record/value equality is now proven offline on
 every turn, against the record the repository returned.)
 
 **Model evidence (meal-plan invariants, 2026-08-28).** Anthropic access is no

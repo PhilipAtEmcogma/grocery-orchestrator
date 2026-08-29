@@ -87,7 +87,8 @@ comparison reasoning/prose labels, regenerated samples, and offline
    codes, pacing and its first 16 tests landed 2026-08-29. What remains is the
    credentialed run itself — see `docs/LIVE-EVAL-RUNBOOK.md`.
 3. Location/freshness, payable totals, production fail-closed selection,
-   idempotency ownership/candidate access, and complete model qualification
+   candidate access at scale (idempotency ownership closed 2026-08-29), and
+   complete model qualification
    remain open.
 4. CDK adoption, least-privilege IAM, API controls, published SnapStart alias,
    dashboards, budgets, and deployment verification are not implemented.

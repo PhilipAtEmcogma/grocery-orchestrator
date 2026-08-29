@@ -30,6 +30,7 @@ from src.store.idempotency import (
     AcquireResult,
     AcquireStatus,
     IdempotencyStore,
+    new_claim_token,
 )
 
 REGION = "ap-southeast-2"
@@ -64,12 +65,14 @@ class DynamoIdempotencyStore(IdempotencyStore):
         now = int(time.time())
         pk = f"idem#{key}"
         stale_threshold = now - IN_PROGRESS_TIMEOUT_SECONDS
+        token = new_claim_token()
 
         try:
             self._table.put_item(
                 Item={
                     "pk": pk,
                     "payload_hash": payload_hash,
+                    "claim_token": token,
                     "status": "in_progress",
                     "started_at": now,
                     "ttl": now + self._ttl_seconds,
@@ -83,7 +86,7 @@ class DynamoIdempotencyStore(IdempotencyStore):
                     ":stale": stale_threshold,
                 },
             )
-            return AcquireResult(AcquireStatus.ACQUIRED)
+            return AcquireResult(AcquireStatus.ACQUIRED, claim_token=token)
         except ClientError as exc:
             if exc.response["Error"]["Code"] != "ConditionalCheckFailedException":
                 raise
@@ -112,25 +115,61 @@ class DynamoIdempotencyStore(IdempotencyStore):
         # In progress and not stale — someone else is working on it.
         return AcquireResult(AcquireStatus.IN_PROGRESS)
 
-    def complete(self, key: str, response_json: str) -> None:
-        """Store a terminal result. Subsequent acquires return it verbatim."""
-        pk = f"idem#{key}"
-        self._table.update_item(
-            Key={"pk": pk},
-            UpdateExpression="SET #s = :completed, response_json = :resp",
-            ExpressionAttributeNames={"#s": "status"},
-            ExpressionAttributeValues={
-                ":completed": "completed",
-                ":resp": response_json,
-            },
-        )
-
-    def release(self, key: str) -> None:
+    def complete(self, key: str, claim_token: str, response_json: str) -> bool:
         """
-        Drop the in-progress marker without caching a result.
+        Store a terminal result, only while this caller still owns the claim.
+
+        The condition is the fence. Without it an invocation that stalled past
+        the in-progress timeout, watched another invocation legitimately take
+        over its claim, and then woke up would overwrite the newer claim with
+        its own older answer -- which the next retry would then be served as
+        cached truth.
+
+        Returns False when the fence held against us. That is not an error: the
+        work was valid and its response goes to the client that asked. What is
+        refused is writing it over somebody else's claim.
+        """
+        pk = f"idem#{key}"
+        try:
+            self._table.update_item(
+                Key={"pk": pk},
+                UpdateExpression="SET #s = :completed, response_json = :resp",
+                ConditionExpression="#s = :in_progress AND claim_token = :token",
+                ExpressionAttributeNames={"#s": "status"},
+                ExpressionAttributeValues={
+                    ":completed": "completed",
+                    ":in_progress": "in_progress",
+                    ":resp": response_json,
+                    ":token": claim_token,
+                },
+            )
+            return True
+        except ClientError as exc:
+            if exc.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                return False
+            raise
+
+    def release(self, key: str, claim_token: str) -> bool:
+        """
+        Drop this caller's in-progress marker without caching a result.
 
         Called when the turn failed in a retryable way — caching the failure
         would make the client's retry permanently useless.
+
+        Owner-conditional, and the unfenced version was the worse of the two
+        bugs: deleting a newer invocation's marker lets a THIRD invocation
+        start the same turn while the second is still running, so the table
+        stops preventing the duplicate work it exists to prevent.
         """
         pk = f"idem#{key}"
-        self._table.delete_item(Key={"pk": pk})
+        try:
+            self._table.delete_item(
+                Key={"pk": pk},
+                ConditionExpression="claim_token = :token",
+                ExpressionAttributeValues={":token": claim_token},
+            )
+            return True
+        except ClientError as exc:
+            if exc.response["Error"]["Code"] == "ConditionalCheckFailedException":
+                return False
+            raise

@@ -282,13 +282,23 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
   `grocery-idempotency-dev` with TTL); the price repository passes its shared
   live contract suite.
 - ✅ **Schema and migration plan** documented (`DYNAMODB-SCHEMA.md`).
-- 🚧 **Idempotency** replays completed turns, scopes keys by session, detects
-  in-flight work and rejects reused ids with a different payload. Canonical
-  request hashing and stale-owner fencing are Pilot Task 6.
+- ✅ **Idempotency** replays completed turns, scopes keys by session, detects
+  in-flight work and rejects reused ids with a different payload. The
+  fingerprint is taken over the *validated request*, not the raw HTTP bytes, so
+  whitespace, key order, omitted-versus-null — and trailing zeros on money,
+  since `30` and `30.00` are the same budget — cannot turn a correct retry into
+  a 400 the client is forbidden to retry.
+- ✅ **A superseded invocation cannot overwrite a newer claim.** Every claim
+  carries an owner token, rotated on acquire *and* on takeover, and
+  `complete()`/`release()` are conditional on it. Without that, an invocation
+  that stalled past the timeout and woke up after another had taken over could
+  write its older answer over the newer claim — served to the next retry as
+  cached truth — or delete the newer marker and let a third invocation start
+  the same turn. Verified against the live table, not just in memory.
 
 ### Tests, evals and CI
 
-- ✅ **514 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **531 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -393,7 +403,7 @@ python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
 And to check it:
 
 ```bash
-pytest                     # 514 passing, 31 skipped
+pytest                     # 531 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py       # 76.7% scripted baseline
