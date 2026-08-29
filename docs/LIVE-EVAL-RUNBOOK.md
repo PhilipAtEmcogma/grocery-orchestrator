@@ -14,22 +14,28 @@ against each one, but the defences only work if you use them.
 
 ---
 
-## 1. What is outstanding, and what it blocks
+## 1. What this covers, and what it unblocked
 
-| # | Evidence | Command | Blocks |
-|---|---|---|---|
-| 1 | Live Guardrail 13/13 must-block **and** 7/7 must-allow | `evals/run_guardrail.py --model …` | Pilot Task 3 follow-up; legacy 5.9 / 8.10; Req 5.5 |
-| 2 | Claude intent scorecard | `evals/run_intent.py --model claude-haiku` | Pilot Task 7; legacy 5.7; **any** Claude route |
-| 3 | Prompt-cache utilisation per model | see §5 | Legacy 3.9; Req 9.6 |
+All three items below were taken on 2026-08-29 — see §8 for results. The table
+stays because it is the checklist for the NEXT run, not a to-do list:
 
-Until (1) exists there is **no qualifying live evidence that the Guardrail
-blocks anything**. That was true until 2026-08-29; see §8. Guardrail
-`b1xezpqe04kx` version `2` now has qualifying evidence.
+| # | Evidence | Command | Unblocked | Status |
+|---|---|---|---|---|
+| 1 | Live Guardrail must-block **and** must-allow | `evals/run_guardrail.py --model …` | Pilot Task 3 follow-up (b); legacy 5.9 / 8.10; Req 5.5 | ✅ 13/13, 9/9 |
+| 2 | Per-model intent scorecards | `evals/run_intent.py --model …` | Pilot Task 7; legacy 5.7 | ✅ all ≥ 92.9% |
+| 3 | Prompt-cache utilisation per model | see §5 | Legacy 3.9; Req 9.6 | ✅ zero, and correct |
 
-Until (2) exists, no Claude model may be routed for `classify_intent`. Clearing
-the meal-plan floor qualified Claude Haiku 4.5 for `generate_plan` **and for
-nothing else**. Every model in `config/models.json` is nonetheless still marked
-`enabled` — a known Pilot Task 7 configuration defect, not qualification.
+**Re-run all three whenever the Guardrail policy changes**, whenever a model is
+added to `config/models.json`, and before any release gate that cites them. A
+scorecard is evidence about one policy version and one model; both move.
+
+Guardrail `b1xezpqe04kx` version `2` now has qualifying evidence, and every
+model has an intent scorecard.
+
+**A scorecard is not route approval.** Clearing a floor on one task qualifies a
+model for that task and nothing else, and every model in `config/models.json` is
+still marked `enabled` regardless of what it has been scored on — a known Pilot
+Task 7 configuration defect, not qualification.
 
 ---
 

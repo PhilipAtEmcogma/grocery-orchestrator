@@ -10,7 +10,9 @@
       "default_model_id": "au.anthropic.claude-haiku-4-5-20251001-v1:0",
       "display_name": "Claude Haiku 4.5",
       "family": "anthropic",
-      "tiers": ["fast"],
+      "tiers": [
+        "fast"
+      ],
       "capabilities": {
         "tool_use": true,
         "system_prompt": true,
@@ -21,7 +23,10 @@
         "max_output_tokens": 8192,
         "cache_min_tokens": 4096
       },
-      "cost_per_1k": { "input": "0.0008", "output": "0.004" },
+      "cost_per_1k": {
+        "input": "0.0008",
+        "output": "0.004"
+      },
       "enabled": true
     },
     {
@@ -30,7 +35,10 @@
       "default_model_id": "au.anthropic.claude-sonnet-4-5-20250929-v1:0",
       "display_name": "Claude Sonnet 4.5",
       "family": "anthropic",
-      "tiers": ["quality", "fast"],
+      "tiers": [
+        "quality",
+        "fast"
+      ],
       "capabilities": {
         "tool_use": true,
         "system_prompt": true,
@@ -41,8 +49,12 @@
         "max_output_tokens": 8192,
         "cache_min_tokens": 4096
       },
-      "cost_per_1k": { "input": "0.003", "output": "0.015" },
-      "enabled": true
+      "cost_per_1k": {
+        "input": "0.003",
+        "output": "0.015"
+      },
+      "enabled": false,
+      "_disabled_reason": "No qualifying scorecard on any task, and excluded on LATENCY rather than quality: p50 11.8s / p90 19.9s against the production 20s client timeout, with 9 of 98 plan calls over the ceiling (2026-08-28). It was `enabled` and second preference for generate_plan, so a Nova Pro outage failed over to a model already documented as unfit -- and because it declares both the quality and fast tiers, the cheapest-first fallback in route() made it a candidate for EVERY task. Re-enable only with a scorecard and a latency measurement under the ceiling."
     },
     {
       "key": "nova-lite",
@@ -50,7 +62,9 @@
       "default_model_id": "apac.amazon.nova-lite-v1:0",
       "display_name": "Amazon Nova Lite",
       "family": "amazon",
-      "tiers": ["fast"],
+      "tiers": [
+        "fast"
+      ],
       "capabilities": {
         "tool_use": true,
         "system_prompt": true,
@@ -61,7 +75,10 @@
         "max_output_tokens": 5120,
         "cache_min_tokens": 0
       },
-      "cost_per_1k": { "input": "0.00006", "output": "0.00024" },
+      "cost_per_1k": {
+        "input": "0.00006",
+        "output": "0.00024"
+      },
       "enabled": true
     },
     {
@@ -70,7 +87,10 @@
       "default_model_id": "apac.amazon.nova-pro-v1:0",
       "display_name": "Amazon Nova Pro",
       "family": "amazon",
-      "tiers": ["quality", "fast"],
+      "tiers": [
+        "quality",
+        "fast"
+      ],
       "capabilities": {
         "tool_use": true,
         "system_prompt": true,
@@ -81,7 +101,10 @@
         "max_output_tokens": 5120,
         "cache_min_tokens": 0
       },
-      "cost_per_1k": { "input": "0.0008", "output": "0.0032" },
+      "cost_per_1k": {
+        "input": "0.0008",
+        "output": "0.0032"
+      },
       "enabled": true
     },
     {
@@ -90,7 +113,9 @@
       "default_model_id": "",
       "display_name": "Meta Llama Instruct",
       "family": "meta",
-      "tiers": ["fast"],
+      "tiers": [
+        "fast"
+      ],
       "capabilities": {
         "tool_use": false,
         "system_prompt": true,
@@ -101,14 +126,83 @@
         "max_output_tokens": 4096,
         "cache_min_tokens": 0
       },
-      "cost_per_1k": { "input": "0.00072", "output": "0.00072" },
+      "cost_per_1k": {
+        "input": "0.00072",
+        "output": "0.00072"
+      },
       "enabled": false
     }
   ],
   "routing": {
-    "classify_intent": { "tier": "fast", "prefer": ["nova-lite", "claude-haiku"] },
-    "generate_plan": { "tier": "quality", "prefer": ["nova-pro", "claude-sonnet"] },
-    "repair_plan": { "tier": "fast", "prefer": ["nova-lite", "claude-haiku"] },
-    "generate_prose": { "tier": "fast", "prefer": ["nova-lite", "claude-haiku"] }
+    "classify_intent": {
+      "tier": "fast",
+      "prefer": [
+        "nova-lite",
+        "claude-haiku"
+      ]
+    },
+    "generate_plan": {
+      "tier": "quality",
+      "prefer": [
+        "nova-pro",
+        "claude-sonnet"
+      ]
+    },
+    "repair_plan": {
+      "tier": "fast",
+      "prefer": [
+        "nova-lite",
+        "claude-haiku"
+      ]
+    },
+    "generate_prose": {
+      "tier": "fast",
+      "prefer": [
+        "nova-lite",
+        "claude-haiku"
+      ]
+    }
+  },
+  "scorecards": {
+    "_comment": "Measured evidence, per model per task. A model is eligible for a task only with an entry here that meets the floor; see tests/test_multimodel.py, which fails the build if a routable model has no scorecard for a task it could serve. Recording the guardrail version matters: an intent score is a measurement of the classifier AND the policy in front of it, and version 2 unblocked cases version 1 refused.",
+    "_floor": 0.9,
+    "classify_intent": {
+      "_source": "evals/run_intent.py, 30 cases, guardrail version 2, paced 9/min",
+      "_measured": "2026-08-29",
+      "nova-pro": {
+        "rate": 1.0,
+        "scored": 28,
+        "blocked": 2
+      },
+      "claude-haiku": {
+        "rate": 0.964,
+        "scored": 28,
+        "blocked": 2
+      },
+      "nova-lite": {
+        "rate": 0.929,
+        "scored": 28,
+        "blocked": 2
+      }
+    },
+    "generate_plan": {
+      "_source": "evals/run_meal_plan.py, 11 cases, three clean reps each, paced",
+      "_measured": "2026-08-28",
+      "nova-pro": {
+        "rate": 1.0,
+        "scored": 11,
+        "reps": 3
+      },
+      "claude-haiku": {
+        "rate": 1.0,
+        "scored": 11,
+        "reps": 3
+      }
+    },
+    "_unscored_tasks": {
+      "_comment": "Tasks no eval measures, named rather than hidden. The test treats these as accepted gaps; deleting a task from here without adding a scorecard makes the build fail, which is the point.",
+      "repair_plan": "Exercised INSIDE the meal-plan eval -- repair fires during those runs and its output is scored through the same invariants -- but never scored on its own. A repair-specific regression would show up only as a lower meal-plan score.",
+      "generate_prose": "No eval measures prose at all. Legacy 5.6 (subjective quality scoring) is unchecked, so prose is routed to models nothing has scored for prose. Bounded by construction rather than by measurement: the node rejects money, rejects unknown placeholders, verifies the cheapest claim against retrieved records, and degrades to the structured payload on any failure."
+    }
   }
 }

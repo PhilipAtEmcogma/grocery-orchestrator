@@ -233,13 +233,26 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
   graph, including induced failures, run with no AWS account.
 - ✅ **Bedrock adapter** verified live against Nova Lite, Nova Pro, Claude
   Haiku 4.5 and Claude Sonnet 4.5 in `ap-southeast-2`.
-- 🚧 **Every model now has an intent scorecard, and all three clear the floor.**
-  Measured 2026-08-29 against guardrail version 2: Nova Pro 100.0% (28/28),
-  Claude Haiku 4.5 96.4% (27/28), Nova Lite 92.9% (26/28). Meal-plan invariants,
-  paced: Nova Pro 100%, Claude Haiku 4.5 100%, three clean reps each; Sonnet is
-  excluded on latency, not quality. Routing is still not approved: every model
-  remains marked `enabled` in the development catalogue, which is a known Pilot
-  Task 7 configuration defect rather than qualification.
+- ✅ **A model cannot serve a task it was never scored on.** `enabled` used to
+  mean "listed in the config": every model carried `enabled: true` regardless of
+  evidence, and Claude Sonnet was second preference for `generate_plan` while
+  being documented as excluded on latency — p90 19.9s against a 20s client
+  timeout. A Nova Pro outage failed over to it. Worse, `route()` falls back to
+  the cheapest enabled model at the tier, and Sonnet declared both tiers, so it
+  was reachable from every task. It is now disabled with the reason recorded,
+  scorecards live in `config/models.json` as data, and a test fails the build if
+  any routable model lacks qualifying evidence for the task it would serve.
+- ✅ **Scorecards, measured 2026-08-29 against guardrail version 2.** Intent:
+  Nova Pro 100.0% (28/28), Claude Haiku 4.5 96.4% (27/28), Nova Lite 92.9%
+  (26/28). Meal-plan invariants, paced, three clean reps each: Nova Pro 100%,
+  Claude Haiku 4.5 100%. All clear the 90% floor.
+- 🚧 **Two tasks are routed with nothing measuring them**, named in
+  `scorecards._unscored_tasks` rather than left implicit: `repair_plan` is
+  exercised inside the meal-plan eval but never scored alone, and
+  `generate_prose` has no eval at all (legacy 5.6). Prose is bounded by
+  construction — money rejected, placeholders verified, cheapest claim checked
+  against retrieved records, degrading to the structured payload on failure —
+  which is not the same as being measured.
 - ✅ **Guardrail verified live: 13/13 must-block, 9/9 must-allow**, exit 0,
   against `b1xezpqe04kx` **version 2** on 2026-08-29. Getting there took fixing
   the harness first — `--model` did not pin, `OUT_OF_SCOPE` counted as a block,
@@ -264,7 +277,7 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
 
 ### Tests, evals and CI
 
-- ✅ **504 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **511 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -369,7 +382,7 @@ python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
 And to check it:
 
 ```bash
-pytest                     # 504 passing, 31 skipped
+pytest                     # 511 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py       # 76.7% scripted baseline
