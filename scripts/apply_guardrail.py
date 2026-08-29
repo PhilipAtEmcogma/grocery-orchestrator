@@ -115,7 +115,15 @@ def main() -> int:
 
     try:
         if existing:
-            client.update_guardrail(guardrailIdentifier=existing, **request)
+            # `tags` is a create-only parameter: UpdateGuardrail rejects it
+            # outright with ParamValidationError. This script had only ever run
+            # the create path, so the update path had never executed once --
+            # the first policy change attempted after the guardrail existed
+            # failed on a parameter that has nothing to do with the policy.
+            # Tags are set at creation and are not policy, so dropping them
+            # here changes nothing about what the guardrail enforces.
+            update = {k: v for k, v in request.items() if k != "tags"}
+            client.update_guardrail(guardrailIdentifier=existing, **update)
             guardrail_id = existing
             print(f"\nUpdated guardrail {guardrail_id}")
         else:

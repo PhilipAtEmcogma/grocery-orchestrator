@@ -262,7 +262,7 @@ python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
     tests/test_sample_fixtures.py                # rewrite samples/ from the server
 python evals/run_intent.py                       # 76.7% scripted baseline
-python evals/run_intent.py --model nova-lite     # 83.3% live (Nova Lite)
+python evals/run_intent.py --model nova-lite     # 92.9% live, guardrail v2
 python evals/run_intent.py --model nova-pro      # 100% live (Nova Pro)
 python evals/run_meal_plan.py                    # 100% invariants baseline
 python evals/run_guardrail.py                    # must_allow structural (scripted)
@@ -500,7 +500,7 @@ idempotency; Powertools observability; handler; local server; CI; zip build.
 **Live verified in `ap-southeast-2`:** products and idempotency DynamoDB tables;
 152 seeded records; Dynamo price repository contract; five current stored
 idempotency outcomes; Nova Lite/Pro invocation; and Guardrail
-`b1xezpqe04kx` version `1` basic attachment. This is evidence about the
+`b1xezpqe04kx` version `2` verified 13/13 + 9/9. This is evidence about the
 resources, not about behaviour: it does not prove stale ownership or live
 red-team quality. (Retrieved-record/value equality is now proven offline on
 every turn, against the record the repository returned.)
@@ -600,8 +600,9 @@ this session was four separate cases of a scorer being confidently wrong.
 
 Local scripted baselines are 76.7% intent and 100% meal-plan (was 91%; the
 same harness fixes lifted it), plus 7/7 Guardrail must-allow structure.
-Nova Lite intent 83.3%, Nova Pro intent 100% — both unchanged and measured by
-the intent harness, which has had none of the above scrutiny.
+Live intent figures were re-measured on 2026-08-29 against guardrail v2 with
+GuardrailBlocked excluded: Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite
+92.9%. The earlier 83.3%/100% pair counted Guardrail refusals as wrong answers.
 
 **Open for human review:** `min_grams_per_person_day` in
 `config/feasibility.json` decides when a meal-plan request is refused as
@@ -612,12 +613,28 @@ fixtures, not by anyone who knows about food. Bounded by tests to a
 get refused outright, so it should not stay unreviewed indefinitely. Brief:
 `docs/OPEN-REVIEW-min-grams-per-person-day.md`.
 
-**Live evidence still to take:** three items, all needing credentials, batched
-into one session — the live Guardrail result, the Claude intent scorecard, and
-cache utilisation. The harness controls were repaired on 2026-08-29 and are now
-trustworthy; the runs have not been done. **`docs/LIVE-EVAL-RUNBOOK.md` is the
-runbook**: preconditions, exit-code meanings, the five traps that have already
-cost this project time, and where to write the result down.
+**Live evidence taken 2026-08-29.** All three outstanding items are done; full
+detail in `docs/LIVE-EVAL-RUNBOOK.md` §8.
+
+* **Guardrail: 13/13 must-block, 9/9 must-allow, exit 0** against
+  `b1xezpqe04kx` **version 2**, Nova Lite, paced 9/min. The qualifying live
+  policy evidence Req 5.5 needed.
+* **Intent scorecards, guardrail v2:** Nova Pro 100.0% (28/28), Claude Haiku
+  4.5 96.4% (27/28), Nova Lite 92.9% (26/28). All clear the 90% floor. These
+  supersede the older 83.3%/100% figures, which counted Guardrail refusals as
+  wrong answers.
+* **Prompt cache: zero on every path, and that is correct.** `cachePoint`
+  attaches to the ~500-token system prompt against Claude's 4096 minimum; the
+  large repeated content is in the user prompt. Implemented, honestly gated,
+  structurally inert.
+
+**The run found and fixed a real over-block.** `ForagingAndWildFood` was defined
+as "wild-gathered food including mushrooms, plants, shellfish, or roadkill", and
+the classifier keyed on the ingredient noun: `how much is truffle oil`,
+`price of mushrooms` and `cheapest button mushrooms` were all refused. Version 2
+scopes the topic to the ACT of gathering. **A bare `price of mushrooms` is still
+refused and remains open** — three rounds of tuning moved qualified queries but
+not the unqualified noun.
 
 **Known pilot blockers:** (Pilot Task 2 is now fully closed — the runtime
 money half and the retrieved-record/value proof both landed 2026-08-29);

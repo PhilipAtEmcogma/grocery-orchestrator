@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import ClassVar
 
 import pytest
 
@@ -596,3 +597,66 @@ def test_a_clean_intent_run_still_gates_normally():
 
     bad = IntentCard("claude-haiku", [_intent_case(True), _intent_case(False)])
     assert intent_gate(bad.accuracy, 0.9, "accuracy", bad) == 1
+
+
+def _blocked_case() -> IntentCase:
+    return IntentCase(case_id="inj-001", passed=False, known_gap=None, guardrail_blocked=True)
+
+
+def test_a_guardrail_block_is_not_a_classification_failure():
+    """
+    Found live on 2026-08-29. The harness caught GuardrailBlocked under a bare
+    `except Exception` and recorded "raised GuardrailBlocked" as a wrong answer.
+
+    The same prompts are must_block cases in the red-team suite, where blocking
+    them is what a passing score MEANS. Scoring them as misses meant the safety
+    layer working looked like a bad classifier, and it cost every model the same
+    three cases.
+    """
+    card = IntentCard("claude-haiku", [_intent_case(True), _intent_case(True), _blocked_case()])
+
+    assert len(card.blocked) == 1
+    assert len(card.scored) == 2, "a blocked case must leave the denominator"
+    assert card.accuracy == 1.0
+
+
+def test_the_ninety_percent_floor_is_reachable_again():
+    """
+    The consequence, and why this blocked Pilot Task 7.
+
+    With three of thirty cases always blocked and counted as failures, the
+    ceiling was 27/30 = 90.0% -- exactly the routing floor, reachable only with
+    a perfect score on everything else. No model, however good, had headroom.
+    """
+    results = [_intent_case(True) for _ in range(27)] + [_blocked_case() for _ in range(3)]
+    card = IntentCard("nova-lite", results)
+
+    assert card.accuracy == 1.0, "27 correct out of 27 answerable is 100%, not 90%"
+    assert intent_gate(card.accuracy, 0.9, "accuracy", card) == 0
+
+
+def test_run_records_a_guardrail_block_rather_than_a_wrong_answer():
+    """
+    Pins the CATCH, not just the arithmetic.
+
+    The tests above build a blocked CaseResult by hand, so they would still pass
+    if `except GuardrailBlocked` were removed and the generic handler swallowed
+    it again. This drives `run()` with a client that raises it on every call.
+    """
+    from evals.run_intent import run as run_intent
+    from src.models.base import GuardrailBlocked
+
+    class AlwaysBlocked:
+        last_usage: ClassVar[dict] = {}
+
+        def structured(self, **kwargs):
+            raise GuardrailBlocked("blocked by policy")
+
+        def text(self, **kwargs) -> str:
+            raise GuardrailBlocked("blocked by policy")
+
+    card = run_intent(AlwaysBlocked(), "blocked-everywhere")  # type: ignore[arg-type]
+
+    assert len(card.blocked) == len(card.results), "every case should be recorded as blocked"
+    assert card.scored == [], "blocked cases must not be scored as wrong answers"
+    assert not any("raised GuardrailBlocked" in f for r in card.results for f in r.failures)

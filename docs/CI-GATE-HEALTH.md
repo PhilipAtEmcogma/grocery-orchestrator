@@ -36,6 +36,20 @@ failure and dies on the second. `plan-003`, named below as the boundary case,
 now passes — it was under-spending at exactly the 30% floor, and pre-filtering
 candidates to the budget lifted utilisation clear of it.
 
+**2026-08-29: this stopped being an argument about percentages.** The
+guardrail suite's seven `must_allow` cases scored 7/7 while the deployed policy
+was refusing `how much is truffle oil`, `price of mushrooms` and `cheapest
+button mushrooms` — mushrooms being an everyday grocery item. The defect was
+found by investigating an *intent* eval failure, not by the suite whose entire
+job is to catch over-blocking. Seven benign cases were all too ordinary to
+include an unusual-but-legitimate product.
+
+That is what too few cases costs: not a score that jitters, but a passing gate
+over a live product defect. `allow-008` and `allow-009` now guard the fixed
+queries (`must_allow` is 9 cases), and a bare `price of mushrooms` is still
+refused and is deliberately NOT a case — a permanently red gate is one people
+stop reading. Reproduction in `docs/LIVE-EVAL-RUNBOOK.md` §8.5.
+
 The underlying problem is unchanged and is about case count, not threshold: one
 meal-plan case is worth 9 percentage points, so the drop overshoots whenever it
 comes.

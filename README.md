@@ -233,20 +233,22 @@ infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
   graph, including induced failures, run with no AWS account.
 - ✅ **Bedrock adapter** verified live against Nova Lite, Nova Pro, Claude
   Haiku 4.5 and Claude Sonnet 4.5 in `ap-southeast-2`.
-- 🚧 **No route is qualified.** Meal-plan invariants, paced to the account's
-  request quota: Nova Pro 100%, Claude Haiku 4.5 100%, three clean reps each.
-  Sonnet is excluded on latency, not quality. Intent: Nova Lite 83.3%, Nova
-  Pro 100%, and **no Claude model has an intent scorecard**. Every model is
-  still marked `enabled` in the development catalogue — a known Pilot Task 7
-  configuration defect, not qualification.
-- 🚧 **Guardrail** policy, tagging and fail-closed attachment are implemented,
-  with offline propagation proven through intent, plan and prose. The numbered
-  resource has basic live-invocation evidence only; live 13/13 must-block plus
-  7/7 must-allow remains open. The harness that will produce it had three
-  defects making any result unquotable — `--model` did not pin, `OUT_OF_SCOPE`
-  counted as a block, and a must-block miss exited zero — all fixed and pinned
-  by tests on 2026-08-29. The run itself is batched with the other live work:
-  see [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
+- 🚧 **Every model now has an intent scorecard, and all three clear the floor.**
+  Measured 2026-08-29 against guardrail version 2: Nova Pro 100.0% (28/28),
+  Claude Haiku 4.5 96.4% (27/28), Nova Lite 92.9% (26/28). Meal-plan invariants,
+  paced: Nova Pro 100%, Claude Haiku 4.5 100%, three clean reps each; Sonnet is
+  excluded on latency, not quality. Routing is still not approved: every model
+  remains marked `enabled` in the development catalogue, which is a known Pilot
+  Task 7 configuration defect rather than qualification.
+- ✅ **Guardrail verified live: 13/13 must-block, 9/9 must-allow**, exit 0,
+  against `b1xezpqe04kx` **version 2** on 2026-08-29. Getting there took fixing
+  the harness first — `--model` did not pin, `OUT_OF_SCOPE` counted as a block,
+  and a must-block miss exited zero, so no result it produced was quotable.
+  The run then found a real over-block: the foraging topic was defined as an
+  ingredient list, so `truffle oil`, `mushrooms` and `button mushrooms` were all
+  refused. Version 2 scopes it to the act of gathering. **A bare "price of
+  mushrooms" is still refused and remains open** —
+  [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md) §8.5.
 
 ### Data and storage
 
@@ -388,7 +390,7 @@ environment. The third is the one people miss:
 export AWS_PROFILE=grocery
 export AWS_REGION=ap-southeast-2
 export BEDROCK_GUARDRAIL_ID=b1xezpqe04kx   # grocery-assistant-guardrail-dev
-export BEDROCK_GUARDRAIL_VERSION=DRAFT     # the default; set explicitly when pinning
+export BEDROCK_GUARDRAIL_VERSION=2         # pin the numbered version, not DRAFT
 
 python evals/run_meal_plan.py --compare claude-sonnet nova-pro
 ```
