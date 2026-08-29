@@ -71,10 +71,6 @@
     {
       "Key": "Source",
       "Value": "TheMealDB"
-    },
-    {
-      "Key": "Role",
-      "Value": "raw-upstream-dataset-see-ADR-0003"
     }
   ]
 }
