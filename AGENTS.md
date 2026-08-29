@@ -249,7 +249,7 @@ managed-evaluation stages are planned or proposed, not built.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 466 passed, 31 skipped, no AWS
+python -m pytest -q                              # 485 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -602,6 +602,13 @@ fixtures, not by anyone who knows about food. Bounded by tests to a
 525g-1197g window and not blocking anything — but it decides which requests
 get refused outright, so it should not stay unreviewed indefinitely. Brief:
 `docs/OPEN-REVIEW-min-grams-per-person-day.md`.
+
+**Live evidence still to take:** three items, all needing credentials, batched
+into one session — the live Guardrail result, the Claude intent scorecard, and
+cache utilisation. The harness controls were repaired on 2026-08-29 and are now
+trustworthy; the runs have not been done. **`docs/LIVE-EVAL-RUNBOOK.md` is the
+runbook**: preconditions, exit-code meanings, the five traps that have already
+cost this project time, and where to write the result down.
 
 **Known pilot blockers:** Task 2 exact record/value follow-up (the runtime
 money half closed 2026-08-29);

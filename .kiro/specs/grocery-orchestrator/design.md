@@ -81,10 +81,10 @@ comparison reasoning/prose labels, regenerated samples, and offline
    `validate_plan` rejects money in the plan's model-authored text (Pilot Task
    2 follow-up (a), 2026-08-29). The whole-response assertion stays in
    `validate.py` by design — see §2.4 below and `AGENTS.md`.
-2. The live Guardrail harness is experimental: `--model` does not pin the
-   requested model, `OUT_OF_SCOPE` can count as blocked, and live must-block
-   misses do not fail the process. No qualifying 13/13 plus 7/7 live result
-   exists.
+2. No qualifying 13/13 plus 7/7 live Guardrail result exists. The harness's
+   controls are no longer the obstacle: pinning, block classification, exit
+   codes, pacing and its first 16 tests landed 2026-08-29. What remains is the
+   credentialed run itself — see `docs/LIVE-EVAL-RUNBOOK.md`.
 3. Location/freshness, payable totals, production fail-closed selection,
    idempotency ownership/candidate access, and complete model qualification
    remain open.
