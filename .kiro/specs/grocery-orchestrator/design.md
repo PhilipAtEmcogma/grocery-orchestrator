@@ -643,7 +643,7 @@ structural guarantees over behavioural ones, applied to the build.
 
 ### 10.4 What remains to be verified
 
-The Guardrail `b1xezpqe04kx`, version `1`, has been created and observed on a
+The Guardrail `b1xezpqe04kx`, version `2`, has been created and observed on a
 basic attached Bedrock invocation in `ap-southeast-2`. That verifies the live
 resource, numbered attachment, and basic request shape; it does **not** verify
 policy quality or graph-level intervention behavior.

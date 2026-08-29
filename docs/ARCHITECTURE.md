@@ -83,7 +83,7 @@ is the boundary worth drawing, because it is where untrusted data enters.
 | Schedule | `grocery-price-refresh-dev` | `cron(0 3 * * ? *)` Pacific/Auckland, ENABLED |
 | Products table | `grocery-products-dev` | 152 items, GSI1, PAY_PER_REQUEST |
 | Idempotency table | `grocery-idempotency-dev` | TTL ACTIVE |
-| Guardrail | `b1xezpqe04kx` version `1` | DRAFT deliberately not granted in IAM |
+| Guardrail | `b1xezpqe04kx` version `2` | v2 published 2026-08-29; DRAFT deliberately not granted in IAM |
 | SNS topic | `grocery-orchestrator-alarms-dev` | alarms: handler-escaped, api-5xx |
 
 **One artefact, two functions.** `scripts/build_lambda.py` now includes

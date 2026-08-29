@@ -161,15 +161,52 @@ proposed, or gated as labelled; it is not implemented.
 
     Offline gates passed: 485 passed, 31 skipped; scripted baselines unchanged
     at 7/7 must-allow, 76.7% intent, 100% meal-plan invariants.
-  - [ ] **Pilot Task 3 follow-up (b) — Record the live Guardrail result.**
-    Deferred to the batched live-AWS session, not because it is optional but
-    because it needs credentials and should happen alongside the Claude intent
-    scorecard and cache-utilisation evidence rather than in three separate
-    sittings. Acceptance is exit code 0 with 13/13 must-block and 7/7
-    must-allow against guardrail `b1xezpqe04kx` version `1`, paced.
-    **Runbook: `docs/LIVE-EVAL-RUNBOOK.md`** — preconditions, exit-code
-    meanings, the five traps that have already cost this project time, and
-    where to record the result.
+  - [x] **Pilot Task 3 follow-up (b) — Record the live Guardrail result.**
+    Completed 2026-08-29. **13/13 must-block and 9/9 must-allow, exit 0**,
+    against guardrail `b1xezpqe04kx` **version 2**, Nova Lite, paced 9/min,
+    account `097087133897`. Two clean reps against version 1 first (13/13, 7/7),
+    then version 2 after the policy fix below. No upstream failures, no
+    inconclusive runs. This is the qualifying live policy evidence Req 5.5 and
+    legacy 5.9/8.10 required.
+
+    **The run found a real over-block, and it was worse than it first looked.**
+    Investigating an intent-eval failure showed `how much is truffle oil`
+    returning `GUARDRAIL_BLOCKED` while `olive oil` passed. The cause was the
+    `ForagingAndWildFood` topic, defined as "wild-gathered food including
+    mushrooms, plants, shellfish, or roadkill" — an ingredient list the
+    classifier keyed on regardless of context. `price of mushrooms` and
+    `cheapest button mushrooms` were blocked too. A grocery price assistant that
+    refuses to price mushrooms is broken rather than safe.
+
+    Fixed by scoping the topic to the ACT of gathering wild food. Verified in
+    both directions on DRAFT before publishing: every genuine foraging query
+    still denies and the full suite passed 13/13, then version 2 was cut.
+    `allow-008` and `allow-009` were added as regression guards.
+
+    **Still open:** a bare `price of mushrooms` is refused. Three rounds of
+    tuning moved qualified queries but not the unqualified noun. Recorded as an
+    open defect rather than tuned further — loosening a safety topic by trial
+    and error is the wrong direction to push from. Deliberately not an eval
+    case: a permanently red gate is one people stop reading.
+
+    `scripts/apply_guardrail.py` also had to be fixed to get here: it passed
+    `tags` to `UpdateGuardrail`, which rejects it, so the update path had never
+    once executed. The guardrail was created and never changed, and the first
+    attempt to change it failed on a parameter unrelated to policy.
+  - [x] **Pilot Task 3 follow-up (c) — Stop scoring a Guardrail block as a
+    classification failure.** `run_intent.py` caught `GuardrailBlocked` under a
+    bare `except Exception` and recorded it as a wrong answer. The same prompts
+    are must-block cases in the red-team suite, where blocking them is what a
+    passing score MEANS. Three such cases cost every model ten points and capped
+    the suite at 27/30 = **90.0% exactly** — the routing floor, with no headroom
+    for any model however good, which silently blocked Pilot Task 7. Now caught
+    before the generic handler, excluded from the denominator as `known_gap`
+    cases already were, and named in the report.
+  - [ ] **Pilot Task 3 follow-up (d) — DEFERRED: unblock a bare mushroom
+    query.** See (b). Needs either a different topic formulation or acceptance
+    that the managed classifier cannot separate the retail and foraging senses
+    of a bare ingredient noun. Reproduction and evidence in
+    `docs/LIVE-EVAL-RUNBOOK.md` §8.5.
 - [ ] **Pilot Task 4 — Correct request semantics and payable arithmetic.** Ask
   for missing required constraints and define verified consumption and
   full-pack payable totals.
@@ -409,14 +446,17 @@ and nut-free support) is future work — see Phase 11.*
   — *Req 9.4*
 - [x] **3.8** Insert cache markers only where supported and above the minimum,
   and record utilisation — *Req 9.6*
-- [ ] **3.9** Verify cache utilisation against accessible live endpoints
+- [x] **3.9** Verify cache utilisation against accessible live endpoints
   — **[pending model qualification evidence]**
 - [x] **3.10** Implement the managed-inference adapter behind the model
   protocol
 
 *3.10 was built but never specified. The adapter is verified against live
 Bedrock endpoints (Nova Lite and Nova Pro in ap-southeast-2). Current evidence:
-Nova Lite 83.3% and Nova Pro 100% on intent; on meal-plan invariants, paced to
+Nova Lite 92.9%, Nova Pro 100% and Claude Haiku 4.5 96.4% on intent, measured
+2026-08-29 against guardrail version 2 with GuardrailBlocked excluded from the
+denominator (the older 83.3% Nova Lite figure counted three Guardrail refusals
+as wrong answers); on meal-plan invariants, paced to
 the account's request quota, Nova Pro 100% and Claude Haiku 4.5 100% over three
 clean reps each (the earlier "Nova Pro 64%" was measured by a scorer since
 found wrong in three ways — see AGENTS.md). Claude access was unblocked on
@@ -463,12 +503,23 @@ enforcement from `run_turn()` remains the explicit Task 2 follow-up.*
 - [x] **5.4** Meal plan cases with invariants and reported metrics — *Req 10.2*
 - [x] **5.5** Budget floor check, not only the ceiling
 - [ ] **5.6** Subjective quality scoring for variety and appeal
-- [ ] **5.7** Score every candidate model and publish the comparison
+- [x] **5.7** Score every candidate model and publish the comparison
   — *Req 9.5* — **[current blocker: model-specific access and missing scorecards]**
 - [x] **5.8** Red-team case set for content safety, covering both content that
   must be blocked and content that must be allowed
 - [ ] **5.9** Harness that runs the red-team set against the numbered live
   Guardrail and reports each case's outcome
+
+*3.9 and 5.7 were answered on 2026-08-29 and both results are in
+`docs/LIVE-EVAL-RUNBOOK.md` §8. Intent scorecards against guardrail version 2:
+Nova Pro 100.0% (28/28), Claude Haiku 4.5 96.4% (27/28), Nova Lite 92.9%
+(26/28) — all three clear the 90% floor, including Nova Lite, the model
+currently routed for `classify_intent`. Cache utilisation is zero on every path
+and that is CORRECT: `cachePoint` attaches to the system prompt (~500 tokens)
+against Claude's 4096-token minimum, while the large repeated content (the
+products table) sits in the user prompt. The capability is implemented and
+honestly gated, and cannot fire as the prompts are arranged. Neither Nova model
+declares caching at all.*
 
 *5.3's mechanism is built and currently has nothing to report: no case in
 either golden set carries a known-gap marker any more. The last two were the
@@ -659,7 +710,7 @@ failure mode is a single careless log line added later.*
 
 *8.9 and 8.10 were split to distinguish policy-as-code from behavioral
 evidence. The offline policy is reviewable and validated. Guardrail
-`b1xezpqe04kx` version `1` and Nova invocation have basic live evidence. Pilot
+`b1xezpqe04kx` version `2` has qualifying live evidence (13/13 + 9/9). Pilot
 Task 3 then proved provider-neutral intervention propagation through intent,
 plan, and prose and added the experimental harness. The live policy result is
 still open because model selection, outcome classification, and failing-exit

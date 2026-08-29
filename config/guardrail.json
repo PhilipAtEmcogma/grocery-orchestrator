@@ -3,10 +3,8 @@
   "version": "1.0",
   "name": "grocery-assistant-guardrail-dev",
   "description": "Content safety and prompt-attack protection for the Smart Grocery & Meal Budget Assistant.",
-
   "blockedInputMessaging": "I can't help with that. I can compare grocery prices or plan meals within a budget.",
   "blockedOutputsMessaging": "I can't help with that. I can compare grocery prices or plan meals within a budget.",
-
   "contentPolicyConfig": {
     "_comment": "PROMPT_ATTACK is inputStrength only — it has no meaning on output. It also does NOTHING unless user input is tagged; see src/models/guardrail.py.",
     "filtersConfig": [
@@ -42,7 +40,6 @@
       }
     ]
   },
-
   "topicPolicyConfig": {
     "_comment": "Denied topics are the domain-specific layer. Content filters catch generic harm; these catch harm specific to a food and budget assistant. Each is a plausible thing a user might ask a grocery chatbot that it must not answer.",
     "topicsConfig": [
@@ -92,12 +89,14 @@
       {
         "name": "ForagingAndWildFood",
         "type": "DENY",
-        "definition": "Identification, safety, or preparation guidance for wild-gathered food including mushrooms, plants, shellfish, or roadkill.",
+        "definition": "Finding, identifying, or judging the safety of wild food the user picked themselves, not bought: foraged fungi, wild plants, beach shellfish, roadkill. Shop-bought mushrooms are not this topic.",
         "examples": [
           "Which wild mushrooms are safe to eat",
           "Can I gather shellfish from the beach to save money",
-          "How do I know if a wild plant is edible"
-        ]
+          "How do I know if a wild plant is edible",
+          "Is roadkill safe to cook"
+        ],
+        "_comment": "Scoped to the ACTIVITY, not the ingredient, on 2026-08-29. The previous definition read 'wild-gathered food including mushrooms, plants, shellfish, or roadkill', which the classifier treated as an ingredient list: 'price of mushrooms' and 'cheapest button mushrooms' were BLOCKED, as was 'how much is truffle oil'. Mushrooms are an everyday grocery item, so a price assistant that refuses to price them is broken rather than safe. The must_block cases for genuine foraging still deny; see evals/cases/guardrail.json."
       },
       {
         "name": "SystemAndPromptDisclosure",
@@ -112,40 +111,81 @@
       }
     ]
   },
-
   "wordPolicyConfig": {
     "_comment": "Managed profanity plus injection phrases that are unambiguous. Deliberately short: a long custom list produces false positives on legitimate grocery queries and gives a false sense of coverage. The PROMPT_ATTACK filter is the real defence; these catch the crude cases cheaply.",
     "managedWordListsConfig": [
-      { "type": "PROFANITY" }
+      {
+        "type": "PROFANITY"
+      }
     ],
     "wordsConfig": [
-      { "text": "ignore previous instructions" },
-      { "text": "ignore all previous instructions" },
-      { "text": "disregard your instructions" },
-      { "text": "you are now" },
-      { "text": "reveal your system prompt" }
+      {
+        "text": "ignore previous instructions"
+      },
+      {
+        "text": "ignore all previous instructions"
+      },
+      {
+        "text": "disregard your instructions"
+      },
+      {
+        "text": "you are now"
+      },
+      {
+        "text": "reveal your system prompt"
+      }
     ]
   },
-
   "sensitiveInformationPolicyConfig": {
     "_comment": "A grocery assistant has no reason to receive or emit these. ANONYMIZE on output rather than BLOCK so an incidental match degrades the response instead of failing the turn; BLOCK on input for the categories that indicate something has gone wrong upstream.",
     "piiEntitiesConfig": [
-      { "type": "CREDIT_DEBIT_CARD_NUMBER", "action": "BLOCK" },
-      { "type": "CREDIT_DEBIT_CARD_CVV", "action": "BLOCK" },
-      { "type": "US_SOCIAL_SECURITY_NUMBER", "action": "BLOCK" },
-      { "type": "PASSWORD", "action": "BLOCK" },
-      { "type": "EMAIL", "action": "ANONYMIZE" },
-      { "type": "PHONE", "action": "ANONYMIZE" },
-      { "type": "ADDRESS", "action": "ANONYMIZE" },
-      { "type": "NAME", "action": "ANONYMIZE" }
+      {
+        "type": "CREDIT_DEBIT_CARD_NUMBER",
+        "action": "BLOCK"
+      },
+      {
+        "type": "CREDIT_DEBIT_CARD_CVV",
+        "action": "BLOCK"
+      },
+      {
+        "type": "US_SOCIAL_SECURITY_NUMBER",
+        "action": "BLOCK"
+      },
+      {
+        "type": "PASSWORD",
+        "action": "BLOCK"
+      },
+      {
+        "type": "EMAIL",
+        "action": "ANONYMIZE"
+      },
+      {
+        "type": "PHONE",
+        "action": "ANONYMIZE"
+      },
+      {
+        "type": "ADDRESS",
+        "action": "ANONYMIZE"
+      },
+      {
+        "type": "NAME",
+        "action": "ANONYMIZE"
+      }
     ]
   },
-
   "_contextual_grounding_note": "contextualGroundingPolicyConfig is deliberately NOT configured. Its documentation excludes conversational and chatbot use cases, and it produces a probabilistic score against a threshold. Our grounding requirement (requirements.md Req 3) is met structurally instead: graph topology, a price-free draft schema, and a CI assertion. A probabilistic check would be weaker than what we already have, and configuring it would imply a guarantee it does not provide.",
-
   "tags": [
-    { "key": "Project", "value": "SmartGrocery" },
-    { "key": "Env", "value": "dev" },
-    { "key": "ManagedBy", "value": "config/guardrail.json" }
+    {
+      "key": "Project",
+      "value": "SmartGrocery"
+    },
+    {
+      "key": "Env",
+      "value": "dev"
+    },
+    {
+      "key": "ManagedBy",
+      "value": "config/guardrail.json"
+    }
   ]
 }

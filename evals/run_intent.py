@@ -43,7 +43,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from evals._pacing import DEFAULT_MAX_RPM, pace_bedrock_calls
 from src.graph.nodes.intent import classify_intent
 from src.graph.state import GroceryState
-from src.models.base import ModelClient
+from src.models.base import GuardrailBlocked, ModelClient
 from src.models.registry import ModelSpec
 from src.models.scripted import ScriptedModelClient
 from src.retrieval.memory import InMemoryPriceRepository
@@ -66,6 +66,13 @@ class CaseResult:
     # still produces a classification for every case and still reports a tidy
     # accuracy -- one that measures the keyword fallback, not the model.
     degraded: bool = False
+    # The Guardrail refused the turn, so the model never classified it. NOT a
+    # classification failure: the same prompts appear in the red-team suite as
+    # must_block cases, where blocking them is what a passing score MEANS.
+    # Scored as a miss, three of these cost every model ten points and capped
+    # the suite at 27/30 = 90.0% -- exactly the routing floor, with no headroom
+    # for any model however good.
+    guardrail_blocked: bool = False
 
 
 @dataclass
@@ -80,7 +87,15 @@ class Scorecard:
 
     @property
     def scored(self) -> list[CaseResult]:
-        return [r for r in self.results if r.known_gap is None]
+        # Guardrail-blocked cases leave the denominator for the same reason
+        # known_gap cases do: the accuracy is a claim about classification, and
+        # the model was never given the chance to classify these.
+        return [r for r in self.results if r.known_gap is None and not r.guardrail_blocked]
+
+    @property
+    def blocked(self) -> list[CaseResult]:
+        """Refused by the Guardrail before the classifier saw them."""
+        return [r for r in self.results if r.guardrail_blocked]
 
     @property
     def gaps(self) -> list[CaseResult]:
@@ -189,10 +204,19 @@ def run(model: ModelClient, label: str) -> Scorecard:
 
         started = time.perf_counter()
         degraded = False
+        blocked = False
         try:
             out = classify_intent(state, model)
             degraded = bool(out.get("intent_degraded"))
             failures = _check(case, out, repo)
+        except GuardrailBlocked:
+            # Caught BEFORE the generic handler because it is a subclass of
+            # ModelError and, unlike every other exception here, it is the
+            # SAFETY LAYER WORKING. classify_intent re-raises it deliberately
+            # (Pilot Task 3's propagation). Recording it as a wrong answer made
+            # the content filter look like a bad classifier.
+            blocked = True
+            failures = []
         except Exception as exc:
             failures = [f"raised {type(exc).__name__}: {exc}"]
         elapsed = int((time.perf_counter() - started) * 1000)
@@ -205,6 +229,7 @@ def run(model: ModelClient, label: str) -> Scorecard:
                 known_gap=case.get("known_gap"),
                 failures=failures,
                 degraded=degraded,
+                guardrail_blocked=blocked,
                 latency_ms=elapsed,
                 input_tokens=usage.get("input_tokens") or 0,
                 output_tokens=usage.get("output_tokens") or 0,
@@ -217,6 +242,14 @@ def run(model: ModelClient, label: str) -> Scorecard:
 def report(card: Scorecard, spec: ModelSpec | None = None, verbose: bool = False) -> None:
     print(f"\n=== {card.model_label} ===")
     print(f"  accuracy   {card.accuracy:.1%}  ({card.passed}/{len(card.scored)})")
+    if card.blocked:
+        # Named, never silently dropped. A reader who sees 96% over 27 cases
+        # must be able to see that three were refused before the model saw them.
+        ids = ", ".join(r.case_id for r in card.blocked)
+        print(
+            f"  guardrail  {len(card.blocked)} of {len(card.results)} cases refused "
+            f"before classification ({ids}) — excluded, not failed"
+        )
     print(f"  p50 latency {card.p50_latency_ms} ms")
     if spec is not None:
         print(f"  est. cost   ${card.cost(spec)} for {len(card.results)} cases")

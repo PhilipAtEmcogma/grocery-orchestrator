@@ -265,7 +265,7 @@ configured **THEN THE SYSTEM SHALL** refuse to invoke the model.
 *Partially met. The code-side half is built and tested: the filter policy is
 version-controlled data, a validator rejects inert configurations, untrusted
 input is tagged, and generation fails closed without a filter. Guardrail
-`b1xezpqe04kx`, version `1`, has basic attached live-invocation evidence.
+`b1xezpqe04kx`, version `2`, has qualifying live policy evidence (13/13 + 9/9).
 Pilot Task 3 proved offline that `GuardrailBlocked` propagates through intent,
 plan, and prose nodes to one handler mapping, with three node propagation tests
 and one handler mapping test. The provider-neutral subtype is defined at the
@@ -282,9 +282,13 @@ result, because on this suite an unanswered case would otherwise read as content
 the Guardrail let through. The harness is now paced, and has 16 tests where it
 previously had none.
 
-The live 13/13 must-block plus 7/7 must-allow result has still not been taken.
-It is batched with the other credentialed work in `docs/LIVE-EVAL-RUNBOOK.md`,
-and until it is recorded this criterion has no qualifying live evidence.*
+The live result was taken on 2026-08-29: **13/13 must-block and 9/9 must-allow,
+exit 0**, against guardrail `b1xezpqe04kx` version `2`, Nova Lite, paced 9/min.
+This criterion now has qualifying live evidence. The run also found and fixed an
+over-block of benign grocery queries (the foraging topic was scoped to an
+ingredient rather than an activity); a bare "price of mushrooms" is still
+refused and is tracked as an open defect. Detail in
+`docs/LIVE-EVAL-RUNBOOK.md` §8.*
 
 5.6 **IF** a stated dietary exclusion cannot be reliably mapped to the
 retrieval filter **THEN THE SYSTEM SHALL** refuse the meal plan and report
