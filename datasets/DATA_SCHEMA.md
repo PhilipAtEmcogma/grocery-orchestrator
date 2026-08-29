@@ -1,5 +1,29 @@
 # Smart Grocery Data Schema
 
+> **Lineage note (reconciled 2026-08-29).** The tables described here —
+> `SmartGroceryProducts` and `SmartGroceryRecipes` — are the project's **raw
+> upstream dataset ("Lineage B")**: the real collected data (285 PAK'nSAVE
+> Lincoln Road + 300 New World Albany products, and 175 TheMealDB recipes). They
+> are **not** the orchestrator's serving tables. The running service reads a
+> different schema — `grocery-products-dev` (PK `store_key` / SK `product_key`,
+> GSI `GSI1`, money as a **String**) and `grocery-idempotency-dev`, with
+> `grocery-meals-dev` planned — collectively **"Lineage A"**.
+>
+> **Decision (ADR 0003, 2026-08-29):** adopt Lineage A as the authoritative
+> serving schema; this dataset (Lineage B) is the **upstream source**, brought
+> into the serving tables through a **B→A transform in ingestion**
+> (`ingestion/normalise.py`). The CDK does **not** adopt `SmartGrocery*` as
+> serving tables — they may be kept as a raw-data staging store or exported to
+> S3 and retired. The field-by-field B→A mapping is in
+> `infra/docs/03-STACK-SPECS.md` (IngestionStack → "Data source"); the decision
+> is in `infra/docs/08-OPEN-DECISIONS.md` §1 and
+> `docs/adr/0003-infrastructure-as-code-and-resource-adoption.md`.
+>
+> Overlaps that cause confusion: this dataset's `price` is a **Number** and its
+> key is `primary_key` (`pakn_save_<id>`); the serving table's money is a
+> **String** (`price_nzd`) and its keys are `store_key`/`product_key`. The
+> transform is what converts between them.
+
 ## 1. Data Source
 
 ### Product Data
@@ -25,7 +49,7 @@ Processed product files:
 - `datasets/data/processed/new_world_albany_products_latest.csv`
 - `datasets/data/processed/new_world_albany_products_latest.json`
 
-Products table: `SmartGroceryProducts`
+Products table: `SmartGroceryProducts` *(raw upstream dataset; serving table is `grocery-products-dev` — see lineage note at top)*
 
 | Field | Type | PK | Meaning |
 | --- | --- | --- | --- |
@@ -53,7 +77,7 @@ Processed recipe files:
 - `datasets/data/processed/recipes_latest.csv`
 - `datasets/data/processed/recipes_latest.json`
 
-Recipes table: `SmartGroceryRecipes`
+Recipes table: `SmartGroceryRecipes` *(raw upstream dataset; serving table is `grocery-meals-dev`, planned — see lineage note at top)*
 
 | Field | Type | PK | Meaning |
 | --- | --- | --- | --- |
