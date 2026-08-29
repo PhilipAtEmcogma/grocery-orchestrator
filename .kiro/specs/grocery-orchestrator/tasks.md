@@ -246,9 +246,40 @@ proposed, or gated as labelled; it is not implemented.
 
     14 tests added; 531 -> 545 passing. All five eval baselines unchanged.
     `samples/response_clarification.json` added and validated in CI.
-  - [ ] **4b — Verified consumption and payable arithmetic.** Payable totals are
-    already implemented (`MealPlan.payable_total_nzd`, `within_budget` follows
-    it); what remains is the verified-consumption definition.
+  - [x] **4b — Verified consumption and payable arithmetic.** Completed
+    2026-08-29. `assert_arithmetic` checked that four sums agreed WITH EACH
+    OTHER — meals sum to the total, baskets sum to the payable. Worth having,
+    and structurally unable to catch the case design.md §14 named as unproven: a
+    line cost wrong by construction propagates consistently through all four and
+    passes every one, and nothing checked a basket total against anything.
+
+    `assert_costed_from_citations()` re-derives every figure from the cited
+    prices: line cost equals price times packs, pack counts aggregate per
+    product ACROSS meals and round up ONCE, basket totals equal whole packs at
+    shelf price, and a basket's citations really are at the store it names.
+
+    **`Ingredient` gained `packs`**, because the plan could not previously
+    verify its own arithmetic — `qty` is a display string, so nothing downstream
+    could re-derive a line cost. Response-side only, so no client breaks:
+    readers ignore unknown fields and nobody constructs an Ingredient to send us.
+
+    9 tests, parametrised over the three real ways to get pack counting wrong —
+    one pack per appearance, the fractional figure, and rounding per meal rather
+    than once at the end. Each produces a plan whose four internal sums agree
+    perfectly, and each is asserted to pass `assert_arithmetic` before failing
+    the new check, so the tests demonstrate the gap rather than assert it.
+    Verified by mutation: dropping the aggregation fails 4, dropping line-cost
+    re-derivation fails 1.
+
+    **`samples/response_meal_plan.json` was stale and is regenerated.** It
+    published a successful plan for "a flat of 3 for under $30 this week" — a
+    request the current code refuses, because the scripted planner spends $51.18
+    against that budget. The drift predates this session. The sample request now
+    carries a feasible $90, and the response is captured from the handler rather
+    than hand-written; it also now illustrates the two-totals distinction
+    directly, consumption $37.21 against payable $60.14.
+
+    Offline gates passed: 573 passed, 31 skipped.
 - [ ] **Pilot Task 5 — Enforce location, store scope, and freshness.** Extend
   repository contracts and route stale-only data to an honest outcome.
   - [x] **5a — Radius scope and freshness, enforced in the repository.**

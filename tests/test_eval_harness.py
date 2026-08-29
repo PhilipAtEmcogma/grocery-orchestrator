@@ -203,6 +203,7 @@ def _plan_using(ref: str) -> MealPlan:
                         item="beef mince",
                         qty="1kg",
                         citation_ref=ref,
+                        packs=Decimal("1"),
                         line_cost_nzd=Decimal("12.00"),
                     )
                 ],

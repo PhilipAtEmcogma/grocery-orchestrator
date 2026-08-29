@@ -2,7 +2,18 @@
   "version": "1.0",
   "session_id": "sess-7f3a9c21",
   "turn_id": "turn-0002-c9d1",
-  "message": "feed a flat of 3 for under $30 this week, no seafood",
-  "location": { "lat": -36.8899, "lon": 174.8536, "label": "Sylvia Park, Auckland" },
-  "hints": { "household_size": 3, "budget_nzd": 30, "days": 3, "dietary_exclusions": ["seafood"] }
+  "message": "feed a flat of 3 for under $90 this week, no seafood",
+  "location": {
+    "lat": -36.8899,
+    "lon": 174.8536,
+    "label": "Sylvia Park, Auckland"
+  },
+  "hints": {
+    "household_size": 3,
+    "budget_nzd": 90,
+    "days": 7,
+    "dietary_exclusions": [
+      "seafood"
+    ]
+  }
 }

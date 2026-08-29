@@ -25,7 +25,7 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 from enum import StrEnum
 from typing import Annotated, Literal, Protocol
 
@@ -197,6 +197,16 @@ class Ingredient(BaseModel):
     item: str
     qty: str = Field(description="Human-readable, e.g. '500g', '2 cloves'")
     citation_ref: str = Field(pattern=r"^c\d+$")
+    # How much of the cited PACK this line uses: 0.5 is half a 1kg pack, 2 is
+    # two whole packs. Carried on the wire because without it the plan cannot
+    # verify its own arithmetic -- `qty` is a display string, so nothing
+    # downstream could re-derive line_cost or the whole-pack basket totals, and
+    # `assert_arithmetic` was reduced to checking that four sums agreed with
+    # each other. A consistently wrong line cost passed every one of them.
+    #
+    # Response-side only, so adding it breaks no client: readers ignore fields
+    # they do not know, and nobody constructs an Ingredient to send us.
+    packs: Decimal = Field(gt=0, description="Multiplier on the cited pack size")
     line_cost_nzd: Decimal = Field(ge=0)
 
 
@@ -627,6 +637,102 @@ def assert_citations_match_retrieval(
         raise AssertionError(
             f"Citations do not match retrieval ({len(violations)}):\n"
             + "\n".join(f"  - {v}" for v in violations)
+        )
+
+
+def assert_costed_from_citations(
+    plan: MealPlan,
+    citations: Mapping[str, Citation],
+    tolerance: Decimal = Decimal("0.02"),
+) -> None:
+    """
+    Req 2.2/2.3: re-derive every figure from the cited prices.
+
+    `assert_arithmetic` checks that four sums agree WITH EACH OTHER — meals sum
+    to the total, baskets sum to the payable. That is worth having and it is not
+    enough: a line cost that is wrong by construction propagates consistently
+    through all four and passes every one of them. Nothing re-derived a line
+    cost, and nothing checked a basket total at all.
+
+    The reuse/multipack case is why it matters. A product used 0.5 packs in one
+    meal and 0.7 in another totals 1.2, and you must buy TWO packs. Counting one
+    pack per appearance, or summing the fractions, or rounding per meal instead
+    of once at the end, all produce a plausible basket that the old checks
+    accepted. A draft using five packs of mince once reported a basket holding
+    one, and a plan consuming $221 of food shipped against a $40 budget.
+
+    Verified here:
+
+    * every line cost equals the cited pack price times the packs used
+    * pack counts are aggregated per product ACROSS MEALS and rounded up ONCE
+    * every basket total equals whole packs times price, for that store's cited
+      products
+    * every basket's citations really are at the store the basket names
+
+    Requires the citations, so it lives beside `assert_citations_match_retrieval`
+    rather than inside `assert_arithmetic`: both are the same shape of check,
+    which is that a number in the response must be traceable to a retrieved
+    record rather than merely self-consistent.
+    """
+    violations: list[str] = []
+    # store key -> ref -> packs accumulated across every meal
+    per_store: dict[str, dict[str, Decimal]] = {}
+
+    for meal in plan.meals:
+        for ing in meal.ingredients:
+            citation = citations.get(ing.citation_ref)
+            if citation is None:
+                violations.append(f"{meal.name!r}: {ing.citation_ref} is not a declared citation")
+                continue
+
+            expected = (citation.price_nzd * ing.packs).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+            if abs(expected - ing.line_cost_nzd) > tolerance:
+                violations.append(
+                    f"{meal.name!r} / {ing.item!r}: line cost {ing.line_cost_nzd} != "
+                    f"{citation.price_nzd} x {ing.packs} = {expected}"
+                )
+
+            key = f"{citation.store.value}#{citation.store_location}"
+            per_store.setdefault(key, {})
+            per_store[key][ing.citation_ref] = (
+                per_store[key].get(ing.citation_ref, Decimal("0")) + ing.packs
+            )
+
+    for basket in plan.baskets:
+        key = f"{basket.store.value}#{basket.store_location}"
+        used = per_store.get(key)
+        if used is None:
+            violations.append(f"basket at {basket.store_location} matches no meal ingredient")
+            continue
+
+        # Rounded up ONCE per product, after aggregating every meal's use.
+        expected_total = Decimal("0")
+        for ref, packs in used.items():
+            citation = citations.get(ref)
+            if citation is None:
+                continue
+            whole = packs.to_integral_value(rounding=ROUND_CEILING)
+            expected_total += whole * citation.price_nzd
+        expected_total = expected_total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        if abs(expected_total - basket.basket_total_nzd) > tolerance:
+            violations.append(
+                f"basket at {basket.store_location}: {basket.basket_total_nzd} != "
+                f"{expected_total} (whole packs at shelf price)"
+            )
+
+        if sorted(basket.citation_refs) != sorted(used):
+            violations.append(
+                f"basket at {basket.store_location} lists {sorted(basket.citation_refs)}, "
+                f"meals used {sorted(used)}"
+            )
+
+    if violations:
+        raise AssertionError(
+            "Plan figures do not follow from the citations "
+            f"({len(violations)}):" + chr(10) + chr(10).join(f"  - {v}" for v in violations)
         )
 
 

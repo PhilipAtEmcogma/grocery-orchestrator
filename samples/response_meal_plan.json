@@ -7,7 +7,7 @@
       "seq": 0,
       "type": "session",
       "session_id": "sess-7f3a9c21",
-      "turn_id": "turn-0002-c9d1-regen",
+      "turn_id": "turn-0002-c9d1",
       "version": "1.0"
     },
     {
@@ -18,11 +18,6 @@
     },
     {
       "seq": 2,
-      "type": "notice",
-      "message": "Using duration of 7 from your message rather than 3."
-    },
-    {
-      "seq": 3,
       "type": "citation",
       "citation": {
         "ref": "c1",
@@ -42,7 +37,7 @@
       }
     },
     {
-      "seq": 4,
+      "seq": 3,
       "type": "citation",
       "citation": {
         "ref": "c2",
@@ -62,7 +57,7 @@
       }
     },
     {
-      "seq": 5,
+      "seq": 4,
       "type": "citation",
       "citation": {
         "ref": "c3",
@@ -82,7 +77,7 @@
       }
     },
     {
-      "seq": 6,
+      "seq": 5,
       "type": "citation",
       "citation": {
         "ref": "c4",
@@ -102,7 +97,7 @@
       }
     },
     {
-      "seq": 7,
+      "seq": 6,
       "type": "citation",
       "citation": {
         "ref": "c5",
@@ -122,7 +117,7 @@
       }
     },
     {
-      "seq": 8,
+      "seq": 7,
       "type": "citation",
       "citation": {
         "ref": "c6",
@@ -142,7 +137,7 @@
       }
     },
     {
-      "seq": 9,
+      "seq": 8,
       "type": "citation",
       "citation": {
         "ref": "c7",
@@ -162,7 +157,7 @@
       }
     },
     {
-      "seq": 10,
+      "seq": 9,
       "type": "citation",
       "citation": {
         "ref": "c8",
@@ -182,7 +177,7 @@
       }
     },
     {
-      "seq": 11,
+      "seq": 10,
       "type": "citation",
       "citation": {
         "ref": "c9",
@@ -202,7 +197,7 @@
       }
     },
     {
-      "seq": 12,
+      "seq": 11,
       "type": "citation",
       "citation": {
         "ref": "c10",
@@ -222,7 +217,7 @@
       }
     },
     {
-      "seq": 13,
+      "seq": 12,
       "type": "citation",
       "citation": {
         "ref": "c11",
@@ -242,7 +237,7 @@
       }
     },
     {
-      "seq": 14,
+      "seq": 13,
       "type": "citation",
       "citation": {
         "ref": "c12",
@@ -262,7 +257,7 @@
       }
     },
     {
-      "seq": 15,
+      "seq": 14,
       "type": "citation",
       "citation": {
         "ref": "c13",
@@ -282,7 +277,7 @@
       }
     },
     {
-      "seq": 16,
+      "seq": 15,
       "type": "citation",
       "citation": {
         "ref": "c14",
@@ -302,7 +297,7 @@
       }
     },
     {
-      "seq": 17,
+      "seq": 16,
       "type": "citation",
       "citation": {
         "ref": "c15",
@@ -322,7 +317,7 @@
       }
     },
     {
-      "seq": 18,
+      "seq": 17,
       "type": "citation",
       "citation": {
         "ref": "c16",
@@ -342,25 +337,26 @@
       }
     },
     {
-      "seq": 19,
+      "seq": 18,
       "type": "token",
       "text": "This plan comes to the plan total against your budget of your budget."
     },
     {
-      "seq": 20,
+      "seq": 19,
       "type": "token",
       "text": " Reusing one pack across several meals kept the cost down."
     },
     {
-      "seq": 21,
+      "seq": 20,
       "type": "meal_plan",
       "data": {
         "household_size": 3,
         "days": 7,
-        "budget_nzd": "70",
-        "total_nzd": "18.62",
+        "budget_nzd": "90",
+        "total_nzd": "37.21",
+        "payable_total_nzd": "60.14",
         "within_budget": true,
-        "repair_attempts": 1,
+        "repair_attempts": 0,
         "meals": [
           {
             "name": "Scripted Dinner 1",
@@ -370,28 +366,32 @@
                 "item": "item c1",
                 "qty": "portion",
                 "citation_ref": "c1",
-                "line_cost_nzd": "0.33"
+                "packs": "0.3",
+                "line_cost_nzd": "0.66"
               },
               {
                 "item": "item c2",
                 "qty": "portion",
                 "citation_ref": "c2",
-                "line_cost_nzd": "1.27"
+                "packs": "0.3",
+                "line_cost_nzd": "2.55"
               },
               {
                 "item": "item c3",
                 "qty": "portion",
                 "citation_ref": "c3",
-                "line_cost_nzd": "0.45"
+                "packs": "0.3",
+                "line_cost_nzd": "0.89"
               },
               {
                 "item": "item c4",
                 "qty": "portion",
                 "citation_ref": "c4",
-                "line_cost_nzd": "0.63"
+                "packs": "0.3",
+                "line_cost_nzd": "1.26"
               }
             ],
-            "subtotal_nzd": "2.68"
+            "subtotal_nzd": "5.36"
           },
           {
             "name": "Scripted Dinner 2",
@@ -401,28 +401,32 @@
                 "item": "item c3",
                 "qty": "portion",
                 "citation_ref": "c3",
-                "line_cost_nzd": "0.45"
+                "packs": "0.3",
+                "line_cost_nzd": "0.89"
               },
               {
                 "item": "item c4",
                 "qty": "portion",
                 "citation_ref": "c4",
-                "line_cost_nzd": "0.63"
+                "packs": "0.3",
+                "line_cost_nzd": "1.26"
               },
               {
                 "item": "item c5",
                 "qty": "portion",
                 "citation_ref": "c5",
-                "line_cost_nzd": "0.75"
+                "packs": "0.3",
+                "line_cost_nzd": "1.50"
               },
               {
                 "item": "item c6",
                 "qty": "portion",
                 "citation_ref": "c6",
-                "line_cost_nzd": "0.43"
+                "packs": "0.3",
+                "line_cost_nzd": "0.86"
               }
             ],
-            "subtotal_nzd": "2.26"
+            "subtotal_nzd": "4.51"
           },
           {
             "name": "Scripted Dinner 3",
@@ -432,28 +436,32 @@
                 "item": "item c5",
                 "qty": "portion",
                 "citation_ref": "c5",
-                "line_cost_nzd": "0.75"
+                "packs": "0.3",
+                "line_cost_nzd": "1.50"
               },
               {
                 "item": "item c6",
                 "qty": "portion",
                 "citation_ref": "c6",
-                "line_cost_nzd": "0.43"
+                "packs": "0.3",
+                "line_cost_nzd": "0.86"
               },
               {
                 "item": "item c7",
                 "qty": "portion",
                 "citation_ref": "c7",
-                "line_cost_nzd": "0.52"
+                "packs": "0.3",
+                "line_cost_nzd": "1.05"
               },
               {
                 "item": "item c8",
                 "qty": "portion",
                 "citation_ref": "c8",
-                "line_cost_nzd": "0.82"
+                "packs": "0.3",
+                "line_cost_nzd": "1.65"
               }
             ],
-            "subtotal_nzd": "2.52"
+            "subtotal_nzd": "5.06"
           },
           {
             "name": "Scripted Dinner 4",
@@ -463,28 +471,32 @@
                 "item": "item c7",
                 "qty": "portion",
                 "citation_ref": "c7",
-                "line_cost_nzd": "0.52"
+                "packs": "0.3",
+                "line_cost_nzd": "1.05"
               },
               {
                 "item": "item c8",
                 "qty": "portion",
                 "citation_ref": "c8",
-                "line_cost_nzd": "0.82"
+                "packs": "0.3",
+                "line_cost_nzd": "1.65"
               },
               {
                 "item": "item c9",
                 "qty": "portion",
                 "citation_ref": "c9",
-                "line_cost_nzd": "1.43"
+                "packs": "0.3",
+                "line_cost_nzd": "2.85"
               },
               {
                 "item": "item c10",
                 "qty": "portion",
                 "citation_ref": "c10",
-                "line_cost_nzd": "1.53"
+                "packs": "0.3",
+                "line_cost_nzd": "3.06"
               }
             ],
-            "subtotal_nzd": "4.30"
+            "subtotal_nzd": "8.61"
           },
           {
             "name": "Scripted Dinner 5",
@@ -494,28 +506,32 @@
                 "item": "item c9",
                 "qty": "portion",
                 "citation_ref": "c9",
-                "line_cost_nzd": "1.43"
+                "packs": "0.3",
+                "line_cost_nzd": "2.85"
               },
               {
                 "item": "item c10",
                 "qty": "portion",
                 "citation_ref": "c10",
-                "line_cost_nzd": "1.53"
+                "packs": "0.3",
+                "line_cost_nzd": "3.06"
               },
               {
                 "item": "item c11",
                 "qty": "portion",
                 "citation_ref": "c11",
-                "line_cost_nzd": "0.17"
+                "packs": "0.3",
+                "line_cost_nzd": "0.33"
               },
               {
                 "item": "item c12",
                 "qty": "portion",
                 "citation_ref": "c12",
-                "line_cost_nzd": "0.17"
+                "packs": "0.3",
+                "line_cost_nzd": "0.33"
               }
             ],
-            "subtotal_nzd": "3.30"
+            "subtotal_nzd": "6.57"
           },
           {
             "name": "Scripted Dinner 6",
@@ -525,28 +541,32 @@
                 "item": "item c11",
                 "qty": "portion",
                 "citation_ref": "c11",
-                "line_cost_nzd": "0.17"
+                "packs": "0.3",
+                "line_cost_nzd": "0.33"
               },
               {
                 "item": "item c12",
                 "qty": "portion",
                 "citation_ref": "c12",
-                "line_cost_nzd": "0.17"
+                "packs": "0.3",
+                "line_cost_nzd": "0.33"
               },
               {
                 "item": "item c13",
                 "qty": "portion",
                 "citation_ref": "c13",
-                "line_cost_nzd": "0.24"
+                "packs": "0.3",
+                "line_cost_nzd": "0.48"
               },
               {
                 "item": "item c14",
                 "qty": "portion",
                 "citation_ref": "c14",
-                "line_cost_nzd": "0.30"
+                "packs": "0.3",
+                "line_cost_nzd": "0.60"
               }
             ],
-            "subtotal_nzd": "0.88"
+            "subtotal_nzd": "1.74"
           },
           {
             "name": "Scripted Dinner 7",
@@ -556,28 +576,32 @@
                 "item": "item c1",
                 "qty": "portion",
                 "citation_ref": "c1",
-                "line_cost_nzd": "0.33"
+                "packs": "0.3",
+                "line_cost_nzd": "0.66"
               },
               {
                 "item": "item c2",
                 "qty": "portion",
                 "citation_ref": "c2",
-                "line_cost_nzd": "1.27"
+                "packs": "0.3",
+                "line_cost_nzd": "2.55"
               },
               {
                 "item": "item c3",
                 "qty": "portion",
                 "citation_ref": "c3",
-                "line_cost_nzd": "0.45"
+                "packs": "0.3",
+                "line_cost_nzd": "0.89"
               },
               {
                 "item": "item c4",
                 "qty": "portion",
                 "citation_ref": "c4",
-                "line_cost_nzd": "0.63"
+                "packs": "0.3",
+                "line_cost_nzd": "1.26"
               }
             ],
-            "subtotal_nzd": "2.68"
+            "subtotal_nzd": "5.36"
           }
         ],
         "baskets": [
@@ -612,24 +636,23 @@
         ],
         "dietary_exclusions_applied": [
           "seafood"
-        ],
-        "payable_total_nzd": "60.14"
+        ]
       }
     },
     {
-      "seq": 22,
+      "seq": 21,
       "type": "done",
       "usage": {
         "model_ids": [
-          "apac.amazon.nova-lite-v1:0",
-          "apac.amazon.nova-pro-v1:0"
+          "scripted-fast",
+          "scripted-quality"
         ],
-        "input_tokens": 4336,
-        "output_tokens": 402,
-        "latency_ms": 4432,
+        "input_tokens": 1373,
+        "output_tokens": 120,
+        "latency_ms": 8420,
         "guardrail_intervened": false
       },
-      "server_time": "2026-08-23T09:44:30.790472Z"
+      "server_time": "2026-07-30T19:45:03Z"
     }
   ]
 }
