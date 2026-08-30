@@ -108,7 +108,7 @@ All of it exists.
 | Ingestion role | `grocery-ingestion-dev-role` | `config/iam-ingestion-role.json`; read+write on products only, no Bedrock, no idempotency |
 | State machine | `grocery-ingestion-dev` | `config/ingestion-state-machine.json` |
 | Schedule | `grocery-price-refresh-dev` | `cron(0 3 * * ? *)` Pacific/Auckland, ENABLED |
-| Products table | `grocery-products-dev` | **2,911 items** (152 fixture + 2,759 real), GSI1 + GSI2, PAY_PER_REQUEST |
+| Products table | `grocery-products-dev` | **2,759 items**, the real catalogue only, GSI1 + GSI2, PAY_PER_REQUEST |
 | Idempotency table | `grocery-idempotency-dev` | TTL ACTIVE |
 | Guardrail | `b1xezpqe04kx` version `2` | v2 published 2026-08-29; DRAFT deliberately not granted in IAM |
 | SNS topic | `grocery-orchestrator-alarms-dev` | alarms: handler-escaped, api-5xx; one confirmed email subscriber |
@@ -508,35 +508,70 @@ brand-specific is reachable since `resolve_product_key` matches on name and
 size. Ties break on display name, so a re-run cannot report `changed` on a day
 nothing changed.
 
-## 3j. The serving table now holds TWO catalogues, and should not — OPEN
+## 3j. One catalogue — fixture rows removed 2026-08-30
 
-The load was additive: no Lineage B key collided with a fixture key, so
-`grocery-products-dev` holds **152 fixture rows and 2,759 real ones**. That is a
-mixed catalogue, and it produces visibly inconsistent answers:
+The load was additive, so the table briefly held 152 fixture rows AND 2,759 real
+ones, and answered inconsistently: head terms hit the fixtures while meal plans
+drew on the real data. `cheapest milk near Albany` returned a *Devonport*
+fixture price though Albany had real data.
 
-| Request | Answers from |
+The fixture rows are gone. `scripts/load_seed_data.py --remove` deletes exactly
+the `(store_key, product_key)` pairs the fixture file names -- never a
+scan-and-filter, so every other row is untouched by construction rather than by
+a predicate someone has to get right. `--dry-run` reports what is present first,
+because "deleted 0 rows" and "the table was already clean" are different facts.
+Reverse with the loader itself; that symmetry is the point, since an operation
+you can undo is one you can afford to try.
+
+Live afterwards, every head term falling through to its Lineage B answer exactly
+as `config/product-synonyms.json`'s candidate ordering was built to do:
+
+| Request | Answer |
 |---|---|
-| `cheapest butter` | **fixture** -- `Pams Butter 500g`, Mangere |
-| `cheapest bananas` | **fixture** -- `Pams Bananas 1kg` |
-| `cheapest milk near Albany` | **fixture** -- a *Devonport* price, though Albany has real data |
-| `feed 3 people for 5 days on $80` | **real** -- Pak'nSAVE Albany, real products |
+| `cheapest butter` | Pak'nSAVE Albany, $9.49, Mainland Salted Butter |
+| `cheapest milk near Albany` | Pak'nSAVE **Albany**, $4.79, Pams Value Standard Milk |
+| `feed 3 people for 5 days on $80` | 5 meals, $33.34 payable |
 
-The cause is the synonym precedence working as designed, in a state it was not
-designed for. Head terms are tried fixture-first, and `butter-500g` still has
-rows, so the curated fixture answer wins; meal-plan candidates come from GSI2
-across the whole table, so they see the real data. Two different catalogues
-answering two different question types.
+**Consequence to carry:** `tests/test_price_repository_contract.py` run against
+the live table with `PRICE_REPO_DYNAMO_TABLE` expects fixture products. Those 31
+tests are skipped by default and their expectations now belong to the real
+catalogue.
 
-**The fix is to hold one catalogue.** Removing the 152 fixture rows makes every
-head term fall through to its Lineage B answer -- which is exactly what the
-candidate-list ordering in `config/product-synonyms.json` was built to do.
+## 3k. A dietary term the extractor produced and the table did not know — FIXED
 
-**Not done, because it is a deletion from a live table and was not asked for.**
-It is cheap to reverse (`python scripts/load_seed_data.py` restores all 152 in
-seconds from a committed file), and it has one real consequence worth deciding
-deliberately: `tests/test_price_repository_contract.py` run against the live
-table with `PRICE_REPO_DYNAMO_TABLE` expects fixture products, and those 31
-skipped tests would need their expectations moved to the real catalogue.
+Removing the fixtures surfaced this; it was never about the catalogue.
+`vegetarian dinner for 2 for 3 days on $50` was refused live with
+`UNSUPPORTED_EXCLUSION`, and the refusal listed "no meat" among the terms it
+supports **while refusing "meat"**.
+
+The extractor had returned the exclusion as the bare noun `meat`.
+`SUPPORTED_EXCLUSIONS` held `no meat` and not `meat`. The same request phrased as
+`vegetarian meal plan ...` produced a plan on the next call, so this was
+INTERMITTENT -- the worst shape for a safety control, because it passes review
+and fails a user.
+
+Fixed by adding `meat`, `dairy` and `eggs`, each mapping *exactly* as its
+negated form already does. That equality is asserted rather than written out: a
+bare noun excluding something different from its negation would be a second
+policy decision smuggled in as a synonym. A second test asserts every term
+`supported_terms()` advertises actually maps, which is the shape the defect took.
+
+The system behaved correctly throughout -- it failed closed and said so. The
+table was simply missing a spelling.
+
+### It also exposed a repair eval case that tested nothing
+
+`rb-003` is a budget-repair case whose exclusion was `dairy` -- the very term
+that was unmapped. It had been *failing via the unsupported path*, not by
+overspending, so it was scored as a budget case while testing nothing about
+budgets. With `dairy` mapped it reached the planner and passed at both one pack
+per product and three: at $90 for 3 people over 5 days it could not be made to
+overspend at all.
+
+Budget lowered to $50, where a normal plan fits and a 3x-pack plan does not,
+which is the discrimination a budget case owes. Recorded in the case `note` per
+the eval-discipline rule -- and worth being precise that this is not lowering a
+bar a model failed to clear: the case never exercised its own kind.
 
 ## 4. IAM notes worth keeping
 

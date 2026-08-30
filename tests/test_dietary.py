@@ -220,3 +220,44 @@ def test_price_check_is_not_blocked_by_unsupported_exclusion(repo):
     types = {e.type for e in response.events}
     assert "price_comparison" in types
     assert "error" not in types
+
+
+# ---------------------------------------------------------------- bare nouns
+
+
+@pytest.mark.parametrize(
+    ("bare", "negated"),
+    [("meat", "no meat"), ("dairy", "no dairy"), ("eggs", "no eggs")],
+)
+def test_a_bare_noun_maps_exactly_as_its_negated_form(bare: str, negated: str) -> None:
+    """
+    The extractor does not always phrase an exclusion the way the user did.
+
+    `vegetarian dinner for 2 for 3 days on $50` was refused live with
+    UNSUPPORTED_EXCLUSION because the model returned the exclusion as `meat`,
+    and the table had `no meat` but not `meat`. The refusal then listed "no
+    meat" among the supported terms while refusing "meat".
+
+    Asserted as EQUALITY with the negated form rather than against a literal
+    set: a bare noun that excluded something different from its negation would
+    be a second policy decision wearing a synonym's clothes.
+    """
+    assert SUPPORTED_EXCLUSIONS[bare] == SUPPORTED_EXCLUSIONS[negated]
+
+    categories, unsupported = map_exclusions([bare])
+    assert not unsupported
+    assert categories == sorted(SUPPORTED_EXCLUSIONS[negated])
+
+
+def test_the_refusal_message_never_lists_a_term_it_would_refuse() -> None:
+    """
+    Every term `supported_terms()` offers must actually map.
+
+    The live defect was visible in exactly this shape -- the message advertised
+    "no meat" while the request for "meat" was being refused. A user reading
+    that has no way to act on it.
+    """
+    for term in supported_terms():
+        categories, unsupported = map_exclusions([term])
+        assert not unsupported, f"{term!r} is advertised but refused"
+        assert categories, f"{term!r} is advertised but excludes nothing"

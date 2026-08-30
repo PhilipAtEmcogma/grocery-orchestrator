@@ -22,12 +22,14 @@
     {
       "id": "rb-003",
       "kind": "budget",
-      "message": "meals for 3 people for 5 days, $90, no dairy",
+      "message": "meals for 3 people for 5 days, $50, no dairy",
       "household_size": 3,
       "days": 5,
-      "budget_nzd": "90.00",
-      "exclusions": ["dairy"],
-      "note": "Cutting cost while holding an exclusion. Req 5.3 exists because a repair pass once regenerated without the allergy it was never told about."
+      "budget_nzd": "50.00",
+      "exclusions": [
+        "dairy"
+      ],
+      "note": "Cutting cost while holding an exclusion. Req 5.3 exists because a repair pass once regenerated without the allergy it was never told about. BUDGET LOWERED 90.00 -> 50.00 on 2026-08-30, and the reason is not that a model underperformed: at $90 this case passed at ONE pack per product and at THREE, so it never exercised budget repair at all and was scored as a budget case while testing nothing about budgets. It only ever failed because the bare term 'dairy' was unmapped and it took the UNSUPPORTED_EXCLUSION path -- failing for a reason unrelated to its kind, which is how the defect stayed hidden. At $50 a normal plan fits and a 3x-pack plan does not, which is the discrimination a budget case owes."
     },
     {
       "id": "rb-004",
@@ -57,7 +59,9 @@
       "household_size": 4,
       "days": 3,
       "budget_nzd": "75.00",
-      "exclusions": ["vegetarian"],
+      "exclusions": [
+        "vegetarian"
+      ],
       "validation_errors": [
         "ingredient qty '500g for $5' states '$5'",
         "ingredient item 'Butter (was 7.50, now 5.00)' states '7.50'"
