@@ -28,6 +28,66 @@ proposed, or gated as labelled; it is not implemented.
   Reconciled requirements, design, task status, contract/schema guidance,
   README/AGENTS, steering, and ADRs; cross-document review and offline gates
   passed on 2026-08-23.
+  - [x] **Pilot Task 1 follow-up (a) — Answer the external audit of
+    2026-08-30.** Completed 2026-08-31. An outside technical and product audit
+    was taken at commit `5ace934`; `docs/AUDIT-RESPONSE-2026-08-30.md` replies
+    to it finding by finding, with every claim re-checked against the code
+    rather than accepted.
+
+    **Four merges landed between the audited commit and the reply**, closing
+    three headline findings before they were published: the CDK "stubs plus
+    TODO comments" (`7eab93a` deployed two stacks), the recipe blocker as a
+    head-term problem (`0146263` curated 29 recipes), and GSI2 missing from
+    `stateful-stack.ts`. Recorded because it is the ordinary condition of a
+    review — a finding needs a commit attached, not a date.
+
+    **D3, and the tripwire behind it.** The audit found that
+    `scripts/check_recipe_coverage.py` resolved through the 26-product fixture
+    file while this ledger, `src/recipes/base.py` and the README all described
+    the real catalogue. It did not find that the forcing test guarding the 15b
+    decision had the same defect: it watched the fixture catalogue, which
+    cannot grow, so its trigger was unreachable. Fixed by making the instrument
+    name its inputs — `src/recipes/catalogue.py`, a script that prints
+    catalogue and recipe-set identity every run and refuses `--fail-under`
+    from the fixtures, and a forcing test pointed at `datasets/` that skips
+    rather than falling back. The 15b conclusion survived, which was luck and
+    is now a control.
+
+    **The streaming rejection's stated reason was obsolete; the conclusion was
+    not.** `design.md` §8 rejected streaming as a gateway bypass costing
+    throttling, usage plans and authentication. API Gateway REST added response
+    streaming in Nov 2025 and that trade is gone. But the Python managed
+    runtime does not support response streaming and SnapStart supports managed
+    runtimes only — so streaming costs SnapStart, which is the trade `AGENTS.md`
+    already refuses for containers, and meal-plan p95 is 12.2s against a 29s
+    ceiling that is therefore not binding. §8 and §9 now record the runtime as
+    the blocker. Req 7.9 stays a GAP. **Every latency-derived decision the
+    audit proposed re-opening — the Sonnet exclusion, `MAX_ITEMS_PER_TURN`, the
+    repair bound, the AgentCore p99 contingency — waits on a load run, because
+    p99 is undefined at n=3.**
+
+    Also fixed: `dynamo.py`'s module header said "scans the base table" two
+    commits after GSI2 replaced it (D5); `FRONTEND-INTEGRATION.md`'s event
+    tables still showed money in prose the orchestrator stopped emitting on
+    2026-08-29, re-derived from a real turn (D7); `build_graph()` compiled per
+    request (17.16ms → 2.81ms per offline turn, memoised on the dependency
+    pair, keyed on identity so two fixture catalogues can never share a graph);
+    and a set of stale counts and statuses across README, AGENTS and this file.
+
+    Declined with reasons: the second retrieval query on the empty path, the
+    MCP protocol bump, and D9's cost figures (the audit compares Bedrock config
+    against Anthropic first-party list prices, which are different price
+    lists). **D1 — the provenance of the 2,759 served rows — remains open and
+    is not an engineering task**: the tripwire in `ingestion/sources.py`
+    protects the ingestion Lambda, not the serving table.
+
+    Account-side recommendations are a runbook in §5 of the response rather
+    than actions: the API key on usage plan `v4yd7d`, arming Req 12.5, the
+    200-turn load run, and the restore drill.
+
+    Offline gates passed: 811 passed, 31 skipped; evals unchanged at intent
+    76.7%, meal plan 100%, prose 100%, repair 100%; 19/19 demos, demo 11 output
+    byte-identical.
 - [x] **Pilot Task 2 — Correct citation construction and money-free rendering;
   partially strengthen grounding evidence.** Citations now use configured table,
   `store_key`, and normalized `product_key`; citation-before-use and basic source
@@ -972,35 +1032,52 @@ proposed, or gated as labelled; it is not implemented.
     if EVERY ingredient can be priced: a payable total computed from part of a
     shopping list is a number the shopper cannot spend to, and `within_budget`
     derived from it is a false promise — the one failure this codebase exists to
-    prevent. Measured over both datasets:
+    prevent.
 
-    | | |
-    |---|---|
-    | recipes | 175 |
-    | best recipe | **75%** of ingredients costable |
-    | median recipe | ~12% |
-    | recipes at 100% | **0** |
-    | recipes at ≥90% | **0**, under any staples assumption |
+    **Re-measured 2026-08-31 against BOTH product catalogues** (audit finding
+    D3). The figures below used to be the fixture ones alone, while this entry,
+    `src/recipes/base.py` and the README all described the real catalogue:
+
+    | product catalogue | best | median | at 100% | at ≥90% |
+    |---|---|---|---|---|
+    | `datasets/` — 528 products, 2,939 rows | **75%** | 17% | **0** | **0** |
+    | `fixtures/` — 26 products, 152 rows | **75%** | 12% | **0** | **0** |
+
+    Zero under any staples assumption, either way. **The decision below was
+    sound and was reached by luck**: it rested on an instrument pointed at the
+    26-product fixture file and survived only because the answer happened to be
+    the same against the real catalogue. It is now held by a control —
+    `test_the_two_catalogues_agree_that_the_imported_recipes_are_unusable`.
 
     **The two datasets were built for different jobs.** TheMealDB recipes are
     international home cooking, median 11 ingredients, reaching for soy sauce
     (53 recipes), garlic (43), lime (36), fish sauce (36), ginger (34) and
-    coriander (29). The product catalogue is 300 items per store across 17
-    categories, weighted to fresh produce, meat and dairy, with no spice rack,
-    no condiments and no long tail. `water` appears in 42 recipes and is not a
-    grocery product at all.
+    coriander (29). The product catalogue is weighted to fresh produce, meat and
+    dairy, with no spice rack, no condiments and no long tail. `water` appears
+    in 42 recipes and is not a grocery product at all.
 
     Widening "assumed on hand" from {water, salt, pepper} to a full spice rack
     and pantry — 40+ terms — moved usable recipes **from zero to zero**. The gap
     is not staples, and a generous staples list would only have hidden costs the
     shopper still has to pay.
 
-    `test_task_15_is_blocked_by_data_and_will_say_when_it_is_not` FAILS WHEN THE
+    `test_the_imported_catalogue_still_cannot_be_planned_from` FAILS WHEN THE
     BLOCKER LIFTS, verified by simulating a complete catalogue. Same forcing
     shape as the Scan ceiling in 6b, pointed the other way, so "not enough data
     yet" cannot quietly become permanent.
+
+    **It watches `datasets/` now, and until 2026-08-31 it watched the
+    fixtures** — a catalogue `scripts/generate_fixtures.py` regenerates to a
+    fixed shape and which therefore cannot grow. Its trigger condition was
+    unreachable, so it read as a working control and guarded nothing. It skips
+    rather than falling back when the dataset is absent, because a forcing test
+    that quietly re-points at a catalogue which cannot change is the defect it
+    was just corrected for.
+
     `python scripts/check_recipe_coverage.py --missing 20` reports the distance
-    and names what is absent.
+    and names what is absent. It prints the catalogue and recipe set it
+    resolved against on every run, and refuses `--fail-under` against the
+    fixtures while the real catalogue is available.
 
     **DECIDED 2026-08-30 (Philip): option (b), sequenced AFTER the IaC work.**
 

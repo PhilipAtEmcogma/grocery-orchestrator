@@ -381,7 +381,9 @@ being done from here.
 | `src/recipes/base.py` | Coverage figures given for both catalogues, with the D3 correction recorded |
 | `FRONTEND-INTEGRATION.md` | Stale money re-derived from a real turn; header records what the old warning said and why it is gone (D7) |
 | `design.md` §8, §9 | The streaming rejection's stated reason was obsolete; the conclusion now rests on the runtime/SnapStart conflict |
-| `README.md`, `AGENTS.md` | Test counts 763 → 811; Task 15 row said "blocked" when 15b had shipped; removed a bullet that contradicted a decision recorded 23 lines above it |
+| `README.md` | Test counts 763 → 811; Task 15 row said "blocked" when 15b had shipped; removed a bullet contradicting a decision recorded 23 lines above it; "the planned WebSocket upgrade" corrected to REST streaming, superseded rather than deferred; layout block was missing `recipes/`, `review/` and `mcp/` entirely |
+| `AGENTS.md` | Blockers paragraph still listed Tasks 9–11 and 15b, all shipped; two new working-agreement rules — clear the graph cache if you patch a node, and *Name the catalogue a measurement used* |
+| `tasks.md` | Pilot Task 1 follow-up (a) records this work; 15c's coverage table gave the fixture figures under a real-catalogue heading and named a test that had been renamed |
 
 **Gates:** 811 passed, 31 skipped; ruff check and format clean; `validate.py`
 with all five negative controls; 19/19 demos; pyright unchanged at 4

@@ -123,16 +123,16 @@ variable:
   because `CORS_ORIGIN=*` would fail it and needs the frontend origin first.
   §3g.
 
-**Three decisions waiting on a person** — each has its evidence gathered and its
-options written down; none needs more code first:
+**One decision still waiting on a person**, of three that were. Each had its
+evidence gathered and its options written down; none needed more code first.
 
 1. ~~**The recipe catalogue and the product catalogue do not meet.**~~
-   **Decided 2026-08-30:** curate ~20–30 recipes written against *this*
-   catalogue rather than importing a general recipe API — 100% costable by
-   construction, since there are ~418 known terms to write against.
-   **Sequenced after the IaC work (Tasks 9–11)**, because Task 15 is
-   prompt-and-data work with almost no AWS surface and the CDK work is what
-   every reproducibility and cost claim waits on. `tasks.md` Pilot Task 15b.
+   **Decided 2026-08-30, and done.** Curate ~20–30 recipes written against
+   *this* catalogue rather than importing a general recipe API — 29 shipped,
+   29/29 costable against the real catalogue. It was sequenced after the IaC
+   work (Tasks 9–11) because Task 15 is prompt-and-data work with almost no
+   AWS surface; both landed on 2026-08-30/31, so the sequencing is history
+   rather than a plan. `tasks.md` Pilot Task 15b.
 2. ~~**Gate repair at 90%?**~~ **Decided and applied 2026-08-30.** Three reps
    each confirmed the structure — Nova Lite 91.7%, Claude Haiku 83.3%, identical
    every rep, failing in opposite halves. Haiku is excluded from `repair_plan`
@@ -219,9 +219,15 @@ generate_prose -> finalise -> END
 - **Event-shaped contract.** The response is always a list of typed events
   (`session`, `intent`, `citation`, `price_comparison`, `meal_plan`,
   `notice`, `no_data`, `error`, `done`), defined once in
-  `src/schemas/contract.py`. Over REST the whole list returns at once; the
-  planned WebSocket upgrade emits the same events one at a time, so the
-  contract doesn't change when the transport does.
+  `src/schemas/contract.py`. Over REST the whole list returns at once; a
+  streaming transport would emit the same events one at a time, so the
+  contract doesn't change when the transport does. That upgrade is **not
+  built and no longer means WebSockets** — API Gateway REST gained response
+  streaming in Nov 2025, which keeps the throttling, usage plans and
+  authorizers a WebSocket API would make you rebuild. What blocks it now is
+  the runtime, not the gateway: the Python managed runtime does not support
+  response streaming and SnapStart does not support the OS-only runtime that
+  does. `design.md` §8 has the reasoning.
 - **Grounding is structural.** See above — enforced by
   `assert_grounded()`, and `assert_arithmetic()` re-derives every subtotal
   and total to make sure a plan's numbers actually add up.
@@ -257,7 +263,9 @@ architecture in detail; this is the map, not the territory.
 src/
   schemas/contract.py      The wire contract — single source of truth
   graph/                   LangGraph state machine
-    build.py                 Topology; the shape IS two of the invariants
+    build.py                 Topology; the shape IS two of the invariants.
+                             compiled_graph() memoises on the dependency pair —
+                             clear it if you monkeypatch a node
     state.py                 GroceryState — what every node reads and writes
     dietary.py               Exclusion term -> category, or an honest refusal
     feasibility.py           Is this budget possible at all (see docs/OPEN-REVIEW-*)
@@ -266,6 +274,16 @@ src/
                            scripted stand-in, guardrail tagging
   prompts/                 System/user prompts and the price-free draft schemas
   retrieval/               PriceRepository protocol; fixture and DynamoDB impls
+  recipes/                 Curated catalogue (Req 2.9): the recipes, their
+                           dietary classification, deterministic assembly into
+                           a PlanDraft, and catalogue.py — a product catalogue
+                           that names its own source and size, because a
+                           coverage number without one measures nothing
+  review/                  Task 14a: the sanitised snapshot a data-quality
+                           reviewer would sit behind, and the validation its
+                           findings must survive. No reviewer is deployed
+  mcp/                     Local read-only MCP façade: two coarse tools over
+                           stdio, default-off, rate and session capped
   store/                   Idempotency: in-memory and DynamoDB
   observability/           Telemetry protocol, instrumented wrappers, Powertools
   runner.py                ChatRequest -> graph -> validated ChatResponse
@@ -578,7 +596,10 @@ against the deployed endpoint under load.
 **Gated until there is evidence to justify them:** cross-Region inference
 profiles; recipe/catalogue Knowledge Bases (never price authority); advisory
 Automated Reasoning; Bedrock Model Evaluation and AgentCore Evaluations as
-companions to the local suites rather than replacements; WebSocket delivery;
+companions to the local suites rather than replacements; **WebSocket delivery
+— now superseded rather than deferred**, since REST response streaming reaches
+the same outcome on the API that already exists (blocked on the Python
+runtime/SnapStart conflict, `design.md` §8, not on the gateway);
 remote MCP; separate environments. AgentCore Memory needs Cognito, consent, TTL,
 export and deletion, and a privacy review first, and never holds prices. Moving
 the shopper meal path onto AgentCore Runtime is a separate contingency for a p99

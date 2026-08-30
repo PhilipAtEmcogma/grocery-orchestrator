@@ -341,13 +341,24 @@ rule about publishing a price without its capture date, wearing a different hat.
 **`config/` ships inside the Lambda archive**, so retuning a threshold is a
 deploy. That is the argument for Task 7b's SSM work.
 
-Blockers are now **Tasks 9–11 (IaC), 14, 15b and 16**. Closed 2026-08-30: Task
-8 (local MCP, `src/mcp/`), Task 12 substantially (8 alarms, dashboard, Budget,
-first deployed latency and cost baselines), Task 13's first half (the real
-2,759-row catalogue is loaded), and deferral 6b (GSI2). Task 15 is **blocked on
-data, measured**: zero of 175 recipes are fully priceable, and a forcing test
-fails when that changes. AgentCore and the managed-evaluation stages remain
-proposed, not built.
+Blockers are now **Tasks 13, 15c and 16**, plus Task 14's Runtime behind ADR
+0002. Closed 2026-08-30: Task 8 (local MCP, `src/mcp/`), Task 12 substantially
+(8 alarms, dashboard, Budget, first deployed latency and cost baselines), Task
+13's first half (the real 2,759-row catalogue is loaded), and deferral 6b
+(GSI2). Closed 2026-08-30/31: **Tasks 9–11** (two CDK stacks deployed, tables
+adopted by reference, service plane at verified parity — the cutover is
+deferred by decision, `ARCHITECTURE.md` §3m), **Task 14a** (the reviewer's
+boundary), and **Task 15b** (29 curated recipes, 29/29 costable against the
+real catalogue, assembled by `src/recipes/planning.py`).
+
+**Task 15 is no longer blocked on data; 15c is blocked on nothing but work** —
+the selection prompt, the graph branch, and an eval suite. The *imported* 175
+recipes remain unusable and that is now measured against both catalogues: 0 at
+100% against `datasets/` (best 75%, median 17%) and against `fixtures/` (best
+75%, median 12%). Until 2026-08-31 only the fixture figure existed while every
+document described the real catalogue — see *Name the catalogue a measurement
+used* below. AgentCore and the managed-evaluation stages remain proposed, not
+built.
 
 Two deliberate deferrals carry their reasoning in `tasks.md`: a bare
 `price of mushrooms` is still refused by the Guardrail (3d), and SSM routing
@@ -366,8 +377,45 @@ load evidence the deferral required.
   without tagging.
 - **Nodes are `state → partial state`.** Pure functions, independently
   testable.
+- **The compiled graph is memoised, so clear the cache if you patch a node.**
+  `compiled_graph()` in `src/graph/build.py` keys on the `(repo, model)` pair —
+  the compile measured 13.4 ms and was 78% of an offline turn, on a path where
+  the handler already caches both dependencies. A graph resolves its node
+  functions from `src.graph.nodes` AT BUILD TIME, so a test that monkeypatches
+  one is only testing anything if the graph is built after the patch.
+  `tests/conftest.py` calls `clear_graph_cache()` around every test so nothing
+  depends on that by accident; anything outside the suite has to do it itself.
+  Never key that cache on anything but identity — `InMemoryPriceRepository`
+  takes a fixture path, so collapsing two would answer a turn from the wrong
+  catalogue with every assertion passing.
 - Python 3.13, region `ap-southeast-2` (Sydney).
 - Line length 100. Ruff with bandit (`S`) rules enabled.
+
+### Name the catalogue a measurement used
+
+**A coverage or resolution number is not quotable unless the thing it resolved
+against is named in the same breath.** `scripts/check_recipe_coverage.py`
+resolved through `InMemoryPriceRepository()` — the 26-product fixture file —
+while `src/recipes/base.py`, `tasks.md` and the README all described the
+measurement as being against the real 2,939-row catalogue. Three documents
+agreed with each other and none of them agreed with the code, and a blocking
+decision on Req 2.9 rested on the result.
+
+Worse, the forcing test guarding that decision had the same defect. Its
+condition is "the product catalogue grew enough to price whole recipes" and it
+watched the **fixture** catalogue, which `scripts/generate_fixtures.py`
+regenerates to a fixed shape and which therefore cannot grow. The trigger was
+unreachable. It read as a working control and guarded nothing — the same shape
+as the secret scan that never ran and the privacy test that read one stream.
+
+So: `src/recipes/catalogue.py` holds a `Catalogue` that carries its own source
+path and size and `describe()`s itself; the script prints both catalogue and
+recipe-set identity on every run and **refuses to gate** (`--fail-under`) from
+the fixtures when the real catalogue is available; and `tests/test_recipes.py`
+asserts both catalogues reach the same conclusion rather than trusting one.
+
+The conclusion did survive, which was luck and not evidence. If you add a
+measurement here, make the instrument name its inputs.
 
 ---
 
@@ -399,7 +447,9 @@ python -m pytest tests/test_ingestion.py         # ingestion; no AWS
 python scripts/check_quotas.py                    # throughput ceiling, live
 python Philip_demo/run_all.py                     # nineteen demos, offline; DEMO_MODE=aws|integration
 MCP_ENABLED=1 python scripts/mcp_server.py        # local read-only MCP over stdio
-python scripts/check_recipe_coverage.py --missing 20   # why Task 15 is blocked
+python scripts/check_recipe_coverage.py --missing 20   # imported recipes vs the REAL catalogue
+python scripts/check_recipe_coverage.py --recipes curated              # 29/29 costable
+python scripts/check_recipe_coverage.py --recipes curated --catalogue fixtures  # 14/29
 python scripts/measure_latency.py                 # latency against the DEPLOYED endpoint
 ```
 
