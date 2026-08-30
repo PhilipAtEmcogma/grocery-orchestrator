@@ -728,6 +728,15 @@ scopes the topic to the ACT of gathering. **A bare `price of mushrooms` is still
 refused and remains open** — three rounds of tuning moved qualified queries but
 not the unqualified noun.
 
+**Two open defects on the deployed service, both backend, found 2026-08-30.**
+The Lambda sets `BEDROCK_GUARDRAIL_VERSION=1` while every document and all the
+qualifying evidence describe version 2, so benign mushroom and truffle-oil
+queries are refused live (`docs/ARCHITECTURE.md` §3f). And nothing implements
+Req 12.5: dropping `USE_DYNAMODB` or `USE_BEDROCK` silently selects fixtures and
+the scripted model, and the service would keep returning valid-looking grounded
+citations about fake products (§3g). **No offline gate can see a deployed
+environment variable** — that is why both survived every check.
+
 **Known pilot blockers:** IaC, a code refresh, and operational evidence — not
 deployment itself, which happened on 2026-08-27 and was mis-recorded here until
 2026-08-30. Pilot Tasks 1–7 closed on 2026-08-29 — grounding proof, live

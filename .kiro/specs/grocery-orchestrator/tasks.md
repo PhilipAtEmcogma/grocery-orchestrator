@@ -306,7 +306,8 @@ proposed, or gated as labelled; it is not implemented.
     is about the product. No location still means national results (Req 1.6),
     and a location never silently widens back.
 
-    **The threshold is config** (`config/freshness.json`, 14 days) and is
+    **The threshold is config** (`config/freshness.json`; 14 days when this
+    task closed, raised to 45 on 2026-08-30 — see the Task 13 note) and is
     measured against an INJECTABLE reference date. That is not a testing
     convenience. Committed fixtures carry a fixed capture date, so under a wall
     clock they drift into staleness as calendar time passes: judged against
@@ -947,8 +948,10 @@ enforcement from `run_turn()` remains the explicit Task 2 follow-up.*
   — *Req 9.5* — **[current blocker: model-specific access and missing scorecards]**
 - [x] **5.8** Red-team case set for content safety, covering both content that
   must be blocked and content that must be allowed
-- [ ] **5.9** Harness that runs the red-team set against the numbered live
-  Guardrail and reports each case's outcome
+- [x] **5.9** Harness that runs the red-team set against the numbered live
+  Guardrail and reports each case's outcome — closed 2026-08-29 by Pilot Task 3
+  follow-ups (a) and (b): the harness's own controls were fixed first, then
+  13/13 must-block and 9/9 must-allow recorded against version 2
 
 *3.9 and 5.7 were answered on 2026-08-29 and both results are in
 `docs/LIVE-EVAL-RUNBOOK.md` §8. Intent scorecards against guardrail version 2:
@@ -1060,7 +1063,11 @@ hold in production.*
 - [ ] **7.5** Implement per-retailer acquisition with isolated failure
   — *Req 8.5*
 - [ ] **7.6** Orchestrate acquisition with parallel per-retailer error handling
-- [ ] **7.7** Implement name normalisation in ingestion — *Req 8.3*
+- [x] **7.7** Implement name normalisation in ingestion — *Req 8.3* — closed
+  2026-08-30. `ingestion/lineage_b.py` derives one canonical `product_key` from
+  a retailer's product name and size, so the same item at Pak'nSave and New
+  World shares a key and GSI1 can compare them; 251 of ~400 distinct keys occur
+  in both chains. Deriving it is what makes the comparison possible at all
 - [ ] **7.8** Schedule the refresh — *Req 8.4*
 - [x] **7.9** Assess terms-of-service risk before live acquisition — *Req 8.8*
   — `ACQUISITION-RISK.md`
@@ -1094,8 +1101,12 @@ It gates 6.8.*
 - [x] **8.2** Dependency vulnerability scanning
 - [x] **8.3** Secret scanning
 - [x] **8.4** Exclude personal data from logs — *Req 11.5*
-- [ ] **8.5** Per-function roles scoped to named resources — *Req 11.1*
-  — **[superseded by Pilot Tasks 9–10]**
+- [x] **8.5** Per-function roles scoped to named resources — *Req 11.1* —
+  four roles live in `ap-southeast-2`, one per principal: orchestrator,
+  ingestion, Step Functions and scheduler. Read-only on products for the
+  orchestrator with GSI1 and GSI2 named explicitly and `Scan` removed;
+  ingestion cannot read the model or the idempotency table. Codifying them in
+  CDK remains Pilot Tasks 9–10
 - [ ] **8.6** Managed secret storage — *Req 11.2* — **[superseded by Pilot Task 10]**
 - [ ] **8.7** Gateway throttling and usage plans — *Req 11.4*
   — **[superseded by Pilot Task 10]**
@@ -1103,9 +1114,13 @@ It gates 6.8.*
 - [x] **8.9** Define the content safety policy as version-controlled data and
   validate it offline — *Req 5.5*
 - [ ] **8.10** Verify the content safety policy against the numbered live
-  Guardrail using the red-team set from 5.8 — *Req 5.5*; harness construction
-  and propagation moved to Pilot Task 3, qualifying live policy evidence remains
-  in its unchecked follow-up
+  Guardrail using the red-team set from 5.8 — *Req 5.5*. **The policy was
+  verified (13/13 + 9/9 against version 2, 2026-08-29) but the SERVICE DOES NOT
+  APPLY IT.** `grocery-orchestrator-dev` sets `BEDROCK_GUARDRAIL_VERSION=1`, so
+  production runs the version whose foraging over-block version 2 fixed —
+  confirmed live on 2026-08-30: `how much is truffle oil` and `cheapest button
+  mushrooms` both return `GUARDRAIL_BLOCKED`. Verifying a policy and applying it
+  are two different facts and this task needs both. See `docs/ARCHITECTURE.md` §3f
 - [x] **8.11** Tag untrusted input so the prompt-attack filter evaluates it
   — *Req 6.5*
 - [x] **8.12** Fail closed when no content safety filter is configured
@@ -1246,10 +1261,15 @@ step that gets skipped.*
 
 - [x] **10.1** Build the deployment archive excluding unused transitive
   packages
-- [ ] **10.2** Enable snapshot-based cold-start optimisation on a published
-  alias — **[superseded by Pilot Task 10]**
-- [ ] **10.3** Deploy the endpoint with cross-origin support
-  — **[superseded by Pilot Tasks 10–11; strict CORS required]**
+- [x] **10.2** Enable snapshot-based cold-start optimisation on a published
+  alias — live: alias `grocery-orchestrator-dev:live`, SnapStart
+  `OptimizationStatus: On`, and the X-Ray trace shows a `Restore` subsegment of
+  ~0.6s. Codifying it in CDK remains Pilot Task 10
+- [x] **10.3** Deploy the endpoint with cross-origin support — live:
+  `POST /dev/chat` on `woqmel35lk`, CORS emitted by the handler and `OPTIONS`
+  answered by it. **`CORS_ORIGIN` is `*`**, which Req 12.5 and `security.md`
+  forbid for a production stage; that tightening is Pilot Task 10 and needs the
+  frontend's origin to exist first
 - [ ] **10.4** Regenerate live configuration locally and record sanitized
   adoption assertions — *Req 12.4*; superseded by Pilot Task 9
 - [ ] **10.5** Measure latency on the plan path and record percentiles

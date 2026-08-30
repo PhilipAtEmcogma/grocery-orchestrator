@@ -117,9 +117,11 @@ over introducing additional products, to reduce both cost and waste.
 2.8 **IF** budget, household size, or duration required for a meal plan is not
 stated **THEN THE SYSTEM SHALL NOT** infer it and shall return a contract-valid,
 actionable clarification instead.
-*Current defect: the reference implementation defaults missing household size
-and duration and can route a missing budget through the infeasible-plan path.
-Pilot Task 4 corrects this before deployment.*
+*Closed 2026-08-29 by Pilot Task 4a and verified live on 2026-08-30. The
+implementation previously defaulted missing household size and duration and
+routed a missing budget through the infeasible-plan path — `feed my flat of 3
+this week` invented a `$0` budget and answered `BUDGET_INFEASIBLE`. It now emits
+a `clarification` event naming what it needs.*
 
 2.9 **[GAP]** **WHEN** producing a meal plan **THE SYSTEM SHALL** select meals
 from a curated recipe catalogue rather than composing them freely.

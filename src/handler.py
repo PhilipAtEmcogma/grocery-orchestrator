@@ -43,6 +43,7 @@ import contextlib
 import json
 import os
 import time
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
@@ -120,6 +121,90 @@ _model: ModelClient | None = None
 _idempotency: IdempotencyStore | None = None
 
 
+# --------------------------------------------------------------------------
+# Production-mode fail-closed check (Req 12.5)
+# --------------------------------------------------------------------------
+
+STAGE_ENV = "APP_STAGE"
+PRODUCTION_STAGES = frozenset({"prod", "production", "pilot"})
+
+# What a stage serving real shoppers must have. Each maps to a dependency that
+# otherwise falls back to a DEMO implementation, silently.
+_PRODUCTION_REQUIREMENTS: tuple[tuple[str, str | None, str], ...] = (
+    ("USE_DYNAMODB", "1", "the stored price repository (otherwise: 26 fixture products)"),
+    ("USE_BEDROCK", "1", "the Bedrock model plane (otherwise: the scripted stand-in)"),
+    ("BEDROCK_GUARDRAIL_ID", None, "a content-safety policy on every generation call"),
+    ("BEDROCK_GUARDRAIL_VERSION", None, "a NUMBERED guardrail version, never DRAFT"),
+    ("CORS_ORIGIN", None, "a single named origin"),
+)
+
+
+class ConfigurationError(RuntimeError):
+    """A production stage is missing configuration it cannot run correctly without."""
+
+
+def assert_production_configuration(env: Mapping[str, str] | None = None) -> None:
+    """
+    Req 12.5. Fail startup rather than silently serve a demo.
+
+    THE FAILURE THIS PREVENTS IS INVISIBLE, WHICH IS WHY IT NEEDS A CHECK.
+    `_dependencies()` selects by environment: `USE_DYNAMODB=1` picks DynamoDB,
+    `USE_BEDROCK=1` picks Bedrock, and anything else falls through to the
+    fixture repository and the scripted client. Drop one variable in production
+    and the endpoint keeps returning HTTP 200 with well-formed, grounded,
+    arithmetically verified citations -- computed from 26 invented products by a
+    rule-based stand-in. Every invariant in this system still holds. No metric
+    looks wrong. The answers are simply not about real prices.
+
+    That is worse than an outage, because an outage is visible.
+
+    THIS EXISTS BECAUSE A REAL DRIFT WENT UNNOTICED. On 2026-08-30 the deployed
+    function was found applying Guardrail version 1 while every document and all
+    the qualifying evidence described version 2 -- a documented `must_allow`
+    case was being refused in production while the record said 9/9. Nothing
+    offline can read a deployed environment variable, so no gate could see it.
+    A startup assertion is where that class of drift becomes visible, because it
+    runs in the environment it is asserting about.
+
+    `DRAFT` is rejected explicitly: it is a moving target, and evidence
+    collected against it describes whatever the policy happened to be that day.
+    `CORS_ORIGIN=*` is rejected because `security.md` requires production to
+    reject wildcard CORS -- an anonymous pilot still names its one origin.
+
+    Non-production stages are unaffected: the whole point of the fallbacks is
+    that the graph runs on a laptop with no AWS account.
+    """
+    # A separate name: rebinding the parameter leaves its declared Optional
+    # type in play and every later .get() reads as a possible None.
+    config: Mapping[str, str] = os.environ if env is None else env
+    stage = config.get(STAGE_ENV, "").strip().lower()
+    if stage not in PRODUCTION_STAGES:
+        return
+
+    problems: list[str] = []
+    for name, required_value, why in _PRODUCTION_REQUIREMENTS:
+        actual = config.get(name, "").strip()
+        if not actual:
+            problems.append(f"{name} is unset - {why}")
+        elif required_value is not None and actual != required_value:
+            problems.append(f"{name}={actual!r}, expected {required_value!r} - {why}")
+
+    version = config.get("BEDROCK_GUARDRAIL_VERSION", "").strip()
+    if version.upper() == "DRAFT":
+        problems.append(
+            "BEDROCK_GUARDRAIL_VERSION=DRAFT - a numbered version is required, "
+            "because DRAFT moves and evidence gathered against it describes nothing"
+        )
+    if config.get("CORS_ORIGIN", "").strip() == "*":
+        problems.append("CORS_ORIGIN='*' - security.md forbids wildcard CORS in production")
+
+    if problems:
+        raise ConfigurationError(
+            f"{STAGE_ENV}={stage!r} but the configuration is incomplete, and the "
+            "fallbacks it would select are demo implementations (Req 12.5): " + "; ".join(problems)
+        )
+
+
 def _dependencies() -> tuple[PriceRepository, ModelClient]:
     """
     Resolve the repository and model client.
@@ -128,6 +213,11 @@ def _dependencies() -> tuple[PriceRepository, ModelClient]:
     against fixtures locally and DynamoDB/Bedrock in AWS.
     """
     global _repo, _model
+
+    # Before ANY fallback is selected. Checking afterwards would report a
+    # misconfiguration the process had already worked around, which is the
+    # shape of check this repository keeps finding to be useless.
+    assert_production_configuration()
 
     if _repo is None:
         if os.environ.get("USE_DYNAMODB") == "1":

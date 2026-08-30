@@ -89,6 +89,22 @@ the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVA
 76.7%, meal plan 100%, prose 100%, repair 100%, guardrail 9/9 must-allow — all
 gated in CI and the pre-commit hook.
 
+**Open defects on the deployed service** (found 2026-08-30, both backend):
+
+- ~~**Guardrail version drift**~~ — **fixed 2026-08-30.** The Lambda applied
+  version `1` while all evidence described version `2`, so `how much is truffle
+  oil` — a documented `must_allow` case — was refused live while the record said
+  9/9. Now version `2` (alias v9), both must-allow mushroom cases verified.
+  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3f.
+- ~~**Silent demo mode**~~ — **check implemented 2026-08-30** (Req 12.5).
+  Dropping `USE_DYNAMODB` or `USE_BEDROCK` used to fall back to fixtures and the
+  scripted model, returning grounded, arithmetically valid citations about 26
+  fake products with no error anywhere.
+  `assert_production_configuration()` now refuses to start a `prod`/`pilot`
+  stage without them. **Not yet armed in the account** — `APP_STAGE` is unset,
+  because `CORS_ORIGIN=*` would fail it and needs the frontend origin first.
+  §3g.
+
 **Known open questions that want a human**, not more code:
 
 - `min_grams_per_person_day` decides which meal-plan requests are refused
