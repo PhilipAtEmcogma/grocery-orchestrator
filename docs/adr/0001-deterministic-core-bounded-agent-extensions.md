@@ -70,7 +70,10 @@ The MCP façade may call the application service. It must not become a second pa
 This ADR records an accepted design, not completed functionality.
 
 - Deterministic LangGraph workflow: **implemented**.
-- Local read-only MCP façade: **planned** (Pilot Task 8).
-- Bounded data-quality agent: **planned** (Pilot Task 14).
+- Local read-only MCP façade: **implemented** (Pilot Task 8, stdio only).
+- Bounded data-quality agent: **half implemented** (Pilot Task 14a). The
+  sanitised snapshot boundary and the deterministic finding validation are
+  built and tested in `src/review/`; they are required whoever reviews. No
+  Runtime is deployed and no model reviews anything — that needs ADR 0002.
 - Remote MCP/OAuth: **later roadmap**.
 - AgentCore contingency: **not triggered and not approved**.

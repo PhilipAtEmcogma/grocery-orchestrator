@@ -755,6 +755,85 @@ duplicate costs essentially nothing, but the hand-made one is the one alarmed
 and the one the frontend contract names -- so it, not the CDK one, is still
 production.
 
+## 3n. The reviewer's boundary, built without the reviewer — 2026-08-31
+
+`src/review/` is the deterministic half of Pilot Task 14: the sanitised
+snapshot a data-quality reviewer would sit behind, and the validation its
+findings must survive. **Nothing is deployed and no model reviews anything.**
+ADR 0002 is still *Proposed — mentor approval required*, and that gate is about
+deploying an AgentCore Runtime, not about writing the constraints one would run
+inside.
+
+Building this half early is not working around the gate. The reviewer is the
+untrusted component whether it is a model or a person with a spreadsheet, so
+the boundary and the check are needed either way — and if the ADR is declined,
+this is what a human reviewer uses.
+
+### The snapshot is an allowlist, not a redaction
+
+Req 13.8 forbids shopper messages, locations, dietary data, sessions and
+credentials reaching the reviewer. The tempting implementation is to strip
+those fields from a `PriceRecord`. The honest one is to construct the snapshot
+from `SNAPSHOT_FIELDS` — 13 named fields on a `SnapshotRow` type that is
+deliberately *not* `PriceRecord`.
+
+The difference shows up later. A field added to retrieval joins a redacted
+object silently and joins an allowlisted one never. `snapshot_to_dicts`
+iterates the allowlist rather than calling `dataclasses.asdict`, for the same
+reason: `asdict` serialises whatever the dataclass happens to carry, which puts
+the decision in the wrong place.
+
+`lat`/`lon` are excluded even though they are store coordinates from
+`config/store-locations.json` and not a shopper's position. A reviewer checking
+a price does not need geography, and a field that is not there cannot leak.
+
+### It raises rather than truncating
+
+`build_snapshot` refuses more rows than the cap instead of taking the first
+500. Truncating would make the reviewer's view depend on the caller's ordering,
+so a finding about "the catalogue" would really be a finding about whichever
+rows arrived first — and nobody reading the finding would know. The caller
+chooses the slice, and then the record says what was reviewed.
+
+### The validation is `assert_citations_match_retrieval` in different clothes
+
+That check exists because a citation naming the right table, with a plausible
+key and a price nobody retrieved, passed cleanly. **Shape is not identity.** A
+finding carries exactly the same risk: "row X has a bad unit price" is worth
+nothing unless row X was in the snapshot and its unit price really is what the
+finding says.
+
+So every finding is checked three ways — the reference exists in the snapshot,
+the values it quotes match that row exactly, and it reports rather than
+prescribes. A finding failing any of them is not low-confidence; it is a
+fabrication, dropped with the reason recorded. `fabrication_rate` is the number
+that shows a reviewer has stopped referring to real rows, before a human
+notices the findings have become useless.
+
+`Finding` has no field for a proposed value (Req 13.8: candidate prices are not
+publication authority). Because a reviewer denied the field would write it in
+prose instead, `_PRESCRIPTIVE` also refuses "should be $2.49" in the
+observation — the same authority arriving through the back door.
+
+### The one rule we already know stays as code
+
+`implausible_unit_price` catches the defect that actually reached the live
+table: `unit_price_nzd` of "2490.00" against a $2.49 sold-each broccoli, six
+rows, shipped with no signal. A model might notice it; a comparison cannot fail
+to. The reviewer's value is the anomalies nobody thought to write a rule for,
+and handing it the ones we did think of would be paying a language model to do
+arithmetic.
+
+Swept across all 152 catalogue rows: 0 false positives, and the 6 sold-each
+rows exercise the `pack_grams == 1` branch that produced the defect. The
+tolerance is an order of magnitude, not a cent — a check that fires on rounding
+differences is a check that gets switched off.
+
+**Still open, and needs ADR 0002:** the Runtime, the isolated least-privilege
+identity, the call/token/time/cost/egress caps, teardown evidence, and the
+labelled anomaly evaluation. 20 tests cover what exists.
+
+
 ## 4. IAM notes worth keeping
 
 **Cross-region inference profiles need two grants.** `config/models.json`

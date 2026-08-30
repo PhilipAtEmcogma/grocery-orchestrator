@@ -266,7 +266,9 @@ ingestion/                 Price ingestion: sources, normalise, handler, and
                            fail-closed dietary re-classifier. Deployed to
                            ap-southeast-2; live retailer acquisition stays
                            gated on ACQUISITION-RISK.md §8
-Philip_demo/               Seven runnable feature demos, offline, no AWS.
+Philip_demo/               Nineteen runnable demos. Default mode is offline,
+                           no AWS; DEMO_MODE selects integration (the deployed
+                           endpoint) or aws (deployed resources, read-only).
                            run_all.py exits non-zero if any drifts from the code
 tests/                     Fast, deterministic, no AWS or network
 evals/                     Scored golden sets; cases/*.json are the sets
@@ -465,8 +467,10 @@ claimed. Read it before changing any of this, and not before.
   measures the quota rather than the model.
 - ✅ **Scripted baselines** — 76.7% intent, 100% meal-plan invariants, 7/7
   Guardrail must-allow structure.
-- ✅ **Seven runnable demos** (`Philip_demo/`), offline; `run_all.py` exits
-  non-zero if any has drifted from the code it describes.
+- ✅ **Nineteen runnable demos** (`Philip_demo/`) across three modes — local
+  (offline), integration (the deployed endpoint), aws (deployed resources,
+  read-only). `run_all.py` exits non-zero if any has drifted from the code it
+  describes, and distinguishes a FAILED demo from a BLOCKED one.
 - ✅ **CI** — lint, format, types, tests, contract and grounding validation,
   dependency and secret scanning, guardrail and alarm policy validation, eval
   floors, and the Lambda package build. Five jobs behind one required
@@ -539,7 +543,12 @@ against the deployed endpoint under load.
 - **Task 14 — isolated AgentCore Runtime reviewer** over capped sanitised
   ingestion snapshots, emitting cited schema-checked findings for deterministic
   validation and human approval. No shopper PII, no writes, no publication, no
-  shopper-path authority.
+  shopper-path authority. **The deterministic half is already built**
+  (`src/review/`, Task 14a): the allowlisted snapshot the reviewer would sit
+  behind, and the validation its findings must survive — a reference that
+  exists, quoted values that match, and no proposed replacement value. Both
+  are needed whoever reviews, including a person with a spreadsheet. What
+  waits on approval is the Runtime, the isolated identity, and the caps.
 
 **Gated until there is evidence to justify them:** cross-Region inference
 profiles; recipe/catalogue Knowledge Bases (never price authority); advisory
@@ -578,7 +587,7 @@ git config blame.ignoreRevsFile .git-blame-ignore-revs
 Then, to see it work:
 
 ```bash
-python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
+python Philip_demo/run_all.py   # nineteen demos, offline, about a minute
 ```
 
 And to check it:
@@ -692,8 +701,9 @@ specific question arises.
   event stream, which totals to render, and the failure modes worth handling
   distinctly.
 - [`samples/`](samples/) — payloads `validate.py` checks in CI.
-- [`Philip_demo/`](Philip_demo/) — seven runnable demos of the features,
-  offline, with the run instructions in each file.
+- [`Philip_demo/`](Philip_demo/) — nineteen runnable demos of the features,
+  offline by default, with the run instructions and the mode each supports in
+  the docstring at the top of every file.
 
 **How it is deployed and how it behaves**
 

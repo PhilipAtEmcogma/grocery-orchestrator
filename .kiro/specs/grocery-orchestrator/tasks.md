@@ -814,6 +814,60 @@ proposed, or gated as labelled; it is not implemented.
   teardown evidence. It receives no shopper PII and has no production write,
   publication, or shopper-path authority. AgentCore Evaluations may supplement
   local labelled anomaly tests with reproducible provenance.
+  - [x] **14a — The boundary and the post-validation. Done 2026-08-31.**
+    `src/review/` builds the sanitised capped snapshot and validates findings
+    against it. 20 tests. **No AgentCore surface is built and nothing is
+    deployed** — ADR 0002 is still *Proposed, mentor approval required*, and
+    that gate is about deploying a Runtime, not about writing the constraints
+    it would run inside.
+
+    **This half is required whoever reviews**, including a person with a
+    spreadsheet, which is why it is worth building ahead of the decision. The
+    reviewer is the untrusted component in both cases; the boundary and the
+    check are what make its output usable.
+
+    **The snapshot is an ALLOWLIST, not a redaction.** Req 13.8 forbids shopper
+    messages, locations, dietary data, sessions and credentials reaching the
+    reviewer. `SNAPSHOT_FIELDS` names the 13 fields it may see and `SnapshotRow`
+    is a separate type from `PriceRecord`, so a field added to retrieval later
+    cannot silently join the snapshot. Redaction has to be remembered;
+    deny-by-default does not. `snapshot_to_dicts` iterates the allowlist rather
+    than calling `asdict`, for the same reason.
+
+    **`build_snapshot` raises rather than truncating.** Silently taking the
+    first 500 rows would make the reviewer's view depend on the caller's
+    ordering, so a finding about "the catalogue" would really be a finding about
+    whichever rows arrived first. The caller chooses the slice, and then the
+    record says what was reviewed.
+
+    **The validation is the same shape as `assert_citations_match_retrieval`,
+    for the same reason.** That check exists because a citation naming the right
+    table with a plausible key and a price nobody retrieved passed cleanly:
+    SHAPE IS NOT IDENTITY. A finding is the identical risk in different clothes,
+    so every one is checked three ways — the reference exists in the snapshot,
+    the values it quotes match that row exactly, and it reports rather than
+    prescribes. A finding failing any of them is a fabrication, dropped with the
+    reason recorded, and `fabrication_rate` is the number that shows a reviewer
+    has stopped referring to real rows before a human notices the findings are
+    useless.
+
+    **There is no field for a proposed value** (Req 13.8: candidate prices are
+    not publication authority). Because a reviewer inclined to prescribe would
+    then write it in prose instead, `_PRESCRIPTIVE` refuses "should be $2.49" in
+    the observation text — the same authority arriving through the back door.
+
+    **The one anomaly rule we already know stays as CODE.**
+    `implausible_unit_price` catches the live defect — `unit_price_nzd` of
+    "2490.00" against a $2.49 sold-each broccoli, six rows, shipped with no
+    signal. A model might notice it; a comparison cannot fail to. The reviewer's
+    value is the anomalies nobody thought to write a rule for, and handing it
+    the ones we did think of would be paying a language model to do arithmetic.
+    Swept over all 152 catalogue rows: 0 false positives, and the 6 sold-each
+    rows exercise the branch that produced the defect.
+
+    **Still open (needs ADR 0002):** the Runtime itself, the isolated identity,
+    the call/token/time/cost/egress caps, teardown evidence, and the labelled
+    anomaly evaluation.
 - [ ] **Pilot Task 15 — Introduce the curated recipe catalogue.** Models select
   recipe ids and product citations; code owns scaling, safety, and totals.
   A Knowledge Base may be evaluated only for cited recipe/catalogue retrieval
