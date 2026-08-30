@@ -482,7 +482,11 @@ def test_the_whole_real_dataset_transforms_without_a_single_unmapped_category() 
     offers, report = transform(records, captured_at=CAPTURED_AT)
 
     assert report.unmapped_categories == ()
-    assert report.kept + report.dropped_non_food == report.total
+    # Conservation: every input row is kept, dropped as non-food, or collapsed
+    # into a cheaper twin. Nothing may vanish unaccounted for -- a row that
+    # disappears silently is a product the shopper cannot be shown and cannot
+    # be told about.
+    assert report.kept + report.dropped_non_food + report.collapsed_duplicates == report.total
     assert report.overridden > 0, "the safety override caught nothing; check the terms"
     # Every offer must be writable and carry a category dietary.py understands.
     fixture_categories = {
@@ -549,6 +553,90 @@ def test_no_animal_product_escapes_into_a_category_a_vegetarian_would_eat() -> N
         "animal-product names classified into a category a vegetarian would be "
         f"served: {sorted(set(escaped))}"
     )
+
+
+# ---------------------------------------------------------------- duplicates
+
+
+def test_two_brands_of_one_product_at_one_store_collapse_to_the_cheapest() -> None:
+    """
+    The base table key is (store_key, product_key) and must be unique.
+
+    `derive_product_key` ignores brand on purpose, so the same product compares
+    across chains. The cost is that one store stocking two brands of the same
+    thing at the same size produces two rows with one key -- and `BatchWriteItem`
+    refuses a batch containing duplicate keys.
+
+    Found by loading, not by reading: the first real load failed with "Provided
+    list of item keys contains duplicates" after 96 collisions in Pak'nSave
+    alone. The fixtures carry exactly one product per key by construction, so
+    nothing offline had ever exercised this.
+    """
+    records = [
+        _record("Mixed Berries", "Frozen Foods", "500g", price="7.09", store="PAK'nSAVE Albany"),
+        _record("Mixed Berries", "Frozen Foods", "500g", price="6.99", store="PAK'nSAVE Albany"),
+    ]
+    records[0]["brand"] = "Frozen Harvest"
+    records[1]["brand"] = "Pams"
+
+    offers, report = transform(records, captured_at=CAPTURED_AT)
+
+    assert len(offers) == 1
+    assert report.collapsed_duplicates == 1
+    # Cheapest wins: it is the only answer the product ever gives for a
+    # same-product, same-store, same-size pair.
+    assert offers[0].price_nzd == Decimal("6.99")
+    assert offers[0].display_name == "Pams Mixed Berries"
+
+
+def test_the_same_product_at_two_stores_is_not_collapsed() -> None:
+    """Deduplication is per store. Two stores is the comparison, not a duplicate."""
+    records = [
+        _record("Brown Onions", "Fresh Vegetables", "kg", price="2.49", store="PAK'nSAVE Albany"),
+        _record("Brown Onions", "Fresh Vegetables", "kg", price="2.79", store="New World Albany"),
+    ]
+    offers, report = transform(records, captured_at=CAPTURED_AT)
+    assert len(offers) == 2
+    assert report.collapsed_duplicates == 0
+    assert {o.store for o in offers} == {"paknsave", "new_world"}
+
+
+def test_an_equal_priced_tie_breaks_deterministically() -> None:
+    """
+    Without a tiebreak, two equally priced brands swap between runs and
+    `refresh()` reports `changed` on a day nothing changed -- destroying the
+    signal the diff exists to provide.
+    """
+
+    def build(order: list[str]) -> list:
+        out = []
+        for brand in order:
+            r = _record(
+                "Tuna Loins", "Fresh Seafood", "kg", price="39.99", store="New World Albany"
+            )
+            r["brand"] = brand
+            out.append(r)
+        return out
+
+    first, _ = transform(build(["Leigh Fish", "Ocean Blue"]), captured_at=CAPTURED_AT)
+    second, _ = transform(build(["Ocean Blue", "Leigh Fish"]), captured_at=CAPTURED_AT)
+    assert first[0].display_name == second[0].display_name
+
+
+@pytest.mark.skipif(not DATASET.exists(), reason="dataset not present")
+def test_the_whole_dataset_yields_unique_table_keys() -> None:
+    """
+    The property the load actually needs, asserted over all 3,000 real rows.
+
+    A unit test with two invented brands proves the rule; only the real
+    catalogue proves the rule covers the real collisions.
+    """
+    from ingestion.normalise import store_key
+
+    offers, report = transform(_load_dataset(), captured_at=CAPTURED_AT)
+    keys = [(store_key(o.store, o.store_location), o.product_key) for o in offers]
+    assert len(keys) == len(set(keys)), "duplicate (store_key, product_key) would fail the write"
+    assert report.collapsed_duplicates > 0, "no collisions collapsed; has the dataset changed?"
 
 
 # ---------------------------------------------------------------- helpers

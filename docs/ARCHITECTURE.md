@@ -108,10 +108,11 @@ All of it exists.
 | Ingestion role | `grocery-ingestion-dev-role` | `config/iam-ingestion-role.json`; read+write on products only, no Bedrock, no idempotency |
 | State machine | `grocery-ingestion-dev` | `config/ingestion-state-machine.json` |
 | Schedule | `grocery-price-refresh-dev` | `cron(0 3 * * ? *)` Pacific/Auckland, ENABLED |
-| Products table | `grocery-products-dev` | 152 items, **GSI1 + GSI2**, PAY_PER_REQUEST |
+| Products table | `grocery-products-dev` | **2,911 items** (152 fixture + 2,759 real), GSI1 + GSI2, PAY_PER_REQUEST |
 | Idempotency table | `grocery-idempotency-dev` | TTL ACTIVE |
 | Guardrail | `b1xezpqe04kx` version `2` | v2 published 2026-08-29; DRAFT deliberately not granted in IAM |
-| SNS topic | `grocery-orchestrator-alarms-dev` | alarms: handler-escaped, api-5xx |
+| SNS topic | `grocery-orchestrator-alarms-dev` | alarms: handler-escaped, api-5xx; one confirmed email subscriber |
+| Usage plan | `grocery-orchestrator-dev-plan` (`v4yd7d`) | 5 rps / burst 10 on stage `dev`; created 2026-08-30 |
 
 **One artefact, two functions.** `scripts/build_lambda.py` now includes
 `ingestion` in `INCLUDE_DIRS`, and the same `build/lambda.zip` is deployed to
@@ -445,6 +446,97 @@ most consequential failure the service has.
 That is alarm coverage, not a defect in this check -- Req 12.8 already asks for
 measured alarms beyond the first two, and it is Pilot Task 12 work. Recorded
 here so the two facts stay attached to each other.
+
+## 3h. CORS is still `*`, and cannot be fixed here yet — BLOCKED
+
+`security.md` and Req 12.5 both require a production stage to reject wildcard
+CORS, and `assert_production_configuration()` enforces it. The deployed function
+still sets `CORS_ORIGIN=*`.
+
+**This is not an oversight and cannot be closed from this repository.** Strict
+CORS means naming ONE origin, and the origin is the frontend's CloudFront
+domain, which does not exist -- the S3 + CloudFront stack is
+`infra/docs/09-FRONTEND.md`, unbuilt, and teammates' scope. There is nothing to
+name.
+
+`infra/docs/03-STACK-SPECS.md` already permits this precisely: dev may use `*`
+**only** while the stage is non-production. That is why `APP_STAGE` is unset --
+arming the check today would fail startup on a value that has no correct
+setting yet.
+
+The fix, when the CloudFront domain exists, is one variable and one alias move:
+
+```bash
+# read the current map first: update-function-configuration REPLACES it
+aws lambda update-function-configuration --function-name grocery-orchestrator-dev     --environment "Variables={...,CORS_ORIGIN=https://dxxxx.cloudfront.net,APP_STAGE=pilot}"
+```
+
+Setting `APP_STAGE=pilot` in the same change is deliberate: it arms Req 12.5 at
+the moment the last thing blocking it is gone, rather than leaving an inert
+check nobody remembers to turn on.
+
+## 3i. The real catalogue is loaded — 2026-08-30
+
+2,759 rows from the data team's collected catalogue are now in
+`grocery-products-dev`, via `LineageBSource` and `refresh()`. Provably
+idempotent: the second dry run reports **0 added, 0 changed, 2,759 unchanged**,
+which is what idempotent looks like from the outside rather than a claim.
+
+From 3,000 raw rows: **61 dropped** as non-food (pet food), **180 collapsed** as
+duplicates, **74 re-classified** by the dietary safety override, leaving 2,759.
+A conservation test asserts kept + dropped + collapsed equals the input, because
+a row that vanishes unaccounted for is a product nobody can be shown and nobody
+is told about.
+
+### The duplicate collision, found by loading rather than by reading
+
+`BatchWriteItem` refused the first load: *"Provided list of item keys contains
+duplicates"*. The base table key is `(store_key, product_key)` and one store
+stocks two BRANDS of the same product at the same size -- `Pams Mixed Berries`
+and `Frozen Harvest Mixed Berries`, both 500g, both Albany. `derive_product_key`
+ignores brand deliberately, so the same product compares across Pak'nSave and
+New World; the cost is that it also collapses two brands within one store.
+
+96 collisions in Pak'nSave alone. **Nothing offline had exercised it**, because
+the fixtures carry exactly one product per key by construction -- a shape the
+real catalogue does not have.
+
+Resolved by keeping the cheapest per (store, product), which is the answer the
+product already gives: the dearer brand of an identical product at the same
+store is never the answer to "what is the cheapest X", and nothing
+brand-specific is reachable since `resolve_product_key` matches on name and
+size. Ties break on display name, so a re-run cannot report `changed` on a day
+nothing changed.
+
+## 3j. The serving table now holds TWO catalogues, and should not — OPEN
+
+The load was additive: no Lineage B key collided with a fixture key, so
+`grocery-products-dev` holds **152 fixture rows and 2,759 real ones**. That is a
+mixed catalogue, and it produces visibly inconsistent answers:
+
+| Request | Answers from |
+|---|---|
+| `cheapest butter` | **fixture** -- `Pams Butter 500g`, Mangere |
+| `cheapest bananas` | **fixture** -- `Pams Bananas 1kg` |
+| `cheapest milk near Albany` | **fixture** -- a *Devonport* price, though Albany has real data |
+| `feed 3 people for 5 days on $80` | **real** -- Pak'nSAVE Albany, real products |
+
+The cause is the synonym precedence working as designed, in a state it was not
+designed for. Head terms are tried fixture-first, and `butter-500g` still has
+rows, so the curated fixture answer wins; meal-plan candidates come from GSI2
+across the whole table, so they see the real data. Two different catalogues
+answering two different question types.
+
+**The fix is to hold one catalogue.** Removing the 152 fixture rows makes every
+head term fall through to its Lineage B answer -- which is exactly what the
+candidate-list ordering in `config/product-synonyms.json` was built to do.
+
+**Not done, because it is a deletion from a live table and was not asked for.**
+It is cheap to reverse (`python scripts/load_seed_data.py` restores all 152 in
+seconds from a committed file), and it has one real consequence worth deciding
+deliberately: `tests/test_price_repository_contract.py` run against the live
+table with `PRICE_REPO_DYNAMO_TABLE` expects fixture products, and those 31
+skipped tests would need their expectations moved to the real catalogue.
 
 ## 4. IAM notes worth keeping
 

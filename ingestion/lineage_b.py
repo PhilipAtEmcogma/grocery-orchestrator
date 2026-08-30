@@ -401,6 +401,7 @@ class TransformReport:
     dropped_non_food: int
     overridden: int
     unmapped_categories: tuple[str, ...]
+    collapsed_duplicates: int = 0
 
 
 STORE_LOCATIONS_CONFIG = Path(__file__).resolve().parent.parent / "config" / "store-locations.json"
@@ -502,10 +503,56 @@ def transform(records: list[dict], *, captured_at: str) -> tuple[list[RawOffer],
         overridden += was_overridden
         offers.append(to_offer(record, captured_at=captured_at))
 
-    return offers, TransformReport(
+    deduped, collapsed = _cheapest_per_store_product(offers)
+
+    return deduped, TransformReport(
         total=len(records),
-        kept=len(offers),
+        kept=len(deduped),
         dropped_non_food=dropped,
         overridden=overridden,
         unmapped_categories=tuple(sorted(unmapped)),
+        collapsed_duplicates=collapsed,
     )
+
+
+def _cheapest_per_store_product(offers: list[RawOffer]) -> tuple[list[RawOffer], int]:
+    """
+    One row per (store, product_key), keeping the cheapest.
+
+    THE BASE TABLE KEY IS (store_key, product_key) AND MUST BE UNIQUE. Lineage
+    B breaks that on its own: one store stocks two BRANDS of the same product at
+    the same size -- `Pams Mixed Berries` and `Frozen Harvest Mixed Berries`,
+    both 500g, both at Albany. `derive_product_key` ignores brand on purpose, so
+    that the same product compares across Pak'nSave and New World; the cost is
+    that it also collapses two brands within one store.
+
+    Found by loading, not by reading: `BatchWriteItem` refuses a batch
+    containing duplicate keys, so the first real load failed with "Provided list
+    of item keys contains duplicates" after 96 collisions in Pak'nSave alone.
+    Nothing offline had exercised a catalogue where one store stocks two brands
+    of one thing -- the fixtures carry exactly one product per key by
+    construction.
+
+    KEEPING THE CHEAPEST IS THE ANSWER THE PRODUCT ALREADY GIVES. The question
+    this catalogue exists to answer is "what is the cheapest X", so the dearer
+    brand of an identical product at the same store is never the answer to any
+    query the system supports. Nothing brand-specific is reachable:
+    `resolve_product_key` matches on name and size.
+
+    Ties break on `display_name`, and that matters more than it looks: without a
+    deterministic tiebreak, two equally priced brands would swap places between
+    runs and `refresh()` would report `changed` on a day nothing changed --
+    which is the signal the diff exists to make trustworthy.
+    """
+    best: dict[tuple[str, str, str], RawOffer] = {}
+    collapsed = 0
+    for offer in offers:
+        key = (offer.store, offer.store_location, offer.product_key)
+        current = best.get(key)
+        if current is None:
+            best[key] = offer
+            continue
+        collapsed += 1
+        if (offer.price_nzd, offer.display_name) < (current.price_nzd, current.display_name):
+            best[key] = offer
+    return list(best.values()), collapsed

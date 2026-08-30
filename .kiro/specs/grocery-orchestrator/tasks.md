@@ -693,6 +693,30 @@ proposed, or gated as labelled; it is not implemented.
   dead-letter behavior. Where review decoupling is justified, add filtered
   DynamoDB Streams -> SQS/DLQ with retry/redrive/backlog evidence. No live
   retailer traffic.
+> **Pilot Task 13, first half done 2026-08-30: the real catalogue is loaded.**
+> `LineageBSource` (recorded, not live — ACQUISITION-RISK.md §8 untouched) feeds
+> the existing `refresh()`, so the diffing, dry-run and per-retailer isolation
+> already built all apply. 2,759 rows written to `grocery-products-dev`, and
+> **proved idempotent**: the second dry run reports 0 added, 0 changed.
+>
+> From 3,000 raw: 61 dropped as non-food, 180 collapsed as duplicates, 74
+> re-classified by the safety override.
+>
+> **The duplicate collision is the finding.** `BatchWriteItem` refused the first
+> load — one store stocks two BRANDS of the same product at the same size, and
+> `derive_product_key` ignores brand so that products compare across chains. 96
+> collisions in Pak'nSave alone, and nothing offline had exercised it because the
+> fixtures carry one product per key by construction. Resolved by keeping the
+> cheapest per (store, product) — the answer the product already gives — with a
+> deterministic tiebreak so a re-run cannot report a false `changed`.
+>
+> **Still open:** the table now holds BOTH catalogues (`docs/ARCHITECTURE.md`
+> §3j) and answers head-term queries from the fixtures while answering meal
+> plans from the real data. Holding one catalogue is the fix and it is a
+> deliberate deletion, not done here. The Woolworths branch of the state machine
+> fetches 0 rows — the dataset covers two chains — which is honest but means the
+> product's "three chains" claim is currently true only of the fixtures.
+
 - [ ] **Pilot Task 14 — Add the bounded data-quality reviewer.** After ADR 0002
   mentor approval, deploy it separately in AgentCore Runtime over capped
   sanitised ingestion snapshots with an isolated least-privilege identity,
@@ -1068,7 +1092,10 @@ hold in production.*
   a retailer's product name and size, so the same item at Pak'nSave and New
   World shares a key and GSI1 can compare them; 251 of ~400 distinct keys occur
   in both chains. Deriving it is what makes the comparison possible at all
-- [ ] **7.8** Schedule the refresh — *Req 8.4*
+- [ ] **7.8** Schedule the refresh — *Req 8.4* — the EventBridge schedule and
+  state machine exist and are ENABLED; what they refresh from is now a choice
+  (`PRICE_SOURCE`), and pointing the scheduled run at `lineage_b` is a
+  deliberate act nobody has taken
 - [x] **7.9** Assess terms-of-service risk before live acquisition — *Req 8.8*
   — `ACQUISITION-RISK.md`
 - [x] **7.10** Create the idempotency table with expiry — *Req 12.3*
@@ -1108,7 +1135,13 @@ It gates 6.8.*
   ingestion cannot read the model or the idempotency table. Codifying them in
   CDK remains Pilot Tasks 9–10
 - [ ] **8.6** Managed secret storage — *Req 11.2* — **[superseded by Pilot Task 10]**
-- [ ] **8.7** Gateway throttling and usage plans — *Req 11.4*
+- [x] **8.7** Gateway throttling and usage plans — *Req 11.4* — closed
+  2026-08-30. Stage `dev` throttles at 5 rps / burst 10, and usage plan
+  `grocery-orchestrator-dev-plan` (`v4yd7d`) now carries the same limits
+  attached to that stage. `security.md` line 22 requires BOTH — the stage had
+  throttling and there was no usage plan at all, so half the control was
+  missing. No API key requirement: the pilot is anonymous, and a usage plan
+  throttles without one
   — **[superseded by Pilot Task 10]**
 - [ ] **8.8** Authentication on the endpoint — **[later roadmap after anonymous pilot]**
 - [x] **8.9** Define the content safety policy as version-controlled data and
