@@ -291,9 +291,60 @@ between a finding and a false alarm.
 
 **The cutover is the outstanding step and it is a decision, not a task.** It
 changes the URL that `scripts/measure_latency.py`, `Philip_demo/_demo_support.py`
-and several documents name. Set `NAME_SUFFIX=''`, deploy, repoint the consumers,
-and delete the hand-made resources — in that order, with a `cdk diff` read
-before each.
+and several documents name.
+
+**DEFERRED 2026-08-31 — stay dual until a frontend exists.**
+
+The cutover's only real cost is the URL change, and its only real question is
+who that breaks. **Nobody knows yet**, because the frontend does not exist: it
+is teammates' scope, `CONTRACT-v1.md` is what they build against, and its open
+questions do not even auto-adopt defaults until 2026-09-11. Cutting over now
+would move a URL to spare a consumer that has not been written, and then have to
+be re-checked against whatever they actually built.
+
+So both planes keep running. That is affordable rather than merely tolerable —
+both are scale-to-zero and the duplicate costs essentially nothing — and it
+keeps the CDK definition exercised without betting a live endpoint on it.
+
+**What stays true while we wait, and is the cost of waiting:** the hand-made
+plane is production, and it carries the two defects the CDK one fixes —
+`/aws/lambda/grocery-orchestrator-dev` retention is `null`, so a future logging
+mistake becomes a permanent one, and stage tracing was added by hand rather than
+being on from the start. Neither is urgent. Both are reasons not to let "stay
+dual" quietly become the permanent answer.
+
+**Revisit when the frontend is built**, not on a date. At that point:
+
+1. Ask which URL it is actually wired to. If it is already on `woqmel35lk`, that
+   is the input the 2026-08-30 recommendation above said should decide this.
+2. Re-run the parity table. It was verified on 2026-08-30 against a service that
+   has since gained the curated recipe catalogue and will gain more; parity is a
+   measurement, not a property, and re-reading an old one is the mistake this
+   project keeps writing down.
+3. Then choose cut over, adopt, or stay dual — with the frontend's answer in
+   hand rather than a guess about it.
+
+**The sequence written before this deferral was wrong, and is corrected here.**
+It said: set `NAME_SUFFIX=''`, deploy, repoint the consumers, delete the
+hand-made resources — in that order. **Step two fails.** With an empty suffix
+the CDK function is named `grocery-orchestrator-dev`, which is the hand-made
+function's name, and CloudFormation CREATE collides. The `-cdk` suffix exists
+because of that collision; the sequence forgot it. The real order is:
+
+1. Repoint every consumer — `scripts/measure_latency.py`,
+   `Philip_demo/_demo_support.py`, `CONTRACT-v1.md` and the docs that name the
+   URL — at the `-cdk` endpoint, which is already running and already at parity.
+2. Delete the hand-made resources.
+3. `NAME_SUFFIX=''`, `cdk diff`, deploy.
+4. Repoint the consumers again, at the final names.
+
+**There is no zero-downtime path here**, and that is the honest thing the old
+sequence hid: between steps 2 and 3 nothing serves the old name, and step 3
+produces a new REST API id regardless, so the URL changes either way. A cutover
+that reads as four steps and one URL change is really two URL changes and a gap.
+That is a further reason to do it once, with a real consumer to coordinate with,
+rather than now to tidy the stack.
+
 
 **Decision needed from:** Philip, once the demo work settles.
 

@@ -27,9 +27,15 @@ strings. Details and identifiers in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.m
 **Until 2026-08-30 this section said "nothing is deployed — there is no CDK
 stack, no API Gateway, no Lambda alias".** Two of those three were false, and
 had been since 2026-08-27; `docs/ARCHITECTURE.md` §3 recorded the API and the
-alias correctly the whole time and was not believed. What remains true is the
-CDK half: there is **no IaC**, so nothing about the deployment is reproducible,
-drift-detectable, or reviewable as a unit.
+alias correctly the whole time and was not believed.
+
+**The CDK half closed on 2026-08-30** (Pilot Tasks 9–11). Two stacks are
+deployed: `Grocery-Stateful-dev`, which adopts the seeded tables by reference
+and contains no table resource at all, and `Grocery-Service-dev`, the full
+service plane under a `-cdk` name suffix. **Both service planes run**, and the
+hand-made one is still production — cutting over is a decision that was
+deliberately deferred on 2026-08-31 until a frontend exists to coordinate the
+URL change with. `docs/ARCHITECTURE.md` §3m.
 
 **The code is current as of 2026-08-30.** The alias served version `5` from
 2026-08-27 — before Pilot Tasks 4–7 — and now serves **version `7`**, built from
@@ -57,9 +63,9 @@ operational evidence** — not first deployment.
 | 6 · Idempotency fencing, canonical hashing, pagination, PITR | ✅ done · one deferral (6b) |
 | 7 · Scorecards, route qualification, prose/repair evals | ✅ done · one deferral (7b) |
 | 8 · Local read-only MCP | ✅ done — 2 coarse tools, default-off, capped, parity-tested |
-| 9–12 · CDK, service plane, deploy, operations | 🟡 **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). 9–11 = IaC, not started; the service is deployed imperatively |
+| 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done** — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). Cutover deferred by decision, not pending |
 | 13 · Controlled ingestion | ⬜ not started |
-| 14 · AgentCore reviewer | ⬜ proposed, needs ADR 0002 approval |
+| 14 · AgentCore reviewer | 🟡 **14a done** — the sanitised snapshot boundary and finding validation, which are needed whoever reviews. The Runtime needs ADR 0002; the request was narrowed to it alone on 2026-08-31 |
 | 15 · Recipe catalogue | 🟡 catalogue + coverage gate built. Planner blocked on data; **approach decided** (curate against our catalogue), sequenced after 9–11 |
 | 16 · Release gates | ⬜ not started |
 
@@ -286,9 +292,11 @@ datasets/                  Recipe and product source data plus its schema notes
 docs/                      Deployment record, CI gate health, throughput
                            ceiling, an open review, ADRs — see Further reading
 infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
-                           and a reviewable scaffold skeleton now exist; the
-                           stacks are stubs — no CDK stack deployed, though the
-                           service itself IS deployed by hand (Pilot Tasks 9-12)
+                           and two DEPLOYED stacks: Grocery-Stateful-dev adopts
+                           the tables by reference, Grocery-Service-dev is the
+                           whole service plane under a -cdk suffix. The
+                           hand-made plane is still production; the cutover is
+                           deferred by decision (ARCHITECTURE §3m)
 ```
 
 ## Progress to date, and what it cost
@@ -513,13 +521,15 @@ against the deployed endpoint under load.
    and session capped, privacy-safe audit, and parity asserted against the same
    `lambda_handler` API Gateway invokes. Run it with
    `MCP_ENABLED=1 python scripts/mcp_server.py`.
-2. **Tasks 9–12 — CDK, service plane, deployment, operations.** Adopt the
-   existing tables *and the existing API, Lambda, alias, roles and schedule*
-   without replacement; zip Lambda on a published SnapStart alias; REST
-   controls, SSM, strict IAM and CORS; then dashboards, alarms, Budgets, X-Ray
-   and the latency/cost baselines everything else is waiting on. Design
-   documentation and a reviewable scaffold already exist under
-   [`infra/`](infra/) — design only, no stack implemented. Note the adoption
+2. **Tasks 9–12 — CDK, service plane, deployment, operations.** ✅ **9–11 done
+   2026-08-30.** The tables are adopted by reference (the template holds no
+   table resource, so a stack delete cannot take the data); the service plane —
+   zip Lambda on a published SnapStart alias, REST controls, SSM, strict IAM,
+   CORS — deploys under a `-cdk` suffix beside the running one, verified at
+   parity before anything was cut over. **The cutover itself is deferred by
+   decision** until a frontend exists (ARCHITECTURE §3m, `infra/docs/08` §10).
+   12 is substantially done: dashboards, alarms, Budgets, X-Ray and the first
+   deployed latency/cost baselines. Note the adoption
    surface is larger than `infra/docs/00` says: that table lists the API and
    alias as "not yet", and they exist.
 3. **Task 13 — controlled ingestion.** EventBridge and Step Functions over
@@ -717,23 +727,26 @@ specific question arises.
   quota increase is available; for the models in the route, it is not.
 - [`DYNAMODB-SCHEMA.md`](DYNAMODB-SCHEMA.md) — current and planned tables,
   candidate-query options, and the CDK adoption sequence.
-- [`infra/`](infra/) — the Infrastructure-as-Code plan: design docs
-  (`infra/docs/00-09`), a reviewable CDK **scaffold skeleton**, and
+- [`infra/`](infra/) — the Infrastructure-as-Code work: design docs
+  (`infra/docs/00-09`), the two **deployed** CDK stacks, and
   [`docs/adr/0003`](docs/adr/0003-infrastructure-as-code-and-resource-adoption.md).
-  Read before starting Pilot Tasks 9–12 — it says what to build and in what
-  order. Design/skeleton only — no CDK stack is deployed from it yet, but the
-  service plane it describes already exists, created by hand; see
-  `infra/docs/08` §10 for the adopt-or-replace decision that follows.
+  `infra/docs/08` §10 is the one to read: it records why the API was deployed
+  beside the hand-made one rather than imported, the parity table, and the
+  **2026-08-31 decision to stay dual** until a frontend exists — including the
+  corrected cutover sequence, because the one written before it would have
+  collided on a duplicate function name.
 
 **Judgement calls, open and closed**
 
 - [`docs/OPEN-REVIEW-adr-0002.md`](docs/OPEN-REVIEW-adr-0002.md) — **open, and
-  wants the mentor.** Whether to approve ADR 0002, and how much of it: three
-  AgentCore-shaped components that sit beside the deterministic service and
-  cannot touch a shopper's answer. Twenty minutes, no code reading. It is the
-  decision three unstarted tasks are waiting on, and the brief argues the case
-  against as well as for — **a decline costs very little**, which is why the
-  reviewer's boundary was built before the reviewer.
+  wants the mentor.** Whether to approve ADR 0002. Twenty minutes, no code
+  reading. **The request was narrowed on 2026-08-31 to the reviewer Runtime
+  only**: Gateway and the managed evaluations are withdrawn rather than left on
+  the table, the first because a managed auth layer over two working coarse
+  operations gets a shopper nothing, the second because its own gate blocks it
+  on us. The brief argues the case against as well as for — **a decline costs
+  very little**, which is why the reviewer's boundary was built before the
+  reviewer.
 - [`docs/OPEN-REVIEW-head-terms.md`](docs/OPEN-REVIEW-head-terms.md) — **open,
   and wants somebody who shops these stores.** Which product a one-word query
   like "cheapest butter" should return, when the catalogue holds fourteen

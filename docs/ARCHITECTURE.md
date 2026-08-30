@@ -742,18 +742,39 @@ its history.
   a CDK deploy changing state outside its own stack is worth knowing about.
 - **Stage tracing on from the start**, rather than patched in by hand.
 
-### The cutover is outstanding, and is a decision
+### The cutover is DEFERRED, deliberately -- 2026-08-31
 
-`NAME_SUFFIX=''`, repoint the consumers, deploy, retire the hand-made resources
--- reading a `cdk diff` before each step. It changes the URL that
-`scripts/measure_latency.py`, `Philip_demo/_demo_support.py` and several
-documents name, so it waits on whoever owns the demo work.
-`infra/docs/08-OPEN-DECISIONS.md` §10 has the sequence.
+**Two service planes keep running until a frontend exists.** The cutover's only
+real cost is the URL change and its only real question is who that breaks, and
+nobody knows yet: the frontend is teammates' scope, `CONTRACT-v1.md` is what
+they build against, and its open questions do not auto-adopt defaults until
+2026-09-11. Moving a URL to spare a consumer nobody has written yet is work that
+would have to be re-done against the consumer they actually write.
 
-**Until then two service planes are running.** Both are scale-to-zero and the
-duplicate costs essentially nothing, but the hand-made one is the one alarmed
-and the one the frontend contract names -- so it, not the CDK one, is still
-production.
+Both planes are scale-to-zero, so the duplicate costs essentially nothing. The
+hand-made one is the one alarmed and the one the frontend contract names, so it,
+not the CDK one, is still production.
+
+**The cost of waiting, stated so it does not get forgotten:** production is the
+plane with `null` log retention on `/aws/lambda/grocery-orchestrator-dev` and
+tracing added by hand rather than on from the start. The CDK plane fixes both.
+Neither is urgent; both are reasons not to let "stay dual" become permanent by
+default.
+
+**Revisit when the frontend is built** -- not on a date. Ask which URL it wired
+to, RE-RUN the parity table rather than reading the 2026-08-30 one (parity is a
+measurement, not a property, and the service has gained a recipe catalogue
+since), then choose. `infra/docs/08-OPEN-DECISIONS.md` §10 carries the full
+reasoning and the corrected sequence.
+
+**The sequence this section used to give was wrong.** It said `NAME_SUFFIX=''`,
+deploy, repoint, retire. Step two fails: with an empty suffix the CDK function
+is named `grocery-orchestrator-dev`, which is the hand-made function's name, and
+CREATE collides -- the `-cdk` suffix exists precisely because of that. Consumers
+have to be repointed at the `-cdk` endpoint and the hand-made resources deleted
+BEFORE the unsuffixed deploy, which means two URL changes and a gap where the
+old name serves nothing. There is no zero-downtime path, and the old wording
+hid that.
 
 ## 3n. The reviewer's boundary, built without the reviewer — 2026-08-31
 
