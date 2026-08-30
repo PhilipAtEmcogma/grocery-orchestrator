@@ -4,10 +4,14 @@ from src.recipes.base import (
     Recipe,
     RecipeIngredient,
     RecipeRepository,
+    is_viable_for,
+    recipe_categories,
     recipe_excluded_categories,
 )
 from src.recipes.memory import (
     ASSUMED_ON_HAND,
+    CURATED_RECIPES,
+    CuratedRecipeRepository,
     FixtureRecipeRepository,
     RecipeCoverage,
     coverage,
@@ -16,12 +20,16 @@ from src.recipes.memory import (
 
 __all__ = [
     "ASSUMED_ON_HAND",
+    "CURATED_RECIPES",
+    "CuratedRecipeRepository",
     "FixtureRecipeRepository",
     "Recipe",
     "RecipeCoverage",
     "RecipeIngredient",
     "RecipeRepository",
     "coverage",
+    "is_viable_for",
+    "recipe_categories",
     "recipe_excluded_categories",
     "usable_recipes",
 ]

@@ -183,11 +183,24 @@ def test_coverage_is_measured_against_the_catalogue_that_is_loaded(
     assert any(c.missing for c in covs)
 
 
-def test_task_15_is_blocked_by_data_and_will_say_when_it_is_not(
+def test_the_imported_catalogue_still_cannot_be_planned_from(
     recipes: list[Recipe],
 ) -> None:
     """
-    THE FORCING TEST. It fails when the blocker LIFTS, not when it persists.
+    THE FORCING TEST, and what it now guards.
+
+    Pilot Task 15b is NO LONGER BLOCKED: `config/recipes.json` holds recipes
+    written against this catalogue, every ingredient priceable by construction,
+    and `tests/test_curated_recipes.py` covers them. This test is about the 175
+    IMPORTED recipes, which remain unusable — and it now guards the DECISION
+    rather than the feature.
+
+    If the product catalogue ever grows enough to price whole imported recipes,
+    this fails and says so. That is the moment to revisit whether curating our
+    own is still the right call, or whether 175 real recipes beat 29 written
+    ones. Until then the answer is settled and this keeps it from drifting.
+
+    It still fails when the blocker LIFTS, not when it persists.
 
     Req 2.9 needs plans composed from recipes with provable payable totals, and
     a recipe is only usable if EVERY ingredient can be priced -- a total
@@ -209,8 +222,9 @@ def test_task_15_is_blocked_by_data_and_will_say_when_it_is_not(
     usable = usable_recipes(covs, minimum_ratio=REQUIRED_RATIO)
 
     assert len(usable) < RECIPES_NEEDED_TO_PLAN, (
-        f"{len(usable)} recipes are now fully costable, at or past the "
-        f"{RECIPES_NEEDED_TO_PLAN} a planner needs to choose between. The data "
-        "blocker on Pilot Task 15 has lifted: wire recipe-constrained planning "
-        "(Req 2.9) and delete this assertion. See src/recipes/base.py."
+        f"{len(usable)} IMPORTED recipes are now fully costable, at or past the "
+        f"{RECIPES_NEEDED_TO_PLAN} a planner needs. The product catalogue has "
+        "grown: revisit whether the curated set in config/recipes.json is still "
+        "the right source, or whether 175 real recipes now beat 29 written ones. "
+        "See tasks.md Pilot Task 15b for the decision this would reopen."
     )

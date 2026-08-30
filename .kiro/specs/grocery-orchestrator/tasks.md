@@ -823,7 +823,46 @@ proposed, or gated as labelled; it is not implemented.
     `RecipeRepository` protocol, classifies each recipe's dietary content from
     its INGREDIENTS rather than its label, and measures how much of each recipe
     this product catalogue can price. 12 tests.
-  - [ ] **15b — BLOCKED ON DATA, and the block is measured.** Recipe-constrained
+  - [x] **15b — Curated catalogue and deterministic assembly. Done 2026-08-30.**
+    `config/recipes.json` holds **29 recipes written against this catalogue**,
+    every ingredient priceable by construction — the property that made the
+    imported 175 unusable. `src/recipes/planning.py` converts selected recipes
+    into a `PlanDraft`, which is the shape `assemble_plan`, `validate_plan`,
+    `assert_arithmetic` and the bounded repair loop already consume. 19 tests.
+
+    **Producing a `PlanDraft` rather than a new plan type is the design.** Each
+    of those downstream checks was hardened by a real defect; a recipe planner
+    with its own plan type would need its own versions of all of them, and the
+    second copy is the one that goes wrong.
+
+    **The pack multiplier is the only number this path invents.** 150g per
+    serving × 3 people against a 500g pack is 0.9 packs; a count ingredient
+    converts directly (3 eggs × 2 = 6 packs) because the catalogue records
+    sold-each goods with `pack_grams == 1` — a sentinel meaning one unit, not
+    one gram. Verified end to end: "Sausages and Mash" for three costs $7.14
+    consumed and $17.14 payable, the two-totals distinction intact.
+
+    **A gap found and closed while doing it.** `recipe_excluded_categories`
+    scans ingredient NAMES for meat and seafood words, which is right for an
+    imported recipe whose ingredients cannot be resolved — but it reports
+    "Scrambled Eggs on Toast" and "Broccoli and Cheese Pasta" as excluding
+    NOTHING, and a vegan would be served both. `recipe_categories` now derives
+    the answer from the resolved products instead, and `is_viable_for` filters
+    selection on it. Viability by diet: vegetarian 18/29, dairy-free 18/29,
+    pescatarian 20/29, vegan 7/29.
+
+    Vegan is tight on purpose: `lineage_b.py` maps the catalogue's combined
+    "Fresh Milk & Plant Milk" to `dairy` wholesale, because the source does not
+    separate oat milk from cow's milk and over-excluding is the safe direction.
+    Per-product allergen tagging (legacy 11.7) is what lifts it; widening the
+    category map would trade a safety property for a menu.
+
+    **Still to wire:** the selection prompt (model returns recipe ids), the
+    graph branch that uses it, and an eval suite for recipe-constrained plans.
+    The deterministic half — which is what Req 2.9 actually specifies as code's
+    responsibility — is done and tested.
+
+  - [ ] **15c — Wire selection into the graph.** Recipe-constrained
     planning is deliberately NOT wired into the graph. A recipe is usable only
     if EVERY ingredient can be priced: a payable total computed from part of a
     shopping list is a number the shopper cannot spend to, and `within_budget`
