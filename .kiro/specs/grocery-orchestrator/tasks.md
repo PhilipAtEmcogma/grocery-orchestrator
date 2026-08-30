@@ -570,17 +570,57 @@ proposed, or gated as labelled; it is not implemented.
 >   stopgap; revert when Task 13 lands real ingested prices. Full reasoning in
 >   `config/freshness.json` `_decision_2026_08_30` and `docs/ARCHITECTURE.md` §3c.
 
-- [ ] **Pilot Task 9 — Establish CDK and adopt existing data resources.** Build
-  the TypeScript CDK app and stateful stack; import existing tables without
-  replacement and record reviewed adoption evidence. Extend the adoption review
-  to the existing service-plane resources listed in the note above.
+- [x] **Pilot Task 9 — Establish CDK and adopt existing data resources.**
+  Completed 2026-08-30. Environment bootstrapped, `Grocery-Stateful-dev`
+  deployed. **Strategy A**: the template contains NO `AWS::DynamoDB::Table`
+  resource, so CloudFormation cannot create, replace or delete the tables — the
+  adoption evidence is the absence, not an assertion.
+
+  Schema confirmed with `describe-table` against the account, not from a
+  document (`infra/docs/06` §0 warns off `datasets/dynamodb_schema/*.json`,
+  which describes the data team's separate lineage). Before/after evidence
+  recorded: products 2,759 → 2,759, idempotency 74 → 74, `TableId` unchanged
+  (`7ce1af63…`, so no replacement), stack resources = `CDKMetadata` only, and
+  the live endpoint still answered 200 afterwards.
+
+- [x] **Pilot Task 10 — Define the deployable service plane.** Completed
+  2026-08-30. `Grocery-Service-dev`: Python 3.13 zip Lambda from
+  `build/lambda.zip`, SnapStart on a published `live` alias, REST API with
+  `POST`/`OPTIONS` on `/chat` proxying the alias, scoped IAM built from
+  `config/iam-orchestrator-role.json` with `${AWS_*}` resolved from the deploy
+  identity, SSM parameters, 14-day log retention, throttling and a usage plan.
+
+  CORS is handled by the HANDLER, not an API-level MOCK preflight —
+  `src/handler.py` emits its own headers and answers `OPTIONS`, so a second
+  mechanism would produce duplicate `Access-Control-Allow-Origin` headers that
+  browsers reject.
 - [ ] **Pilot Task 10 — Define the deployable service plane.** Codify the Python
   3.13 zip Lambda, published SnapStart alias, REST API, Guardrail, strict CORS,
   throttling, usage plan, SSM configuration, log retention, and scoped IAM.
-- [ ] **Pilot Task 11 — Deploy and verify the anonymous pilot safely.** Treat
-  resource adoption and deployment as separate reviewed operations in account
-  the deployment account (see `aws sts get-caller-identity`), region
-  `ap-southeast-2`.
+- [ ] **Pilot Task 11 — Deploy and verify the anonymous pilot safely.**
+  **Deployed and verified 2026-08-30; the CUTOVER is what remains.** Adoption
+  and deployment were kept as separate reviewed operations exactly as this task
+  asks: `Grocery-Stateful-dev` first (creates nothing), then
+  `Grocery-Service-dev` under a `-cdk` name suffix so it stands BESIDE the
+  hand-made plane rather than colliding with it.
+
+  Parity verified before any cutover: price checks byte-identical across both
+  endpoints; the meal-plan total differed until the same question was run three
+  times against the SAME endpoint and returned $35.75/$31.74/$31.74 — inherent
+  variance in plan composition, not a configuration difference. Checking that
+  before reporting a discrepancy is the difference between a finding and a false
+  alarm.
+
+  The CDK plane also fixes three things the hand-made one has wrong: log
+  retention (`null`, never expire → 14 days), the account-level API Gateway
+  CloudWatch role that `docs/ARCHITECTURE.md` §7 records as unset, and stage
+  tracing on from the start.
+
+  **Remaining, and it is a decision rather than a task:** set `NAME_SUFFIX=''`,
+  repoint `scripts/measure_latency.py` / `Philip_demo/_demo_support.py` / the
+  docs, deploy, and retire the hand-made resources — reading a `cdk diff` before
+  each step. It changes a URL that in-progress demo work names, so it waits on
+  the owner. `infra/docs/08` §10.
 - [ ] **Pilot Task 12 — Add operational acceptance gates and artefact storage.**
   Build CloudWatch dashboards/alarms, X-Ray evidence, Budgets, quota review,
   latency/cost baselines, and alarm drills. Use encrypted versioned S3 with
