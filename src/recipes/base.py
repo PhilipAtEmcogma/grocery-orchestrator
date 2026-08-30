@@ -8,22 +8,35 @@ deterministic code owning scaling, dietary verification and totals.
 THE CATALOGUE IS NOT WIRED INTO THE GRAPH, AND THIS MODULE EXPLAINS WHY.
 A recipe is only usable for planning if its ingredients can be PRICED, and
 pricing needs every ingredient to resolve to a product the retrieval layer
-actually returns. Measured against the two datasets this project holds:
+actually returns. Measured 2026-08-31 over 175 recipes and 451 distinct
+ingredients, **against BOTH product catalogues, because a coverage number is
+only worth something if it does not depend on which file was open**:
 
-    175 recipes, 451 distinct ingredients
-    best recipe:   75% of ingredients costable
-    median recipe: 15%
-    recipes at 90% or better: ZERO -- under any staples assumption
+    catalogue                              best   median   at 100%
+    datasets/  (528 products, 2,939 rows)   75%     17%      ZERO
+    fixtures/  ( 26 products,   152 rows)   75%     12%      ZERO
+
+Zero at 90% or better either way, under any staples assumption.
+
+THE FIGURES USED TO COME FROM THE FIXTURE CATALOGUE ALONE, while this
+docstring described the real one -- `scripts/check_recipe_coverage.py`
+resolved through `InMemoryPriceRepository()`, which defaults to the 26-product
+seed file, and its output named neither. A blocking decision on Req 2.9 rested
+on an instrument pointed at the wrong data and survived only because the
+answer happened to be the same. That is luck, not evidence. The script now
+names its catalogue in every run and refuses to gate from the fixture one;
+`tests/test_recipes.py` asserts both catalogues agree. (Audit finding D3,
+2026-08-30.)
 
 The two datasets were built for different jobs and do not meet. TheMealDB
 recipes are international home cooking with a median of 11 ingredients each,
 reaching for soy sauce, fish sauce, ginger, coriander, cumin and paprika. The
-product catalogue is 300 items per store across 17 categories, weighted to
-fresh produce, meat and dairy, with no spice rack, no condiments and no long
-tail. `water` is in 42 recipes and is not a grocery product at all.
+product catalogue is weighted to fresh produce, meat and dairy, with no spice
+rack, no condiments and no long tail. `water` is in 42 recipes and is not a
+grocery product at all.
 
 WHY THAT BLOCKS THE FEATURE RATHER THAN MERELY DEGRADING IT. A plan built from
-a recipe whose ingredients are 15% priced would state a payable total computed
+a recipe whose ingredients are 17% priced would state a payable total computed
 from a sixth of what the shopper has to buy. That number is not an estimate,
 it is wrong, and `within_budget` derived from it is a false promise -- the
 single failure mode this codebase is built to prevent. Refusing to plan is the

@@ -7,7 +7,7 @@ from the handler means it is testable without any Lambda event shape.
 
 from __future__ import annotations
 
-from src.graph.build import build_graph
+from src.graph.build import compiled_graph
 from src.graph.state import GroceryState
 from src.models.base import ModelClient
 from src.retrieval.base import PriceRepository
@@ -21,8 +21,11 @@ from src.schemas.contract import (
 
 
 def run_turn(request: ChatRequest, repo: PriceRepository, model: ModelClient) -> ChatResponse:
-    # Build a fresh graph per call, wired to this call's repo/model.
-    graph = build_graph(repo, model)
+    # Memoised on the dependency pair rather than compiled per call: the
+    # compile measured 13.4 ms and was 78% of an offline turn, on a path the
+    # handler already caches `repo` and `model` for. See `compiled_graph` for
+    # why identity keying is the load-bearing part.
+    graph = compiled_graph(repo, model)
 
     # Annotated so the type checker can see this satisfies GroceryState.
     # GroceryState is total=False, so a partial dict is valid: the remaining

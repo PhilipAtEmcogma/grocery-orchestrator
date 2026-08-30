@@ -66,7 +66,7 @@ operational evidence** — not first deployment.
 | 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done** — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). Cutover deferred by decision, not pending |
 | 13 · Controlled ingestion | ⬜ not started |
 | 14 · AgentCore reviewer | 🟡 **14a done** — the sanitised snapshot boundary and finding validation, which are needed whoever reviews. The Runtime needs ADR 0002; the request was narrowed to it alone on 2026-08-31 |
-| 15 · Recipe catalogue | 🟡 catalogue + coverage gate built. Planner blocked on data; **approach decided** (curate against our catalogue), sequenced after 9–11 |
+| 15 · Recipe catalogue | 🟡 **15a and 15b done** — 29 curated recipes, 29/29 priceable against the real catalogue (14/29 against the offline fixtures), and `src/recipes/planning.py` assembles them into a `PlanDraft`. **15c — wiring selection into the graph — is the remainder.** The imported 175 stay unusable: 0/175 against *both* catalogues |
 | 16 · Release gates | ⬜ not started |
 
 **Two deliberate deferrals remain** (6b closed 2026-08-30), each with the
@@ -98,7 +98,7 @@ intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%;
 DynamoDB products and idempotency tables with owner-fenced claims proven against
 the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
-**Offline gates:** 763 tests passing, 31 skipped. Five eval suites — intent
+**Offline gates:** 811 tests passing, 31 skipped. Five eval suites — intent
 76.7%, meal plan 100%, prose 100%, repair 100% (12 cases), guardrail 9/9
 must-allow — all gated in CI and the pre-commit hook. **Repair is now gated on
 model choice too**: three reps each, Nova Lite 91.7% and Claude Haiku 83.3%,
@@ -123,16 +123,16 @@ variable:
   because `CORS_ORIGIN=*` would fail it and needs the frontend origin first.
   §3g.
 
-**Three decisions waiting on a person** — each has its evidence gathered and its
-options written down; none needs more code first:
+**One decision still waiting on a person**, of three that were. Each had its
+evidence gathered and its options written down; none needed more code first.
 
 1. ~~**The recipe catalogue and the product catalogue do not meet.**~~
-   **Decided 2026-08-30:** curate ~20–30 recipes written against *this*
-   catalogue rather than importing a general recipe API — 100% costable by
-   construction, since there are ~418 known terms to write against.
-   **Sequenced after the IaC work (Tasks 9–11)**, because Task 15 is
-   prompt-and-data work with almost no AWS surface and the CDK work is what
-   every reproducibility and cost claim waits on. `tasks.md` Pilot Task 15b.
+   **Decided 2026-08-30, and done.** Curate ~20–30 recipes written against
+   *this* catalogue rather than importing a general recipe API — 29 shipped,
+   29/29 costable against the real catalogue. It was sequenced after the IaC
+   work (Tasks 9–11) because Task 15 is prompt-and-data work with almost no
+   AWS surface; both landed on 2026-08-30/31, so the sequencing is history
+   rather than a plan. `tasks.md` Pilot Task 15b.
 2. ~~**Gate repair at 90%?**~~ **Decided and applied 2026-08-30.** Three reps
    each confirmed the structure — Nova Lite 91.7%, Claude Haiku 83.3%, identical
    every rep, failing in opposite halves. Haiku is excluded from `repair_plan`
@@ -149,11 +149,16 @@ options written down; none needs more code first:
 - Which product a one-word query returns — "cheapest butter" against fourteen
   butters — was decided by reading the catalogue, not by anyone who shops there:
   [`docs/OPEN-REVIEW-head-terms.md`](docs/OPEN-REVIEW-head-terms.md).
-- **The recipe catalogue and the product catalogue do not meet.** No recipe is
-  fully priceable, so Req 2.9 cannot be delivered as written. Widening the
-  product collection, choosing recipes to fit the catalogue, or narrowing the
-  requirement are all defensible — and the choice belongs to the team, not this
-  repository. `tasks.md` Pilot Task 15b has the evidence and the three options.
+- **Where the 2,759 served rows actually came from.**
+  `datasets/DATA_SCHEMA.md` §1 says the prices were "Sourced from Foodstuffs
+  online shopping catalog across 10 Auckland physical store locations";
+  [`ACQUISITION-RISK.md`](ACQUISITION-RISK.md) §8 permits acquisition only
+  under thirteen conditions and records condition 1 as unmet. Both cannot be
+  fully true. `ingestion/sources.py`'s tripwire protects the ingestion Lambda,
+  not the serving table, and the Fair Trading Act exposure §4.5 identifies
+  attaches to the comparison we publish rather than to the collection. **This
+  is a conversation with the data teammates, not an engineering task, and it
+  should happen before any demo outside the team.**
 - The frontend team's response shape in `datasets/DATA_SCHEMA.md` is flat JSON
   with different intent names; ours is an event list. Both are reasonable, they
   are not the same thing, and nobody has reconciled them.
@@ -214,9 +219,15 @@ generate_prose -> finalise -> END
 - **Event-shaped contract.** The response is always a list of typed events
   (`session`, `intent`, `citation`, `price_comparison`, `meal_plan`,
   `notice`, `no_data`, `error`, `done`), defined once in
-  `src/schemas/contract.py`. Over REST the whole list returns at once; the
-  planned WebSocket upgrade emits the same events one at a time, so the
-  contract doesn't change when the transport does.
+  `src/schemas/contract.py`. Over REST the whole list returns at once; a
+  streaming transport would emit the same events one at a time, so the
+  contract doesn't change when the transport does. That upgrade is **not
+  built and no longer means WebSockets** — API Gateway REST gained response
+  streaming in Nov 2025, which keeps the throttling, usage plans and
+  authorizers a WebSocket API would make you rebuild. What blocks it now is
+  the runtime, not the gateway: the Python managed runtime does not support
+  response streaming and SnapStart does not support the OS-only runtime that
+  does. `design.md` §8 has the reasoning.
 - **Grounding is structural.** See above — enforced by
   `assert_grounded()`, and `assert_arithmetic()` re-derives every subtotal
   and total to make sure a plan's numbers actually add up.
@@ -252,7 +263,9 @@ architecture in detail; this is the map, not the territory.
 src/
   schemas/contract.py      The wire contract — single source of truth
   graph/                   LangGraph state machine
-    build.py                 Topology; the shape IS two of the invariants
+    build.py                 Topology; the shape IS two of the invariants.
+                             compiled_graph() memoises on the dependency pair —
+                             clear it if you monkeypatch a node
     state.py                 GroceryState — what every node reads and writes
     dietary.py               Exclusion term -> category, or an honest refusal
     feasibility.py           Is this budget possible at all (see docs/OPEN-REVIEW-*)
@@ -261,6 +274,16 @@ src/
                            scripted stand-in, guardrail tagging
   prompts/                 System/user prompts and the price-free draft schemas
   retrieval/               PriceRepository protocol; fixture and DynamoDB impls
+  recipes/                 Curated catalogue (Req 2.9): the recipes, their
+                           dietary classification, deterministic assembly into
+                           a PlanDraft, and catalogue.py — a product catalogue
+                           that names its own source and size, because a
+                           coverage number without one measures nothing
+  review/                  Task 14a: the sanitised snapshot a data-quality
+                           reviewer would sit behind, and the validation its
+                           findings must survive. No reviewer is deployed
+  mcp/                     Local read-only MCP façade: two coarse tools over
+                           stdio, default-off, rate and session capped
   store/                   Idempotency: in-memory and DynamoDB
   observability/           Telemetry protocol, instrumented wrappers, Powertools
   runner.py                ChatRequest -> graph -> validated ChatResponse
@@ -464,7 +487,7 @@ claimed. Read it before changing any of this, and not before.
 
 ### Tests, evals and CI
 
-- ✅ **763 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **811 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -536,14 +559,24 @@ against the deployed endpoint under load.
    fixture or recorded adapters, with provenance, partial-failure and
    dead-letter behaviour. **No live retailer traffic**, which stays gated on
    [`ACQUISITION-RISK.md`](ACQUISITION-RISK.md) §8.
-4. **Task 15 — recipe catalogue.** Models select recipe ids and product
-   citations; code owns scaling, safety and totals. The catalogue, its dietary
-   classification and a coverage gate are built (`src/recipes/`). **The planner
-   is deliberately not wired: zero of the 175 recipes have every ingredient
-   priceable** against the product catalogue (best 75%, median ~12%), so a plan
-   built from one would state a payable total derived from a fraction of the
-   shopping list. `python scripts/check_recipe_coverage.py --missing 20` names
-   what is absent; a forcing test fails when the data becomes sufficient.
+4. **Task 15c — wire recipe selection into the graph.** Models select recipe
+   ids and product citations; code owns scaling, safety and totals. **The
+   deterministic half is built** (`src/recipes/`): 29 curated recipes, every
+   ingredient priceable against the real catalogue by construction, and
+   `planning.py` assembling them into the same `PlanDraft` that
+   `assemble_plan`, `validate_plan`, `assert_arithmetic` and the bounded repair
+   loop already consume. What remains is the selection prompt, the graph
+   branch, and an eval suite for recipe-constrained plans.
+
+   **The imported 175 stay unusable, and that is now measured against both
+   catalogues** — zero fully priceable against the real one (best 75%, median
+   17%) *and* against the fixtures (best 75%, median 12%). Until 2026-08-31
+   only the fixture figure existed while the documentation described the real
+   catalogue, so the decision to curate rested on an instrument pointed at the
+   wrong data and survived by luck. `python scripts/check_recipe_coverage.py
+   --missing 20` now names its catalogue in every run and refuses to gate from
+   the fixture one; a forcing test fails if the real catalogue ever grows
+   enough to reopen the decision.
 5. **Task 16 — release gates.** The integrated run of every gate above.
 
 **Requires mentor approval before starting** (ADR 0002, still proposed):
@@ -563,7 +596,10 @@ against the deployed endpoint under load.
 **Gated until there is evidence to justify them:** cross-Region inference
 profiles; recipe/catalogue Knowledge Bases (never price authority); advisory
 Automated Reasoning; Bedrock Model Evaluation and AgentCore Evaluations as
-companions to the local suites rather than replacements; WebSocket delivery;
+companions to the local suites rather than replacements; **WebSocket delivery
+— now superseded rather than deferred**, since REST response streaming reaches
+the same outcome on the API that already exists (blocked on the Python
+runtime/SnapStart conflict, `design.md` §8, not on the gateway);
 remote MCP; separate environments. AgentCore Memory needs Cognito, consent, TTL,
 export and deletion, and a privacy review first, and never holds prices. Moving
 the shopper meal path onto AgentCore Runtime is a separate contingency for a p99
@@ -603,7 +639,7 @@ python Philip_demo/run_all.py   # nineteen demos, offline, about a minute
 And to check it:
 
 ```bash
-pytest                     # 763 passing, 31 skipped
+pytest                     # 811 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py       # 76.7% scripted baseline
@@ -702,6 +738,7 @@ specific question arises.
 | What should I build next, and how? | `.kiro/specs/.../tasks.md`, `infra/docs/` |
 | Why is this number what it is? | `config/*.json` — each carries its own reasoning |
 | Why was it done this way? | `.kiro/specs/.../design.md` §8, ADRs |
+| Somebody outside reviewed this — what did we do about it? | `docs/AUDIT-RESPONSE-2026-08-30.md` |
 
 **Building against it**
 
@@ -737,6 +774,15 @@ specific question arises.
   collided on a duplicate function name.
 
 **Judgement calls, open and closed**
+
+- [`docs/AUDIT-RESPONSE-2026-08-30.md`](docs/AUDIT-RESPONSE-2026-08-30.md) — the
+  reply to an outside technical and product audit, finding by finding: what was
+  already closed by four merges that landed during the review, what was true
+  and is now fixed, and what is declined with the argument. **Read the streaming
+  entry (§1 Finding 2) if you are about to act on the 29-second constraint** —
+  the gateway limit is liftable and the Python-runtime/SnapStart conflict is
+  what actually blocks it. Also the honest answer to "where did the 2,759 rows
+  come from", which is a conversation rather than a code change.
 
 - [`docs/OPEN-REVIEW-adr-0002.md`](docs/OPEN-REVIEW-adr-0002.md) — **open, and
   wants the mentor.** Whether to approve ADR 0002. Twenty minutes, no code

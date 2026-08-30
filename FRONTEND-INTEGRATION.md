@@ -7,14 +7,38 @@ Contract version **1.0**. This guide is the practical companion to
 ever disagree, [`src/schemas/contract.py`](src/schemas/contract.py) is the source
 of truth — it's Pydantic, and CI validates every sample against it.
 
-Everything below was captured from the dev server on 2026-08-10 and documents
-current reference behavior, including release-blocking defects: citation
-`table` is a logical label, `pk` uses category instead of location, `sk` may
-not be the normalized base key, and comparison/prose text contains literal
-money. The examples remain unchanged until Pilot Task 2 fixes code and
-regenerates samples atomically. Do not treat those fields as the target
-contract; the corrected target is in
-[`CONTRACT-v1.md`](CONTRACT-v1.md).
+Everything below was captured from the handler and re-verified on
+**2026-08-31**. It describes current behaviour, and the four release-blocking
+defects this section used to warn about are all fixed.
+
+<details>
+<summary>What that warning said, and why it is gone</summary>
+
+Between 2026-08-10 and 2026-08-29 this guide opened by telling you not to trust
+its own examples: citation `table` was a logical label, `pk` used category
+instead of location, `sk` was not always the normalized base key, and
+comparison and prose text contained literal money. Pilot Task 2 fixed all four
+in the code and regenerated the samples atomically, on 2026-08-29.
+
+**The notice then outlived the defects by two days, and the examples outlived
+them by longer.** The JSON captures were regenerated at the time; the two
+hand-written event tables in §6 and §7 were not, and went on showing
+`The cheapest option is $2.97 at Pak'nSave Mangere.` — prose the orchestrator
+had stopped emitting, in the one document a frontend team builds against.
+Corrected 2026-08-31 by capture rather than by hand (audit finding D7).
+
+The lesson is the one this repository keeps relearning: a worked example is
+code that nothing executes. `samples/` is regenerated and CI-validated;
+`UPDATE_FIXTURES=1 python -m pytest tests/test_sample_fixtures.py` is what
+keeps it honest. Prose tables in Markdown have no such gate, so re-derive them
+from a real turn rather than editing them.
+</details>
+
+Prices reach you only in structured fields. **Prose never contains money** — it
+names products and stores, so `token` text carries pack sizes like `500g` but
+no dollar figure, checked twice on the way out (the model's template and the
+rendered string). Render money from `price_comparison` and `meal_plan`, never
+by parsing `token` text.
 
 ---
 
@@ -298,7 +322,7 @@ seq  type              query_item
  2   citation          Pams Butter 500g
  …   citation          … (15 citations across the three items)
 16   citation          White Bread, 700g
-17   token             The cheapest option is $2.97 at Pak'nSave Mangere.
+17   token             The cheapest option is Pams Butter 500g at Pak'nSave Mangere.
 18   token             That is the best price across the stores near you.
 19   price_comparison  butter-500g
 20   price_comparison  milk-2l
@@ -365,7 +389,7 @@ seq  type              detail
  2   citation          Pams Butter 500g
  …   citation          … (5 butter citations)
  7   no_data           I don't have price data for wagyu ribeye.
- 8   token             The cheapest option is $2.97 at Pak'nSave Mangere.
+ 8   token             The cheapest option is Pams Butter 500g at Pak'nSave Mangere.
  9   token             That is the best price across the stores near you.
 10   price_comparison  butter-500g
 11   done
