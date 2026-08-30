@@ -13,9 +13,6 @@ catalogue and pass for the wrong reason.
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
 import pytest
 
 from src.graph.dietary import map_exclusions
@@ -26,11 +23,11 @@ from src.recipes import (
     recipe_categories,
     recipe_excluded_categories,
 )
-from src.retrieval.memory import load_synonyms, normalise_term
+from src.recipes.catalogue import DATASET_DIR, load_dataset_catalogue
+from src.retrieval.memory import load_synonyms
 from src.schemas.contract import LITERAL_MONEY
 
-DATASET = Path(__file__).resolve().parents[1] / "datasets" / "data" / "dynamodb_products"
-needs_dataset = pytest.mark.skipif(not DATASET.exists(), reason="dataset not present")
+needs_dataset = pytest.mark.skipif(not DATASET_DIR.exists(), reason="dataset not present")
 
 
 @pytest.fixture(scope="module")
@@ -46,29 +43,18 @@ def category_of():
     Built from the real catalogue through the same synonym table
     `resolve_product_key` uses, so what this test resolves is what a turn
     resolves.
+
+    The load lives in `src/recipes/catalogue.py` rather than here. It used to
+    be a copy, byte-for-byte equivalent to the one in
+    `Philip_demo/11_recipe_coverage_gate.py` apart from mapping to a category
+    instead of a key -- and equivalent copies are the dangerous kind, because
+    nothing is wrong and so nothing flags the day one of them is tuned.
     """
-    from ingestion.lineage_b import classify, derive_product_key, is_non_food
-
-    categories: dict[str, str] = {}
-    for path in sorted(DATASET.glob("*.json")):
-        for entry in json.loads(path.read_text(encoding="utf-8"))["SmartGroceryProducts"]:
-            item = entry.get("PutRequest", {}).get("Item", entry)
-            record = {k: (v.get("S") if "S" in v else v.get("N")) for k, v in item.items()}
-            if is_non_food(record["product_name"]):
-                continue
-            key = derive_product_key(record["product_name"], record.get("size", ""))
-            categories[key] = classify(record["product_name"], record["category"])[0]
-
+    catalogue = load_dataset_catalogue()
+    assert catalogue is not None, "guarded by needs_dataset"
     synonyms = load_synonyms()
 
-    def resolve(term: str) -> str | None:
-        normalised = normalise_term(term)
-        for key in synonyms.get(normalised, []):
-            if key in categories:
-                return categories[key]
-        return categories.get(normalised.replace(" ", "-"))
-
-    return resolve
+    return lambda term: catalogue.category_for(term, synonyms)
 
 
 # ---------------------------------------------------------------- shape

@@ -374,7 +374,7 @@ load evidence the deferral required.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 763 passed, 31 skipped, no AWS
+python -m pytest -q                              # 811 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \

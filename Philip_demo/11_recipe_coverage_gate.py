@@ -70,9 +70,7 @@ ARCHITECTURE
 from __future__ import annotations
 
 import collections
-import json
 import statistics
-from pathlib import Path
 
 from _demo_support import (
     LOCAL,
@@ -113,39 +111,26 @@ def real_catalogue_resolver():
     """
     Resolve an ingredient term against the REAL catalogue, not the fixture.
 
-    Identical construction to `tests/test_curated_recipes.py`: the collected
-    dataset through the same synonym table `resolve_product_key` uses, so what
-    this resolves is what a turn resolves. Returns None if the dataset is not
-    present, and section 7 says so rather than quietly reporting a fixture
-    number under a real-catalogue heading.
+    The collected dataset through the same synonym table `resolve_product_key`
+    uses, so what this resolves is what a turn resolves. Returns None if the
+    dataset is not present, and section 7 says so rather than quietly reporting
+    a fixture number under a real-catalogue heading.
+
+    The load moved to `src/recipes/catalogue.py` on 2026-08-31. It used to be a
+    copy of the one in `tests/test_curated_recipes.py`, and a third variant sat
+    in `scripts/check_recipe_coverage.py` reading the fixture catalogue while
+    reporting under a real-catalogue heading -- which is the defect the audit
+    of 2026-08-30 recorded as D3. One loader now, and it names itself.
     """
-    dataset = Path(__file__).resolve().parents[1] / "datasets" / "data" / "dynamodb_products"
-    if not dataset.exists():
+    from src.recipes.catalogue import load_dataset_catalogue
+    from src.retrieval.memory import load_synonyms
+
+    catalogue = load_dataset_catalogue()
+    if catalogue is None:
         return None
 
-    from ingestion.lineage_b import derive_product_key, is_non_food
-    from src.retrieval.memory import load_synonyms, normalise_term
-
-    keys: set[str] = set()
-    for path in sorted(dataset.glob("*.json")):
-        for entry in json.loads(path.read_text(encoding="utf-8"))["SmartGroceryProducts"]:
-            item = entry.get("PutRequest", {}).get("Item", entry)
-            record = {k: (v.get("S") if "S" in v else v.get("N")) for k, v in item.items()}
-            if is_non_food(record["product_name"]):
-                continue
-            keys.add(derive_product_key(record["product_name"], record.get("size", "")))
-
     synonyms = load_synonyms()
-
-    def resolve(term: str) -> str | None:
-        normalised = normalise_term(term)
-        for key in synonyms.get(normalised, []):
-            if key in keys:
-                return key
-        direct = normalised.replace(" ", "-")
-        return direct if direct in keys else None
-
-    return resolve
+    return lambda term: catalogue.resolve(term, synonyms)
 
 
 recipes = FixtureRecipeRepository().all_recipes()

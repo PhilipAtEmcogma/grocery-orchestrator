@@ -6,6 +6,16 @@ and its dietary classification are real and must be correct. The COVERAGE is a
 blocker, and the test for it is written to fail when the blocker LIFTS -- the
 same forcing shape Pilot Task 6b used for the Scan ceiling, pointed the other
 way, so "not enough data yet" cannot quietly become permanent.
+
+THE FORCING TEST WATCHES THE REAL CATALOGUE, and until 2026-08-31 it did not.
+It resolved through `InMemoryPriceRepository()`, which reads the 26-product
+fixture file -- generated seed data that is regenerated to a fixed shape by
+`scripts/generate_fixtures.py` and therefore CANNOT grow. A tripwire whose
+condition is "the catalogue got bigger", watching a catalogue that never
+changes, can never fire. It read as a working control and guarded nothing,
+which is the same shape as the secret scan that never ran and the privacy test
+that read one stream. It now resolves against `datasets/`, which is what the
+serving table holds and the only catalogue that can actually grow.
 """
 
 from __future__ import annotations
@@ -21,7 +31,8 @@ from src.recipes import (
     recipe_excluded_categories,
     usable_recipes,
 )
-from src.retrieval.memory import InMemoryPriceRepository
+from src.recipes.catalogue import load_dataset_catalogue, load_fixture_catalogue
+from src.retrieval.memory import InMemoryPriceRepository, load_synonyms
 
 # What Req 2.9 needs before a plan can be composed from recipes: every
 # ingredient priced, and enough recipes to choose between.
@@ -35,11 +46,30 @@ def recipes() -> list[Recipe]:
 
 
 def _resolver():
+    """Against the fixture catalogue, via the repository the offline suite uses."""
     repo = InMemoryPriceRepository()
 
     def resolve(term: str) -> str | None:
         for candidate in (term, f"{term}s", term[:-1] if term.endswith("s") else term):
             key = repo.resolve_product_key(candidate)
+            if key:
+                return key
+        return None
+
+    return resolve
+
+
+def _catalogue_resolver(catalogue):
+    """
+    Against a NAMED catalogue. Same generosity as `_resolver` -- whole-term
+    singular and plural -- so the two are comparable and a bad number under
+    either is a floor rather than an artefact of strict matching.
+    """
+    synonyms = load_synonyms()
+
+    def resolve(term: str) -> str | None:
+        for candidate in (term, f"{term}s", term[:-1] if term.endswith("s") else term):
+            key = catalogue.resolve(candidate, synonyms)
             if key:
                 return key
         return None
@@ -207,24 +237,71 @@ def test_the_imported_catalogue_still_cannot_be_planned_from(
     computed from part of a shopping list is a number the shopper cannot spend
     to, and `within_budget` derived from it is a false promise.
 
-    Measured today: 175 recipes, best 75% costable, median ~12%, and ZERO at
-    100% under any staples assumption. The datasets were built for different
-    jobs: TheMealDB is international home cooking reaching for soy sauce, fish
-    sauce, ginger and coriander; the product catalogue is 300 fresh-weighted
-    items per store with no spice rack and no long tail.
+    IT RESOLVES AGAINST `datasets/`, NOT THE FIXTURES, and that correction is
+    what makes it a control at all. The condition being watched is "the product
+    catalogue grew enough"; the fixture catalogue is generated to a fixed shape
+    and cannot grow, so watching it meant the trigger could never fire. See the
+    module docstring.
 
-    So the planner is deliberately NOT wired to the catalogue. When the product
-    data grows enough to price whole recipes, this test fails and says so --
-    which is the moment to build it, and the moment somebody would otherwise
-    have to notice by chance.
+    Measured 2026-08-31 against the real catalogue (528 distinct products,
+    2,939 rows): 175 recipes, best 75% costable, median 17%, ZERO at 100% under
+    any staples assumption. Against the 26-product fixtures the same suite is
+    best 75%, median 12% -- both zero at 100%, which is what makes the 15b
+    decision sound rather than an artefact of which file was open. The datasets
+    were built for different jobs: TheMealDB is international home cooking
+    reaching for soy sauce, fish sauce, ginger and coriander; the product
+    catalogue is fresh-weighted with no spice rack and no long tail.
+
+    So the planner is deliberately NOT wired to the imported catalogue. When
+    the product data grows enough to price whole recipes, this test fails and
+    says so -- which is the moment to build it, and the moment somebody would
+    otherwise have to notice by chance.
     """
-    covs = coverage(recipes, _resolver())
+    catalogue = load_dataset_catalogue()
+    if catalogue is None:
+        pytest.skip(
+            "datasets/data/dynamodb_products is not checked out. Skipped rather "
+            "than measured against fixtures: a forcing test that silently falls "
+            "back to a catalogue which cannot grow is the defect this test was "
+            "just corrected for."
+        )
+
+    covs = coverage(recipes, _catalogue_resolver(catalogue))
     usable = usable_recipes(covs, minimum_ratio=REQUIRED_RATIO)
 
     assert len(usable) < RECIPES_NEEDED_TO_PLAN, (
-        f"{len(usable)} IMPORTED recipes are now fully costable, at or past the "
-        f"{RECIPES_NEEDED_TO_PLAN} a planner needs. The product catalogue has "
-        "grown: revisit whether the curated set in config/recipes.json is still "
-        "the right source, or whether 175 real recipes now beat 29 written ones. "
-        "See tasks.md Pilot Task 15b for the decision this would reopen."
+        f"{len(usable)} IMPORTED recipes are now fully costable against "
+        f"{catalogue.describe()}, at or past the {RECIPES_NEEDED_TO_PLAN} a "
+        "planner needs. The product catalogue has grown: revisit whether the "
+        "curated set in config/recipes.json is still the right source, or "
+        "whether 175 real recipes now beat 29 written ones. See tasks.md Pilot "
+        "Task 15b for the decision this would reopen."
     )
+
+
+def test_the_two_catalogues_agree_that_the_imported_recipes_are_unusable(
+    recipes: list[Recipe],
+) -> None:
+    """
+    The decision in 15b is only sound if it does not depend on which catalogue
+    was measured. Both say zero, so it does not.
+
+    This is the assertion the audit of 2026-08-30 asked for: the coverage
+    conclusion was reached through an instrument pointed at the fixture
+    catalogue, and survived only because the answer happened to be the same
+    against the real one. That is luck. Asserting both makes it a control.
+    """
+    fixture_usable = usable_recipes(
+        coverage(recipes, _catalogue_resolver(load_fixture_catalogue())),
+        minimum_ratio=REQUIRED_RATIO,
+    )
+    assert not fixture_usable, "fixtures now price a whole imported recipe"
+
+    dataset = load_dataset_catalogue()
+    if dataset is None:
+        pytest.skip("datasets/data/dynamodb_products is not checked out")
+
+    dataset_usable = usable_recipes(
+        coverage(recipes, _catalogue_resolver(dataset)), minimum_ratio=REQUIRED_RATIO
+    )
+    assert not dataset_usable, f"{dataset.describe()} now prices a whole imported recipe"

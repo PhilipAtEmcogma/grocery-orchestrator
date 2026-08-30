@@ -191,3 +191,79 @@ def test_messy_naming_still_resolves_across_stores(repo):
     names = {r.display_name for r in recs}
     assert len(names) > 1, "fixtures should have inconsistent naming"
     assert len({r.store for r in recs}) == 3, "all three chains present"
+
+
+# --------------------------------------------------- the compiled-graph cache
+
+
+def test_the_same_dependency_pair_reuses_one_compiled_graph():
+    """
+    Compiling measured 13.4 ms and was 78% of an offline turn. The handler
+    already caches the repository and model client at module scope, so
+    recompiling per request threw that saving away one layer down.
+    """
+    from src.graph.build import clear_graph_cache, compiled_graph
+
+    clear_graph_cache()
+    repo, model = InMemoryPriceRepository(), ScriptedModelClient()
+
+    assert compiled_graph(repo, model) is compiled_graph(repo, model)
+
+
+def test_a_different_repository_never_shares_a_graph():
+    """
+    The safety half, and the reason the cache is keyed on identity.
+
+    `InMemoryPriceRepository` takes a fixture path, so two of them can hold
+    different catalogues. A cache that collapsed them would answer a turn from
+    the wrong catalogue while every assertion in the system passed -- the graph
+    would be internally consistent and simply about the wrong data, which is
+    the one failure mode this codebase exists to prevent. Neither dependency
+    defines `__eq__`, so `lru_cache` hashes by identity; this test is what
+    fails if that ever changes.
+    """
+    from src.graph.build import clear_graph_cache, compiled_graph
+
+    clear_graph_cache()
+    model = ScriptedModelClient()
+    first, second = InMemoryPriceRepository(), InMemoryPriceRepository()
+
+    assert first is not second
+    assert compiled_graph(first, model) is not compiled_graph(second, model)
+
+    # And the same in the other axis, so neither argument is being ignored.
+    repo = InMemoryPriceRepository()
+    assert compiled_graph(repo, ScriptedModelClient()) is not compiled_graph(
+        repo, ScriptedModelClient()
+    )
+
+
+def test_clearing_the_cache_forces_a_recompile():
+    """
+    What `tests/conftest.py` relies on. A graph resolves its node functions
+    from `src.graph.nodes` when it is built, so a test that monkeypatches a
+    node is only testing anything if the cache was cleared first.
+    """
+    from src.graph.build import clear_graph_cache, compiled_graph
+
+    clear_graph_cache()
+    repo, model = InMemoryPriceRepository(), ScriptedModelClient()
+    before = compiled_graph(repo, model)
+
+    clear_graph_cache()
+
+    assert compiled_graph(repo, model) is not before
+
+
+def test_a_cached_graph_still_serves_repeated_turns(repo, model):
+    """
+    Positive control for reuse: the second turn through a memoised graph must
+    behave exactly like the first. A compiled graph holds no per-turn state --
+    nodes are `state -> partial state` and each invocation is handed its own
+    state dict -- and this is what would fail if that stopped being true.
+    """
+    first = run_turn(_req("cheapest butter"), repo, model)
+    second = run_turn(_req("cheapest butter"), repo, model)
+
+    assert _types(first) == _types(second)
+    assert_grounded(second)

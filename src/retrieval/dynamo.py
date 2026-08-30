@@ -9,10 +9,16 @@ tests/test_price_repository_contract.py — run against a real table with:
 
 The GSI1 index (PK=product_key, SK=gsi1_sk with zero-padded price) means
 `cheapest_for_product` is a single query already sorted — no application-side
-sorting needed. `candidates_for_budget` scans the base table because it needs
-cross-product, cross-store coverage filtered by category; this is acceptable
-at seed-data scale (~150 items) and will need a category GSI if the catalogue
-grows past ~5,000 items.
+sorting needed. `candidates_for_budget` queries GSI2 (PK=category,
+SK=gsi2_sk with zero-padded price), which is likewise sorted at the source.
+
+**It used to Scan, and this header said so two commits after it stopped.**
+Pilot Task 6b replaced the Scan with GSI2 on 2026-08-30 and the `Scan`
+permission was revoked from the orchestrator role, so the description here
+outlived the behaviour it described — while the method's own docstring was
+correct the whole time. Recorded because the correction is the point: a
+module header is the least-read and most-quoted piece of documentation in a
+file, and it is where a stale claim survives longest.
 
 `resolve_product_key` reuses the same synonym table as the in-memory
 implementation. The mapping is application logic (noisy free-text -> canonical

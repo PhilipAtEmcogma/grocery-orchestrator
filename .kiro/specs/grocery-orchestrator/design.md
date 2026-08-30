@@ -510,6 +510,43 @@ followed the rules tests the wrong thing.
 streaming cheaply at the cost of rate limiting, usage plans, and
 authentication — three security requirements traded for transport convenience.
 
+**Amended 2026-08-31: the trade this rejection describes no longer exists, and
+streaming is still not adopted — for a different reason.** API Gateway REST
+added response streaming in November 2025 (`responseTransferMode: STREAM` over
+a `/response-streaming-invocations` integration URI, `InvokeWithResponseStream`,
+integration timeout to 15 minutes), and the stage stays in front of it, so
+throttling, usage plans, authorizers and WAF all still apply. Nothing has to be
+bypassed. The rejection above was correct when written and its *stated* reason
+is now obsolete.
+
+The reason it stays rejected is the runtime, and it is a harder constraint than
+the one it replaces:
+
+- **The Python managed runtime does not support response streaming.** It needs
+  a custom runtime (`provided.al2023`) or the Lambda Web Adapter with an ASGI
+  server in the package.
+- **SnapStart supports Java 11+, Python 3.12+ and .NET 8+ managed runtimes
+  only.** OS-only runtimes and container images are not supported.
+
+Those two do not intersect. A custom runtime buys streaming and forfeits
+SnapStart, which is the same trade `AGENTS.md` already refuses for containers
+("forfeits SnapStart, which is zip-only") — and refusing it there while
+accepting it here would be incoherent. The Lambda Web Adapter route keeps the
+managed runtime but adds a web server to a handler whose whole value is that it
+has no framework in it, and its SnapStart compatibility is unestablished.
+
+**And the pressure to pay either price is not there.** The ceiling below is not
+binding: the deployed meal-plan p95 is 12.2s against 29s, and the price-check
+p95 is 2.21s. Streaming would improve perceived latency on the meal-plan path —
+12 seconds of blank screen is a real UX cost — but it buys headroom the service
+is not short of, at the price of a cold-start property it does measure.
+
+Revisit if any of these change: p99 approaches the ceiling under real
+concurrency (undefined today — Req 13.13 cannot be evaluated without a load
+run); Lambda ships native Python streaming; or SnapStart reaches OS-only
+runtimes. Req 7.9 stays a GAP, and the reason recorded against it is now the
+runtime rather than the gateway.
+
 ---
 
 ## 9. Known constraints
@@ -517,6 +554,19 @@ authentication — three security requirements traded for transport convenience.
 **Synchronous integration timeout.** The gateway caps synchronous responses at
 29 seconds. The plan path — classification, retrieval, composition, validation,
 possible regeneration — is the only path that approaches it.
+
+**It is no longer an unliftable cap, and it is no longer the binding
+constraint.** Response streaming on REST (Nov 2025) extends the integration
+timeout to 15 minutes; §8 records why this project still does not take it — the
+Python runtime and SnapStart do not both fit. More to the point, the first
+measurement against the deployed endpoint (2026-08-30) puts meal-plan p95 at
+**12.2s** and price-check p95 at **2.21s**, so the 29s figure is roughly 2.4×
+the slowest path rather than a wall the design is pressed against. Six
+decisions below descend from this constraint and their *reasons* should be
+re-read in that light — the cost arguments survive, the latency ones weaken —
+but none of them changes on latency grounds until p99 is known, and p99 is
+undefined at n=3. **The load run is the prerequisite for revisiting any of
+them.**
 
 Mitigations, in order of preference:
 1. Regeneration on the low-cost model — **implemented**
@@ -527,7 +577,10 @@ Mitigations, in order of preference:
 4. Splitting structured generation from prose generation — **implemented**;
    prose is a separate node on the low-cost tier (§3), and its failure degrades
    rather than costing a retry (§2.4)
-5. Streaming transport (Req 7.9) — not built
+5. Streaming transport (Req 7.9) — **not built, and now blocked on the runtime
+   rather than on the gateway.** Available on REST since Nov 2025; §8 records
+   why the Python-runtime/SnapStart conflict makes it expensive here and why
+   the ceiling it would lift is not currently binding.
 
 Escalation beyond these requires measured evidence, not anticipation. Note that
 four of the five are now in place and none of them has been measured, because
