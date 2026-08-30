@@ -780,10 +780,27 @@ costume of a dependency upgrade.
 ### 12.6 The two alarms, as configuration
 
 The alarm definitions are version-controlled in `config/alarms.json` and
-validated by `scripts/apply_alarms.py --dry-run`. They are not deployed because
-the service plane does not yet exist; that is a deployment gap, not absence of
-an AWS account. Offline validation runs in CI and the pre-commit hook so the
-definitions cannot rot while they wait.
+validated by `scripts/apply_alarms.py --dry-run`. Offline validation runs in CI
+and the pre-commit hook so the definitions cannot rot.
+
+**Corrected 2026-08-30: they ARE deployed.** This paragraph said they were not,
+"because the service plane does not yet exist". Both alarms exist in
+`ap-southeast-2`, both are in `OK`, both publish to
+`grocery-orchestrator-alarms-dev`, the `HandlerEscaped` metric filter is on the
+orchestrator log group matching `{ $.message = "handler_escaped" }`, and the
+topic has a confirmed email subscriber. `grocery-orchestrator-handler-escaped-dev`
+even reports `StateReason: "Delivery test complete - returning to normal"`, so
+somebody ran a delivery drill.
+
+That is the third document found asserting a deployment gap that the account
+does not have — see `docs/ARCHITECTURE.md` §3. The lesson is recorded there and
+is worth repeating here: a design document describes intent, and when it makes a
+claim about what exists, that claim ages. Check the account.
+
+What is genuinely missing is everything AROUND the alarms — no dashboard, no
+Budget, no latency or cost baseline, and no alarm coverage of the model plane
+(throttling, guardrail interventions, repair-loop depth). Those are Pilot Task
+12, and they remain open.
 
 These are the two worth having on day one, and they are cheap because the
 signals already exist:

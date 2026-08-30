@@ -22,12 +22,14 @@
     {
       "id": "rb-003",
       "kind": "budget",
-      "message": "meals for 3 people for 5 days, $90, no dairy",
+      "message": "meals for 3 people for 5 days, $50, no dairy",
       "household_size": 3,
       "days": 5,
-      "budget_nzd": "90.00",
-      "exclusions": ["dairy"],
-      "note": "Cutting cost while holding an exclusion. Req 5.3 exists because a repair pass once regenerated without the allergy it was never told about."
+      "budget_nzd": "50.00",
+      "exclusions": [
+        "dairy"
+      ],
+      "note": "Cutting cost while holding an exclusion. Req 5.3 exists because a repair pass once regenerated without the allergy it was never told about. BUDGET LOWERED 90.00 -> 50.00 on 2026-08-30, and the reason is not that a model underperformed: at $90 this case passed at ONE pack per product and at THREE, so it never exercised budget repair at all and was scored as a budget case while testing nothing about budgets. It only ever failed because the bare term 'dairy' was unmapped and it took the UNSUPPORTED_EXCLUSION path -- failing for a reason unrelated to its kind, which is how the defect stayed hidden. At $50 a normal plan fits and a 3x-pack plan does not, which is the discrimination a budget case owes."
     },
     {
       "id": "rb-004",
@@ -57,12 +59,84 @@
       "household_size": 4,
       "days": 3,
       "budget_nzd": "75.00",
-      "exclusions": ["vegetarian"],
+      "exclusions": [
+        "vegetarian"
+      ],
       "validation_errors": [
         "ingredient qty '500g for $5' states '$5'",
         "ingredient item 'Butter (was 7.50, now 5.00)' states '7.50'"
       ],
       "note": "Two defects at once, plus an exclusion to hold. Repair must fix both without dropping the vegetarian constraint."
+    },
+    {
+      "id": "rb-005",
+      "kind": "budget",
+      "message": "feed 5 people for 4 days on $95",
+      "household_size": 5,
+      "days": 4,
+      "budget_nzd": "95.00",
+      "note": "A LARGE household, where the cheapest route is reuse rather than substitution. rb-001 to rb-004 are all households of 1-4; at 5 the per-meal pack count rises fast and a repair that swaps one product for a cheaper one barely moves the total. Distinct from the others in what the model must DO, not in its numbers."
+    },
+    {
+      "id": "rb-006",
+      "kind": "budget",
+      "message": "vegetarian meals for 3 people for 4 days on $55",
+      "household_size": 3,
+      "days": 4,
+      "budget_nzd": "55.00",
+      "exclusions": [
+        "vegetarian"
+      ],
+      "note": "Cost-cutting with the exclusion set NARROWED to what is left. rb-003 holds a dairy exclusion, which removes one category; vegetarian removes two of the cheapest protein sources, so the repair has to find savings in a smaller pool. Req 5.3: the exclusion must be restated on regeneration, and a repair that quietly drops it to hit the number is the failure this case exists for."
+    },
+    {
+      "id": "rb-007",
+      "kind": "budget",
+      "message": "dinner for 2 for 6 days on $38",
+      "household_size": 2,
+      "days": 6,
+      "budget_nzd": "38.00",
+      "note": "A LONG duration on a tight budget: 12 servings from $38. Whole-pack rounding dominates here -- a product used across six days is bought once, so the repair that works is consolidating onto fewer products rather than cheaper ones. The failure mode this catches is a model that trims portions instead of the shopping list."
+    },
+    {
+      "id": "rd-003",
+      "kind": "defect",
+      "message": "feed 3 people for 4 days on $70",
+      "household_size": 3,
+      "days": 4,
+      "budget_nzd": "70.00",
+      "validation_errors": [
+        "meal serves 2, household is 3"
+      ],
+      "note": "A NON-MONEY defect. rd-001 and rd-002 are both invented prices, so the suite only ever measured one kind of repair. Req 2.6 requires every meal's serving count to equal the household size, and a repair that fixes the servings while breaking the budget has not repaired anything."
+    },
+    {
+      "id": "rd-004",
+      "kind": "defect",
+      "message": "dairy-free dinner for 2 for 5 days on $65",
+      "household_size": 2,
+      "days": 5,
+      "budget_nzd": "65.00",
+      "exclusions": [
+        "dairy-free"
+      ],
+      "validation_errors": [
+        "ingredient 'Tasty Cheese 1kg' is in an excluded category (dairy)"
+      ],
+      "note": "THE SAFETY-CRITICAL REPAIR. The draft violated the dietary exclusion itself -- not a price, not a count. Req 5.3 exists because a repair pass once regenerated without the allergy it was never told about, and this is the case that would catch that recurring. A model that fixes it by dropping the exclusion instead of the ingredient fails on both checks."
+    },
+    {
+      "id": "rd-005",
+      "kind": "defect",
+      "message": "feed 4 people for 3 days on $80",
+      "household_size": 4,
+      "days": 3,
+      "budget_nzd": "80.00",
+      "validation_errors": [
+        "meal name 'Roast Night (save $12 vs takeaways)' states '$12'",
+        "meal serves 3, household is 4"
+      ],
+      "note": "A money defect AND a structural one together. rd-002 pairs two money defects; this pairs two DIFFERENT kinds, which is the case where a model tends to fix the one it noticed and re-submit."
     }
   ]
 }

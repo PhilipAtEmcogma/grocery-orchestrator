@@ -89,8 +89,16 @@ def validate(cfg: dict) -> list[str]:
             "dashboard widget, not an alarm"
         )
 
-    # What the filters actually publish, to check the alarms against.
+    # What is publishable in our own namespace, from BOTH sources.
+    #
+    # Metric filters are derived by CloudWatch from log lines and are declared
+    # here. EMF metrics are emitted by the application itself and are declared
+    # in `emf_metrics` -- listed rather than assumed, so an alarm on a mistyped
+    # metric name still fails. tests/test_alarms.py binds that list to the
+    # METRIC_ constants in src/observability/base.py.
+    namespace_default = "GroceryOrchestrator"
     published = {(f.get("namespace"), f.get("metric_name")) for f in filters}
+    published |= {(namespace_default, m) for m in cfg.get("emf_metrics", [])}
 
     for f in filters:
         name = f.get("name", "<unnamed>")
@@ -127,15 +135,47 @@ def validate(cfg: dict) -> list[str]:
                     f"metric filter in this config publishes"
                 )
 
-        if alarm.get("statistic") != REQUIRED_STATISTIC:
+        # Two kinds of alarm, and the rules differ because the questions do.
+        #
+        # A COUNT alarm asks "did this happen at all" -- an escaped handler, a
+        # 5xx. Sum, one datapoint, fires immediately, and an average over
+        # 0-filled datapoints would hide the single event that matters.
+        #
+        # A STATISTIC alarm asks "what does the distribution look like" -- p95
+        # latency against an SLO. It needs an extended statistic and more than
+        # one period, because a single slow five minutes on a service doing
+        # single-figure turns per minute is one slow request, not a trend.
+        #
+        # The kind is DECLARED, not inferred from the shape. Inferring it would
+        # let a count alarm silently become statistical through a typo, which is
+        # the class of error this whole validator exists to catch.
+        kind = alarm.get("kind", "count")
+        if kind not in {"count", "statistic"}:
+            problems.append(f"alarm '{name}': kind is {kind!r}, expected 'count' or 'statistic'")
+
+        if kind == "count" and alarm.get("statistic") != REQUIRED_STATISTIC:
             problems.append(
                 f"alarm '{name}': statistic is {alarm.get('statistic')!r}, not "
                 f"'Sum' — an average over 0-filled datapoints hides a single event"
             )
+        if kind == "statistic" and not alarm.get("extended_statistic", "").startswith("p"):
+            problems.append(
+                f"alarm '{name}': a statistic alarm needs an extended_statistic "
+                f"like 'p95'; got {alarm.get('extended_statistic')!r}. An average "
+                f"hides the tail, and the tail is what the gateway ceiling truncates"
+            )
 
         threshold = alarm.get("threshold")
         comparison = alarm.get("comparison_operator")
-        if comparison != REQUIRED_COMPARISON:
+        if kind == "statistic":
+            # A latency SLO is "must not exceed", so strictly-greater is the
+            # correct reading of the target rather than a weaker one.
+            if comparison not in {"GreaterThanThreshold", REQUIRED_COMPARISON}:
+                problems.append(
+                    f"alarm '{name}': comparison is {comparison!r}, expected a "
+                    f"greater-than form for a threshold alarm"
+                )
+        elif comparison != REQUIRED_COMPARISON:
             problems.append(
                 f"alarm '{name}': comparison is {comparison!r}. With threshold "
                 f"{threshold}, '{REQUIRED_COMPARISON}' is what fires on the first "
@@ -144,16 +184,24 @@ def validate(cfg: dict) -> list[str]:
         if not isinstance(threshold, int | float) or threshold < 1:
             problems.append(f"alarm '{name}': threshold must be >= 1, got {threshold!r}")
 
-        if alarm.get("datapoints_to_alarm") != 1:
-            problems.append(
-                f"alarm '{name}': datapoints_to_alarm is "
-                f"{alarm.get('datapoints_to_alarm')!r}, not 1 — these fire on a "
-                f"single occurrence by design"
-            )
-        if alarm.get("evaluation_periods") != 1:
-            problems.append(
-                f"alarm '{name}': evaluation_periods is {alarm.get('evaluation_periods')!r}, not 1"
-            )
+        points = alarm.get("datapoints_to_alarm")
+        periods = alarm.get("evaluation_periods")
+        if kind == "count":
+            if points != 1:
+                problems.append(
+                    f"alarm '{name}': datapoints_to_alarm is {points!r}, not 1 — "
+                    f"count alarms fire on a single occurrence by design"
+                )
+            if periods != 1:
+                problems.append(f"alarm '{name}': evaluation_periods is {periods!r}, not 1")
+        else:
+            if not isinstance(points, int) or points < 1:
+                problems.append(f"alarm '{name}': datapoints_to_alarm must be >= 1")
+            if not isinstance(periods, int) or periods < points:
+                problems.append(
+                    f"alarm '{name}': evaluation_periods {periods!r} must be >= "
+                    f"datapoints_to_alarm {points!r}, or the alarm can never fire"
+                )
 
         missing = alarm.get("treat_missing_data")
         if missing == "breaching":
@@ -191,8 +239,9 @@ def summarise(cfg: dict) -> None:
         print(
             f"               {alarm['namespace']}/{alarm['metric_name']}"
             f"{' [' + dims + ']' if dims else ''} "
-            f"{alarm['statistic']} >= {alarm['threshold']} "
-            f"over {alarm['period']}s"
+            f"{alarm.get('statistic') or alarm.get('extended_statistic')} "
+            f"{'>' if alarm['comparison_operator'] == 'GreaterThanThreshold' else '>='} "
+            f"{alarm['threshold']} over {alarm['period']}s"
         )
 
 
@@ -231,6 +280,14 @@ def apply(cfg: dict, region: str) -> int:
             print(f"Filter {f['name']}")
 
         for alarm in cfg["alarms"]:
+            # Statistic and ExtendedStatistic are mutually exclusive in the API:
+            # sending both is a ValidationError, and sending neither alarms on
+            # nothing. The alarm's declared `kind` decides which.
+            statistic: dict[str, str] = (
+                {"ExtendedStatistic": alarm["extended_statistic"]}
+                if alarm.get("kind") == "statistic"
+                else {"Statistic": alarm["statistic"]}
+            )
             cw.put_metric_alarm(
                 AlarmName=alarm["name"],
                 AlarmDescription=alarm["description"],
@@ -239,7 +296,7 @@ def apply(cfg: dict, region: str) -> int:
                 Dimensions=[
                     {"Name": k, "Value": v} for k, v in alarm.get("dimensions", {}).items()
                 ],
-                Statistic=alarm["statistic"],
+                **statistic,
                 Period=alarm["period"],
                 EvaluationPeriods=alarm["evaluation_periods"],
                 DatapointsToAlarm=alarm["datapoints_to_alarm"],

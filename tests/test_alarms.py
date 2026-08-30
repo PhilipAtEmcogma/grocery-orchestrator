@@ -284,3 +284,64 @@ def test_the_log_group_names_the_deployed_function(config):
         f"the filter would attach to the wrong log group or none"
     )
     assert function.endswith(f"-{config['environment']}")
+
+
+# ---------------------------------------------------------------- EMF metrics
+
+
+def test_declared_emf_metrics_match_the_code(config) -> None:
+    """
+    `emf_metrics` in the config must be exactly the METRIC_ constants.
+
+    An alarm can watch either a metric filter (declared in this config) or an
+    EMF metric the application emits. Only the first is verifiable from the
+    config alone, so the second is DECLARED -- and this test is what makes the
+    declaration worth anything. Renaming a metric in code without updating the
+    config now fails the build, instead of leaving an alarm watching a name
+    nothing writes, which looks exactly like a healthy service.
+    """
+    import re
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[1] / "src/observability/base.py").read_text(
+        encoding="utf-8"
+    )
+    in_code = set(re.findall(r'^METRIC_\w+ = "(\w+)"', source, re.M))
+    declared = set(config["emf_metrics"])
+
+    assert declared == in_code, (
+        f"config/alarms.json emf_metrics is out of step with the code. "
+        f"only in code: {sorted(in_code - declared)}; "
+        f"only in config: {sorted(declared - in_code)}"
+    )
+
+
+def test_every_alarm_watches_a_metric_something_publishes(config) -> None:
+    """
+    The check that stops an alarm sitting calm on a metric nothing writes.
+
+    AWS is happy to create it; it just reports INSUFFICIENT_DATA forever, which
+    is indistinguishable from healthy at a glance.
+    """
+    cfg = config
+    publishable = {(f["namespace"], f["metric_name"]) for f in cfg["metric_filters"]}
+    publishable |= {("GroceryOrchestrator", m) for m in cfg["emf_metrics"]}
+
+    for alarm in cfg["alarms"]:
+        namespace = alarm["namespace"]
+        if namespace.startswith("AWS/"):
+            continue  # published by the service, not by us
+        assert (namespace, alarm["metric_name"]) in publishable, alarm["name"]
+
+
+def test_the_internal_error_alarm_is_dimensioned_on_the_code(config) -> None:
+    """
+    An honest refusal must never page anyone.
+
+    BUDGET_INFEASIBLE and NO_DATA are successful outcomes of the product doing
+    its job, and they share the TurnError metric with INTERNAL_ERROR. Without
+    the `code` dimension this alarm would fire on a shopper asking for a plan
+    that genuinely does not fit their budget.
+    """
+    alarm = next(a for a in config["alarms"] if a["name"].endswith("internal-error-dev"))
+    assert alarm["dimensions"].get("code") == "INTERNAL_ERROR"

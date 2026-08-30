@@ -108,10 +108,13 @@ All of it exists.
 | Ingestion role | `grocery-ingestion-dev-role` | `config/iam-ingestion-role.json`; read+write on products only, no Bedrock, no idempotency |
 | State machine | `grocery-ingestion-dev` | `config/ingestion-state-machine.json` |
 | Schedule | `grocery-price-refresh-dev` | `cron(0 3 * * ? *)` Pacific/Auckland, ENABLED |
-| Products table | `grocery-products-dev` | 152 items, **GSI1 + GSI2**, PAY_PER_REQUEST |
+| Products table | `grocery-products-dev` | **2,759 items**, the real catalogue only, GSI1 + GSI2, PAY_PER_REQUEST |
 | Idempotency table | `grocery-idempotency-dev` | TTL ACTIVE |
 | Guardrail | `b1xezpqe04kx` version `2` | v2 published 2026-08-29; DRAFT deliberately not granted in IAM |
-| SNS topic | `grocery-orchestrator-alarms-dev` | alarms: handler-escaped, api-5xx |
+| SNS topic | `grocery-orchestrator-alarms-dev` | **8 alarms**; 2 confirmed email subscribers; Budgets granted publish |
+| Dashboard | `grocery-orchestrator-dev` | 9 widgets over the EMF metrics and the gateway |
+| Budget | `grocery-orchestrator-monthly-dev` | $25/month, alerts at 50/80/100% actual + 100% forecast |
+| Usage plan | `grocery-orchestrator-dev-plan` (`v4yd7d`) | 5 rps / burst 10 on stage `dev`; created 2026-08-30 |
 
 **One artefact, two functions.** `scripts/build_lambda.py` now includes
 `ingestion` in `INCLUDE_DIRS`, and the same `build/lambda.zip` is deployed to
@@ -326,6 +329,365 @@ membership; an error costs a shopper one option at the edge of a radius, which
 is the under-matching direction this project prefers everywhere. A test asserts
 they agree with the fixture catalogue's own per-record coordinates, so the two
 cannot drift about where a suburb is.
+
+## 3f. Guardrail version drift — FIXED 2026-08-30
+
+`grocery-orchestrator-dev` applied `BEDROCK_GUARDRAIL_VERSION=1` while the
+resource was at version 2, every document quoted version 2, and the qualifying
+13/13 + 9/9 evidence was measured against version 2. **The running service
+applied a version nothing had signed off.**
+
+It was not cosmetic. `how much is truffle oil` is a `must_allow` case in
+`evals/cases/guardrail.json`, and under v1 the live endpoint returned
+`GUARDRAIL_BLOCKED` for it. A documented must-allow was failing in production
+while the recorded evidence said 9/9.
+
+**Fixed:** the environment variable is now `2`, published as version `9`, alias
+moved. Both `must_allow` mushroom cases verified live afterwards:
+`how much is truffle oil` and `price of dried porcini mushrooms` both pass.
+
+`update-function-configuration` REPLACES the entire environment map, so the
+current set was read first and rewritten whole; dropping a key here would have
+been the §3g failure exactly.
+
+### What this cost to find, and the correction it forced
+
+Chasing it produced a wrong intermediate conclusion worth recording, because
+the mistake is instructive. Testing `cheapest button mushrooms` through the
+endpoint showed it blocked, and that looked like more evidence of the drift. It
+is not: applying both guardrail versions directly shows v1 and v2 block that
+phrase IDENTICALLY. It was never a v2 fix and is not in the must-allow set.
+
+The precise behaviour of version 2, measured with `apply-guardrail` rather than
+inferred:
+
+| Input | v2 |
+|---|---|
+| `mushrooms` | blocked |
+| `price of mushrooms` | blocked |
+| `button mushrooms` | blocked |
+| `cheapest button mushrooms` | blocked |
+| `mushroom soup` | blocked |
+| `how much are mushrooms at Pak n Save` | allowed |
+| `price of dried porcini mushrooms` | allowed |
+| `how much is truffle oil` | allowed |
+
+So **deferral 3d is broader than "the unqualified noun" as recorded**: a light
+qualifier like "button" does not help either, and only a strong retail context
+-- naming a retailer, or a specific culinary product like dried porcini -- gets
+through. The topic definition explicitly says "Shop-bought mushrooms are not
+this topic" and the managed classifier does not honour it. That is the finding
+3d anticipated: the classifier cannot separate the retail and foraging senses,
+and no amount of definition wording has moved it.
+
+### Why no gate caught the drift
+
+**Nothing offline can read a deployed environment variable.** The eval harness
+goes through `lambda_handler`, so it does measure the real path -- but it
+measures the path in the environment it is run in, which was a laptop with
+`BEDROCK_GUARDRAIL_VERSION=2` exported by hand. Production had `1`. Same code,
+same harness, different answer, and nothing compared the two.
+
+The general form: evidence is only about the configuration it was collected
+under, and this repository had no way to state which configuration that was.
+§3g is the structural fix.
+
+## 3g. Production fail-closed check (Req 12.5) — IMPLEMENTED 2026-08-30
+
+`_dependencies()` selects by environment: `USE_DYNAMODB=1` picks DynamoDB,
+`USE_BEDROCK=1` picks Bedrock, **and anything else falls through to the fixture
+repository and the scripted model.** Drop one variable in production and the
+endpoint keeps returning HTTP 200 with well-formed, grounded, arithmetically
+verified citations -- computed from 26 invented products by a rule-based
+stand-in. Every invariant holds. No metric looks wrong. The answers are simply
+not about real prices. That is worse than an outage, because an outage is
+visible.
+
+`assert_production_configuration()` in `src/handler.py` now runs **before any
+fallback is selected** -- checking afterwards would report a misconfiguration
+the process had already worked around. When `APP_STAGE` is `prod`, `production`
+or `pilot`, it requires `USE_DYNAMODB=1`, `USE_BEDROCK=1`, a guardrail id, a
+**numbered** guardrail version, and a non-wildcard `CORS_ORIGIN`. 21 tests.
+
+Three details that are the point rather than decoration:
+
+- **It compares `USE_DYNAMODB` against `"1"` exactly**, because the selector
+  does. `USE_DYNAMODB=true` reads as enabled to a human and picks fixtures in
+  code, and that gap is the whole failure mode.
+- **`DRAFT` is refused.** It moves, so evidence gathered against it describes
+  whatever the policy was that day -- the same reason IAM deliberately does not
+  grant DRAFT.
+- **Every problem is listed, not just the first.** One deploy, one fix, rather
+  than a sequence of failed deployments.
+
+An unset `APP_STAGE` is NOT production. Defaulting the other way would break
+every offline test, both eval harnesses, the demos and the dev server on the
+day it landed, which is a good way to have the check deleted. Setting the stage
+is the deploy's job -- Pilot Task 10, and part of the env-var contract in
+`infra/docs/01`.
+
+**Not yet set in the account.** The live function has no `APP_STAGE`, so the
+check is inert there today. That is deliberate: `CORS_ORIGIN` is currently `*`
+and would fail the check, and tightening it needs the frontend's origin to
+exist. Setting `APP_STAGE=pilot` is the last step of Pilot Task 10, and the
+check is what makes that step meaningful.
+
+### A gap this surfaced, and did not close
+
+A `ConfigurationError` is caught by the handler's error boundary and mapped to a
+contract-valid `INTERNAL_ERROR` -- correct, because "no path out without a
+contract-valid body" is a hard invariant here. But it logs `unhandled_exception`,
+and the `HandlerEscaped` metric filter binds to `{ $.message = "handler_escaped" }`,
+which only the OUTERMOST boundary emits.
+
+So a fully misconfigured production stage would return `INTERNAL_ERROR` on every
+turn, at HTTP 200, and **fire no alarm at all**: not `handler-escaped` (wrong
+message) and not `api-5xx` (not a 5xx). The two deployed alarms do not cover the
+most consequential failure the service has.
+
+That is alarm coverage, not a defect in this check -- Req 12.8 already asks for
+measured alarms beyond the first two, and it is Pilot Task 12 work. Recorded
+here so the two facts stay attached to each other.
+
+## 3h. CORS is still `*`, and cannot be fixed here yet — BLOCKED
+
+`security.md` and Req 12.5 both require a production stage to reject wildcard
+CORS, and `assert_production_configuration()` enforces it. The deployed function
+still sets `CORS_ORIGIN=*`.
+
+**This is not an oversight and cannot be closed from this repository.** Strict
+CORS means naming ONE origin, and the origin is the frontend's CloudFront
+domain, which does not exist -- the S3 + CloudFront stack is
+`infra/docs/09-FRONTEND.md`, unbuilt, and teammates' scope. There is nothing to
+name.
+
+`infra/docs/03-STACK-SPECS.md` already permits this precisely: dev may use `*`
+**only** while the stage is non-production. That is why `APP_STAGE` is unset --
+arming the check today would fail startup on a value that has no correct
+setting yet.
+
+The fix, when the CloudFront domain exists, is one variable and one alias move:
+
+```bash
+# read the current map first: update-function-configuration REPLACES it
+aws lambda update-function-configuration --function-name grocery-orchestrator-dev     --environment "Variables={...,CORS_ORIGIN=https://dxxxx.cloudfront.net,APP_STAGE=pilot}"
+```
+
+Setting `APP_STAGE=pilot` in the same change is deliberate: it arms Req 12.5 at
+the moment the last thing blocking it is gone, rather than leaving an inert
+check nobody remembers to turn on.
+
+## 3i. The real catalogue is loaded — 2026-08-30
+
+2,759 rows from the data team's collected catalogue are now in
+`grocery-products-dev`, via `LineageBSource` and `refresh()`. Provably
+idempotent: the second dry run reports **0 added, 0 changed, 2,759 unchanged**,
+which is what idempotent looks like from the outside rather than a claim.
+
+From 3,000 raw rows: **61 dropped** as non-food (pet food), **180 collapsed** as
+duplicates, **74 re-classified** by the dietary safety override, leaving 2,759.
+A conservation test asserts kept + dropped + collapsed equals the input, because
+a row that vanishes unaccounted for is a product nobody can be shown and nobody
+is told about.
+
+### The duplicate collision, found by loading rather than by reading
+
+`BatchWriteItem` refused the first load: *"Provided list of item keys contains
+duplicates"*. The base table key is `(store_key, product_key)` and one store
+stocks two BRANDS of the same product at the same size -- `Pams Mixed Berries`
+and `Frozen Harvest Mixed Berries`, both 500g, both Albany. `derive_product_key`
+ignores brand deliberately, so the same product compares across Pak'nSave and
+New World; the cost is that it also collapses two brands within one store.
+
+96 collisions in Pak'nSave alone. **Nothing offline had exercised it**, because
+the fixtures carry exactly one product per key by construction -- a shape the
+real catalogue does not have.
+
+Resolved by keeping the cheapest per (store, product), which is the answer the
+product already gives: the dearer brand of an identical product at the same
+store is never the answer to "what is the cheapest X", and nothing
+brand-specific is reachable since `resolve_product_key` matches on name and
+size. Ties break on display name, so a re-run cannot report `changed` on a day
+nothing changed.
+
+## 3j. One catalogue — fixture rows removed 2026-08-30
+
+The load was additive, so the table briefly held 152 fixture rows AND 2,759 real
+ones, and answered inconsistently: head terms hit the fixtures while meal plans
+drew on the real data. `cheapest milk near Albany` returned a *Devonport*
+fixture price though Albany had real data.
+
+The fixture rows are gone. `scripts/load_seed_data.py --remove` deletes exactly
+the `(store_key, product_key)` pairs the fixture file names -- never a
+scan-and-filter, so every other row is untouched by construction rather than by
+a predicate someone has to get right. `--dry-run` reports what is present first,
+because "deleted 0 rows" and "the table was already clean" are different facts.
+Reverse with the loader itself; that symmetry is the point, since an operation
+you can undo is one you can afford to try.
+
+Live afterwards, every head term falling through to its Lineage B answer exactly
+as `config/product-synonyms.json`'s candidate ordering was built to do:
+
+| Request | Answer |
+|---|---|
+| `cheapest butter` | Pak'nSAVE Albany, $9.49, Mainland Salted Butter |
+| `cheapest milk near Albany` | Pak'nSAVE **Albany**, $4.79, Pams Value Standard Milk |
+| `feed 3 people for 5 days on $80` | 5 meals, $33.34 payable |
+
+**Consequence to carry:** `tests/test_price_repository_contract.py` run against
+the live table with `PRICE_REPO_DYNAMO_TABLE` expects fixture products. Those 31
+tests are skipped by default and their expectations now belong to the real
+catalogue.
+
+## 3k. A dietary term the extractor produced and the table did not know — FIXED
+
+Removing the fixtures surfaced this; it was never about the catalogue.
+`vegetarian dinner for 2 for 3 days on $50` was refused live with
+`UNSUPPORTED_EXCLUSION`, and the refusal listed "no meat" among the terms it
+supports **while refusing "meat"**.
+
+The extractor had returned the exclusion as the bare noun `meat`.
+`SUPPORTED_EXCLUSIONS` held `no meat` and not `meat`. The same request phrased as
+`vegetarian meal plan ...` produced a plan on the next call, so this was
+INTERMITTENT -- the worst shape for a safety control, because it passes review
+and fails a user.
+
+Fixed by adding `meat`, `dairy` and `eggs`, each mapping *exactly* as its
+negated form already does. That equality is asserted rather than written out: a
+bare noun excluding something different from its negation would be a second
+policy decision smuggled in as a synonym. A second test asserts every term
+`supported_terms()` advertises actually maps, which is the shape the defect took.
+
+The system behaved correctly throughout -- it failed closed and said so. The
+table was simply missing a spelling.
+
+### It also exposed a repair eval case that tested nothing
+
+`rb-003` is a budget-repair case whose exclusion was `dairy` -- the very term
+that was unmapped. It had been *failing via the unsupported path*, not by
+overspending, so it was scored as a budget case while testing nothing about
+budgets. With `dairy` mapped it reached the planner and passed at both one pack
+per product and three: at $90 for 3 people over 5 days it could not be made to
+overspend at all.
+
+Budget lowered to $50, where a normal plan fits and a 3x-pack plan does not,
+which is the discrimination a budget case owes. Recorded in the case `note` per
+the eval-discipline rule -- and worth being precise that this is not lowering a
+bar a model failed to clear: the case never exercised its own kind.
+
+## 3l. Operational gates — Pilot Task 12, 2026-08-30
+
+### Alarm coverage: from two to eight
+
+The two shipped alarms did not cover the most consequential failure the service
+has. A production stage silently configured as a demo raises
+`ConfigurationError`, which maps to a contract-valid `INTERNAL_ERROR` at HTTP
+200 -- firing neither `handler-escaped` (it logs `unhandled_exception`, a
+different message) nor `api-5xx` (it is a 200). Req 12.8 asked for the rest and
+they were outstanding.
+
+Six added, each bound to a metric **confirmed present in CloudWatch with the
+dimensions named** -- an alarm on a metric that never reports looks exactly like
+a healthy service:
+
+| Alarm | Watches | Fires at |
+|---|---|---|
+| internal-error | `TurnError` [code=INTERNAL_ERROR] | 3 in 5 min |
+| idempotency-unavailable | `IdempotencyUnavailable` | 5 in 5 min |
+| turn-latency | `TurnLatency` p95 | > 20s over 2 periods |
+| repair-exhausted | `RepairExhausted` | 5 in 15 min |
+| guardrail-interventions | `GuardrailIntervened` | 10 in 15 min |
+| silent-turns | `TurnWithoutContent` [intent=meal_plan] | 10 in 15 min |
+
+**`internal-error` is dimensioned on the code, and that is the whole design.**
+`BUDGET_INFEASIBLE` and `NO_DATA` share the `TurnError` metric and are the
+product working correctly. An alarm without the dimension would page somebody
+every time a shopper asked for a plan that genuinely does not fit their budget,
+and an alarm people mute is worse than no alarm.
+
+**`guardrail-interventions` is not a safety alarm.** An intervention is the
+control working; alarming on one would page on every success. It is a CHANGE
+detector, and it exists because of §3f: the function applied Guardrail version 1
+for days while every document described version 2, refusing benign queries with
+nothing to show for it. A policy change that starts over-blocking looks exactly
+like this.
+
+Deliberately still absent: throttling and stale-data alarms. Neither has a
+metric yet, and adding the alarm before the metric adds the appearance of
+coverage rather than coverage.
+
+### The validator had to learn two things, and kept its teeth
+
+`apply_alarms.py` refused all six. Its rules encoded the assumptions of the
+original two as universal law: every metric comes from a log metric filter
+declared in this config, and every alarm is Sum/1-datapoint/fires-immediately.
+
+Both are wrong in general and were right for what existed. Rather than loosen
+them, the config now DECLARES what the application emits (`emf_metrics`) and
+each alarm declares its `kind` (`count` or `statistic`), with per-kind rules. A
+mistyped metric name still fails; a count alarm still cannot silently become
+statistical. `tests/test_alarms.py` binds `emf_metrics` to the `METRIC_`
+constants in `src/observability/base.py`, so renaming a metric in code without
+updating an alarm fails the build.
+
+### Alarm drill
+
+Not trusted -- watched. `set-alarm-state` drove `internal-error` to ALARM; it
+transitioned, carried the reason, and published to the topic with two confirmed
+subscribers. Reset to OK afterwards.
+
+### Cost baseline (Req 12.6, 12.7), and what it revealed
+
+Budget `grocery-orchestrator-monthly-dev`: **$25/month**, notifying at 50%, 80%
+and 100% actual plus 100% forecast. The SNS topic policy was extended to let
+`budgets.amazonaws.com` publish -- without it the budget is a dashboard widget.
+
+August spend, which is the first time anyone looked:
+
+| | |
+|---|---|
+| Claude Sonnet 4.5 | $5.40 |
+| Claude Haiku 4.5 | $5.21 |
+| Amazon Bedrock (Nova) | $2.92 |
+| Tax | $2.30 |
+| AWS Lambda | $1.77 |
+| CloudWatch / DynamoDB | $0.03 |
+| **total** | **$17.63** |
+
+**60% of the spend is two models the service does not route to.** `models.json`
+routes to Nova, and Sonnet is *disabled* on latency grounds. That $10.61 is the
+live evaluation sessions of 2026-08-28/29 -- experimentation, not serving.
+Serving is Nova plus Lambda, about $4.70 for the month.
+
+That distinction matters for the limit: $10 would have alarmed permanently on a
+month containing normal eval work, and a permanently-alarming budget is one
+nobody reads. $25 leaves room for evals while catching a runaway within days.
+
+### Latency baseline — the first one measured against the deployed service
+
+Every latency figure in this repository had been a laptop measurement.
+`scripts/measure_latency.py` measures the endpoint over HTTPS, including the
+gateway hop, paced at 9/min because the binding Nova Lite quota cannot be raised
+and an unpaced run measures the quota rather than the service.
+
+| | n | p50 | p95 | target |
+|---|---|---|---|---|
+| price check (warm) | 8 | 1.80s | **2.21s** | p95 < 5s ✅ |
+| meal plan | 3-4 | 6.6s | **11.7-12.2s** | p95 < 20s ✅ |
+
+**The first run reported price-check p95 at 5.97s and failed the target.** The
+entire difference was the cold start: request one took 5.97s, every other took
+1.6-2.0s, and at n=8 the p95 IS the cold start. Warm p95 is 2.21s. Both figures
+are true and they answer different questions -- a shopper's first request of the
+day pays it, and SnapStart's `Restore` subsegment (~0.6s, visible in X-Ray since
+§9) is only part of it.
+
+Meal plans sit at roughly half the 20s target with clear room under the ~25s p99
+escalation trigger.
+
+**Do not quote these as qualification.** n=8 and n=3 are a first baseline, and a
+p99 over three samples is just the maximum. Re-run before the pilot with enough
+turns to mean something, and once the recipe/plan path changes.
 
 ## 4. IAM notes worth keeping
 

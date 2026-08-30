@@ -56,11 +56,11 @@ operational evidence** — not first deployment.
 | 5 · Location scope, freshness, named regions | ✅ done |
 | 6 · Idempotency fencing, canonical hashing, pagination, PITR | ✅ done · one deferral (6b) |
 | 7 · Scorecards, route qualification, prose/repair evals | ✅ done · one deferral (7b) |
-| **8 · Local read-only MCP** | ⬜ **not started — next** |
-| 9–12 · CDK, service plane, deploy, operations | ⬜ not started (design in `infra/`) — but a service **is** deployed imperatively; these tasks bring it under IaC |
+| 8 · Local read-only MCP | ✅ done — 2 coarse tools, default-off, capped, parity-tested |
+| 9–12 · CDK, service plane, deploy, operations | 🟡 **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). 9–11 = IaC, not started; the service is deployed imperatively |
 | 13 · Controlled ingestion | ⬜ not started |
 | 14 · AgentCore reviewer | ⬜ proposed, needs ADR 0002 approval |
-| 15 · Recipe catalogue | ⬜ not started |
+| 15 · Recipe catalogue | 🟡 catalogue + coverage gate built; **planning blocked on data** (0 of 175 recipes fully priceable) |
 | 16 · Release gates | ⬜ not started |
 
 **Two deliberate deferrals remain** (6b closed 2026-08-30), each with the
@@ -79,15 +79,56 @@ reasoning recorded in `tasks.md`:
 - **7b** — SSM routing belongs with the CDK stacks, where a parameter is
   declared as infrastructure rather than clicked into an account.
 
+**Deployed and operating** (2026-08-30): alias `live` → **v11** serving current
+`main`, the **real 2,759-row catalogue**, Guardrail **v2** applied, GSI2 for
+meal-plan candidates with `Scan` revoked, **8 alarms** + dashboard + a $25
+Budget, API-stage X-Ray, and the first latency baseline measured against the
+endpoint rather than a laptop — price check p95 **2.21s** (target 5s), meal plan
+p95 **12.2s** (target 20s). Detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3a–§3l.
+
 **Verified live in `ap-southeast-2`** (account `097087133897`, 2026-08-29):
 Guardrail `b1xezpqe04kx` **version 2** at 13/13 must-block and 9/9 must-allow;
 intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%;
 DynamoDB products and idempotency tables with owner-fenced claims proven against
 the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
-**Offline gates:** 694 tests passing, 31 skipped. Five eval suites — intent
-76.7%, meal plan 100%, prose 100%, repair 100%, guardrail 9/9 must-allow — all
-gated in CI and the pre-commit hook.
+**Offline gates:** 763 tests passing, 31 skipped. Five eval suites — intent
+76.7%, meal plan 100%, prose 100%, repair 100% (12 cases), guardrail 9/9
+must-allow — all gated in CI and the pre-commit hook. Repair is measured live
+too — Nova Lite 91.7%, Claude Haiku 83.3% — and deliberately not gated on model
+choice; see `config/models.json` `_measured_not_gated`.
+
+**Two defects found and fixed on 2026-08-30**, both backend, both invisible to
+every offline gate because nothing offline can read a deployed environment
+variable:
+
+- ~~**Guardrail version drift**~~ — **fixed 2026-08-30.** The Lambda applied
+  version `1` while all evidence described version `2`, so `how much is truffle
+  oil` — a documented `must_allow` case — was refused live while the record said
+  9/9. Now version `2` (alias v9), both must-allow mushroom cases verified.
+  [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3f.
+- ~~**Silent demo mode**~~ — **check implemented 2026-08-30** (Req 12.5).
+  Dropping `USE_DYNAMODB` or `USE_BEDROCK` used to fall back to fixtures and the
+  scripted model, returning grounded, arithmetically valid citations about 26
+  fake products with no error anywhere.
+  `assert_production_configuration()` now refuses to start a `prod`/`pilot`
+  stage without them. **Not yet armed in the account** — `APP_STAGE` is unset,
+  because `CORS_ORIGIN=*` would fail it and needs the frontend origin first.
+  §3g.
+
+**Three decisions waiting on a person** — each has its evidence gathered and its
+options written down; none needs more code first:
+
+1. **The recipe catalogue and the product catalogue do not meet.** Zero of 175
+   recipes are fully priceable, so Req 2.9 cannot be delivered as written. Widen
+   the data collection, re-source recipes to fit the catalogue, or narrow the
+   requirement — `tasks.md` Pilot Task 15b.
+2. **Gate repair at 90%?** Measured live at 12 cases: Nova Lite 91.7%, Claude
+   Haiku 83.3%, failing in opposite halves. A 90% floor passes one and fails the
+   other, and both are in `repair_plan`'s prefer list — so gating removes the
+   fallback. `config/models.json` `_measured_not_gated`.
+3. **Who owns the `Chatbot` API and Lambda** in the same account?
+   `docs/ARCHITECTURE.md` §3b — untouched pending an owner.
 
 **Known open questions that want a human**, not more code:
 
@@ -97,6 +138,11 @@ gated in CI and the pre-commit hook.
 - Which product a one-word query returns — "cheapest butter" against fourteen
   butters — was decided by reading the catalogue, not by anyone who shops there:
   [`docs/OPEN-REVIEW-head-terms.md`](docs/OPEN-REVIEW-head-terms.md).
+- **The recipe catalogue and the product catalogue do not meet.** No recipe is
+  fully priceable, so Req 2.9 cannot be delivered as written. Widening the
+  product collection, choosing recipes to fit the catalogue, or narrowing the
+  requirement are all defensible — and the choice belongs to the team, not this
+  repository. `tasks.md` Pilot Task 15b has the evidence and the three options.
 - The frontend team's response shape in `datasets/DATA_SCHEMA.md` is flat JSON
   with different intent names; ours is an event list. Both are reasonable, they
   are not the same thing, and nobody has reconciled them.
@@ -403,7 +449,7 @@ claimed. Read it before changing any of this, and not before.
 
 ### Tests, evals and CI
 
-- ✅ **694 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **763 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -453,10 +499,11 @@ different job from standing it up. Latency and cost figures quoted anywhere in
 this repository are still laptop measurements: nothing has been measured
 against the deployed endpoint under load.
 
-1. **Task 8 — local read-only MCP.** Coarse operations that invoke the complete
-   deterministic service; no raw DynamoDB, SDK, filesystem, network, scraping,
-   write, citation or unguarded-generation primitive. Proves schemas, caps,
-   audit, direct-service parity and a disable path before any managed exposure.
+1. ~~**Task 8 — local read-only MCP.**~~ **Done 2026-08-30.** `src/mcp/`, two
+   coarse tools over stdio JSON-RPC with no new dependency, default-off, rate
+   and session capped, privacy-safe audit, and parity asserted against the same
+   `lambda_handler` API Gateway invokes. Run it with
+   `MCP_ENABLED=1 python scripts/mcp_server.py`.
 2. **Tasks 9–12 — CDK, service plane, deployment, operations.** Adopt the
    existing tables *and the existing API, Lambda, alias, roles and schedule*
    without replacement; zip Lambda on a published SnapStart alias; REST
@@ -471,8 +518,13 @@ against the deployed endpoint under load.
    dead-letter behaviour. **No live retailer traffic**, which stays gated on
    [`ACQUISITION-RISK.md`](ACQUISITION-RISK.md) §8.
 4. **Task 15 — recipe catalogue.** Models select recipe ids and product
-   citations; code owns scaling, safety and totals. The 175 curated recipes in
-   `datasets/` are the input.
+   citations; code owns scaling, safety and totals. The catalogue, its dietary
+   classification and a coverage gate are built (`src/recipes/`). **The planner
+   is deliberately not wired: zero of the 175 recipes have every ingredient
+   priceable** against the product catalogue (best 75%, median ~12%), so a plan
+   built from one would state a payable total derived from a fraction of the
+   shopping list. `python scripts/check_recipe_coverage.py --missing 20` names
+   what is absent; a forcing test fails when the data becomes sufficient.
 5. **Task 16 — release gates.** The integrated run of every gate above.
 
 **Requires mentor approval before starting** (ADR 0002, still proposed):
@@ -527,7 +579,7 @@ python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
 And to check it:
 
 ```bash
-pytest                     # 694 passing, 31 skipped
+pytest                     # 763 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py       # 76.7% scripted baseline

@@ -50,6 +50,26 @@ SUPPORTED_EXCLUSIONS: dict[str, frozenset[str]] = {
     "dairy-free": frozenset({"dairy"}),
     "no dairy": frozenset({"dairy"}),
     "no eggs": frozenset({"chilled"}),
+    # ---- bare nouns, added 2026-08-30 ----
+    #
+    # THE EXTRACTOR DOES NOT ALWAYS PHRASE AN EXCLUSION THE WAY A USER DID.
+    # `vegetarian dinner for 2 for 3 days on $50` was refused live with
+    # UNSUPPORTED_EXCLUSION because the model returned the exclusion as `meat`,
+    # and this table had `no meat` but not `meat`. The refusal message then
+    # listed "no meat" among the supported terms while refusing "meat", which
+    # is the kind of answer that reads as a bug to the user because it is one.
+    #
+    # The same phrasing that reached the model as "vegetarian" produced a plan
+    # on the very next request, so this was intermittent -- the worst shape for
+    # a safety control, because it passes review and fails a user.
+    #
+    # Each maps exactly as its "no X" form already does. That is deliberate:
+    # these are not new policy, they are spellings of decisions already taken,
+    # and a bare noun that meant something DIFFERENT from its negated form
+    # would be a second judgement smuggled in as a synonym.
+    "meat": frozenset({"meat", "seafood"}),
+    "dairy": frozenset({"dairy"}),
+    "eggs": frozenset({"chilled"}),
 }
 
 

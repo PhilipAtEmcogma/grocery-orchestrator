@@ -117,16 +117,24 @@ over introducing additional products, to reduce both cost and waste.
 2.8 **IF** budget, household size, or duration required for a meal plan is not
 stated **THEN THE SYSTEM SHALL NOT** infer it and shall return a contract-valid,
 actionable clarification instead.
-*Current defect: the reference implementation defaults missing household size
-and duration and can route a missing budget through the infeasible-plan path.
-Pilot Task 4 corrects this before deployment.*
+*Closed 2026-08-29 by Pilot Task 4a and verified live on 2026-08-30. The
+implementation previously defaulted missing household size and duration and
+routed a missing budget through the infeasible-plan path — `feed my flat of 3
+this week` invented a `$0` budget and answered `BUDGET_INFEASIBLE`. It now emits
+a `clarification` event naming what it needs.*
 
 2.9 **[GAP]** **WHEN** producing a meal plan **THE SYSTEM SHALL** select meals
 from a curated recipe catalogue rather than composing them freely.
-*Not yet built. The approved direction is catalogue-constrained selection:
-the model selects recipe ids and product citations while deterministic code
-owns scaling, dietary verification, arithmetic, and payable totals (Pilot Task
-15).*
+*Not yet built, and BLOCKED ON DATA as of 2026-08-30 — measured, not assumed.
+The approved direction is catalogue-constrained selection: the model selects
+recipe ids and product citations while deterministic code owns scaling, dietary
+verification, arithmetic, and payable totals (Pilot Task 15). The catalogue,
+dietary classification and coverage measurement exist (`src/recipes/`); the
+graph wiring does not, because ZERO of the 175 recipes have every ingredient
+priceable against the current product catalogue (best 75%, median ~12%). A plan
+composed from one would state a payable total derived from a fraction of the
+shopping list, which contradicts 2.1 and 2.2. A forcing test fails when the data
+becomes sufficient. See tasks.md Pilot Task 15b.*
 
 ---
 

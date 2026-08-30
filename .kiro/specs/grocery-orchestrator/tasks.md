@@ -306,7 +306,8 @@ proposed, or gated as labelled; it is not implemented.
     is about the product. No location still means national results (Req 1.6),
     and a location never silently widens back.
 
-    **The threshold is config** (`config/freshness.json`, 14 days) and is
+    **The threshold is config** (`config/freshness.json`; 14 days when this
+    task closed, raised to 45 on 2026-08-30 — see the Task 13 note) and is
     measured against an INJECTABLE reference date. That is not a testing
     convenience. Committed fixtures carry a fixed capture date, so under a wall
     clock they drift into staleness as calendar time passes: judged against
@@ -502,10 +503,42 @@ proposed, or gated as labelled; it is not implemented.
   dataset/model/prompt provenance. Knowledge Bases are gated to cited recipe or
   catalogue knowledge with no price authority; Automated Reasoning is advisory
   only where supported.
-- [ ] **Pilot Task 8 — Deliver local read-only MCP first.** Expose coarse local
-  complete-application operations only; validate schemas and enforce operation,
-  row, call, time, and rate allowlists. Prove direct-service parity and a disable
-  path before any managed exposure.
+- [x] **Pilot Task 8 — Deliver local read-only MCP first.** Completed
+  2026-08-30. `src/mcp/` speaks MCP over stdio JSON-RPC with **no new
+  dependency** — an SDK would put a package in `requirements.txt` that the
+  Lambda archive then has to exclude, and that exclusion list has to stay
+  honest. 22 tests.
+
+  **Two coarse tools, and the list IS the surface** (Req 13.2): `grocery_ask`
+  (a natural-language turn) and `grocery_dietary_terms`. No raw DynamoDB, SDK,
+  filesystem, network, acquisition, write, citation or unguarded-generation
+  primitive. A test asserts no tool name contains a primitive verb, so a
+  reviewer can check the claim without reading the implementation.
+
+  **Parity is asserted on the bytes, not argued** (Req 13.4). Every call goes
+  through the same `lambda_handler` API Gateway invokes, so grounding, dietary
+  fail-closed behaviour, arithmetic and the contract are the same assertions on
+  the same code path. If the façade ever grew its own retrieval, that claim
+  would quietly stop being true.
+
+  **Caps** (Req 13.3): default-OFF (`MCP_ENABLED=1`, matched exactly, like
+  `USE_DYNAMODB`), 6 calls/minute, 60 calls/session, 500-character messages
+  refused *before* the service is invoked, 200-event responses. Rate and session
+  caps both, because a rate cap stops a burst and a session cap stops a slow
+  loop that never bursts. The disable path is exercised as a real subprocess.
+
+  **The audit records that a call happened, never what was asked.** A tool
+  argument here IS a shopper's message. A test plants a message containing
+  "gluten", "coeliac" and a suburb and asserts none of it reaches the audit.
+
+  **A real bug the subprocess test found:** the service writes Powertools logs
+  and EMF metrics to stdout *by design* — that is where CloudWatch reads them —
+  and stdout is also the MCP protocol channel. A real run interleaved
+  `{"_aws": ...}` blobs with JSON-RPC and no client could parse it. `sys.stdout`
+  is now rebound to stderr before the handler is imported, with the true stdout
+  kept privately for responses. In-process tests could not have caught it: they
+  share loggers already bound to a stream.
+
   - [ ] **Pilot Task 8 proposed extension — AgentCore Gateway hybrid.** After
     local MCP proof and ADR 0002 mentor approval, expose the same operations via
     AgentCore Gateway with Identity, Policy, WAF/Cognito or approved workload
@@ -554,6 +587,23 @@ proposed, or gated as labelled; it is not implemented.
   scoped prefixes, lifecycle, restore, and deletion tests for approved
   datasets, evaluation results, and review artefacts; use SNS for non-sensitive
   operator and approval notifications.
+  - **Substantially done 2026-08-30 — see `docs/ARCHITECTURE.md` §3l.** Alarm
+    coverage went from 2 to 8, each bound to a metric confirmed present in
+    CloudWatch; the `internal-error` alarm closes the gap where a production
+    stage silently configured as a demo fired nothing at all. A 9-widget
+    dashboard over the EMF metrics and the gateway. AWS Budget at $25/month
+    with 50/80/100% actual and 100% forecast notifications, and the SNS policy
+    extended so Budgets can publish. An alarm drill run and reset. First cost
+    baseline: $17.63 for August, of which **60% is two models the service does
+    not route to** — the live eval sessions, not serving. First latency baseline
+    measured against the DEPLOYED endpoint rather than a laptop: price check p95
+    2.21s warm against a 5s target, meal plan p95 11.7-12.2s against 20s.
+    `apply_alarms.py`'s validator was taught two new cases (EMF-published
+    metrics, and statistic-kind alarms) without loosening its existing rules.
+    **Still open in this task:** the encrypted versioned S3 artefact bucket with
+    lifecycle and restore tests, throttling and stale-data metrics (the alarms
+    are deliberately absent until the metrics exist), and a larger latency run —
+    n=8 and n=3 are a baseline, not a qualification.
   - **Partial, 2026-08-30: end-to-end X-Ray tracing now exists.** API Gateway
     stage tracing was enabled on `woqmel35lk`/`dev`, so a trace's entry point is
     the gateway rather than the Lambda and the gateway hop is measurable for the
@@ -692,6 +742,30 @@ proposed, or gated as labelled; it is not implemented.
   dead-letter behavior. Where review decoupling is justified, add filtered
   DynamoDB Streams -> SQS/DLQ with retry/redrive/backlog evidence. No live
   retailer traffic.
+> **Pilot Task 13, first half done 2026-08-30: the real catalogue is loaded.**
+> `LineageBSource` (recorded, not live — ACQUISITION-RISK.md §8 untouched) feeds
+> the existing `refresh()`, so the diffing, dry-run and per-retailer isolation
+> already built all apply. 2,759 rows written to `grocery-products-dev`, and
+> **proved idempotent**: the second dry run reports 0 added, 0 changed.
+>
+> From 3,000 raw: 61 dropped as non-food, 180 collapsed as duplicates, 74
+> re-classified by the safety override.
+>
+> **The duplicate collision is the finding.** `BatchWriteItem` refused the first
+> load — one store stocks two BRANDS of the same product at the same size, and
+> `derive_product_key` ignores brand so that products compare across chains. 96
+> collisions in Pak'nSave alone, and nothing offline had exercised it because the
+> fixtures carry one product per key by construction. Resolved by keeping the
+> cheapest per (store, product) — the answer the product already gives — with a
+> deterministic tiebreak so a re-run cannot report a false `changed`.
+>
+> **Still open:** the table now holds BOTH catalogues (`docs/ARCHITECTURE.md`
+> §3j) and answers head-term queries from the fixtures while answering meal
+> plans from the real data. Holding one catalogue is the fix and it is a
+> deliberate deletion, not done here. The Woolworths branch of the state machine
+> fetches 0 rows — the dataset covers two chains — which is honest but means the
+> product's "three chains" claim is currently true only of the fixtures.
+
 - [ ] **Pilot Task 14 — Add the bounded data-quality reviewer.** After ADR 0002
   mentor approval, deploy it separately in AgentCore Runtime over capped
   sanitised ingestion snapshots with an isolated least-privilege identity,
@@ -704,6 +778,54 @@ proposed, or gated as labelled; it is not implemented.
   recipe ids and product citations; code owns scaling, safety, and totals.
   A Knowledge Base may be evaluated only for cited recipe/catalogue retrieval
   and never for authoritative prices.
+  - [x] **15a — Catalogue, dietary classification, and the coverage gate.**
+    Completed 2026-08-30. `src/recipes/` holds the 175 recipes behind a
+    `RecipeRepository` protocol, classifies each recipe's dietary content from
+    its INGREDIENTS rather than its label, and measures how much of each recipe
+    this product catalogue can price. 12 tests.
+  - [ ] **15b — BLOCKED ON DATA, and the block is measured.** Recipe-constrained
+    planning is deliberately NOT wired into the graph. A recipe is usable only
+    if EVERY ingredient can be priced: a payable total computed from part of a
+    shopping list is a number the shopper cannot spend to, and `within_budget`
+    derived from it is a false promise — the one failure this codebase exists to
+    prevent. Measured over both datasets:
+
+    | | |
+    |---|---|
+    | recipes | 175 |
+    | best recipe | **75%** of ingredients costable |
+    | median recipe | ~12% |
+    | recipes at 100% | **0** |
+    | recipes at ≥90% | **0**, under any staples assumption |
+
+    **The two datasets were built for different jobs.** TheMealDB recipes are
+    international home cooking, median 11 ingredients, reaching for soy sauce
+    (53 recipes), garlic (43), lime (36), fish sauce (36), ginger (34) and
+    coriander (29). The product catalogue is 300 items per store across 17
+    categories, weighted to fresh produce, meat and dairy, with no spice rack,
+    no condiments and no long tail. `water` appears in 42 recipes and is not a
+    grocery product at all.
+
+    Widening "assumed on hand" from {water, salt, pepper} to a full spice rack
+    and pantry — 40+ terms — moved usable recipes **from zero to zero**. The gap
+    is not staples, and a generous staples list would only have hidden costs the
+    shopper still has to pay.
+
+    `test_task_15_is_blocked_by_data_and_will_say_when_it_is_not` FAILS WHEN THE
+    BLOCKER LIFTS, verified by simulating a complete catalogue. Same forcing
+    shape as the Scan ceiling in 6b, pointed the other way, so "not enough data
+    yet" cannot quietly become permanent.
+    `python scripts/check_recipe_coverage.py --missing 20` reports the distance
+    and names what is absent.
+
+    **Three ways out, and the choice is the team's, not this repository's:**
+    (a) the data team widens collection to condiments, spices and pantry —
+    the ingredients above are an ordered shopping list for that;
+    (b) source recipes constrained to what the catalogue stocks, rather than a
+    general recipe API — TheMealDB was never chosen for this catalogue;
+    (c) narrow Req 2.9 to recipes as *inspiration* with a shopping list priced
+    only where citable, and state plainly which ingredients are unpriced —
+    which weakens the budget promise and needs a deliberate decision.
 - [ ] **Pilot Task 16 — Wire and release the complete pilot increment.** Run
   mandatory offline, live-adapter, infrastructure, security, evaluation, load,
   privacy, recovery, and cost gates. Local MCP has its own planned demonstration
@@ -939,7 +1061,11 @@ enforcement from `run_turn()` remains the explicit Task 2 follow-up.*
 - [x] **5.3** Report known limitations separately from failures — *Req 10.3*
 - [x] **5.4** Meal plan cases with invariants and reported metrics — *Req 10.2*
 - [x] **5.5** Budget floor check, not only the ceiling
-- [ ] **5.6** Subjective quality scoring for variety and appeal
+- [ ] **5.6** Subjective quality scoring for variety and appeal — still open,
+  and still deliberately. `design.md` §8 and AGENTS.md both argue an LLM judge
+  puts a non-deterministic scorer inside a suite whose value is being
+  deterministic. What changed on 2026-08-30 is the *other* half of that note:
+  the repair suite is no longer too small to gate. See `5.9`/repair below
   — *deliberately still open; `evals/run_prose.py` (2026-08-29) scores RULE
   COMPLIANCE only. An LLM judge would put a non-deterministic scorer inside a
   suite whose value is being deterministic.*
@@ -947,8 +1073,10 @@ enforcement from `run_turn()` remains the explicit Task 2 follow-up.*
   — *Req 9.5* — **[current blocker: model-specific access and missing scorecards]**
 - [x] **5.8** Red-team case set for content safety, covering both content that
   must be blocked and content that must be allowed
-- [ ] **5.9** Harness that runs the red-team set against the numbered live
-  Guardrail and reports each case's outcome
+- [x] **5.9** Harness that runs the red-team set against the numbered live
+  Guardrail and reports each case's outcome — closed 2026-08-29 by Pilot Task 3
+  follow-ups (a) and (b): the harness's own controls were fixed first, then
+  13/13 must-block and 9/9 must-allow recorded against version 2
 
 *3.9 and 5.7 were answered on 2026-08-29 and both results are in
 `docs/LIVE-EVAL-RUNBOOK.md` §8. Intent scorecards against guardrail version 2:
@@ -1060,8 +1188,15 @@ hold in production.*
 - [ ] **7.5** Implement per-retailer acquisition with isolated failure
   — *Req 8.5*
 - [ ] **7.6** Orchestrate acquisition with parallel per-retailer error handling
-- [ ] **7.7** Implement name normalisation in ingestion — *Req 8.3*
-- [ ] **7.8** Schedule the refresh — *Req 8.4*
+- [x] **7.7** Implement name normalisation in ingestion — *Req 8.3* — closed
+  2026-08-30. `ingestion/lineage_b.py` derives one canonical `product_key` from
+  a retailer's product name and size, so the same item at Pak'nSave and New
+  World shares a key and GSI1 can compare them; 251 of ~400 distinct keys occur
+  in both chains. Deriving it is what makes the comparison possible at all
+- [ ] **7.8** Schedule the refresh — *Req 8.4* — the EventBridge schedule and
+  state machine exist and are ENABLED; what they refresh from is now a choice
+  (`PRICE_SOURCE`), and pointing the scheduled run at `lineage_b` is a
+  deliberate act nobody has taken
 - [x] **7.9** Assess terms-of-service risk before live acquisition — *Req 8.8*
   — `ACQUISITION-RISK.md`
 - [x] **7.10** Create the idempotency table with expiry — *Req 12.3*
@@ -1094,18 +1229,32 @@ It gates 6.8.*
 - [x] **8.2** Dependency vulnerability scanning
 - [x] **8.3** Secret scanning
 - [x] **8.4** Exclude personal data from logs — *Req 11.5*
-- [ ] **8.5** Per-function roles scoped to named resources — *Req 11.1*
-  — **[superseded by Pilot Tasks 9–10]**
+- [x] **8.5** Per-function roles scoped to named resources — *Req 11.1* —
+  four roles live in `ap-southeast-2`, one per principal: orchestrator,
+  ingestion, Step Functions and scheduler. Read-only on products for the
+  orchestrator with GSI1 and GSI2 named explicitly and `Scan` removed;
+  ingestion cannot read the model or the idempotency table. Codifying them in
+  CDK remains Pilot Tasks 9–10
 - [ ] **8.6** Managed secret storage — *Req 11.2* — **[superseded by Pilot Task 10]**
-- [ ] **8.7** Gateway throttling and usage plans — *Req 11.4*
+- [x] **8.7** Gateway throttling and usage plans — *Req 11.4* — closed
+  2026-08-30. Stage `dev` throttles at 5 rps / burst 10, and usage plan
+  `grocery-orchestrator-dev-plan` (`v4yd7d`) now carries the same limits
+  attached to that stage. `security.md` line 22 requires BOTH — the stage had
+  throttling and there was no usage plan at all, so half the control was
+  missing. No API key requirement: the pilot is anonymous, and a usage plan
+  throttles without one
   — **[superseded by Pilot Task 10]**
 - [ ] **8.8** Authentication on the endpoint — **[later roadmap after anonymous pilot]**
 - [x] **8.9** Define the content safety policy as version-controlled data and
   validate it offline — *Req 5.5*
 - [ ] **8.10** Verify the content safety policy against the numbered live
-  Guardrail using the red-team set from 5.8 — *Req 5.5*; harness construction
-  and propagation moved to Pilot Task 3, qualifying live policy evidence remains
-  in its unchecked follow-up
+  Guardrail using the red-team set from 5.8 — *Req 5.5*. **The policy was
+  verified (13/13 + 9/9 against version 2, 2026-08-29) but the SERVICE DOES NOT
+  APPLY IT.** `grocery-orchestrator-dev` sets `BEDROCK_GUARDRAIL_VERSION=1`, so
+  production runs the version whose foraging over-block version 2 fixed —
+  confirmed live on 2026-08-30: `how much is truffle oil` and `cheapest button
+  mushrooms` both return `GUARDRAIL_BLOCKED`. Verifying a policy and applying it
+  are two different facts and this task needs both. See `docs/ARCHITECTURE.md` §3f
 - [x] **8.11** Tag untrusted input so the prompt-attack filter evaluates it
   — *Req 6.5*
 - [x] **8.12** Fail closed when no content safety filter is configured
@@ -1246,10 +1395,15 @@ step that gets skipped.*
 
 - [x] **10.1** Build the deployment archive excluding unused transitive
   packages
-- [ ] **10.2** Enable snapshot-based cold-start optimisation on a published
-  alias — **[superseded by Pilot Task 10]**
-- [ ] **10.3** Deploy the endpoint with cross-origin support
-  — **[superseded by Pilot Tasks 10–11; strict CORS required]**
+- [x] **10.2** Enable snapshot-based cold-start optimisation on a published
+  alias — live: alias `grocery-orchestrator-dev:live`, SnapStart
+  `OptimizationStatus: On`, and the X-Ray trace shows a `Restore` subsegment of
+  ~0.6s. Codifying it in CDK remains Pilot Task 10
+- [x] **10.3** Deploy the endpoint with cross-origin support — live:
+  `POST /dev/chat` on `woqmel35lk`, CORS emitted by the handler and `OPTIONS`
+  answered by it. **`CORS_ORIGIN` is `*`**, which Req 12.5 and `security.md`
+  forbid for a production stage; that tightening is Pilot Task 10 and needs the
+  frontend's origin to exist first
 - [ ] **10.4** Regenerate live configuration locally and record sanitized
   adoption assertions — *Req 12.4*; superseded by Pilot Task 9
 - [ ] **10.5** Measure latency on the plan path and record percentiles

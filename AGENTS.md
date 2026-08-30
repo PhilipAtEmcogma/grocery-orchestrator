@@ -214,9 +214,20 @@ Production sets nothing.
 
 ### MCP, AgentCore, and bounded agents
 
-Pilot Task 8 delivers local read-only MCP first. Its coarse tools invoke the
-complete deterministic service and expose no raw DynamoDB, AWS SDK, filesystem,
-network, scraping, write, citation, or unguarded-generation primitive.
+Pilot Task 8 is DONE (2026-08-30). `src/mcp/` exposes two coarse tools over
+stdio JSON-RPC — `grocery_ask` and `grocery_dietary_terms` — which invoke the
+complete deterministic service through the same `lambda_handler` API Gateway
+calls, and expose no raw DynamoDB, AWS SDK, filesystem, network, scraping,
+write, citation, or unguarded-generation primitive. Default-off
+(`MCP_ENABLED=1`), rate and session capped, audit that records that a call
+happened and never what was asked.
+
+**If you add a tool, it must invoke the whole service.** A fine-grained tool
+("query the products table") would be a database with extra steps, and every
+invariant this project has lives ABOVE that layer. And keep stdout clean: it is
+the protocol channel, and the service's own Powertools output goes there by
+design — `serve()` rebinds `sys.stdout` to stderr before importing the handler
+for exactly that reason.
 
 Proposed ADR 0002 would permit two separately approved stages if a mentor
 approves it. AgentCore Gateway with Identity and Policy could mediate the same coarse tools after local parity,
@@ -311,10 +322,13 @@ rule about publishing a price without its capture date, wearing a different hat.
 **`config/` ships inside the Lambda archive**, so retuning a threshold is a
 deploy. That is the argument for Task 7b's SSM work.
 
-Blockers are Tasks 8–16: local MCP, CDK and resource adoption, the service
-plane, operational gates, controlled ingestion, the recipe catalogue, and the
-integrated release run. MCP, AgentCore and the managed-evaluation stages are
-planned or proposed, not built.
+Blockers are now **Tasks 9–11 (IaC), 14, 15b and 16**. Closed 2026-08-30: Task
+8 (local MCP, `src/mcp/`), Task 12 substantially (8 alarms, dashboard, Budget,
+first deployed latency and cost baselines), Task 13's first half (the real
+2,759-row catalogue is loaded), and deferral 6b (GSI2). Task 15 is **blocked on
+data, measured**: zero of 175 recipes are fully priceable, and a forcing test
+fails when that changes. AgentCore and the managed-evaluation stages remain
+proposed, not built.
 
 Two deliberate deferrals carry their reasoning in `tasks.md`: a bare
 `price of mushrooms` is still refused by the Guardrail (3d), and SSM routing
@@ -341,7 +355,7 @@ load evidence the deferral required.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 694 passed, 31 skipped, no AWS
+python -m pytest -q                              # 763 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -365,6 +379,9 @@ python scripts/apply_state_machine.py --dry-run  # ingestion Step Functions
 python -m pytest tests/test_ingestion.py         # ingestion; no AWS
 python scripts/check_quotas.py                    # throughput ceiling, live
 python Philip_demo/run_all.py                     # seven feature demos, offline
+MCP_ENABLED=1 python scripts/mcp_server.py        # local read-only MCP over stdio
+python scripts/check_recipe_coverage.py --missing 20   # why Task 15 is blocked
+python scripts/measure_latency.py                 # latency against the DEPLOYED endpoint
 ```
 
 The pre-commit hook lives in `scripts/hooks/pre-commit` — **version
@@ -727,6 +744,15 @@ the classifier keyed on the ingredient noun: `how much is truffle oil`,
 scopes the topic to the ACT of gathering. **A bare `price of mushrooms` is still
 refused and remains open** — three rounds of tuning moved qualified queries but
 not the unqualified noun.
+
+**Two open defects on the deployed service, both backend, found 2026-08-30.**
+The Lambda sets `BEDROCK_GUARDRAIL_VERSION=1` while every document and all the
+qualifying evidence describe version 2, so benign mushroom and truffle-oil
+queries are refused live (`docs/ARCHITECTURE.md` §3f). And nothing implements
+Req 12.5: dropping `USE_DYNAMODB` or `USE_BEDROCK` silently selects fixtures and
+the scripted model, and the service would keep returning valid-looking grounded
+citations about fake products (§3g). **No offline gate can see a deployed
+environment variable** — that is why both survived every check.
 
 **Known pilot blockers:** IaC, a code refresh, and operational evidence — not
 deployment itself, which happened on 2026-08-27 and was mis-recorded here until
