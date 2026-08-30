@@ -35,6 +35,10 @@ def load(table_name: str) -> int:
                 "store_key": record["store_key"],
                 "product_key": record["product_key"],
                 "gsi1_sk": record["gsi1_sk"],
+                # Omitting this makes the row invisible to GSI2 -- a sparse
+                # index is silent, so meal-plan candidates would simply miss
+                # every seeded product with no error anywhere.
+                "gsi2_sk": record["gsi2_sk"],
                 "store": record["store"],
                 "store_location": record["store_location"],
                 "lat": Decimal(str(record["lat"])),

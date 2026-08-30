@@ -92,10 +92,16 @@ comparison reasoning/prose labels, regenerated samples, and offline
    regions, idempotency ownership, and per-task model qualification all landed.
    Candidate access AT SCALE remains deferred (Task 6b) pending load evidence,
    with a test that fails once the dataset outgrows a Scan.
-4. **The remaining blocker.** CDK adoption, least-privilege IAM, API controls,
-   published SnapStart alias, dashboards, budgets, and deployment verification
-   are not implemented. Nothing is deployed, so no SLO, cost, security or
-   recovery evidence exists — Pilot Tasks 9–12.
+4. **The remaining blocker,** restated 2026-08-30 after an account audit.
+   A service plane **is** deployed — REST API `grocery-orchestrator-api-dev`
+   (`woqmel35lk`), both Lambdas, alias `live`, the ingestion state machine and
+   an ENABLED schedule, all created by hand on 2026-08-27 and answering
+   requests. This item previously read "nothing is deployed", which was wrong.
+   What is not implemented is **CDK adoption, dashboards, budgets, alarm
+   coverage and deployment verification**, so no SLO, cost, security or
+   recovery evidence exists — not for want of a deployment, but because nothing
+   deployed is declared, measured or alarmed, and the alias serves code
+   predating item 3 above (`docs/ARCHITECTURE.md` §3a). Pilot Tasks 9–12.
 5. MCP, AgentCore, managed evaluations, ingestion, and companion services are
    planned/proposed only as labelled; none is a deployed capability.
 

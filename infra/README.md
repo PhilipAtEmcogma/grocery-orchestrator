@@ -1,6 +1,15 @@
 # `infra/` — Infrastructure as Code (design documentation)
 
-> **Status: DESIGN DOCUMENTATION. Nothing here is deployed.**
+> **Status: DESIGN DOCUMENTATION. No CDK stack is deployed.**
+>
+> ⚠️ **Read that precisely (clarified 2026-08-30).** *No CDK stack* is deployed.
+> **A service is** — REST API `grocery-orchestrator-api-dev` (`woqmel35lk`),
+> two Lambdas, the `live` alias, a state machine and an ENABLED daily schedule
+> all exist in `ap-southeast-2`, created by hand on 2026-08-27. This directory's
+> job is therefore to bring a **running** system under IaC, not to stand one up.
+> See [`../docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) §3 for what exists
+> and [`docs/08-OPEN-DECISIONS.md`](docs/08-OPEN-DECISIONS.md) §10 for the
+> adopt-or-replace decision that now precedes Task 9.
 > This directory currently contains *specifications* for the AWS CDK app that
 > will provision the Smart Grocery & Meal Budget Assistant. The CDK app itself
 > (TypeScript sources, `package.json`, `cdk.json`) is **not yet written** — it
@@ -42,9 +51,9 @@ and is mature (see the root [`README.md`](../README.md) and
 
 | Phase | Pilot Task | What it delivers |
 |-------|-----------|------------------|
-| **Adopt** | Task 9 | A CDK app that *takes ownership of the DynamoDB tables that already exist and hold seeded data* — without recreating or emptying them. |
-| **Codify** | Task 10 | The deployable service plane in CDK: the zip Lambda + SnapStart alias, the REST API, the Guardrail, the IAM roles, SSM config, log retention, strict CORS and throttling. |
-| **Deploy & observe** | Tasks 11–12 | Deploy the anonymous pilot, then add the CloudWatch dashboards/alarms, X-Ray, Budgets, S3 artefact storage and SNS notifications that make it operable. |
+| **Adopt** | Task 9 | A CDK app that *takes ownership of the DynamoDB tables that already exist and hold seeded data* — without recreating or emptying them. **Wider than originally scoped:** the Lambdas, alias, state machine and schedule also already exist ([08 §10](docs/08-OPEN-DECISIONS.md)). |
+| **Codify** | Task 10 | The deployable service plane in CDK: the zip Lambda + SnapStart alias, the REST API, the Guardrail, the IAM roles, SSM config, log retention, strict CORS and throttling. Most of this exists hand-made; the task is to declare it, then adopt or replace per resource. |
+| **Deploy & observe** | Tasks 11–12 | Cut the running service over to the CDK-managed one, then add the CloudWatch dashboards/alarms, X-Ray, Budgets, S3 artefact storage and SNS notifications that make it operable. **The observability half is the real gap** — the service runs, but nothing measures, alarms or budgets it. |
 
 A missing **frontend** (the S3 + CloudFront chat UI from the project's
 architecture diagram) and **CI/CD deploy automation** are also part of "live",

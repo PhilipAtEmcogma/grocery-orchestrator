@@ -1,0 +1,30 @@
+{
+  "_comment": "Where each store is. Data rather than code, like regions.json: the position of a supermarket is local knowledge, and someone who knows Auckland should be able to correct an entry without reading Python.",
+  "version": "1.0",
+
+  "_why_this_exists": "The data team's catalogue (datasets/DATA_SCHEMA.md) carries store_name and nothing geographic -- no lat, no lon, no address. The orchestrator's radius filter (Req 1.5, NearFilter) needs coordinates, so without this file a shopper who sends coordinates matches NOTHING in that catalogue and the graph reports 'I don't have price data near you' about stores down the road. That is the same silent-exclusion defect Pilot Task 5a fixed for the store filter, and it is why these are looked up rather than defaulted.",
+
+  "_why_not_a_sentinel": "The first version of ingestion/lineage_b.py wrote lat/lon as 0.0 with a comment calling it fail-closed. 0.0/0.0 is a real place in the Atlantic, so every record was simply far away and every radius query excluded it -- correct-looking behaviour produced by a wrong number, with nothing to show a reader that the coordinate was missing rather than distant. An unknown store now RAISES at ingestion instead, so the data never reaches the table without a position.",
+
+  "_accuracy": "These are SUBURB CENTROIDS, not surveyed store addresses. They are accurate to roughly a kilometre, which is the right resolution for a filter whose smallest sensible radius is a few kilometres and whose purpose is 'shops near me' rather than turn-by-turn directions. A store sitting at the edge of its suburb may fall outside a tight radius that its true position would satisfy -- the under-matching direction, which this project prefers everywhere: a shopper sees one fewer option rather than a price at a store they cannot reach.",
+
+  "_review": "NOT reviewed by anyone with local knowledge of Auckland, and derived from general knowledge rather than from a geocoder or the retailers' own store finders. Same standing as the region membership in regions.json, and correctable the same way -- one line, no code change. Anyone who knows these suburbs should check them; the likeliest errors are Lincoln Road (a long road, and the store is at the Henderson end) and Sylvia Park (a mall, some distance from the Mt Wellington centroid).",
+
+  "_on_the_fixture_catalogue": "fixtures/products.json carries its own lat/lon per record and does not read this file. The six fixture suburbs are listed here anyway so the two catalogues cannot drift into disagreeing about where the same suburb is.",
+
+  "stores": {
+    "Albany": { "lat": -36.7280, "lon": 174.7000 },
+    "Devonport": { "lat": -36.8330, "lon": 174.7960 },
+    "Lincoln Road": { "lat": -36.8600, "lon": 174.6300 },
+    "Mangere": { "lat": -36.9620, "lon": 174.7870 },
+    "Manukau": { "lat": -36.9930, "lon": 174.8790 },
+    "Mt Albert": { "lat": -36.8850, "lon": 174.7130 },
+    "Mt Wellington": { "lat": -36.9080, "lon": 174.8390 },
+    "New Lynn": { "lat": -36.9080, "lon": 174.6840 },
+    "Newmarket": { "lat": -36.8700, "lon": 174.7770 },
+    "Papakura": { "lat": -37.0660, "lon": 174.9440 },
+    "Ponsonby": { "lat": -36.8500, "lon": 174.7450 },
+    "Remuera": { "lat": -36.8800, "lon": 174.7990 },
+    "Sylvia Park": { "lat": -36.9170, "lon": 174.8410 }
+  }
+}

@@ -404,15 +404,33 @@ proposed, or gated as labelled; it is not implemented.
     mutation: dropping the fence fails 3, reusing the token on takeover fails 3,
     reverting to raw-body hashing fails 1, and single-page querying fails 2.
     Offline gates passed: 531 passed, 31 skipped.
-  - [ ] **6b — Queryable candidate pattern, DEFERRED with a forcing test.**
-    `candidates_for_budget` still Scans the products table on every meal-plan
-    turn. `DYNAMODB-SCHEMA.md` requires the replacement to be chosen from real
-    access patterns and load evidence, and there is currently neither: 152 rows
-    and no deployment. Choosing a GSI partition key now would be guessing from
-    zero traffic, and a GSI is expensive to change once written.
-    `test_the_scan_ceiling_is_asserted_rather_than_assumed` fails once the
-    dataset passes `SCAN_CEILING_RECORDS`, so the decision is forced by data
-    rather than forgotten.
+  - [x] **6b — Queryable candidate pattern. CLOSED 2026-08-30.**
+    `candidates_for_budget` queried the products table with a full `Scan` on
+    every meal-plan turn. Deferred deliberately because `DYNAMODB-SCHEMA.md`
+    requires the replacement be chosen from real access patterns and load
+    evidence, and there was neither — 152 rows and no deployment. A GSI is
+    expensive to change once written, so guessing a partition key from zero
+    traffic was the wrong move.
+
+    **The forcing test worked exactly as designed.** The data team's catalogue
+    brought 2,939 rows past the 1,000-row ceiling, which made the decision
+    unavoidable and supplied the evidence it needed. Resolved as **GSI2** —
+    partition `category`, sort `gsi2_sk` (zero-padded cents + product key +
+    store key). Three lines of evidence, all pointing the same way: the access
+    pattern IS partition-by-category/sort-by-price; a Scan reads every row to
+    return two dozen and DynamoDB bills rows read; and the data team
+    independently built the same `CategoryPriceIndex` shape on their own table.
+
+    Live: GSI2 created on `grocery-products-dev`, table re-seeded so the index
+    is populated (a sparse GSI is silent — DynamoDB just omits rows with no
+    sort key), IAM updated, deployed as version 8. **`dynamodb:Scan` was
+    REMOVED from the orchestrator role**, so a live meal plan succeeding is
+    positive proof the query path is the index and not a scan.
+
+    `test_the_scan_ceiling_is_asserted_rather_than_assumed` is replaced by
+    `test_meal_plan_candidates_are_queried_by_category_not_scanned`, which
+    asserts on the CALLS rather than the row count — a row-count ceiling could
+    only ever say "still small enough to get away with it".
 - [ ] **Pilot Task 7 — Reconcile, qualify, and evaluate the model plane.** Align
   the adapter with `langchain-aws`, move routing toward SSM, disable unscored
   models, publish task scorecards, and preserve local evals as release gates.
@@ -493,9 +511,36 @@ proposed, or gated as labelled; it is not implemented.
     AgentCore Gateway with Identity, Policy, WAF/Cognito or approved workload
     identity, privacy-safe audit, quotas, cost evidence, and rollback drill.
     Gateway must never bypass the deterministic Lambda graph.
+> **Account audit, 2026-08-30 — the starting position for Tasks 9–12 is not
+> what these tasks assumed.** A service plane already exists in
+> `ap-southeast-2`, created imperatively on 2026-08-27: REST API
+> `grocery-orchestrator-api-dev` (`woqmel35lk`) with stage `dev` and
+> `POST /chat`, both Lambdas, alias `live` → version `6`, the ingestion state
+> machine, and an ENABLED daily schedule. It answers requests. The README,
+> `AGENTS.md` and `infra/docs/00` all said it did not exist; `docs/ARCHITECTURE.md`
+> §3 said it did, and was right. All four are corrected.
+>
+> Consequences for these tasks, none of which change their acceptance criteria:
+>
+> - Task 9's adoption surface is larger than "data resources" — see
+>   `infra/docs/08` §10 for the adopt-or-replace decision now owed per resource.
+> - Task 10 codifies things that mostly exist rather than creating them.
+> - Task 11 is a **cutover** on a live endpoint, not a first deployment.
+> - Task 12 is the largest genuine gap: the service runs with no dashboard,
+>   alarm coverage, budget or latency baseline attached.
+> - The alias was cut over to current code on 2026-08-30 (`docs/ARCHITECTURE.md`
+>   §3a, versions 6 then 7). Live behaviour now evidences `main`, and all four
+>   paths — comparison, named regions, clarification, meal plan — were verified
+>   working through the deployed endpoint.
+> - **Decision 2026-08-30: `max_price_age_days` raised 14 → 45** so the
+>   fixture-seeded endpoint can demonstrate priced paths. Reversible dev-stage
+>   stopgap; revert when Task 13 lands real ingested prices. Full reasoning in
+>   `config/freshness.json` `_decision_2026_08_30` and `docs/ARCHITECTURE.md` §3c.
+
 - [ ] **Pilot Task 9 — Establish CDK and adopt existing data resources.** Build
   the TypeScript CDK app and stateful stack; import existing tables without
-  replacement and record reviewed adoption evidence.
+  replacement and record reviewed adoption evidence. Extend the adoption review
+  to the existing service-plane resources listed in the note above.
 - [ ] **Pilot Task 10 — Define the deployable service plane.** Codify the Python
   3.13 zip Lambda, published SnapStart alias, REST API, Guardrail, strict CORS,
   throttling, usage plan, SSM configuration, log retention, and scoped IAM.
@@ -509,6 +554,138 @@ proposed, or gated as labelled; it is not implemented.
   scoped prefixes, lifecycle, restore, and deletion tests for approved
   datasets, evaluation results, and review artefacts; use SNS for non-sensitive
   operator and approval notifications.
+  - **Partial, 2026-08-30: end-to-end X-Ray tracing now exists.** API Gateway
+    stage tracing was enabled on `woqmel35lk`/`dev`, so a trace's entry point is
+    the gateway rather than the Lambda and the gateway hop is measurable for the
+    first time; the SnapStart `Restore` subsegment is also now visible, which
+    the cold-path latency baseline needs. Verified against a real trace, not
+    just the flag — `docs/ARCHITECTURE.md` §9. This is the *tracing* half of
+    "X-Ray evidence"; dashboards, Budgets, alarm drills and the latency/cost
+    baselines remain open, and the task stays unchecked.
+> **Scoping note added 2026-08-30 — what the teammates' 3,000 prices actually
+> need.** The data team's tables are live in the account:
+> `smart-grocery-products-dev` (3,000 items, PK `primary_key`, GSI
+> `CategoryPriceIndex`, created 2026-08-28) and `smart-grocery-recipes-dev` (175
+> recipes). Loading them into the serving table is **not a data load** — it is
+> this task's normaliser, plus a change to a safety-critical mapping. Concretely,
+> the B→A transform must supply seven things Lineage B does not carry:
+>
+> 1. **`product_key`, and a synonym table to reach it.** `resolve_product_key` is
+>    exact-match with no substring fallback, by design (a substring match once
+>    resolved "truffle oil" to canola oil). The 26 fixture products have a curated
+>    synonym table; 3,000 arbitrary product names have none, so without one
+>    essentially every query returns `no_data`.
+> 2. **`pack_grams`** — parsed from a free-text `size`. Only **68.1%** (2,044 of
+>    3,000) parse to a mass or volume; the rest are `kg`, `ea`, `6pk`, `12pk`.
+>    `unit_price_nzd` and the meal planner's gram-based feasibility both need it.
+> 3. **A dietary re-map.** `src/graph/dietary.py` maps exclusion terms to *fixture*
+>    categories and is documented as exact against the current catalogue. Lineage B
+>    has 17 different category names, so dietary exclusions would fail closed
+>    against all of them. **This is invariant 3 and must not be done casually.**
+> 4. **`valid_date`** — absent from every Lineage B record. `DATA_SCHEMA.md`
+>    documents the dataset as an August 28 2026 snapshot, which is a usable
+>    provenance claim *from the data team*; it must be recorded as their stated
+>    capture date, not silently defaulted.
+> 5. **`price` Number → String.** Lineage B stores money as a DynamoDB Number,
+>    which is the float round-trip the whole codebase avoids.
+> 6. **`lat`/`lon`** — absent. `RawOffer` requires them. Named regions already
+>    cover location for this dataset (`config/regions.json` was written knowing
+>    this), but the field still needs a decision rather than a zero.
+> 7. **`on_special`** — absent; would become `False` for every row, which changes
+>    what the comparison reasoning can say.
+>
+> Two consequences beyond the transform: 3,000 rows trips
+> `SCAN_CEILING_RECORDS` (1,000) and so **forces deferral 6b**, which is that
+> test working as designed; and the dataset covers only PAK'nSAVE and New World,
+> while the product claims three chains including Woolworths.
+
+> **Started 2026-08-30 — the B→A transform exists and is tested.**
+> `ingestion/lineage_b.py` with 42 tests in `tests/test_lineage_b.py`, run over
+> all 3,000 real rows rather than a sample. It plugs into the existing
+> `PriceSource`/`RawOffer` seam, so `normalise.to_item` and `handler.refresh`
+> are untouched. Result over the real dataset: **2,939 kept, 61 dropped as
+> non-food, 74 re-classified by the safety override.**
+>
+> **The finding that justified doing this properly: the source `category` field
+> is not a safety control.** Mapped straight through it would have breached
+> Invariant 3 in six distinct category pairs — 74 products a vegetarian or vegan
+> would have been served:
+>
+> | Source category | Forced to | Rows | Example |
+> |---|---|---|---|
+> | `Rice, Pasta & Noodles` | meat | 26 | Buldak Carbonara Hot Chicken Ramen |
+> | `Frozen Foods` | meat | 21 | **Frozen Whole Chicken** |
+> | `Breakfast Cereals, Oats & Spreads` | meat | 11 | **Beef Manuka Honey & Hickory Sausages** |
+> | `Cheese, Butter & Yoghurt` | meat | 7 | **Chunky Cheese Sausages** |
+> | `Frozen Foods` | seafood | 5 | Raw Frozen Prawns Cutlet |
+> | `Pantry Staples` | seafood | 4 | Bluefin Tuna Loins |
+>
+> `classify()` therefore maps the category and then overrides on the product
+> name, **fail-closed — it may only ever move a product to a MORE restricted
+> category.** An over-match costs a vegetarian a product they could have eaten;
+> an under-match serves them chicken. `dietary.py` is untouched: the messy
+> upstream vocabulary stops at the ingestion boundary and one category
+> vocabulary reaches the serving table.
+>
+> Also settled, each with its reasoning in the module: plant milk maps to
+> `dairy` (over-exclusion is the safe direction); pet food is dropped at
+> ingestion (it satisfies every check in the system while being obviously not
+> dinner); `size: "kg"` means priced-per-kilogram and maps to 1000g; `ea`/`6pk`
+> use the existing `pack_grams == 1` sold-each sentinel; money goes through
+> `str()` before `Decimal`; `captured_at` is required and must be the data
+> team's stated 2026-08-28 collection date, recorded as their claim.
+>
+> **Synonym table done, 2026-08-30.** `config/product-synonyms.json`
+> (config-as-data, like regions.json), `scripts/generate_synonyms.py`, and 31
+> tests in `tests/test_synonyms.py`. `SYNONYMS` moved out of
+> `src/retrieval/memory.py`; both repositories now load it, and the fixture
+> vocabulary is asserted unchanged by the migration.
+>
+> **The table has two halves, and the split is the safety boundary.** 389
+> generated product names — a restatement of the catalogue, safe to derive,
+> regenerated by script, with 56 ambiguous names (same name, different sizes)
+> DROPPED rather than guessed. And 29 hand-curated head terms, because a bare
+> noun is a judgement no rule gets right: "butter" matches 14 products
+> including `Salted Butter Frozen Dessert`, "cheese" matches 22 including
+> `Chunky Cheese Sausages`, "chicken" matches 42. A "cheapest match" rule
+> answers "cheapest butter" with a frozen dessert.
+>
+> Four terms are **deliberately omitted** with reasons recorded — `cheese`,
+> `tuna`, `salmon` (no plain staple in the catalogue, only specific or premium
+> products) and `peas` (none at all). They return `no_data`, which is honest;
+> the full product names still resolve.
+>
+> `test_a_head_term_resolves_to_something_of_the_right_kind` asserts the
+> *category* of each curated key, so an entry pointing at a novelty product
+> fails a test rather than a demo.
+>
+> `load_synonyms()` returns term → candidate keys because the file describes
+> both catalogues; each repository picks the first key its data actually holds.
+> The in-memory one filters at construction, the DynamoDB one by querying GSI1 —
+> the shared contract suite holds them to the same answer.
+>
+> **All three follow-ups closed 2026-08-30.**
+>
+> (a) **Coordinates.** `lat`/`lon` were written as `0.0` with a comment calling
+> it fail-closed. It is not a sentinel, it is the Atlantic: `NearFilter`
+> computed a real ~18,000km distance and excluded every row, so a radius query
+> returned nothing and the graph said "I don't have price data near you" about
+> a supermarket in the same suburb — the Task 5a silent-exclusion defect through
+> a different door. Now `config/store-locations.json` (suburb centroids, flagged
+> approximate and unreviewed, same standing as `regions.json`), and an unknown
+> store RAISES rather than defaulting. A test asserts the coordinates agree with
+> the fixture catalogue, so the two cannot drift about where a suburb is.
+>
+> (b) **The Scan ceiling** — see 6b above, now closed with GSI2.
+>
+> (c) **Head-term review** — this one is not ours to close.
+> `docs/OPEN-REVIEW-head-terms.md` is the brief: self-contained, fifteen
+> minutes, no code reading, written for somebody who shops at these stores. The
+> three close calls are named, the four deliberate omissions are listed with
+> their reasons, and every answer is a one-line config change. Lower stakes than
+> the feasibility-floor review — a wrong entry is an unhelpful answer, not a
+> refusal — but these are the words a demo audience types first.
+
 - [ ] **Pilot Task 13 — Build controlled ingestion and decoupled review
   triggers.** Use EventBridge and Step Functions Inline Map with fixture or
   recorded adapters, provenance, normalization, partial failure, retry, and

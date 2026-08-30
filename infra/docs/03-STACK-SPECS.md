@@ -165,7 +165,7 @@ const api = new apigateway.RestApi(this, 'Api', {
     stageName: 'dev',
     throttlingRateLimit: 20,      // steady req/s — workshop scale; tune in doc 07
     throttlingBurstLimit: 40,
-    tracingEnabled: true,         // X-Ray on the API
+    tracingEnabled: true,         // X-Ray on the API — matches the live stage since 2026-08-30
     // accessLogDestination + accessLogFormat → CloudWatch (no PII fields)
   },
   // Strict CORS in production mode: ONE origin, never "*". Value = CloudFront domain.

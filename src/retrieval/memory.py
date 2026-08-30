@@ -22,51 +22,46 @@ from src.schemas.contract import Store
 # Free-text terms a user might type, mapped to canonical product keys.
 # Deliberately explicit rather than fuzzy: a wrong match is worse than no
 # match, because it produces a confidently incorrect price.
+#
+# The table itself lives in config/product-synonyms.json, config-as-data like
+# regions.json and freshness.json, because which words mean which grocery item
+# is knowledge about shopping rather than about Python. It used to be a literal
+# dict here; that was fine for 26 fixture products and unworkable for the 528
+# in the data team's catalogue, where the generated half is produced by
+# scripts/generate_synonyms.py.
 
-SYNONYMS: dict[str, str] = {
-    "butter": "butter-500g",
-    "block of butter": "butter-500g",
-    "milk": "milk-2l",
-    "cheese": "cheese-tasty-1kg",
-    "tasty cheese": "cheese-tasty-1kg",
-    "yoghurt": "yoghurt-plain-1kg",
-    "yogurt": "yoghurt-plain-1kg",
-    "eggs": "eggs-size7-dozen",
-    "dozen eggs": "eggs-size7-dozen",
-    "mince": "beef-mince-1kg",
-    "beef mince": "beef-mince-1kg",
-    "ground beef": "beef-mince-1kg",
-    "chicken": "chicken-thigh-1kg",
-    "chicken thighs": "chicken-thigh-1kg",
-    "sausages": "pork-sausages-500g",
-    "tuna": "tuna-canned-185g",
-    "canned tuna": "tuna-canned-185g",
-    "salmon": "salmon-fillet-300g",
-    "pasta": "pasta-spirals-500g",
-    "rice": "rice-longgrain-1kg",
-    "canned tomatoes": "tomatoes-canned-400g",
-    "tinned tomatoes": "tomatoes-canned-400g",
-    "chopped tomatoes": "tomatoes-canned-400g",
-    "baked beans": "beans-baked-420g",
-    "lentils": "lentils-dried-500g",
-    "flour": "flour-plain-1-5kg",
-    "oats": "oats-rolled-1kg",
-    "porridge": "oats-rolled-1kg",
-    "oil": "oil-canola-750ml",
-    "cooking oil": "oil-canola-750ml",
-    "bread": "bread-white-700g",
-    "onions": "onions-brown-1-5kg",
-    "potatoes": "potatoes-washed-2kg",
-    "spuds": "potatoes-washed-2kg",
-    "carrots": "carrots-1kg",
-    "broccoli": "broccoli-each",
-    "bananas": "bananas-1kg",
-    "frozen vegetables": "frozen-mixed-veg-1kg",
-    "frozen veg": "frozen-mixed-veg-1kg",
-    "mixed vegetables": "frozen-mixed-veg-1kg",
-    "peas": "frozen-peas-1kg",
-    "frozen peas": "frozen-peas-1kg",
-}
+SYNONYMS_CONFIG = Path(__file__).resolve().parents[2] / "config" / "product-synonyms.json"
+
+
+def load_synonyms(config_path: Path | None = None) -> dict[str, list[str]]:
+    """
+    Term -> the product keys it could mean, most-preferred first.
+
+    A LIST, not a single key, because the file describes more than one
+    catalogue and the same word names a different product in each: "butter" is
+    `butter-500g` in the fixtures and `salted-butter-500g` in the data team's
+    catalogue. The repository picks the first candidate that exists in the data
+    actually loaded, so the table needs no knowledge of which catalogue it is
+    serving and neither implementation has to be told.
+
+    Head terms come before generated product names within a catalogue: a
+    deliberate human choice outranks a mechanical restatement of a name.
+    """
+    raw = json.loads((config_path or SYNONYMS_CONFIG).read_text(encoding="utf-8"))
+    candidates: dict[str, list[str]] = {}
+    for catalogue in raw["catalogues"].values():
+        for section in ("head_terms", "generated_product_names"):
+            for phrase, key in catalogue.get(section, {}).items():
+                if phrase.startswith("_"):
+                    continue
+                term = normalise_term(phrase)
+                if not term:
+                    continue
+                keys = candidates.setdefault(term, [])
+                if key not in keys:
+                    keys.append(key)
+    return candidates
+
 
 # Words to strip before matching. "cheapest butter near me" -> "butter"
 NOISE = {
@@ -141,18 +136,30 @@ class InMemoryPriceRepository(PriceRepository):
             for r in raw
         ]
 
-        # Synonym keys are normalised too, so "block of butter" (where "of" is
-        # a noise word) still matches once the user's term is stripped.
-        self._synonyms: dict[str, str] = {
-            normalise_term(phrase): key for phrase, key in SYNONYMS.items()
-        }
-
         # Mirrors the GSI1 access pattern: partition by product, sorted by price.
+        # Built BEFORE the synonyms, which are filtered against it.
         self._by_product: dict[str, list[PriceRecord]] = {}
         for rec in self._records:
             self._by_product.setdefault(rec.product_key, []).append(rec)
         for recs in self._by_product.values():
             recs.sort(key=lambda r: (r.price_nzd, r.store.value, r.store_location))
+
+        # Synonym phrases are already normalised by load_synonyms(), so "block
+        # of butter" (where "of" is a noise word) matches once the user's term
+        # is stripped the same way.
+        #
+        # Entries are filtered to keys this catalogue actually holds. The table
+        # describes several catalogues and only one is loaded, so an entry for
+        # the other simply does not apply -- and dropping it here means a
+        # resolved term always has prices behind it, which is the guarantee the
+        # DynamoDB implementation makes by querying. The two must agree: they
+        # are held to it by tests/test_price_repository_contract.py.
+        self._synonyms: dict[str, str] = {}
+        for term, keys in load_synonyms().items():
+            for key in keys:
+                if key in self._by_product:
+                    self._synonyms[term] = key
+                    break
 
     # ------------------------------------------------------------ interface
 

@@ -271,20 +271,56 @@ green because the scripted client has no guardrail.
 ### Current pilot blockers
 
 Do not describe this as pilot-ready. Pilot Tasks 1–7 are done and evidenced,
-including the live Guardrail result; **nothing is deployed**. There is no CDK
-stack, no API Gateway, no published Lambda alias, and therefore no deployed
-SLO, cost, security or recovery evidence — every latency and throughput figure
-in this repository measures a laptop.
+including the live Guardrail result.
 
-Blockers are now entirely Tasks 8–16: local MCP, CDK and resource adoption, the
-service plane, deployment, operational gates, controlled ingestion, the recipe
-catalogue, and the integrated release run. MCP, AgentCore and the
-managed-evaluation stages are planned or proposed, not built.
+**A service IS deployed**, and this section said otherwise until 2026-08-30.
+REST API `woqmel35lk` (`grocery-orchestrator-api-dev`), stage `dev`,
+`POST /dev/chat`, wired to alias `grocery-orchestrator-dev:live`, plus the
+ingestion Lambda, state machine and an ENABLED daily schedule. Verified
+answering on 2026-08-30. `docs/ARCHITECTURE.md` §3 had the identifiers right
+since 2026-08-27; this file, the README and `infra/docs/00` all contradicted it
+and were all wrong. **When a document describing intent disagrees with the
+deployment record about an account, the deployment record wins — and the fix is
+to check the account, not to pick a document.**
 
-Three deliberate deferrals carry their reasoning in `tasks.md`: a bare
-`price of mushrooms` is still refused by the Guardrail (3d), candidate
-retrieval still Scans pending load evidence (6b), and SSM routing waits for the
-CDK stacks (7b).
+What is genuinely absent is the CDK stack, and with it any reproducibility,
+drift detection, or deployed SLO/cost/recovery evidence. No latency or
+throughput figure in this repository has been measured against the endpoint
+under load; they are all laptop measurements.
+
+**The deployed code is current as of 2026-08-30** — alias `live` moved from
+version `5` (2026-08-27, predating Tasks 4–7) to version `7`, built from `main`.
+The `$0`-budget defect is gone. Still: **check which version the alias points at
+before quoting a live behaviour as current**, and cut over the way
+`docs/ARCHITECTURE.md` §3a describes — publish, wait for SnapStart, invoke the
+new version *directly*, and only then move the alias. `build_lambda.py` cannot
+verify its own archive on Windows, so the first thing to execute a locally built
+zip must not be live traffic.
+
+**`max_price_age_days` is 45, not 14, and that is a dated decision rather than a
+calibration.** Enforcing freshness on fixtures dated 2026-07-31 made every priced
+query return `STALE_DATA`; the threshold was raised on 2026-08-30 as a reversible
+dev-stage stopgap so the deployed endpoint can demonstrate something. Full
+reasoning and the revert condition are in `config/freshness.json`
+(`_decision_2026_08_30`) and `docs/ARCHITECTURE.md` §3c. **Return it to 14 when
+real ingested prices land, and never carry 45 into a stage a shopper can reach.**
+**Do not "fix" staleness by re-stamping a capture date**: those prices were
+invented on 2026-07-31, and a later stamp fabricates provenance — the *Do not*
+rule about publishing a price without its capture date, wearing a different hat.
+
+**`config/` ships inside the Lambda archive**, so retuning a threshold is a
+deploy. That is the argument for Task 7b's SSM work.
+
+Blockers are Tasks 8–16: local MCP, CDK and resource adoption, the service
+plane, operational gates, controlled ingestion, the recipe catalogue, and the
+integrated release run. MCP, AgentCore and the managed-evaluation stages are
+planned or proposed, not built.
+
+Two deliberate deferrals carry their reasoning in `tasks.md`: a bare
+`price of mushrooms` is still refused by the Guardrail (3d), and SSM routing
+waits for the CDK stacks (7b). **6b closed 2026-08-30** — candidate retrieval
+queries GSI2 (category / zero-padded price) instead of scanning, chosen on the
+load evidence the deferral required.
 
 ---
 
@@ -305,7 +341,7 @@ CDK stacks (7b).
 ## Commands
 
 ```bash
-python -m pytest -q                              # 597 passed, 31 skipped, no AWS
+python -m pytest -q                              # 694 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -318,6 +354,9 @@ python evals/run_guardrail.py                    # must_allow structural (script
 # EXPERIMENTAL/non-qualifying: --model does not yet pin the requested model
 python evals/run_guardrail.py --model nova-lite
 python scripts/generate_fixtures.py              # regenerate seed data
+python scripts/generate_synonyms.py              # rebuild the generated synonym block
+python scripts/generate_synonyms.py --check      # CI/gate: is that block current?
+python scripts/generate_synonyms.py --candidates butter milk   # what a head term could mean
 python scripts/dev_server.py                     # localhost:8000 for frontend
 python scripts/apply_guardrail.py --dry-run      # validate guardrail policy
 python scripts/build_lambda.py                   # build/lambda.zip, ~30 MB unzipped
@@ -548,8 +587,12 @@ idempotency; Powertools observability; handler; local server; CI; zip build.
 
 **Live verified in `ap-southeast-2`:** products and idempotency DynamoDB tables;
 152 seeded records; Dynamo price repository contract; five current stored
-idempotency outcomes; Nova Lite/Pro invocation; and Guardrail
-`b1xezpqe04kx` version `2` verified 13/13 + 9/9. This is evidence about the
+idempotency outcomes; Nova Lite/Pro invocation; Guardrail
+`b1xezpqe04kx` version `2` verified 13/13 + 9/9; and, re-confirmed 2026-08-30,
+the deployed service plane — REST API `woqmel35lk` returning HTTP 200 on
+`POST /dev/chat` in ~7s with a real Nova Lite call and grounded citations,
+Lambda alias `live` → version `7` (cut over from `5` on 2026-08-30), and
+schedule `grocery-price-refresh-dev` ENABLED. This is evidence about the
 resources, not about behaviour: it does not prove live red-team quality.
 (Stale-claim ownership IS now proven against the live idempotency table.) (Retrieved-record/value equality is now proven offline on
 every turn, against the record the repository returned.)
@@ -685,14 +728,17 @@ scopes the topic to the ACT of gathering. **A bare `price of mushrooms` is still
 refused and remains open** — three rounds of tuning moved qualified queries but
 not the unqualified noun.
 
-**Known pilot blockers:** deployment, and only deployment. Pilot Tasks 1–7
-closed on 2026-08-29 — grounding proof, live Guardrail evidence, clarification,
-payable arithmetic, location and freshness, idempotency fencing, and route
-qualification. What remains is Tasks 8–16: local MCP, CDK adoption, the service
-plane, the deployment itself, operational gates, ingestion, the recipe
-catalogue, and the release run. Until those exist there is no deployed
-security, SLO, cost, recovery or operations evidence, because there is nothing
-deployed to measure.
+**Known pilot blockers:** IaC, a code refresh, and operational evidence — not
+deployment itself, which happened on 2026-08-27 and was mis-recorded here until
+2026-08-30. Pilot Tasks 1–7 closed on 2026-08-29 — grounding proof, live
+Guardrail evidence, clarification, payable arithmetic, location and freshness,
+idempotency fencing, and route qualification. What remains is Tasks 8–16: local
+MCP, CDK adoption of the resources that already exist, the service plane,
+operational gates, ingestion, the recipe catalogue, and the release run. There
+is still no deployed security, SLO, cost, recovery or operations evidence — not
+because nothing is deployed, but because nothing deployed has been measured,
+alarmed or budgeted. (The running code IS now the code in this repository, as
+of 2026-08-30; what it lacks is fresh data and any operational instrumentation.)
 
 **Not a blocker, but on the record before production:** the deployment is
 capped at 10 meal-plan turns per minute, falling to 5 when the repair loop

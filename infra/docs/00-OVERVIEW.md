@@ -61,17 +61,39 @@ The single most important thing to understand before building the CDK app is
 that **AWS resources already exist**, created imperatively. CDK's job is partly
 to *create* new resources and partly to *take ownership of existing ones*.
 
+> ⚠️ **Corrected 2026-08-30 — the adoption surface is bigger than this table
+> used to say.** It previously listed the API Gateway REST API and the SnapStart
+> alias as "❌ Not yet" and the Lambdas and state machine as merely defined.
+> **All of them exist and have since 2026-08-27**, verified against the account
+> on 2026-08-30. Almost the entire service plane is already standing and was
+> created by hand.
+>
+> This changes Pilot Task 9–10 planning materially. The work is not "create the
+> service plane"; it is **adopt or deliberately replace a service plane that is
+> already serving traffic**, which is a harder review with a live endpoint in
+> the middle of it. Decide per resource — see [08 §10](08-OPEN-DECISIONS.md) —
+> and note that replacing the REST API changes the URL the frontend uses, while
+> adopting it inherits whatever manual state it is in.
+>
+> The running Lambda was cut over to **version 6, built from `main`**, on
+> 2026-08-30 ([`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) §3a). Note
+> that it now answers `STALE_DATA` to every priced query, because the seeded
+> data predates the freshness threshold (§3c) — correct behaviour, but it means
+> a smoke test of the deployed stack will not return prices until the data is
+> refreshed.
+
 | Resource | Exists today? | Created by | Under CDK |
 |----------|---------------|-----------|-----------|
 | DynamoDB `grocery-products-dev` (PITR) | ✅ **Yes, seeded** | manual / `load_seed_data.py` | **Adopt (import), never replace** |
 | DynamoDB `grocery-idempotency-dev` (TTL) | ✅ **Yes** | manual | **Adopt (import), never replace** |
-| Bedrock Guardrail (`b1xezpqe04kx`, v1) | ✅ Yes (basic) | `apply_guardrail.py` from [`config/guardrail.json`](../../config/guardrail.json) | Re-create as a construct or adopt by id — see [08-OPEN-DECISIONS](08-OPEN-DECISIONS.md) |
+| Bedrock Guardrail (`b1xezpqe04kx`, **v2**) | ✅ Yes | `apply_guardrail.py` from [`config/guardrail.json`](../../config/guardrail.json) | Re-create as a construct or adopt by id — see [08-OPEN-DECISIONS](08-OPEN-DECISIONS.md) |
 | IAM roles (orchestrator, ingestion) | ✅ Yes | `apply_iam.py` from `config/iam-*.json` | Codify as `Role` constructs |
 | CloudWatch alarms + metric filter + SNS | ✅ Yes | `apply_alarms.py` from [`config/alarms.json`](../../config/alarms.json) | Codify |
-| Step Functions state machine | ⚠️ Defined, apply script exists | `apply_state_machine.py` | Codify |
-| Lambda function(s) | ⚠️ Archive builds (`build/lambda.zip`); deployment is manual | `build_lambda.py` | Codify function + SnapStart alias |
-| API Gateway REST API | ❌ Not yet | — | Create |
-| SnapStart alias | ❌ Not yet | — | Create |
+| Step Functions state machine | ✅ **Yes** — `grocery-ingestion-dev` (STANDARD) | `apply_state_machine.py` | **Adopt**, then codify |
+| EventBridge schedule | ✅ **Yes, ENABLED** — `grocery-price-refresh-dev`, daily 03:00 NZ | manual | **Adopt**, then codify |
+| Lambda function(s) | ✅ **Yes, deployed** — `grocery-orchestrator-dev`, `grocery-ingestion-dev` | `build_lambda.py`, deployed manually | **Adopt**, then codify function + alias |
+| API Gateway REST API | ✅ **Yes** — `grocery-orchestrator-api-dev` (`woqmel35lk`), stage `dev`, `POST /chat` | manual | **Adopt or replace — decide** ([08 §10](08-OPEN-DECISIONS.md)) |
+| SnapStart alias | ✅ **Yes** — `grocery-orchestrator-dev:live` → version `6` | manual | **Adopt**, then codify |
 | S3 + CloudFront frontend | ❌ Not yet | — | Create |
 | AWS Budgets | ❌ Not yet | — | Create |
 | S3 artefact bucket | ❌ Not yet | — | Create |
