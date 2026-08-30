@@ -14,6 +14,16 @@ Offline. Structured logs and EMF metric records print to stdout, which is
 exactly where CloudWatch reads them from in production. X-Ray switches itself
 off outside Lambda, so no daemon is needed.
 
+MODES
+-----
+    local  (default and only)  structured logs and EMF records print to stdout, which
+                               is exactly where CloudWatch reads them in
+                               production. X-Ray switches itself off outside
+                               Lambda, so no daemon is needed.
+
+    Asking for another mode exits without running anything, rather than
+    quietly answering from fixtures. See Philip_demo/README.md.
+
 WHAT THIS DEMONSTRATES
 ----------------------
   1. Per-turn stats: model calls, tokens, latency split, repair attempts
@@ -35,7 +45,15 @@ from __future__ import annotations
 
 import json
 
-from _demo_support import heading, request, section
+from _demo_support import (
+    LOCAL,
+    ModeUnavailable,
+    heading,
+    mode_banner,
+    request,
+    resolve_mode,
+    section,
+)
 
 from src.models.scripted import ScriptedModelClient
 from src.observability.base import NULL_TELEMETRY, TurnStats, request_fields
@@ -46,7 +64,17 @@ from src.observability.instrumented import (
 from src.retrieval.memory import InMemoryPriceRepository
 from src.runner import run_turn
 
+try:
+    mode = resolve_mode(supports=(LOCAL,))
+except ModeUnavailable as exc:
+    raise SystemExit(str(exc)) from exc
+
 heading("DEMO 7 - Observability")
+mode_banner(
+    mode,
+    requires="nothing - no AWS account, credentials or network access",
+    mocked="the price store (fixtures) and the model plane (ScriptedModelClient)",
+)
 
 # ------------------------------------------------------------ a plan turn
 section("1. One meal-plan turn, instrumented")

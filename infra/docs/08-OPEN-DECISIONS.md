@@ -250,8 +250,52 @@ consumer yet. **If the frontend team has already wired to `woqmel35lk`, adopt
 instead** — a URL change imposed on a teammate to tidy our stack is the wrong
 trade.
 
-**Decision needed from:** the implementing engineer + Philip, before Task 9
-starts.
+**RESOLVED 2026-08-30 — and the resolution is "not yet, and here is why".**
+
+Importing the existing API Gateway tree means matching RestApi, Resource, two
+Methods, two Integrations, Deployment, Stage and UsagePlan exactly. A mismatch
+in `cdk import` is not a failed import; it is a REPLACEMENT of a resource that
+is serving traffic.
+
+And an import proves less than it looks. It inherits whatever the hand-made
+resource has — including the parts nobody wrote down — so a stack built by
+import can be complete-looking and untested. A fresh deploy proves the
+definition is *sufficient*, which is the property IaC is actually for.
+
+So `Grocery-Service-dev` deploys the whole plane under a `-cdk` name suffix,
+beside the running one, and **parity was verified before anything was cut
+over**:
+
+| Request | hand-made | CDK |
+|---|---|---|
+| `cheapest butter` | paknsave Albany $9.49 Mainland Salted Butter | *identical* |
+| `cheapest milk near Albany` | paknsave Albany $4.79 Pams Value Standard Milk | *identical* |
+| `how much is truffle oil` | no_data | *identical* |
+| `feed 3 people for 5 days on $80` | 5 meals, $37.32 | 5 meals, $31.74 |
+
+The meal-plan difference is NOT a configuration difference. The same question
+against the *same* endpoint three times returned $35.75, $31.74, $31.74 — plan
+composition varies run to run, and the CDK figure sits inside the hand-made
+one's range. Checking that before reporting a discrepancy is the difference
+between a finding and a false alarm.
+
+**What the CDK plane fixes that the hand-made one has wrong:**
+
+- **Log retention.** `/aws/lambda/grocery-orchestrator-dev` is `null` — never
+  expire. The CDK group is 14 days. `04-SECURITY` requires finite retention, and
+  a log that never expires turns any future logging mistake into a permanent one.
+- **The API Gateway account CloudWatch role**, which `docs/ARCHITECTURE.md` §7
+  records as unset. CDK sets it — note this is ACCOUNT-LEVEL and therefore
+  benefits the hand-made API too.
+- **Stage tracing on from the start**, rather than added by hand afterwards.
+
+**The cutover is the outstanding step and it is a decision, not a task.** It
+changes the URL that `scripts/measure_latency.py`, `Philip_demo/_demo_support.py`
+and several documents name. Set `NAME_SUFFIX=''`, deploy, repoint the consumers,
+and delete the hand-made resources — in that order, with a `cdk diff` read
+before each.
+
+**Decision needed from:** Philip, once the demo work settles.
 
 ## 11. Two unidentified resources in the account — whose are they?
 
@@ -283,13 +327,13 @@ repository references either, and the runtime is not this project's pinned
 | # | Decision | Choice | Date | By | Recorded in |
 |---|----------|--------|------|-----|-------------|
 | 1 | Authoritative tables | Lineage A serving; B = upstream via B→A transform | 2026-08-29 | Philip | ADR 0003, §1, [03 IngestionStack](03-STACK-SPECS.md) |
-| 2 | Adoption strategy | | | | |
-| 3 | Guardrail create vs adopt | | | | |
-| 4 | Step Functions ASL vs L2 | | | | |
-| 5 | Config read vs port | | | | |
-| 6 | SSM vs env for model/feasibility | | | | |
-| 7 | Frontend framework | | | | |
-| 8 | CI/CD approach | | | | |
-| 9 | Cognito/WAF timing | | | | |
-| 10 | Adopt vs replace the existing service plane | | | | |
-| 11 | Ownership of `Chatbot` API + Lambda | | | | |
+| 2 | Adoption strategy | **A — reference, unmanaged** | 2026-08-30 | Claude/Philip | `lib/stateful-stack.ts`; template has NO table resource, so CDK cannot replace them |
+| 3 | Guardrail create vs adopt | **Adopt `b1xezpqe04kx` v2 by id** | 2026-08-30 | Claude/Philip | Creating a second Guardrail means two policies to keep in step and a second thing to red-team. The id and NUMBERED version are Lambda env vars, asserted at synth for prod |
+| 4 | Step Functions ASL vs L2 | | | | deferred with Task 13 |
+| 5 | Config read vs port | **A — read `config/*.json` at synth** | 2026-08-30 | Claude/Philip | Both paths agree on one file during the migration; port to TypeScript once the apply scripts retire |
+| 6 | SSM vs env for model/feasibility | **Both, honestly labelled** | 2026-08-30 | Claude/Philip | Env vars drive the running code; SSM parameters are published as the forward path and marked NOT read at runtime. Wiring the code to read SSM is a separate application task |
+| 7 | Frontend framework | | | | teammates' scope |
+| 8 | CI/CD approach | | | | not yet needed |
+| 9 | Cognito/WAF timing | | | | after the anonymous pilot |
+| 10 | Adopt vs replace the service plane | **Neither yet — deploy in parallel, verify, then decide** | 2026-08-30 | Claude/Philip | See §10 below; parity verified, cutover outstanding |
+| 11 | Ownership of `Chatbot` API + Lambda | | | | still unowned |

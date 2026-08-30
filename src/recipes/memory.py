@@ -16,6 +16,7 @@ from pathlib import Path
 from src.recipes.base import Recipe, RecipeIngredient, RecipeRepository
 
 RECIPE_DIR = Path(__file__).resolve().parents[2] / "datasets" / "data" / "dynamodb_recipe_batches"
+CURATED_RECIPES = Path(__file__).resolve().parents[2] / "config" / "recipes.json"
 
 # Ingredients a shopper is assumed to have, and which therefore neither need
 # pricing nor count against a recipe's coverage.
@@ -146,3 +147,61 @@ def usable_recipes(
     reported as a distance rather than a yes/no.
     """
     return [c for c in coverages if c.ratio >= minimum_ratio]
+
+
+class CuratedRecipeRepository(RecipeRepository):
+    """
+    The recipes the planner actually uses (Req 2.9, Pilot Task 15b).
+
+    Written against THIS product catalogue, so every ingredient is costable by
+    construction — which the 175 imported TheMealDB recipes are not, at zero
+    fully-priceable. `config/recipes.json` carries the reasoning and the review
+    caveat; this just loads it.
+
+    Separate from `FixtureRecipeRepository` rather than replacing it: the
+    imported catalogue is still the evidence for WHY the curated one exists, and
+    the coverage gate measures against it. Deleting it would delete the
+    argument.
+    """
+
+    def __init__(self, path: Path | None = None) -> None:
+        self._path = path or CURATED_RECIPES
+        self._recipes: list[Recipe] | None = None
+
+    def _load(self) -> list[Recipe]:
+        if self._recipes is not None:
+            return self._recipes
+        raw = json.loads(self._path.read_text(encoding="utf-8"))
+        self._recipes = [_to_curated(entry) for entry in raw["recipes"]]
+        return self._recipes
+
+    def all_recipes(self) -> list[Recipe]:
+        return list(self._load())
+
+    def get(self, recipe_id: str) -> Recipe | None:
+        return next((r for r in self._load() if r.recipe_id == recipe_id), None)
+
+
+def _to_curated(entry: dict) -> Recipe:
+    ingredients = tuple(
+        RecipeIngredient(
+            key=i["term"],
+            name=i["term"].title(),
+            # The display measure is DERIVED from the quantity rather than
+            # written alongside it. Two fields saying the same thing drift, and
+            # the one a human reads would be the one that goes stale.
+            measure=(f"{i['grams']}g" if "grams" in i else f"x{i['count']}"),
+            grams_per_serving=i.get("grams"),
+            count_per_serving=i.get("count"),
+        )
+        for i in entry["ingredients"]
+    )
+    return Recipe(
+        recipe_id=entry["recipe_id"],
+        name=entry["name"],
+        category=entry["category"],
+        area="New Zealand",
+        ingredients=ingredients,
+        attribution="Curated for this catalogue; see config/recipes.json.",
+        serves=entry["serves"],
+    )

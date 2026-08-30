@@ -24,6 +24,16 @@ and in another:
          -d '{"version":"1.0","session_id":"sess-local01",
               "turn_id":"turn-local01","message":"cheapest butter"}'
 
+MODES
+-----
+    local  (default and only)  the real Lambda handler, which defaults to fixtures
+                               and the scripted model unless USE_DYNAMODB=1
+                               / USE_BEDROCK=1 are set. Demo 15 drives the
+                               same handler over the deployed HTTPS endpoint.
+
+    Asking for another mode exits without running anything, rather than
+    quietly answering from fixtures. See Philip_demo/README.md.
+
 WHAT THIS DEMONSTRATES
 ----------------------
   1. The Lambda handler end to end, over an API Gateway event
@@ -39,7 +49,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from _demo_support import heading, section
+from _demo_support import LOCAL, ModeUnavailable, heading, mode_banner, resolve_mode, section
 
 import src.store.idempotency as idempotency
 from src.handler import lambda_handler
@@ -58,7 +68,20 @@ from src.store.idempotency import (
 
 ROOT = Path(__file__).resolve().parent.parent
 
+try:
+    mode = resolve_mode(supports=(LOCAL,))
+except ModeUnavailable as exc:
+    raise SystemExit(str(exc)) from exc
+
 heading("DEMO 6 - The HTTP API, the contract, and idempotency")
+mode_banner(
+    mode,
+    requires="nothing - no AWS account, credentials or network access",
+    mocked=(
+        "the price store (fixtures), the model plane (scripted) and the "
+        "idempotency store (in-memory, single-process)"
+    ),
+)
 
 
 def api_event(body: dict | str) -> dict:

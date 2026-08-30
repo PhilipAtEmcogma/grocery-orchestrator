@@ -570,17 +570,57 @@ proposed, or gated as labelled; it is not implemented.
 >   stopgap; revert when Task 13 lands real ingested prices. Full reasoning in
 >   `config/freshness.json` `_decision_2026_08_30` and `docs/ARCHITECTURE.md` §3c.
 
-- [ ] **Pilot Task 9 — Establish CDK and adopt existing data resources.** Build
-  the TypeScript CDK app and stateful stack; import existing tables without
-  replacement and record reviewed adoption evidence. Extend the adoption review
-  to the existing service-plane resources listed in the note above.
+- [x] **Pilot Task 9 — Establish CDK and adopt existing data resources.**
+  Completed 2026-08-30. Environment bootstrapped, `Grocery-Stateful-dev`
+  deployed. **Strategy A**: the template contains NO `AWS::DynamoDB::Table`
+  resource, so CloudFormation cannot create, replace or delete the tables — the
+  adoption evidence is the absence, not an assertion.
+
+  Schema confirmed with `describe-table` against the account, not from a
+  document (`infra/docs/06` §0 warns off `datasets/dynamodb_schema/*.json`,
+  which describes the data team's separate lineage). Before/after evidence
+  recorded: products 2,759 → 2,759, idempotency 74 → 74, `TableId` unchanged
+  (`7ce1af63…`, so no replacement), stack resources = `CDKMetadata` only, and
+  the live endpoint still answered 200 afterwards.
+
+- [x] **Pilot Task 10 — Define the deployable service plane.** Completed
+  2026-08-30. `Grocery-Service-dev`: Python 3.13 zip Lambda from
+  `build/lambda.zip`, SnapStart on a published `live` alias, REST API with
+  `POST`/`OPTIONS` on `/chat` proxying the alias, scoped IAM built from
+  `config/iam-orchestrator-role.json` with `${AWS_*}` resolved from the deploy
+  identity, SSM parameters, 14-day log retention, throttling and a usage plan.
+
+  CORS is handled by the HANDLER, not an API-level MOCK preflight —
+  `src/handler.py` emits its own headers and answers `OPTIONS`, so a second
+  mechanism would produce duplicate `Access-Control-Allow-Origin` headers that
+  browsers reject.
 - [ ] **Pilot Task 10 — Define the deployable service plane.** Codify the Python
   3.13 zip Lambda, published SnapStart alias, REST API, Guardrail, strict CORS,
   throttling, usage plan, SSM configuration, log retention, and scoped IAM.
-- [ ] **Pilot Task 11 — Deploy and verify the anonymous pilot safely.** Treat
-  resource adoption and deployment as separate reviewed operations in account
-  the deployment account (see `aws sts get-caller-identity`), region
-  `ap-southeast-2`.
+- [ ] **Pilot Task 11 — Deploy and verify the anonymous pilot safely.**
+  **Deployed and verified 2026-08-30; the CUTOVER is what remains.** Adoption
+  and deployment were kept as separate reviewed operations exactly as this task
+  asks: `Grocery-Stateful-dev` first (creates nothing), then
+  `Grocery-Service-dev` under a `-cdk` name suffix so it stands BESIDE the
+  hand-made plane rather than colliding with it.
+
+  Parity verified before any cutover: price checks byte-identical across both
+  endpoints; the meal-plan total differed until the same question was run three
+  times against the SAME endpoint and returned $35.75/$31.74/$31.74 — inherent
+  variance in plan composition, not a configuration difference. Checking that
+  before reporting a discrepancy is the difference between a finding and a false
+  alarm.
+
+  The CDK plane also fixes three things the hand-made one has wrong: log
+  retention (`null`, never expire → 14 days), the account-level API Gateway
+  CloudWatch role that `docs/ARCHITECTURE.md` §7 records as unset, and stage
+  tracing on from the start.
+
+  **Remaining, and it is a decision rather than a task:** set `NAME_SUFFIX=''`,
+  repoint `scripts/measure_latency.py` / `Philip_demo/_demo_support.py` / the
+  docs, deploy, and retire the hand-made resources — reading a `cdk diff` before
+  each step. It changes a URL that in-progress demo work names, so it waits on
+  the owner. `infra/docs/08` §10.
 - [ ] **Pilot Task 12 — Add operational acceptance gates and artefact storage.**
   Build CloudWatch dashboards/alarms, X-Ray evidence, Budgets, quota review,
   latency/cost baselines, and alarm drills. Use encrypted versioned S3 with
@@ -774,6 +814,74 @@ proposed, or gated as labelled; it is not implemented.
   teardown evidence. It receives no shopper PII and has no production write,
   publication, or shopper-path authority. AgentCore Evaluations may supplement
   local labelled anomaly tests with reproducible provenance.
+  - [x] **14a — The boundary and the post-validation. Done 2026-08-31.**
+    `src/review/` builds the sanitised capped snapshot and validates findings
+    against it. 20 tests. **No AgentCore surface is built and nothing is
+    deployed** — ADR 0002 is still *Proposed, mentor approval required*, and
+    that gate is about deploying a Runtime, not about writing the constraints
+    it would run inside.
+
+    **This half is required whoever reviews**, including a person with a
+    spreadsheet, which is why it is worth building ahead of the decision. The
+    reviewer is the untrusted component in both cases; the boundary and the
+    check are what make its output usable.
+
+    **The snapshot is an ALLOWLIST, not a redaction.** Req 13.8 forbids shopper
+    messages, locations, dietary data, sessions and credentials reaching the
+    reviewer. `SNAPSHOT_FIELDS` names the 13 fields it may see and `SnapshotRow`
+    is a separate type from `PriceRecord`, so a field added to retrieval later
+    cannot silently join the snapshot. Redaction has to be remembered;
+    deny-by-default does not. `snapshot_to_dicts` iterates the allowlist rather
+    than calling `asdict`, for the same reason.
+
+    **`build_snapshot` raises rather than truncating.** Silently taking the
+    first 500 rows would make the reviewer's view depend on the caller's
+    ordering, so a finding about "the catalogue" would really be a finding about
+    whichever rows arrived first. The caller chooses the slice, and then the
+    record says what was reviewed.
+
+    **The validation is the same shape as `assert_citations_match_retrieval`,
+    for the same reason.** That check exists because a citation naming the right
+    table with a plausible key and a price nobody retrieved passed cleanly:
+    SHAPE IS NOT IDENTITY. A finding is the identical risk in different clothes,
+    so every one is checked three ways — the reference exists in the snapshot,
+    the values it quotes match that row exactly, and it reports rather than
+    prescribes. A finding failing any of them is a fabrication, dropped with the
+    reason recorded, and `fabrication_rate` is the number that shows a reviewer
+    has stopped referring to real rows before a human notices the findings are
+    useless.
+
+    **There is no field for a proposed value** (Req 13.8: candidate prices are
+    not publication authority). Because a reviewer inclined to prescribe would
+    then write it in prose instead, `_PRESCRIPTIVE` refuses "should be $2.49" in
+    the observation text — the same authority arriving through the back door.
+
+    **The one anomaly rule we already know stays as CODE.**
+    `implausible_unit_price` catches the live defect — `unit_price_nzd` of
+    "2490.00" against a $2.49 sold-each broccoli, six rows, shipped with no
+    signal. A model might notice it; a comparison cannot fail to. The reviewer's
+    value is the anomalies nobody thought to write a rule for, and handing it
+    the ones we did think of would be paying a language model to do arithmetic.
+    Swept over all 152 catalogue rows: 0 false positives, and the 6 sold-each
+    rows exercise the branch that produced the defect.
+
+    **Still open (needs ADR 0002):** the Runtime itself, the isolated identity,
+    the call/token/time/cost/egress caps, teardown evidence, and the labelled
+    anomaly evaluation.
+  - [ ] **14b — Put ADR 0002 in front of the mentor.** Written 2026-08-31.
+    `docs/OPEN-REVIEW-adr-0002.md` is the brief: twenty minutes, no code
+    reading, same shape as the two other open reviews. It states what approval
+    does *not* do (it does not move the shopper path onto AgentCore, and it does
+    not authorise deployment — gates 3-7 still bind), records that gate 2 is now
+    met by the shipped MCP façade, argues the case AGAINST as well as for, and
+    offers four answers including "approve none". **A decline costs very
+    little**, which is the point of having built 14a first. The ADR's own
+    implementation status was rewritten the same day; it had been true of
+    2026-08-23, when the service plane did not exist.
+
+    **Approval is not something this repo can grant itself**, so this task
+    closes when a person edits the Status line of the ADR — not when the brief
+    is written.
 - [ ] **Pilot Task 15 — Introduce the curated recipe catalogue.** Models select
   recipe ids and product citations; code owns scaling, safety, and totals.
   A Knowledge Base may be evaluated only for cited recipe/catalogue retrieval
@@ -783,7 +891,54 @@ proposed, or gated as labelled; it is not implemented.
     `RecipeRepository` protocol, classifies each recipe's dietary content from
     its INGREDIENTS rather than its label, and measures how much of each recipe
     this product catalogue can price. 12 tests.
-  - [ ] **15b — BLOCKED ON DATA, and the block is measured.** Recipe-constrained
+  - [x] **15b — Curated catalogue and deterministic assembly. Done 2026-08-30.**
+    `config/recipes.json` holds **29 recipes written against this catalogue**,
+    every ingredient priceable **against the real catalogue** by construction —
+    the property that made the imported 175 unusable.
+
+    *Qualified 2026-08-31.* "Priceable" needs the catalogue named, because the
+    two are different universes: 29/29 resolve against `datasets/` (the ~2,700
+    rows the deployed table holds) and 14/29 against the 152-row offline
+    fixture. `tests/test_curated_recipes.py` resolves against `datasets/` and
+    its docstring says why; `Philip_demo/11` §7 now prints both numbers rather
+    than the flattering one. The imported 175 are 0/175 against **both**, which
+    is what makes the decision sound rather than convenient. `src/recipes/planning.py` converts selected recipes
+    into a `PlanDraft`, which is the shape `assemble_plan`, `validate_plan`,
+    `assert_arithmetic` and the bounded repair loop already consume. 19 tests.
+
+    **Producing a `PlanDraft` rather than a new plan type is the design.** Each
+    of those downstream checks was hardened by a real defect; a recipe planner
+    with its own plan type would need its own versions of all of them, and the
+    second copy is the one that goes wrong.
+
+    **The pack multiplier is the only number this path invents.** 150g per
+    serving × 3 people against a 500g pack is 0.9 packs; a count ingredient
+    converts directly (3 eggs × 2 = 6 packs) because the catalogue records
+    sold-each goods with `pack_grams == 1` — a sentinel meaning one unit, not
+    one gram. Verified end to end: "Sausages and Mash" for three costs $7.14
+    consumed and $17.14 payable, the two-totals distinction intact.
+
+    **A gap found and closed while doing it.** `recipe_excluded_categories`
+    scans ingredient NAMES for meat and seafood words, which is right for an
+    imported recipe whose ingredients cannot be resolved — but it reports
+    "Scrambled Eggs on Toast" and "Broccoli and Cheese Pasta" as excluding
+    NOTHING, and a vegan would be served both. `recipe_categories` now derives
+    the answer from the resolved products instead, and `is_viable_for` filters
+    selection on it. Viability by diet: vegetarian 18/29, dairy-free 18/29,
+    pescatarian 20/29, vegan 7/29.
+
+    Vegan is tight on purpose: `lineage_b.py` maps the catalogue's combined
+    "Fresh Milk & Plant Milk" to `dairy` wholesale, because the source does not
+    separate oat milk from cow's milk and over-excluding is the safe direction.
+    Per-product allergen tagging (legacy 11.7) is what lifts it; widening the
+    category map would trade a safety property for a menu.
+
+    **Still to wire:** the selection prompt (model returns recipe ids), the
+    graph branch that uses it, and an eval suite for recipe-constrained plans.
+    The deterministic half — which is what Req 2.9 actually specifies as code's
+    responsibility — is done and tested.
+
+  - [ ] **15c — Wire selection into the graph.** Recipe-constrained
     planning is deliberately NOT wired into the graph. A recipe is usable only
     if EVERY ingredient can be priced: a payable total computed from part of a
     shopping list is a number the shopper cannot spend to, and `within_budget`

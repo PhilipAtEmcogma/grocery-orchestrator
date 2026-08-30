@@ -10,8 +10,14 @@ Windows, without activating the virtualenv:
 
     .venv\Scripts\python.exe Philip_demo/05_model_routing.py
 
-Offline. This reads config/models.json and routes against it; no Bedrock call
-is made, so no AWS credentials are needed.
+MODES
+-----
+    local  (default and only)  reads config/models.json and routes against it. No
+                               Bedrock call is made, so no credentials are
+                               needed. Demo 14 is the one that calls it.
+
+    Asking for another mode exits without running anything, rather than
+    quietly answering from fixtures. See Philip_demo/README.md.
 
 WHAT THIS DEMONSTRATES
 ----------------------
@@ -31,14 +37,24 @@ deploy; and adding a model becomes a config change a non-engineer can review.
 
 from __future__ import annotations
 
-from _demo_support import heading, section
+from _demo_support import LOCAL, ModeUnavailable, heading, mode_banner, resolve_mode, section
 
 from src.models.base import ModelTier
 from src.models.registry import ModelRegistry, RoutingPolicy, UnroutableTask
 
 registry = ModelRegistry()
 
+try:
+    mode = resolve_mode(supports=(LOCAL,))
+except ModeUnavailable as exc:
+    raise SystemExit(str(exc)) from exc
+
 heading("DEMO 5 - Model routing, the registry, and cost")
+mode_banner(
+    mode,
+    requires="nothing - config/models.json is read from disk",
+    mocked="nothing. No model is called at all; this is the routing decision alone.",
+)
 
 # ------------------------------------------------------------- the catalogue
 section("1. The catalogue")

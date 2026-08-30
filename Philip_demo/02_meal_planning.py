@@ -10,7 +10,13 @@ Windows, without activating the virtualenv:
 
     .venv\Scripts\python.exe Philip_demo/02_meal_planning.py
 
-Offline. No AWS account or credentials needed.
+MODES
+-----
+    local  (default and only)  fixtures plus the scripted model client. No AWS, no
+                               credentials, no network.
+
+    Asking for another mode exits without running anything, rather than
+    quietly answering from fixtures. See Philip_demo/README.md.
 
 WHAT THIS DEMONSTRATES
 ----------------------
@@ -32,7 +38,17 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from _demo_support import citations, heading, request, section, show_events
+from _demo_support import (
+    LOCAL,
+    ModeUnavailable,
+    citations,
+    heading,
+    mode_banner,
+    request,
+    resolve_mode,
+    section,
+    show_events,
+)
 
 from src.graph.dietary import SUPPORTED_EXCLUSIONS, supported_terms
 from src.graph.state import MAX_REPAIR_ATTEMPTS
@@ -44,7 +60,17 @@ from src.schemas.contract import ErrorCode, assert_arithmetic
 repo = InMemoryPriceRepository()
 model = ScriptedModelClient()
 
+try:
+    mode = resolve_mode(supports=(LOCAL,))
+except ModeUnavailable as exc:
+    raise SystemExit(str(exc)) from exc
+
 heading("DEMO 2 - Meal planning, the repair loop, and dietary safety")
+mode_banner(
+    mode,
+    requires="nothing - no AWS account, credentials or network access",
+    mocked="the price store (fixtures) and the model plane (ScriptedModelClient)",
+)
 
 # ------------------------------------------------------------------ a plan
 section("1. A budgeted plan")

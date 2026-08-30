@@ -10,7 +10,13 @@ Windows, without activating the virtualenv:
 
     .venv\Scripts\python.exe Philip_demo/03_grounding_and_safety.py
 
-Offline. No AWS account or credentials needed.
+MODES
+-----
+    local  (default and only)  fixtures plus the scripted model client. No AWS, no
+                               credentials, no network.
+
+    Asking for another mode exits without running anything, rather than
+    quietly answering from fixtures. See Philip_demo/README.md.
 
 WHAT THIS DEMONSTRATES
 ----------------------
@@ -34,7 +40,15 @@ from __future__ import annotations
 import json
 from datetime import UTC, datetime
 
-from _demo_support import heading, request, section
+from _demo_support import (
+    LOCAL,
+    ModeUnavailable,
+    heading,
+    mode_banner,
+    request,
+    resolve_mode,
+    section,
+)
 
 from src.models.guardrail import guard_content_block, new_tags
 from src.models.scripted import ScriptedModelClient
@@ -52,7 +66,17 @@ from src.schemas.contract import (
 repo = InMemoryPriceRepository()
 model = ScriptedModelClient()
 
+try:
+    mode = resolve_mode(supports=(LOCAL,))
+except ModeUnavailable as exc:
+    raise SystemExit(str(exc)) from exc
+
 heading("DEMO 3 - Grounding and safety")
+mode_banner(
+    mode,
+    requires="nothing - no AWS account, credentials or network access",
+    mocked="the price store (fixtures) and the model plane (ScriptedModelClient)",
+)
 
 # ------------------------------------------------ no field for a price
 section("1. The model cannot state a price, because there is nowhere to put one")

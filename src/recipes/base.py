@@ -39,6 +39,7 @@ shape the Scan ceiling used for Pilot Task 6b, pointed the other way.
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -48,16 +49,30 @@ class RecipeIngredient:
     """
     One line of a recipe.
 
-    `key` is the source's own normalised form ("plain flour"), `name` is what it
-    displays ("Plain Flour"), and `measure` is free text ("120g", "1 tbsp").
-    The measure is deliberately NOT parsed here: scaling a recipe is Req 2.9
-    work that only matters once ingredients can be priced, and a parser written
-    against measures nobody can cost would be untested speculation.
+    `key` is the lookup term -- what `resolve_product_key` is asked for. `name`
+    is what it displays and `measure` is free text.
+
+    `grams_per_serving` and `count_per_serving` are what make a CURATED recipe
+    costable where an imported one is not. Exactly one is set: grams for things
+    sold by weight, a count for things bought whole (eggs, a loaf) where grams
+    would be a fiction. Code multiplies by servings; a recipe never states a
+    total and never states a price, which is Req 2.9's whole division of labour.
+
+    Both are None for an imported recipe (TheMealDB carries free-text measures
+    like "1 tbsp"), which is one of several reasons those cannot be planned
+    from -- see the module docstring.
     """
 
     key: str
     name: str
     measure: str
+    grams_per_serving: int | None = None
+    count_per_serving: int | None = None
+
+    @property
+    def is_costable(self) -> bool:
+        """A quantity code can scale, as opposed to prose a human would read."""
+        return self.grams_per_serving is not None or self.count_per_serving is not None
 
 
 @dataclass(frozen=True, slots=True)
@@ -77,10 +92,25 @@ class Recipe:
     area: str
     ingredients: tuple[RecipeIngredient, ...]
     attribution: str
+    #: Servings the quantities are stated for. Code scales from here to the
+    #: household size; Req 2.6 requires every meal to serve the household.
+    serves: int = 1
 
     @property
     def ingredient_keys(self) -> tuple[str, ...]:
         return tuple(i.key for i in self.ingredients)
+
+    @property
+    def is_costable(self) -> bool:
+        """
+        Every ingredient carries a scalable quantity.
+
+        A recipe that is only PARTLY costable is not partly usable: its payable
+        total would be computed from part of the shopping list, and
+        `within_budget` derived from that is a false promise. So this is all or
+        nothing, deliberately.
+        """
+        return bool(self.ingredients) and all(i.is_costable for i in self.ingredients)
 
 
 class RecipeRepository(Protocol):
@@ -151,3 +181,56 @@ def recipe_excluded_categories(recipe: Recipe) -> frozenset[str]:
         if words & MEAT_TERMS:
             excluded.add("meat")
     return frozenset(excluded)
+
+
+def recipe_categories(recipe: Recipe, category_of: Callable[[str], str | None]) -> frozenset[str]:
+    """
+    The product categories this recipe actually requires.
+
+    DERIVED FROM THE PRODUCTS, NOT FROM THE RECIPE'S NAME OR LABEL, and that is
+    the whole point. `recipe_excluded_categories` reads the source category and
+    scans ingredient names for meat and seafood words, which is the right tool
+    for an IMPORTED recipe whose ingredients cannot be resolved. For a curated
+    recipe every ingredient resolves to a real product with a real category, so
+    the honest answer is available and a guess is not needed.
+
+    It also catches what the name scan cannot. "Scrambled Eggs on Toast" and
+    "Broccoli and Cheese Pasta" contain no meat or seafood word, so the name
+    scan reports them as excluding nothing — and a vegan would be served both.
+    Resolving `eggs` to `chilled` and `grated cheddar cheese` to `dairy` is what
+    makes the dietary filter true rather than approximately true.
+
+    An ingredient that does not resolve yields `None` and is IGNORED here, not
+    treated as safe: `is_viable_for` refuses such a recipe outright, because a
+    recipe with an unpriceable ingredient cannot be planned at all.
+    """
+    found: set[str] = set()
+    for ingredient in recipe.ingredients:
+        category = category_of(ingredient.key)
+        if category:
+            found.add(category)
+    return frozenset(found)
+
+
+def is_viable_for(
+    recipe: Recipe,
+    excluded: frozenset[str] | set[str],
+    category_of: Callable[[str], str | None],
+) -> bool:
+    """
+    Can this recipe be made at all, under these dietary exclusions?
+
+    Two ways to fail, and both are refusals rather than substitutions:
+
+    - an ingredient does not resolve, so the recipe cannot be costed and a plan
+      containing it would state a total computed from part of the shopping list;
+    - an ingredient's category is excluded, so making it would breach the
+      exclusion. Swapping the ingredient is NOT an option here: a recipe with a
+      substituted ingredient is a different recipe, and Req 2.9 exists so that
+      the model picks from a catalogue rather than composing freely.
+    """
+    for ingredient in recipe.ingredients:
+        category = category_of(ingredient.key)
+        if category is None or category in excluded:
+            return False
+    return True

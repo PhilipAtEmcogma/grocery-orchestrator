@@ -14,6 +14,22 @@ export interface GroceryConfig {
   readonly stage: string;
   readonly isProduction: boolean;
 
+  /**
+   * Appended to every physical name this app creates.
+   *
+   * A hand-made service plane is already serving on `woqmel35lk`, and its
+   * names are the ones below. Deploying CDK resources with identical names
+   * would not adopt them -- CloudFormation would try to CREATE them and fail.
+   * A suffix lets the CDK plane stand beside the running one so it can be
+   * verified before anything is cut over; set it to '' once the hand-made
+   * resources are retired. See infra/docs/08 §10.
+   */
+  readonly suffix: string;
+
+  /** Numbered Guardrail version, never DRAFT (docs/ARCHITECTURE.md §3f). */
+  readonly guardrailId: string;
+  readonly guardrailVersion: string;
+
   // Physical names (the -dev suffix lets generated resources coexist with the
   // manually-created ones during the migration — config/*.json headers).
   readonly names: {
@@ -58,6 +74,12 @@ export function loadConfig(stage: string): GroceryConfig {
   const cfg: GroceryConfig = {
     stage,
     isProduction,
+    // Default '-cdk' so a first deploy cannot collide with the hand-made
+    // plane. Deliberately explicit rather than clever: someone cutting over
+    // sets NAME_SUFFIX='' and reads the diff.
+    suffix: process.env.NAME_SUFFIX ?? '-cdk',
+    guardrailId: process.env.BEDROCK_GUARDRAIL_ID ?? 'b1xezpqe04kx',
+    guardrailVersion: process.env.BEDROCK_GUARDRAIL_VERSION ?? '2',
     names: {
       productsTable: `grocery-products-${suffix}`,
       idempotencyTable: `grocery-idempotency-${suffix}`,
@@ -88,11 +110,24 @@ export function loadConfig(stage: string): GroceryConfig {
 
   // Fail-closed for production (security.md). Implement these assertions when a
   // prod stage is introduced; left permissive for the anonymous dev pilot.
+  // Fail-closed for production (security.md, Req 12.5). The application makes
+  // the same assertions at startup in src/handler.py; this makes them at SYNTH,
+  // which is earlier and cheaper -- a stack that cannot be correct should not
+  // reach an account.
   if (isProduction) {
     if (cfg.corsOrigin === '*') {
       throw new Error('Production mode refuses wildcard CORS (security.md). Set CORS_ORIGIN.');
     }
-    // TODO: assert USE_DYNAMODB/USE_BEDROCK=1, numbered Guardrail version, named resources.
+    if (!cfg.guardrailId) {
+      throw new Error('Production mode requires BEDROCK_GUARDRAIL_ID.');
+    }
+    if (!/^[0-9]+$/.test(cfg.guardrailVersion)) {
+      throw new Error(
+        `Production mode requires a NUMBERED Guardrail version, got ` +
+          `'${cfg.guardrailVersion}'. DRAFT moves, so evidence gathered against ` +
+          `it describes nothing (docs/ARCHITECTURE.md §3f).`,
+      );
+    }
   }
 
   return cfg;

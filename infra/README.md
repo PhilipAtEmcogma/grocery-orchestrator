@@ -1,6 +1,13 @@
 # `infra/` — Infrastructure as Code (design documentation)
 
-> **Status: DESIGN DOCUMENTATION. No CDK stack is deployed.**
+> **Status: CDK IS DEPLOYED. Tasks 9 and 10 are done; the cutover is not.**
+>
+> `Grocery-Stateful-dev` adopts the seeded tables (Strategy A — the template
+> contains no table resource, so CloudFormation cannot replace them) and
+> `Grocery-Service-dev` deploys the whole service plane under a `-cdk` name
+> suffix, beside the hand-made one, with parity verified. What remains is the
+> cutover: `NAME_SUFFIX=''`, repoint the consumers, retire the hand-made
+> resources. See [`docs/08-OPEN-DECISIONS.md`](docs/08-OPEN-DECISIONS.md) §10.
 >
 > ⚠️ **Read that precisely (clarified 2026-08-30).** *No CDK stack* is deployed.
 > **A service is** — REST API `grocery-orchestrator-api-dev` (`woqmel35lk`),

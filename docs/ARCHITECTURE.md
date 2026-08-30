@@ -111,6 +111,7 @@ All of it exists.
 | Products table | `grocery-products-dev` | **2,759 items**, the real catalogue only, GSI1 + GSI2, PAY_PER_REQUEST |
 | Idempotency table | `grocery-idempotency-dev` | TTL ACTIVE |
 | Guardrail | `b1xezpqe04kx` version `2` | v2 published 2026-08-29; DRAFT deliberately not granted in IAM |
+| CDK stacks | `Grocery-Stateful-dev`, `Grocery-Service-dev` | bootstrapped 2026-08-30; service plane deployed in parallel under `-cdk`, see §3m |
 | SNS topic | `grocery-orchestrator-alarms-dev` | **8 alarms**; 2 confirmed email subscribers; Budgets granted publish |
 | Dashboard | `grocery-orchestrator-dev` | 9 widgets over the EMF metrics and the gateway |
 | Budget | `grocery-orchestrator-monthly-dev` | $25/month, alerts at 50/80/100% actual + 100% forecast |
@@ -688,6 +689,150 @@ escalation trigger.
 **Do not quote these as qualification.** n=8 and n=3 are a first baseline, and a
 p99 over three samples is just the maximum. Re-run before the pilot with enough
 turns to mean something, and once the recipe/plan path changes.
+
+## 3m. CDK is deployed — Pilot Tasks 9 and 10, 2026-08-30
+
+Two CloudFormation stacks now exist, and the environment is bootstrapped.
+
+| Stack | What it does |
+|---|---|
+| `Grocery-Stateful-dev` | Adopts the seeded tables, Strategy A. Contains `CDKMetadata` and three outputs -- **no table resource at all** |
+| `Grocery-Service-dev` | The whole service plane under a `-cdk` name suffix: Lambda, `live` alias with SnapStart, REST API `crm1xkrk34`, scoped IAM, SSM parameters, 14-day log retention, throttling, usage plan |
+
+**The adoption evidence is an absence.** `Grocery-Stateful-dev`'s template
+contains no `AWS::DynamoDB::Table`, so CloudFormation cannot create, replace or
+delete the tables holding 2,759 real price records. Before and after the deploy:
+products 2,759 → 2,759, idempotency 74 → 74, `TableId` unchanged, and the live
+endpoint still answered 200.
+
+**The service plane deploys BESIDE the hand-made one, not over it.** Its names
+carry `-cdk`, because deploying with identical names would not adopt anything --
+CloudFormation would try to CREATE resources that already exist and fail. The
+alternative, `cdk import`, needs every property of an eight-resource API Gateway
+tree to match exactly, and a mismatch there is not a failed import but a
+REPLACEMENT of a resource that is serving. It also proves less: an import
+inherits whatever the hand-made resource has, including the parts nobody wrote
+down, whereas a fresh deploy proves the definition is *sufficient*.
+
+### Parity, checked before anything was cut over
+
+| Request | hand-made | CDK |
+|---|---|---|
+| `cheapest butter` | paknsave Albany $9.49 | *identical* |
+| `cheapest milk near Albany` | paknsave Albany $4.79 | *identical* |
+| `how much is truffle oil` | `no_data` | *identical* |
+| `feed 3 people for 5 days on $80` | 5 meals, $37.32 | 5 meals, $31.74 |
+
+The meal-plan difference looked like a discrepancy and is not one. The same
+question against the SAME endpoint three times returned $35.75, $31.74, $31.74:
+plan composition varies run to run, and the CDK figure sits inside the hand-made
+one's range. **A difference between two systems is only evidence if the same
+system does not produce it on its own** -- checking that is the difference
+between a finding and a false alarm, and this file has enough of the latter in
+its history.
+
+### Three things CDK fixes that the hand-made plane has wrong
+
+- **Log retention.** `/aws/lambda/grocery-orchestrator-dev` is `null` -- never
+  expire. The CDK group is 14 days. `infra/docs/04-SECURITY.md` requires finite
+  retention, and a log that never expires turns any future logging mistake into
+  a permanent one.
+- **The API Gateway account CloudWatch role**, which §7 records as unset. CDK
+  sets it. Note this is ACCOUNT-LEVEL, so the hand-made API gains it too --
+  a CDK deploy changing state outside its own stack is worth knowing about.
+- **Stage tracing on from the start**, rather than patched in by hand.
+
+### The cutover is outstanding, and is a decision
+
+`NAME_SUFFIX=''`, repoint the consumers, deploy, retire the hand-made resources
+-- reading a `cdk diff` before each step. It changes the URL that
+`scripts/measure_latency.py`, `Philip_demo/_demo_support.py` and several
+documents name, so it waits on whoever owns the demo work.
+`infra/docs/08-OPEN-DECISIONS.md` §10 has the sequence.
+
+**Until then two service planes are running.** Both are scale-to-zero and the
+duplicate costs essentially nothing, but the hand-made one is the one alarmed
+and the one the frontend contract names -- so it, not the CDK one, is still
+production.
+
+## 3n. The reviewer's boundary, built without the reviewer — 2026-08-31
+
+`src/review/` is the deterministic half of Pilot Task 14: the sanitised
+snapshot a data-quality reviewer would sit behind, and the validation its
+findings must survive. **Nothing is deployed and no model reviews anything.**
+ADR 0002 is still *Proposed — mentor approval required*, and that gate is about
+deploying an AgentCore Runtime, not about writing the constraints one would run
+inside.
+
+Building this half early is not working around the gate. The reviewer is the
+untrusted component whether it is a model or a person with a spreadsheet, so
+the boundary and the check are needed either way — and if the ADR is declined,
+this is what a human reviewer uses.
+
+### The snapshot is an allowlist, not a redaction
+
+Req 13.8 forbids shopper messages, locations, dietary data, sessions and
+credentials reaching the reviewer. The tempting implementation is to strip
+those fields from a `PriceRecord`. The honest one is to construct the snapshot
+from `SNAPSHOT_FIELDS` — 13 named fields on a `SnapshotRow` type that is
+deliberately *not* `PriceRecord`.
+
+The difference shows up later. A field added to retrieval joins a redacted
+object silently and joins an allowlisted one never. `snapshot_to_dicts`
+iterates the allowlist rather than calling `dataclasses.asdict`, for the same
+reason: `asdict` serialises whatever the dataclass happens to carry, which puts
+the decision in the wrong place.
+
+`lat`/`lon` are excluded even though they are store coordinates from
+`config/store-locations.json` and not a shopper's position. A reviewer checking
+a price does not need geography, and a field that is not there cannot leak.
+
+### It raises rather than truncating
+
+`build_snapshot` refuses more rows than the cap instead of taking the first
+500. Truncating would make the reviewer's view depend on the caller's ordering,
+so a finding about "the catalogue" would really be a finding about whichever
+rows arrived first — and nobody reading the finding would know. The caller
+chooses the slice, and then the record says what was reviewed.
+
+### The validation is `assert_citations_match_retrieval` in different clothes
+
+That check exists because a citation naming the right table, with a plausible
+key and a price nobody retrieved, passed cleanly. **Shape is not identity.** A
+finding carries exactly the same risk: "row X has a bad unit price" is worth
+nothing unless row X was in the snapshot and its unit price really is what the
+finding says.
+
+So every finding is checked three ways — the reference exists in the snapshot,
+the values it quotes match that row exactly, and it reports rather than
+prescribes. A finding failing any of them is not low-confidence; it is a
+fabrication, dropped with the reason recorded. `fabrication_rate` is the number
+that shows a reviewer has stopped referring to real rows, before a human
+notices the findings have become useless.
+
+`Finding` has no field for a proposed value (Req 13.8: candidate prices are not
+publication authority). Because a reviewer denied the field would write it in
+prose instead, `_PRESCRIPTIVE` also refuses "should be $2.49" in the
+observation — the same authority arriving through the back door.
+
+### The one rule we already know stays as code
+
+`implausible_unit_price` catches the defect that actually reached the live
+table: `unit_price_nzd` of "2490.00" against a $2.49 sold-each broccoli, six
+rows, shipped with no signal. A model might notice it; a comparison cannot fail
+to. The reviewer's value is the anomalies nobody thought to write a rule for,
+and handing it the ones we did think of would be paying a language model to do
+arithmetic.
+
+Swept across all 152 catalogue rows: 0 false positives, and the 6 sold-each
+rows exercise the `pack_grams == 1` branch that produced the defect. The
+tolerance is an order of magnitude, not a cent — a check that fires on rounding
+differences is a check that gets switched off.
+
+**Still open, and needs ADR 0002:** the Runtime, the isolated least-privilege
+identity, the call/token/time/cost/egress caps, teardown evidence, and the
+labelled anomaly evaluation. 20 tests cover what exists.
+
 
 ## 4. IAM notes worth keeping
 
