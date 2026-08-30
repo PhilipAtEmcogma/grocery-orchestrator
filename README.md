@@ -727,6 +727,13 @@ specific question arises.
 
 **Judgement calls, open and closed**
 
+- [`docs/OPEN-REVIEW-adr-0002.md`](docs/OPEN-REVIEW-adr-0002.md) — **open, and
+  wants the mentor.** Whether to approve ADR 0002, and how much of it: three
+  AgentCore-shaped components that sit beside the deterministic service and
+  cannot touch a shopper's answer. Twenty minutes, no code reading. It is the
+  decision three unstarted tasks are waiting on, and the brief argues the case
+  against as well as for — **a decline costs very little**, which is why the
+  reviewer's boundary was built before the reviewer.
 - [`docs/OPEN-REVIEW-head-terms.md`](docs/OPEN-REVIEW-head-terms.md) — **open,
   and wants somebody who shops these stores.** Which product a one-word query
   like "cheapest butter" should return, when the catalogue holds fourteen

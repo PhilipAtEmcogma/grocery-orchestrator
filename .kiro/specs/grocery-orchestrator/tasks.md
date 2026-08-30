@@ -868,6 +868,20 @@ proposed, or gated as labelled; it is not implemented.
     **Still open (needs ADR 0002):** the Runtime itself, the isolated identity,
     the call/token/time/cost/egress caps, teardown evidence, and the labelled
     anomaly evaluation.
+  - [ ] **14b — Put ADR 0002 in front of the mentor.** Written 2026-08-31.
+    `docs/OPEN-REVIEW-adr-0002.md` is the brief: twenty minutes, no code
+    reading, same shape as the two other open reviews. It states what approval
+    does *not* do (it does not move the shopper path onto AgentCore, and it does
+    not authorise deployment — gates 3-7 still bind), records that gate 2 is now
+    met by the shipped MCP façade, argues the case AGAINST as well as for, and
+    offers four answers including "approve none". **A decline costs very
+    little**, which is the point of having built 14a first. The ADR's own
+    implementation status was rewritten the same day; it had been true of
+    2026-08-23, when the service plane did not exist.
+
+    **Approval is not something this repo can grant itself**, so this task
+    closes when a person edits the Status line of the ADR — not when the brief
+    is written.
 - [ ] **Pilot Task 15 — Introduce the curated recipe catalogue.** Models select
   recipe ids and product citations; code owns scaling, safety, and totals.
   A Knowledge Base may be evaluated only for cited recipe/catalogue retrieval

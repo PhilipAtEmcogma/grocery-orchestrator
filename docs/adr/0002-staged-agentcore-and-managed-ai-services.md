@@ -218,14 +218,34 @@ removed rather than normalised as permanent architecture.
 
 ## Current implementation status
 
-- Deterministic LangGraph reference workflow: **implemented and tested offline**.
+*Rewritten 2026-08-31. The list below was written on 2026-08-23, when the
+service plane did not exist. Three of this ADR's own preconditions have since
+been met, which is the reason it is worth putting in front of a mentor now
+rather than later. The decision brief is
+[`docs/OPEN-REVIEW-adr-0002.md`](../OPEN-REVIEW-adr-0002.md).*
+
+- Deterministic LangGraph reference workflow: **implemented, tested, and
+  deployed**. REST -> published Lambda alias with SnapStart -> DynamoDB ->
+  Bedrock Converse with Guardrail version 2, plus CDK stacks (ADR 0003).
 - Corrected citation construction, citation-before-use checks, money-free prose
-  labels, and GuardrailBlocked node propagation: **implemented within the
-  documented Task 2–3 limits**.
-- Local read-only MCP: **planned, not implemented**.
-- AgentCore Gateway/Identity/Policy hybrid: **proposed; mentor approval required**.
-- AgentCore Runtime data-quality reviewer: **proposed; mentor approval required**.
+  labels, and GuardrailBlocked node propagation: **implemented**.
+- Local read-only MCP: **implemented** (Pilot Task 8). Two coarse operations
+  over stdio, invoking the complete application service; no raw AWS, data,
+  filesystem, network, write, citation, or generation primitive is exposed.
+  **This satisfies approval gate 2.**
+- AgentCore Gateway/Identity/Policy hybrid: **proposed; mentor approval
+  required**. Unchanged.
+- AgentCore Runtime data-quality reviewer: **proposed; mentor approval
+  required** for the Runtime. Its deterministic half — the allowlisted snapshot
+  boundary of Req 13.8 and the finding post-validation — is **implemented and
+  tested** in `src/review/` (Pilot Task 14a, `docs/ARCHITECTURE.md` §3n),
+  because it is required whoever reviews and it is what a human reviewer would
+  use if this ADR is declined. Nothing is deployed and no model reviews
+  anything.
 - Bedrock Model Evaluation and AgentCore Evaluations: **proposed companions,
-  not implemented**.
+  not implemented**. Local scorecards, golden sets and negative controls are
+  implemented and remain the release gates either way.
 - Other matrix services: **planned or gated as labelled; no deployment claim**.
 - Shopper-path AgentCore Runtime: **contingency not triggered or approved**.
+  Measured meal-plan p95 is 11.7–12.2s against a ~25s p99 escalation trigger,
+  so nothing is pressing on it.
