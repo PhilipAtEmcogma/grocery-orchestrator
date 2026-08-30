@@ -358,3 +358,120 @@ def test_a_model_excluded_on_latency_is_not_a_silent_fallback():
         assert "claude-sonnet" not in registry.routable_models(task), (
             f"claude-sonnet is reachable for {task} despite having no scorecard"
         )
+
+
+# ---------------------------------------------------------------- exclusion
+
+
+def test_an_excluded_model_is_not_routed_and_not_reported_as_routable(tmp_path):
+    """
+    Per-task scoring implies per-task exclusion, and the config could not say it.
+
+    A model can clear the floor on one task and fall below it on another.
+    `available(tier)` would still hand it the second task as a cost-ordered
+    fallback, so `enabled: false` was the only lever -- and that removes the
+    model everywhere, including from tasks it is good at. `claude-sonnet` only
+    fitted that lever because it was unfit for everything.
+    """
+    import json
+
+    config = {
+        "version": "test",
+        "region": "ap-southeast-2",
+        "models": [
+            {
+                "key": "cheap-but-bad-at-repair",
+                "model_id_env": "BEDROCK_MODEL_NOVA_LITE",
+                "default_model_id": "test.cheap-but-bad-at-repair",
+                "display_name": "Cheap",
+                "family": "amazon",
+                "tiers": ["fast"],
+                "capabilities": {
+                    "tool_use": True,
+                    "system_prompt": True,
+                    "prompt_caching": False,
+                    "json_mode": True,
+                },
+                "limits": {"max_output_tokens": 4096, "cache_min_tokens": 4096},
+                "cost_per_1k": {"input": "0.00001", "output": "0.00001"},
+                "enabled": True,
+            },
+            {
+                "key": "good-at-repair",
+                "model_id_env": "BEDROCK_MODEL_NOVA_PRO",
+                "default_model_id": "test.good-at-repair",
+                "display_name": "Good",
+                "family": "amazon",
+                "tiers": ["fast"],
+                "capabilities": {
+                    "tool_use": True,
+                    "system_prompt": True,
+                    "prompt_caching": False,
+                    "json_mode": True,
+                },
+                "limits": {"max_output_tokens": 4096, "cache_min_tokens": 4096},
+                "cost_per_1k": {"input": "0.001", "output": "0.001"},
+                "enabled": True,
+            },
+        ],
+        "routing": {
+            "repair_plan": {
+                "tier": "fast",
+                "prefer": ["good-at-repair"],
+                "exclude": ["cheap-but-bad-at-repair"],
+            }
+        },
+        "scorecards": {"_floor": 0.9},
+    }
+    path = tmp_path / "models.json"
+    path.write_text(json.dumps(config), encoding="utf-8")
+
+    registry = ModelRegistry(path)
+
+    # Not reachable by preference, and not by the cost-ordered fallback either.
+    assert "cheap-but-bad-at-repair" not in registry.routable_models("repair_plan")
+    assert registry.route("repair_plan").key == "good-at-repair"
+
+
+def test_exclusion_is_honoured_by_route_and_routable_models_alike(tmp_path):
+    """
+    The two must agree, or the gate reports a route no turn can reach.
+
+    `routable_models` answers "what could a turn reach"; if it disagreed with
+    `route`, the build would fail on a pair that does not exist -- and a gate
+    that cries wolf gets switched off.
+    """
+    import json
+
+    config = {
+        "version": "test",
+        "region": "ap-southeast-2",
+        "models": [
+            {
+                "key": "only-model",
+                "model_id_env": "BEDROCK_MODEL_NOVA_LITE",
+                "default_model_id": "test.only-model",
+                "display_name": "Only",
+                "family": "amazon",
+                "tiers": ["fast"],
+                "capabilities": {
+                    "tool_use": True,
+                    "system_prompt": True,
+                    "prompt_caching": False,
+                    "json_mode": True,
+                },
+                "limits": {"max_output_tokens": 4096, "cache_min_tokens": 4096},
+                "cost_per_1k": {"input": "0.00001", "output": "0.00001"},
+                "enabled": True,
+            }
+        ],
+        "routing": {"repair_plan": {"tier": "fast", "prefer": [], "exclude": ["only-model"]}},
+        "scorecards": {"_floor": 0.9},
+    }
+    path = tmp_path / "models.json"
+    path.write_text(json.dumps(config), encoding="utf-8")
+    registry = ModelRegistry(path)
+
+    assert registry.routable_models("repair_plan") == []
+    with pytest.raises(UnroutableTask):
+        registry.route("repair_plan")

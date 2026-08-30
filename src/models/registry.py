@@ -165,6 +165,15 @@ class ModelRegistry:
         Raises UnroutableTask rather than falling back to an arbitrary model.
         Silently substituting a weaker model would change output quality with
         no signal, which is worse than failing.
+
+        A routing rule may name `exclude`: models that MUST NOT serve this task
+        whatever their tier says. Per-task scoring implies exactly this and the
+        config could not previously express it -- a model can be excellent at
+        one task and below the floor on another, and `available(tier)` would
+        still hand it the second one as a cost-ordered fallback. That is how
+        `claude-sonnet` once sat as a live fallback for every task while being
+        documented as unfit; `enabled: false` fixed that case only because
+        Sonnet was unfit everywhere.
         """
         if policy is RoutingPolicy.PINNED:
             if not pinned_key:
@@ -182,13 +191,17 @@ class ModelRegistry:
             raise UnroutableTask(f"No routing rule for task '{task}'")
         tier = ModelTier(rule["tier"])
 
+        excluded = set(rule.get("exclude", []))
+
         if policy is RoutingPolicy.AUTO:
             for key in rule.get("prefer", []):
+                if key in excluded:
+                    continue
                 spec = self._specs.get(key)
                 if spec and spec.enabled and spec.is_configured and tier in spec.tiers:
                     return spec
 
-        candidates = self.available(tier)
+        candidates = [s for s in self.available(tier) if s.key not in excluded]
         if not candidates:
             raise UnroutableTask(
                 f"No enabled model for task '{task}' at tier '{tier.value}'. "
@@ -230,12 +243,21 @@ class ModelRegistry:
         if rule is None:
             return []
         tier = ModelTier(rule["tier"])
+        # `exclude` must be honoured HERE as well as in route(), or the
+        # qualification gate reports a pair no turn can actually reach and the
+        # build fails on a route that does not exist. The two must agree: this
+        # function's whole job is to answer "what could a turn reach", and an
+        # answer that disagrees with route() is worse than no answer.
+        excluded = set(rule.get("exclude", []))
         keys = [
             k
             for k in rule.get("prefer", [])
-            if (spec := self._specs.get(k)) and spec.enabled and tier in spec.tiers
+            if k not in excluded
+            and (spec := self._specs.get(k))
+            and spec.enabled
+            and tier in spec.tiers
         ]
-        keys += [s.key for s in self.available(tier) if s.key not in keys]
+        keys += [s.key for s in self.available(tier) if s.key not in keys and s.key not in excluded]
         return keys
 
     def unscored_routes(self) -> list[tuple[str, str]]:

@@ -234,16 +234,20 @@
           "rate": 0.917,
           "scored": 12,
           "budget_rate": 1.0,
-          "defect_rate": 0.8
+          "defect_rate": 0.8,
+          "reps": "3/3 clean, identical (91.7% every rep)"
         },
         "claude-haiku": {
           "rate": 0.833,
           "scored": 12,
           "budget_rate": 0.714,
-          "defect_rate": 1.0
+          "defect_rate": 1.0,
+          "reps": "1 run; repetition in progress 2026-08-30"
         },
         "_gating_decision": "STILL NOT GATED, and now for a different reason than before. The suite can support a threshold: 12 cases make one failure 8.3 points, and the failures are structured rather than random. A 90% floor -- this project's standard -- would pass Nova Lite (91.7%) and FAIL Claude Haiku (83.3%). Both are in repair_plan's prefer list, so gating removes the only fallback for repair when Nova Lite is unavailable. That is a routing decision with a real availability cost, not a scorekeeping one, and it belongs to the service owner rather than to whoever ran the evals. The measurement is here so the decision can be made on evidence.",
-        "_next": "Repeat both models before deciding: these are single runs, and AGENTS.md's eval discipline says a single live run does not qualify a model. If Haiku's budget weakness holds across reps it is real and gating is right; if it moves, the suite still needs more budget cases."
+        "_next": "Repeat both models before deciding: these are single runs, and AGENTS.md's eval discipline says a single live run does not qualify a model. If Haiku's budget weakness holds across reps it is real and gating is right; if it moves, the suite still needs more budget cases.",
+        "_option_kept_on_record": "SPLIT THE TASK, if repair quality ever becomes the bottleneck. The two models are COMPLEMENTARY rather than ranked: Nova Lite scores 100% on budget repair and Claude Haiku 100% on defect repair. Routing `repair_budget` to one and `repair_defect` to the other would give 100% on both, where choosing either model alone gives up something. The graph already knows which kind of repair it is doing -- evals/run_repair.py separates them and src/prompts/ carries two distinct repair prompts, because a budget repair and a defect repair need different instructions. What it would cost: a second routing task, a scorecard per sub-task, and the qualification gate widening to cover both. Recorded here rather than built, because it is machinery for a problem that is not yet biting: a failed repair exhausts the bounded loop and produces an honest refusal, so the cost of the current arrangement is a refusal the shopper can act on rather than a wrong answer they cannot detect.",
+        "_on_repetition": "AGENTS.md requires reps before qualifying a model, because repeated runs of an 11-case suite once differed by 18 points. Nova Lite's three reps here were IDENTICAL, and the reason is worth knowing rather than celebrating: BedrockModelClient sets temperature 0.0, so these calls are near-deterministic and reps confirm stability rather than averaging out noise. The earlier 18-point spread came from a different suite and configuration. Reps are still the right discipline -- they distinguish a stable number from a lucky one -- but on this suite they are cheap confirmation, not a sampling exercise."
       }
     }
   }

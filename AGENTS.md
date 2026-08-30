@@ -267,6 +267,18 @@ repair is measured but NOT gated, because six cases cannot support a threshold â
 all three routable models scored 83.3% and each failed a different case. That
 distinction lives in `scorecards._measured_not_gated`.
 
+**A routing rule can now say a model MUST NOT serve a task.** `exclude` in
+`config/models.json`'s routing rule is honoured by `route()` and by
+`routable_models()` alike -- they must agree, or the qualification gate reports
+a pair no turn can reach and a gate that cries wolf gets switched off.
+
+It exists because per-task scoring implies per-task exclusion and the config
+could not express it. A model can clear the floor on one task and fall below it
+on another; `available(tier)` would still hand it the second task as a
+cost-ordered fallback, and `enabled: false` was the only lever -- which removes
+the model everywhere, including from tasks it is good at. `claude-sonnet` only
+fitted that lever because it was unfit for everything.
+
 `unevidenced_models()` stops the remaining exemption becoming a hole â€” a model
 may be unscored for a task nobody gates, but not unscored everywhere and still
 routable.
