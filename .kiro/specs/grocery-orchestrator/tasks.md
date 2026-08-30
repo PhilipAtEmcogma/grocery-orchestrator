@@ -818,14 +818,39 @@ proposed, or gated as labelled; it is not implemented.
     `python scripts/check_recipe_coverage.py --missing 20` reports the distance
     and names what is absent.
 
-    **Three ways out, and the choice is the team's, not this repository's:**
-    (a) the data team widens collection to condiments, spices and pantry —
-    the ingredients above are an ordered shopping list for that;
-    (b) source recipes constrained to what the catalogue stocks, rather than a
-    general recipe API — TheMealDB was never chosen for this catalogue;
-    (c) narrow Req 2.9 to recipes as *inspiration* with a shopping list priced
-    only where citable, and state plainly which ingredients are unpriced —
-    which weakens the budget promise and needs a deliberate decision.
+    **DECIDED 2026-08-30 (Philip): option (b), sequenced AFTER the IaC work.**
+
+    Curate roughly 20-30 recipes written against THIS catalogue rather than
+    importing a general recipe API. The constraint is narrower than it first
+    looks: TheMealDB's vocabulary does not overlap ours, but writing new recipes
+    against our own does not have that problem — there are ~418 known terms (389
+    generated product names plus 29 curated head terms), so a recipe reading
+    "whole chicken, basmati rice, brown onions, carrots" is 100% costable by
+    construction.
+
+    This is legitimate curation, not gaming the requirement. *Curated* means
+    chosen deliberately, and Req 2.9's actual point is that the model selects a
+    recipe id while deterministic code owns scaling, dietary verification and
+    totals. Choosing recipes the catalogue can price serves that; importing
+    recipes it cannot price defeats it.
+
+    **Sequenced after Pilot Tasks 9-11 deliberately.** Task 15 is prompt-and-data
+    work with almost no AWS surface, and the sprint's stated second objective is
+    broad hands-on AWS. The CDK work is unstarted and every reproducibility,
+    drift-detection and multi-account claim waits on it. Task 15 has real demo
+    value — a plan reading "Tuesday: Chicken & Rice Bake" presents far better
+    than a list of cheap products the model named — but it is polish, and polish
+    goes after the thing everything else is blocked on.
+
+    **When it is built, treat the recipes as reviewable data**, like
+    `config/regions.json` and the head terms: someone who cooks has not checked
+    them, and that should be recorded rather than assumed.
+
+    Rejected, with reasons: (a) the data team widening collection to condiments
+    and spices — a teammate dependency on an unknown timeline, and TheMealDB's
+    tail is 451 distinct ingredients, so it would take most of a supermarket;
+    (c) narrowing Req 2.9 to partial pricing — it weakens the budget promise and
+    contradicts invariants 1 and 2, which is too high a price for a feature.
 - [ ] **Pilot Task 16 — Wire and release the complete pilot increment.** Run
   mandatory offline, live-adapter, infrastructure, security, evaluation, load,
   privacy, recovery, and cost gates. Local MCP has its own planned demonstration

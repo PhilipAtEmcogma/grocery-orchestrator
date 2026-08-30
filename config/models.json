@@ -151,9 +151,16 @@
     "repair_plan": {
       "tier": "fast",
       "prefer": [
-        "nova-lite",
-        "claude-haiku"
-      ]
+        "nova-lite"
+      ],
+      "exclude": [
+        "claude-haiku",
+        "nova-pro"
+      ],
+      "_why_exclude": {
+        "claude-haiku": "83.3% on repair across three identical reps, below the 90% floor. Perfect on defect repair and 71.4% on budget repair -- a structural weakness, not variance. It stays enabled and qualified for classify_intent (96.4%) and generate_plan (100%): `exclude` exists precisely so a model can be excellent at one task and barred from another, which `enabled: false` could never express.",
+        "nova-pro": "No repair scorecard, and it should not acquire one. It declares the fast tier so `available(tier)` would offer it as a cost-ordered fallback, but it is the quality-tier model -- routing repairs to it is a cost regression, not a quality win. Excluded as a routing decision, independent of any score."
+      }
     },
     "generate_prose": {
       "tier": "fast",
@@ -200,8 +207,7 @@
       }
     },
     "_unscored_tasks": {
-      "_comment": "Tasks no eval measures, named rather than hidden. The test treats these as accepted gaps; deleting a task from here without adding a scorecard makes the build fail, which is the point.",
-      "repair_plan": "MEASURED but not gated -- see scorecards._measured_not_gated.repair_plan for the numbers and the reason. Listed here so `unscored_routes()` does not gate on a six-case suite; it is no longer true that nothing measures it."
+      "_comment": "Tasks no eval measures, named rather than hidden. The test treats these as accepted gaps; deleting a task from here without adding a scorecard makes the build fail, which is the point."
     },
     "generate_prose": {
       "_source": "evals/run_prose.py, 11 cases, guardrail version 2, paced 9/min",
@@ -226,24 +232,28 @@
     "_measured_not_gated": {
       "_comment": "Measured, reported, and deliberately NOT used to gate routing, because the suite is too small for any threshold on it to mean anything. Distinct from _unscored_tasks, which is for tasks nothing measures at all. Expand the case set before gating.",
       "repair_plan": {
-        "_source": "evals/run_repair.py, 12 cases (7 budget, 5 defect), guardrail version 2, live",
-        "_measured": "2026-08-30",
-        "_history": "Was 6 cases and reported at 83.3% for all three routable models, each failing a DIFFERENT case -- variance on a suite where one failure is 16.7 points, not a weakness any of them had. The note then said: expand the case set before gating. It was expanded to 12, every case verified to DISCRIMINATE (budget cases all fail an overspending model and pass a normal one; defect cases all fail a money-writing model and pass a normal one), and re-measured.",
-        "_finding": "AT 12 CASES THE FAILURES ARE STRUCTURED, NOT SCATTERED. Nova Lite is perfect on budget repair and drops a defect repair; Claude Haiku is perfect on defect repair and drops two budget repairs. That is the opposite of what six cases suggested, and it is the kind of thing only a bigger suite can show: the earlier reading of 'variance' was correct FOR THAT SUITE and wrong about the models.",
-        "nova-lite": {
-          "rate": 0.917,
-          "scored": 12,
-          "budget_rate": 1.0,
-          "defect_rate": 0.8
-        },
-        "claude-haiku": {
-          "rate": 0.833,
-          "scored": 12,
-          "budget_rate": 0.714,
-          "defect_rate": 1.0
-        },
-        "_gating_decision": "STILL NOT GATED, and now for a different reason than before. The suite can support a threshold: 12 cases make one failure 8.3 points, and the failures are structured rather than random. A 90% floor -- this project's standard -- would pass Nova Lite (91.7%) and FAIL Claude Haiku (83.3%). Both are in repair_plan's prefer list, so gating removes the only fallback for repair when Nova Lite is unavailable. That is a routing decision with a real availability cost, not a scorekeeping one, and it belongs to the service owner rather than to whoever ran the evals. The measurement is here so the decision can be made on evidence.",
-        "_next": "Repeat both models before deciding: these are single runs, and AGENTS.md's eval discipline says a single live run does not qualify a model. If Haiku's budget weakness holds across reps it is real and gating is right; if it moves, the suite still needs more budget cases."
+        "_status": "GATED 2026-08-30. This entry is kept for the reasoning, not because it still applies. The suite was six cases and could not support a threshold; it was expanded to twelve, every case verified to discriminate against a model built to fail it, and re-measured over three reps per model. Nova Lite clears the 90% floor and serves repair; Claude Haiku does not and is excluded from this task only. See scorecards.repair_plan and routing.repair_plan.exclude.",
+        "_option_kept_on_record": "SPLIT THE TASK, if repair quality ever becomes the bottleneck. The two models are COMPLEMENTARY rather than ranked: Nova Lite scores 100% on budget repair and Claude Haiku 100% on defect repair. Routing `repair_budget` to one and `repair_defect` to the other would give 100% on both, where choosing either model alone gives up something. The graph already knows which kind of repair it is doing -- evals/run_repair.py separates them and src/prompts/ carries two distinct repair prompts, because a budget repair and a defect repair need different instructions. What it would cost: a second routing task, a scorecard per sub-task, and the qualification gate widening to cover both. Recorded here rather than built, because it is machinery for a problem that is not yet biting: a failed repair exhausts the bounded loop and produces an honest refusal, so the cost of the current arrangement is a refusal the shopper can act on rather than a wrong answer they cannot detect."
+      }
+    },
+    "repair_plan": {
+      "_source": "evals/run_repair.py, 12 cases (7 budget, 5 defect), guardrail version 2, live",
+      "_measured": "2026-08-30",
+      "_reps": "THREE reps each, and every rep identical. BedrockModelClient sets temperature 0.0, so these calls are near-deterministic: reps here confirm STABILITY rather than averaging out noise. The 18-point spread AGENTS.md warns about came from a different suite and configuration. Reps are still the right discipline -- they separate a stable number from a lucky one -- but on this suite they are cheap confirmation, not sampling.",
+      "_finding": "THE FAILURES ARE STRUCTURED AND OPPOSITE, not scattered. Nova Lite is perfect on budget repair and drops a defect repair; Claude Haiku is perfect on defect repair and drops two budget repairs. At six cases this looked like variance -- 'each failed a different case' -- and that reading was correct FOR THAT SUITE and wrong about the models. Twelve cases, three reps each, and the shape does not move.",
+      "nova-lite": {
+        "rate": 0.917,
+        "scored": 12,
+        "budget_rate": 1.0,
+        "defect_rate": 0.8,
+        "reps": 3
+      },
+      "claude-haiku": {
+        "rate": 0.833,
+        "scored": 12,
+        "budget_rate": 0.714,
+        "defect_rate": 1.0,
+        "reps": 3
       }
     }
   }
