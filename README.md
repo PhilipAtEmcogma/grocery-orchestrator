@@ -94,9 +94,10 @@ the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVA
 
 **Offline gates:** 763 tests passing, 31 skipped. Five eval suites — intent
 76.7%, meal plan 100%, prose 100%, repair 100% (12 cases), guardrail 9/9
-must-allow — all gated in CI and the pre-commit hook. Repair is measured live
-too — Nova Lite 91.7%, Claude Haiku 83.3% — and deliberately not gated on model
-choice; see `config/models.json` `_measured_not_gated`.
+must-allow — all gated in CI and the pre-commit hook. **Repair is now gated on
+model choice too**: three reps each, Nova Lite 91.7% and Claude Haiku 83.3%,
+identical every rep. Haiku is excluded from `repair_plan` and keeps serving the
+tasks it qualifies for — `config/models.json` `routing.repair_plan.exclude`.
 
 **Two defects found and fixed on 2026-08-30**, both backend, both invisible to
 every offline gate because nothing offline can read a deployed environment
@@ -126,10 +127,11 @@ options written down; none needs more code first:
    **Sequenced after the IaC work (Tasks 9–11)**, because Task 15 is
    prompt-and-data work with almost no AWS surface and the CDK work is what
    every reproducibility and cost claim waits on. `tasks.md` Pilot Task 15b.
-2. **Gate repair at 90%?** Measured live at 12 cases: Nova Lite 91.7%, Claude
-   Haiku 83.3%, failing in opposite halves. A 90% floor passes one and fails the
-   other, and both are in `repair_plan`'s prefer list — so gating removes the
-   fallback. `config/models.json` `_measured_not_gated`.
+2. ~~**Gate repair at 90%?**~~ **Decided and applied 2026-08-30.** Three reps
+   each confirmed the structure — Nova Lite 91.7%, Claude Haiku 83.3%, identical
+   every rep, failing in opposite halves. Haiku is excluded from `repair_plan`
+   only; it still serves the tasks it qualifies for. Every task now has a
+   scorecard: `unscored_tasks()` is empty for the first time.
 3. **Who owns the `Chatbot` API and Lambda** in the same account?
    `docs/ARCHITECTURE.md` §3b — untouched pending an owner.
 

@@ -339,11 +339,20 @@ def test_the_unmeasured_tasks_are_named_and_reasoned():
     failing -- which is the intended direction.
     """
     gaps = ModelRegistry().unscored_tasks()
-    # generate_prose left this list on 2026-08-29 when evals/run_prose.py gave
-    # it a scorecard. repair_plan is still here, but for a different reason than
-    # it used to be: it IS measured now (evals/run_repair.py), and is ungated
-    # only because six cases cannot support a threshold.
-    assert set(gaps) == {"repair_plan"}
+    # The list is EMPTY, and getting there is the history of this project's
+    # model plane. generate_prose left it on 2026-08-29 when evals/run_prose.py
+    # gave it a scorecard. repair_plan left it on 2026-08-30: it had been
+    # measured but ungated because six cases could not support a threshold, and
+    # the fix was to expand the suite to twelve rather than to lower the bar.
+    #
+    # Asserted as EMPTY rather than deleted, because the assertion still has a
+    # job: adding a task without a scorecard, or exempting one, now fails here.
+    # An exemption should be hard to add quietly.
+    assert set(gaps) == set(), (
+        f"a task is exempt from scoring again: {sorted(gaps)}. Every exemption "
+        "is a route nothing measures -- add a scorecard or argue the exemption "
+        "in config/models.json, where the reason will be read."
+    )
     for task, reason in gaps.items():
         assert len(reason) > 80, f"{task} needs a real reason, not a label"
 

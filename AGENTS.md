@@ -260,12 +260,19 @@ and reports any pair with no qualifying evidence.
 model, enabling one, or adding a task forces a scorecard or an explicit,
 reasoned exemption.
 
-Both previously unmeasured tasks now have suites. `evals/run_prose.py` scores
-whether a model can follow the prose protocol; `evals/run_repair.py` scores the
-repair pass, budget and defect kinds separately. Prose is gated on model choice;
-repair is measured but NOT gated, because six cases cannot support a threshold —
-all three routable models scored 83.3% and each failed a different case. That
-distinction lives in `scorecards._measured_not_gated`.
+Both previously unmeasured tasks now have suites, and **as of 2026-08-30 every
+task is gated — `unscored_tasks()` is empty for the first time.**
+`evals/run_prose.py` scores prose-protocol compliance; `evals/run_repair.py`
+scores the repair pass, budget and defect kinds separately.
+
+Repair was ungated because six cases could not support a threshold — all three
+routable models scored 83.3%, each failing a different case. **The fix was to
+expand the suite to twelve, not to lower the bar.** Every case was then verified
+to DISCRIMINATE against a model built to fail it, and re-measured over three
+reps per model. The failures turned out to be structured and opposite: Nova Lite
+91.7% (perfect on budget repair), Claude Haiku 83.3% (perfect on defect repair,
+71.4% on budget). The six-case reading of "variance" was right about that suite
+and wrong about the models.
 
 **A routing rule can now say a model MUST NOT serve a task.** `exclude` in
 `config/models.json`'s routing rule is honoured by `route()` and by
