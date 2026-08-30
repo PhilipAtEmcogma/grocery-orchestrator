@@ -503,10 +503,42 @@ proposed, or gated as labelled; it is not implemented.
   dataset/model/prompt provenance. Knowledge Bases are gated to cited recipe or
   catalogue knowledge with no price authority; Automated Reasoning is advisory
   only where supported.
-- [ ] **Pilot Task 8 — Deliver local read-only MCP first.** Expose coarse local
-  complete-application operations only; validate schemas and enforce operation,
-  row, call, time, and rate allowlists. Prove direct-service parity and a disable
-  path before any managed exposure.
+- [x] **Pilot Task 8 — Deliver local read-only MCP first.** Completed
+  2026-08-30. `src/mcp/` speaks MCP over stdio JSON-RPC with **no new
+  dependency** — an SDK would put a package in `requirements.txt` that the
+  Lambda archive then has to exclude, and that exclusion list has to stay
+  honest. 22 tests.
+
+  **Two coarse tools, and the list IS the surface** (Req 13.2): `grocery_ask`
+  (a natural-language turn) and `grocery_dietary_terms`. No raw DynamoDB, SDK,
+  filesystem, network, acquisition, write, citation or unguarded-generation
+  primitive. A test asserts no tool name contains a primitive verb, so a
+  reviewer can check the claim without reading the implementation.
+
+  **Parity is asserted on the bytes, not argued** (Req 13.4). Every call goes
+  through the same `lambda_handler` API Gateway invokes, so grounding, dietary
+  fail-closed behaviour, arithmetic and the contract are the same assertions on
+  the same code path. If the façade ever grew its own retrieval, that claim
+  would quietly stop being true.
+
+  **Caps** (Req 13.3): default-OFF (`MCP_ENABLED=1`, matched exactly, like
+  `USE_DYNAMODB`), 6 calls/minute, 60 calls/session, 500-character messages
+  refused *before* the service is invoked, 200-event responses. Rate and session
+  caps both, because a rate cap stops a burst and a session cap stops a slow
+  loop that never bursts. The disable path is exercised as a real subprocess.
+
+  **The audit records that a call happened, never what was asked.** A tool
+  argument here IS a shopper's message. A test plants a message containing
+  "gluten", "coeliac" and a suburb and asserts none of it reaches the audit.
+
+  **A real bug the subprocess test found:** the service writes Powertools logs
+  and EMF metrics to stdout *by design* — that is where CloudWatch reads them —
+  and stdout is also the MCP protocol channel. A real run interleaved
+  `{"_aws": ...}` blobs with JSON-RPC and no client could parse it. `sys.stdout`
+  is now rebound to stderr before the handler is imported, with the true stdout
+  kept privately for responses. In-process tests could not have caught it: they
+  share loggers already bound to a stream.
+
   - [ ] **Pilot Task 8 proposed extension — AgentCore Gateway hybrid.** After
     local MCP proof and ADR 0002 mentor approval, expose the same operations via
     AgentCore Gateway with Identity, Policy, WAF/Cognito or approved workload
@@ -1029,7 +1061,11 @@ enforcement from `run_turn()` remains the explicit Task 2 follow-up.*
 - [x] **5.3** Report known limitations separately from failures — *Req 10.3*
 - [x] **5.4** Meal plan cases with invariants and reported metrics — *Req 10.2*
 - [x] **5.5** Budget floor check, not only the ceiling
-- [ ] **5.6** Subjective quality scoring for variety and appeal
+- [ ] **5.6** Subjective quality scoring for variety and appeal — still open,
+  and still deliberately. `design.md` §8 and AGENTS.md both argue an LLM judge
+  puts a non-deterministic scorer inside a suite whose value is being
+  deterministic. What changed on 2026-08-30 is the *other* half of that note:
+  the repair suite is no longer too small to gate. See `5.9`/repair below
   — *deliberately still open; `evals/run_prose.py` (2026-08-29) scores RULE
   COMPLIANCE only. An LLM judge would put a non-deterministic scorer inside a
   suite whose value is being deterministic.*

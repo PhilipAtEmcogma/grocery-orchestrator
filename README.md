@@ -56,7 +56,7 @@ operational evidence** — not first deployment.
 | 5 · Location scope, freshness, named regions | ✅ done |
 | 6 · Idempotency fencing, canonical hashing, pagination, PITR | ✅ done · one deferral (6b) |
 | 7 · Scorecards, route qualification, prose/repair evals | ✅ done · one deferral (7b) |
-| **8 · Local read-only MCP** | ⬜ **not started — next** |
+| 8 · Local read-only MCP | ✅ done — 2 coarse tools, default-off, capped, parity-tested |
 | 9–12 · CDK, service plane, deploy, operations | 🟡 **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). 9–11 = IaC, not started; the service is deployed imperatively |
 | 13 · Controlled ingestion | ⬜ not started |
 | 14 · AgentCore reviewer | ⬜ proposed, needs ADR 0002 approval |
@@ -474,10 +474,11 @@ different job from standing it up. Latency and cost figures quoted anywhere in
 this repository are still laptop measurements: nothing has been measured
 against the deployed endpoint under load.
 
-1. **Task 8 — local read-only MCP.** Coarse operations that invoke the complete
-   deterministic service; no raw DynamoDB, SDK, filesystem, network, scraping,
-   write, citation or unguarded-generation primitive. Proves schemas, caps,
-   audit, direct-service parity and a disable path before any managed exposure.
+1. ~~**Task 8 — local read-only MCP.**~~ **Done 2026-08-30.** `src/mcp/`, two
+   coarse tools over stdio JSON-RPC with no new dependency, default-off, rate
+   and session capped, privacy-safe audit, and parity asserted against the same
+   `lambda_handler` API Gateway invokes. Run it with
+   `MCP_ENABLED=1 python scripts/mcp_server.py`.
 2. **Tasks 9–12 — CDK, service plane, deployment, operations.** Adopt the
    existing tables *and the existing API, Lambda, alias, roles and schedule*
    without replacement; zip Lambda on a published SnapStart alias; REST

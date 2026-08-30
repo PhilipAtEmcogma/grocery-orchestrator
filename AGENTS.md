@@ -214,9 +214,20 @@ Production sets nothing.
 
 ### MCP, AgentCore, and bounded agents
 
-Pilot Task 8 delivers local read-only MCP first. Its coarse tools invoke the
-complete deterministic service and expose no raw DynamoDB, AWS SDK, filesystem,
-network, scraping, write, citation, or unguarded-generation primitive.
+Pilot Task 8 is DONE (2026-08-30). `src/mcp/` exposes two coarse tools over
+stdio JSON-RPC — `grocery_ask` and `grocery_dietary_terms` — which invoke the
+complete deterministic service through the same `lambda_handler` API Gateway
+calls, and expose no raw DynamoDB, AWS SDK, filesystem, network, scraping,
+write, citation, or unguarded-generation primitive. Default-off
+(`MCP_ENABLED=1`), rate and session capped, audit that records that a call
+happened and never what was asked.
+
+**If you add a tool, it must invoke the whole service.** A fine-grained tool
+("query the products table") would be a database with extra steps, and every
+invariant this project has lives ABOVE that layer. And keep stdout clean: it is
+the protocol channel, and the service's own Powertools output goes there by
+design — `serve()` rebinds `sys.stdout` to stderr before importing the handler
+for exactly that reason.
 
 Proposed ADR 0002 would permit two separately approved stages if a mentor
 approves it. AgentCore Gateway with Identity and Policy could mediate the same coarse tools after local parity,
@@ -365,6 +376,9 @@ python scripts/apply_state_machine.py --dry-run  # ingestion Step Functions
 python -m pytest tests/test_ingestion.py         # ingestion; no AWS
 python scripts/check_quotas.py                    # throughput ceiling, live
 python Philip_demo/run_all.py                     # seven feature demos, offline
+MCP_ENABLED=1 python scripts/mcp_server.py        # local read-only MCP over stdio
+python scripts/check_recipe_coverage.py --missing 20   # why Task 15 is blocked
+python scripts/measure_latency.py                 # latency against the DEPLOYED endpoint
 ```
 
 The pre-commit hook lives in `scripts/hooks/pre-commit` — **version

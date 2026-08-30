@@ -226,27 +226,24 @@
     "_measured_not_gated": {
       "_comment": "Measured, reported, and deliberately NOT used to gate routing, because the suite is too small for any threshold on it to mean anything. Distinct from _unscored_tasks, which is for tasks nothing measures at all. Expand the case set before gating.",
       "repair_plan": {
-        "_source": "evals/run_repair.py, 6 cases (4 budget, 2 defect), guardrail version 2",
-        "_measured": "2026-08-29",
-        "_why_not_gated": "Six cases: one failure is 16.7 points. All three routable models scored 83.3%, and each failed a DIFFERENT case -- the signature of variance rather than a weakness any of them has. A 90% floor on this suite would fail every model for noise, and a lower floor chosen to make them pass would be a number picked to fit the answer. Same argument as docs/CI-GATE-HEALTH.md section 1.",
+        "_source": "evals/run_repair.py, 12 cases (7 budget, 5 defect), guardrail version 2, live",
+        "_measured": "2026-08-30",
+        "_history": "Was 6 cases and reported at 83.3% for all three routable models, each failing a DIFFERENT case -- variance on a suite where one failure is 16.7 points, not a weakness any of them had. The note then said: expand the case set before gating. It was expanded to 12, every case verified to DISCRIMINATE (budget cases all fail an overspending model and pass a normal one; defect cases all fail a money-writing model and pass a normal one), and re-measured.",
+        "_finding": "AT 12 CASES THE FAILURES ARE STRUCTURED, NOT SCATTERED. Nova Lite is perfect on budget repair and drops a defect repair; Claude Haiku is perfect on defect repair and drops two budget repairs. That is the opposite of what six cases suggested, and it is the kind of thing only a bigger suite can show: the earlier reading of 'variance' was correct FOR THAT SUITE and wrong about the models.",
         "nova-lite": {
-          "rate": 0.833,
-          "scored": 6,
-          "budget": 1.0,
-          "defect": 0.5
+          "rate": 0.917,
+          "scored": 12,
+          "budget_rate": 1.0,
+          "defect_rate": 0.8
         },
         "claude-haiku": {
           "rate": 0.833,
-          "scored": 6,
-          "budget": 0.75,
-          "defect": 1.0
+          "scored": 12,
+          "budget_rate": 0.714,
+          "defect_rate": 1.0
         },
-        "nova-pro": {
-          "rate": 0.833,
-          "scored": 6,
-          "budget": 0.75,
-          "defect": 1.0
-        }
+        "_gating_decision": "STILL NOT GATED, and now for a different reason than before. The suite can support a threshold: 12 cases make one failure 8.3 points, and the failures are structured rather than random. A 90% floor -- this project's standard -- would pass Nova Lite (91.7%) and FAIL Claude Haiku (83.3%). Both are in repair_plan's prefer list, so gating removes the only fallback for repair when Nova Lite is unavailable. That is a routing decision with a real availability cost, not a scorekeeping one, and it belongs to the service owner rather than to whoever ran the evals. The measurement is here so the decision can be made on evidence.",
+        "_next": "Repeat both models before deciding: these are single runs, and AGENTS.md's eval discipline says a single live run does not qualify a model. If Haiku's budget weakness holds across reps it is real and gating is right; if it moves, the suite still needs more budget cases."
       }
     }
   }
