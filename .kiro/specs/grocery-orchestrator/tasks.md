@@ -729,6 +729,54 @@ proposed, or gated as labelled; it is not implemented.
   recipe ids and product citations; code owns scaling, safety, and totals.
   A Knowledge Base may be evaluated only for cited recipe/catalogue retrieval
   and never for authoritative prices.
+  - [x] **15a — Catalogue, dietary classification, and the coverage gate.**
+    Completed 2026-08-30. `src/recipes/` holds the 175 recipes behind a
+    `RecipeRepository` protocol, classifies each recipe's dietary content from
+    its INGREDIENTS rather than its label, and measures how much of each recipe
+    this product catalogue can price. 12 tests.
+  - [ ] **15b — BLOCKED ON DATA, and the block is measured.** Recipe-constrained
+    planning is deliberately NOT wired into the graph. A recipe is usable only
+    if EVERY ingredient can be priced: a payable total computed from part of a
+    shopping list is a number the shopper cannot spend to, and `within_budget`
+    derived from it is a false promise — the one failure this codebase exists to
+    prevent. Measured over both datasets:
+
+    | | |
+    |---|---|
+    | recipes | 175 |
+    | best recipe | **75%** of ingredients costable |
+    | median recipe | ~12% |
+    | recipes at 100% | **0** |
+    | recipes at ≥90% | **0**, under any staples assumption |
+
+    **The two datasets were built for different jobs.** TheMealDB recipes are
+    international home cooking, median 11 ingredients, reaching for soy sauce
+    (53 recipes), garlic (43), lime (36), fish sauce (36), ginger (34) and
+    coriander (29). The product catalogue is 300 items per store across 17
+    categories, weighted to fresh produce, meat and dairy, with no spice rack,
+    no condiments and no long tail. `water` appears in 42 recipes and is not a
+    grocery product at all.
+
+    Widening "assumed on hand" from {water, salt, pepper} to a full spice rack
+    and pantry — 40+ terms — moved usable recipes **from zero to zero**. The gap
+    is not staples, and a generous staples list would only have hidden costs the
+    shopper still has to pay.
+
+    `test_task_15_is_blocked_by_data_and_will_say_when_it_is_not` FAILS WHEN THE
+    BLOCKER LIFTS, verified by simulating a complete catalogue. Same forcing
+    shape as the Scan ceiling in 6b, pointed the other way, so "not enough data
+    yet" cannot quietly become permanent.
+    `python scripts/check_recipe_coverage.py --missing 20` reports the distance
+    and names what is absent.
+
+    **Three ways out, and the choice is the team's, not this repository's:**
+    (a) the data team widens collection to condiments, spices and pantry —
+    the ingredients above are an ordered shopping list for that;
+    (b) source recipes constrained to what the catalogue stocks, rather than a
+    general recipe API — TheMealDB was never chosen for this catalogue;
+    (c) narrow Req 2.9 to recipes as *inspiration* with a shopping list priced
+    only where citable, and state plainly which ingredients are unpriced —
+    which weakens the budget promise and needs a deliberate decision.
 - [ ] **Pilot Task 16 — Wire and release the complete pilot increment.** Run
   mandatory offline, live-adapter, infrastructure, security, evaluation, load,
   privacy, recovery, and cost gates. Local MCP has its own planned demonstration

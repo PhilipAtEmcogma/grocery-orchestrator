@@ -60,7 +60,7 @@ operational evidence** — not first deployment.
 | 9–12 · CDK, service plane, deploy, operations | ⬜ not started (design in `infra/`) — but a service **is** deployed imperatively; these tasks bring it under IaC |
 | 13 · Controlled ingestion | ⬜ not started |
 | 14 · AgentCore reviewer | ⬜ proposed, needs ADR 0002 approval |
-| 15 · Recipe catalogue | ⬜ not started |
+| 15 · Recipe catalogue | 🟡 catalogue + coverage gate built; **planning blocked on data** (0 of 175 recipes fully priceable) |
 | 16 · Release gates | ⬜ not started |
 
 **Two deliberate deferrals remain** (6b closed 2026-08-30), each with the
@@ -113,6 +113,11 @@ gated in CI and the pre-commit hook.
 - Which product a one-word query returns — "cheapest butter" against fourteen
   butters — was decided by reading the catalogue, not by anyone who shops there:
   [`docs/OPEN-REVIEW-head-terms.md`](docs/OPEN-REVIEW-head-terms.md).
+- **The recipe catalogue and the product catalogue do not meet.** No recipe is
+  fully priceable, so Req 2.9 cannot be delivered as written. Widening the
+  product collection, choosing recipes to fit the catalogue, or narrowing the
+  requirement are all defensible — and the choice belongs to the team, not this
+  repository. `tasks.md` Pilot Task 15b has the evidence and the three options.
 - The frontend team's response shape in `datasets/DATA_SCHEMA.md` is flat JSON
   with different intent names; ours is an event list. Both are reasonable, they
   are not the same thing, and nobody has reconciled them.
@@ -487,8 +492,13 @@ against the deployed endpoint under load.
    dead-letter behaviour. **No live retailer traffic**, which stays gated on
    [`ACQUISITION-RISK.md`](ACQUISITION-RISK.md) §8.
 4. **Task 15 — recipe catalogue.** Models select recipe ids and product
-   citations; code owns scaling, safety and totals. The 175 curated recipes in
-   `datasets/` are the input.
+   citations; code owns scaling, safety and totals. The catalogue, its dietary
+   classification and a coverage gate are built (`src/recipes/`). **The planner
+   is deliberately not wired: zero of the 175 recipes have every ingredient
+   priceable** against the product catalogue (best 75%, median ~12%), so a plan
+   built from one would state a payable total derived from a fraction of the
+   shopping list. `python scripts/check_recipe_coverage.py --missing 20` names
+   what is absent; a forcing test fails when the data becomes sufficient.
 5. **Task 16 — release gates.** The integrated run of every gate above.
 
 **Requires mentor approval before starting** (ADR 0002, still proposed):
