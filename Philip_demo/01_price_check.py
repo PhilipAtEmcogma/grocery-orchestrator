@@ -18,6 +18,14 @@ property of the project, not a shortcut taken for the demo: the orchestrator
 depends on protocol boundaries (PriceRepository, ModelClient) with fixture
 implementations behind them, so the entire graph runs offline.
 
+MODES
+-----
+    local  (default and only)  fixtures/products.json plus the scripted model
+                               client. No AWS, no credentials, no network.
+
+    Asking for another mode exits without running anything, rather than
+    quietly answering from fixtures. See Philip_demo/README.md.
+
 WHAT THIS DEMONSTRATES
 ----------------------
   1. Resolving a free-text term ("cheapest butter") to a real product
@@ -30,7 +38,17 @@ WHAT THIS DEMONSTRATES
 
 from __future__ import annotations
 
-from _demo_support import citations, heading, request, section, show_events
+from _demo_support import (
+    LOCAL,
+    ModeUnavailable,
+    citations,
+    heading,
+    mode_banner,
+    request,
+    resolve_mode,
+    section,
+    show_events,
+)
 
 from src.models.scripted import ScriptedModelClient
 from src.retrieval.memory import InMemoryPriceRepository
@@ -40,7 +58,17 @@ from src.schemas.contract import assert_grounded
 repo = InMemoryPriceRepository()
 model = ScriptedModelClient()
 
+try:
+    mode = resolve_mode(supports=(LOCAL,))
+except ModeUnavailable as exc:
+    raise SystemExit(str(exc)) from exc
+
 heading("DEMO 1 - Price checking and comparison")
+mode_banner(
+    mode,
+    requires="nothing - no AWS account, credentials or network access",
+    mocked="the price store (fixtures) and the model plane (ScriptedModelClient)",
+)
 
 # ---------------------------------------------------------------- single item
 section("1. A single item, compared across stores")

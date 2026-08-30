@@ -893,8 +893,16 @@ proposed, or gated as labelled; it is not implemented.
     this product catalogue can price. 12 tests.
   - [x] **15b — Curated catalogue and deterministic assembly. Done 2026-08-30.**
     `config/recipes.json` holds **29 recipes written against this catalogue**,
-    every ingredient priceable by construction — the property that made the
-    imported 175 unusable. `src/recipes/planning.py` converts selected recipes
+    every ingredient priceable **against the real catalogue** by construction —
+    the property that made the imported 175 unusable.
+
+    *Qualified 2026-08-31.* "Priceable" needs the catalogue named, because the
+    two are different universes: 29/29 resolve against `datasets/` (the ~2,700
+    rows the deployed table holds) and 14/29 against the 152-row offline
+    fixture. `tests/test_curated_recipes.py` resolves against `datasets/` and
+    its docstring says why; `Philip_demo/11` §7 now prints both numbers rather
+    than the flattering one. The imported 175 are 0/175 against **both**, which
+    is what makes the decision sound rather than convenient. `src/recipes/planning.py` converts selected recipes
     into a `PlanDraft`, which is the shape `assemble_plan`, `validate_plan`,
     `assert_arithmetic` and the bounded repair loop already consume. 19 tests.
 

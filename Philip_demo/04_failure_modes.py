@@ -10,7 +10,14 @@ Windows, without activating the virtualenv:
 
     .venv\Scripts\python.exe Philip_demo/04_failure_modes.py
 
-Offline. No AWS account or credentials needed.
+MODES
+-----
+    local  (default and only)  fixtures plus the scripted model client, with failing
+                               model stubs injected deliberately. No AWS,
+                               no credentials, no network.
+
+    Asking for another mode exits without running anything, rather than
+    quietly answering from fixtures. See Philip_demo/README.md.
 
 WHAT THIS DEMONSTRATES
 ----------------------
@@ -40,7 +47,15 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from _demo_support import heading, request, section
+from _demo_support import (
+    LOCAL,
+    ModeUnavailable,
+    heading,
+    mode_banner,
+    request,
+    resolve_mode,
+    section,
+)
 
 from src.models.base import ModelError, ModelOutputInvalid
 from src.models.scripted import ScriptedModelClient
@@ -50,7 +65,19 @@ from src.schemas.contract import ErrorCode
 
 repo = InMemoryPriceRepository()
 
+try:
+    mode = resolve_mode(supports=(LOCAL,))
+except ModeUnavailable as exc:
+    raise SystemExit(str(exc)) from exc
+
 heading("DEMO 4 - Failure modes")
+mode_banner(
+    mode,
+    requires="nothing - no AWS account, credentials or network access",
+    mocked=(
+        "the price store (fixtures) and the model plane (scripted, plus stubs that fail on purpose)"
+    ),
+)
 
 
 def terminal(resp) -> tuple[str, bool, str]:
