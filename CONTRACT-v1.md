@@ -461,3 +461,19 @@ and it lands as a v2 change rather than a v1 tightening.
 Answers are recorded here with their date, replacing the proposal. Question 2
 additionally needs its schema gap closed whichever way it goes — the current
 `Location` can express only one of the two options it offers.
+
+### They have questions of their own, and a different contract
+
+**Found 2026-08-31 on the branch `frontend-infra-setup`:** the frontend side
+wrote their own `docs/API-CONTRACT.md`, provisionally, from a commit predating
+this document. It assumes a flat object rather than an event list, numeric
+prices rather than strings, no `turn_id`, and `location` as a required string —
+and its own §12 lists six things it says need confirming.
+
+All six are answered, and the two shapes that actually break are named and
+verified, in
+[`docs/OPEN-REVIEW-frontend-contract.md`](docs/OPEN-REVIEW-frontend-contract.md).
+Their shipped client works against this contract today; their *document* does
+not. **Read that before answering the four questions above** — the two sets are
+about the same interface from opposite ends, and answering ours without
+reconciling theirs would leave two contracts standing.

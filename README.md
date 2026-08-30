@@ -159,9 +159,15 @@ evidence gathered and its options written down; none needed more code first.
   attaches to the comparison we publish rather than to the collection. **This
   is a conversation with the data teammates, not an engineering task, and it
   should happen before any demo outside the team.**
-- The frontend team's response shape in `datasets/DATA_SCHEMA.md` is flat JSON
-  with different intent names; ours is an event list. Both are reasonable, they
-  are not the same thing, and nobody has reconciled them.
+- ~~The frontend team's response shape is flat JSON; ours is an event list, and
+  nobody has reconciled them.~~ **Reconciled on paper 2026-08-31**, and it is
+  worse than `datasets/DATA_SCHEMA.md` suggested: the branch
+  `frontend-infra-setup` carries a second contract document assuming flat
+  objects, numeric prices, no `turn_id` and `location` as a required string.
+  Their shipped client works against ours; their document, implemented, returns
+  HTTP 400. Field-by-field diff and their six questions answered in
+  [`docs/OPEN-REVIEW-frontend-contract.md`](docs/OPEN-REVIEW-frontend-contract.md).
+  **Still needs the conversation** — two contracts standing is the failure mode.
 - Three of four frontend contract questions remain unanswered; question 2
   (location shape) was resolved on our recorded default after it blocked four
   separate pieces of work.
@@ -793,6 +799,13 @@ specific question arises.
   on us. The brief argues the case against as well as for — **a decline costs
   very little**, which is why the reviewer's boundary was built before the
   reviewer.
+- [`docs/OPEN-REVIEW-frontend-contract.md`](docs/OPEN-REVIEW-frontend-contract.md)
+  — **open, and wants the frontend teammate.** A frontend exists, on the branch
+  `frontend-infra-setup`, and it carries its own contract document that
+  disagrees with ours on nearly every field. Their shipped client works; their
+  *document*, if implemented, returns HTTP 400. Fifteen minutes, no code
+  reading — and it unblocks the CDK cutover, which has been waiting for a
+  frontend to coordinate the URL change with.
 - [`docs/OPEN-REVIEW-head-terms.md`](docs/OPEN-REVIEW-head-terms.md) — **open,
   and wants somebody who shops these stores.** Which product a one-word query
   like "cheapest butter" should return, when the catalogue holds fourteen
