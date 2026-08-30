@@ -79,17 +79,28 @@ reasoning recorded in `tasks.md`:
 - **7b** — SSM routing belongs with the CDK stacks, where a parameter is
   declared as infrastructure rather than clicked into an account.
 
+**Deployed and operating** (2026-08-30): alias `live` → **v11** serving current
+`main`, the **real 2,759-row catalogue**, Guardrail **v2** applied, GSI2 for
+meal-plan candidates with `Scan` revoked, **8 alarms** + dashboard + a $25
+Budget, API-stage X-Ray, and the first latency baseline measured against the
+endpoint rather than a laptop — price check p95 **2.21s** (target 5s), meal plan
+p95 **12.2s** (target 20s). Detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3a–§3l.
+
 **Verified live in `ap-southeast-2`** (account `097087133897`, 2026-08-29):
 Guardrail `b1xezpqe04kx` **version 2** at 13/13 must-block and 9/9 must-allow;
 intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%;
 DynamoDB products and idempotency tables with owner-fenced claims proven against
 the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
-**Offline gates:** 694 tests passing, 31 skipped. Five eval suites — intent
-76.7%, meal plan 100%, prose 100%, repair 100%, guardrail 9/9 must-allow — all
-gated in CI and the pre-commit hook.
+**Offline gates:** 763 tests passing, 31 skipped. Five eval suites — intent
+76.7%, meal plan 100%, prose 100%, repair 100% (12 cases), guardrail 9/9
+must-allow — all gated in CI and the pre-commit hook. Repair is measured live
+too — Nova Lite 91.7%, Claude Haiku 83.3% — and deliberately not gated on model
+choice; see `config/models.json` `_measured_not_gated`.
 
-**Open defects on the deployed service** (found 2026-08-30, both backend):
+**Two defects found and fixed on 2026-08-30**, both backend, both invisible to
+every offline gate because nothing offline can read a deployed environment
+variable:
 
 - ~~**Guardrail version drift**~~ — **fixed 2026-08-30.** The Lambda applied
   version `1` while all evidence described version `2`, so `how much is truffle
@@ -104,6 +115,20 @@ gated in CI and the pre-commit hook.
   stage without them. **Not yet armed in the account** — `APP_STAGE` is unset,
   because `CORS_ORIGIN=*` would fail it and needs the frontend origin first.
   §3g.
+
+**Three decisions waiting on a person** — each has its evidence gathered and its
+options written down; none needs more code first:
+
+1. **The recipe catalogue and the product catalogue do not meet.** Zero of 175
+   recipes are fully priceable, so Req 2.9 cannot be delivered as written. Widen
+   the data collection, re-source recipes to fit the catalogue, or narrow the
+   requirement — `tasks.md` Pilot Task 15b.
+2. **Gate repair at 90%?** Measured live at 12 cases: Nova Lite 91.7%, Claude
+   Haiku 83.3%, failing in opposite halves. A 90% floor passes one and fails the
+   other, and both are in `repair_plan`'s prefer list — so gating removes the
+   fallback. `config/models.json` `_measured_not_gated`.
+3. **Who owns the `Chatbot` API and Lambda** in the same account?
+   `docs/ARCHITECTURE.md` §3b — untouched pending an owner.
 
 **Known open questions that want a human**, not more code:
 
@@ -424,7 +449,7 @@ claimed. Read it before changing any of this, and not before.
 
 ### Tests, evals and CI
 
-- ✅ **694 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **763 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -554,7 +579,7 @@ python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
 And to check it:
 
 ```bash
-pytest                     # 694 passing, 31 skipped
+pytest                     # 763 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py       # 76.7% scripted baseline

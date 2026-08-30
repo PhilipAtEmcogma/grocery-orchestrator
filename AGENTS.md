@@ -322,10 +322,13 @@ rule about publishing a price without its capture date, wearing a different hat.
 **`config/` ships inside the Lambda archive**, so retuning a threshold is a
 deploy. That is the argument for Task 7b's SSM work.
 
-Blockers are Tasks 8–16: local MCP, CDK and resource adoption, the service
-plane, operational gates, controlled ingestion, the recipe catalogue, and the
-integrated release run. MCP, AgentCore and the managed-evaluation stages are
-planned or proposed, not built.
+Blockers are now **Tasks 9–11 (IaC), 14, 15b and 16**. Closed 2026-08-30: Task
+8 (local MCP, `src/mcp/`), Task 12 substantially (8 alarms, dashboard, Budget,
+first deployed latency and cost baselines), Task 13's first half (the real
+2,759-row catalogue is loaded), and deferral 6b (GSI2). Task 15 is **blocked on
+data, measured**: zero of 175 recipes are fully priceable, and a forcing test
+fails when that changes. AgentCore and the managed-evaluation stages remain
+proposed, not built.
 
 Two deliberate deferrals carry their reasoning in `tasks.md`: a bare
 `price of mushrooms` is still refused by the Guardrail (3d), and SSM routing
@@ -352,7 +355,7 @@ load evidence the deferral required.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 694 passed, 31 skipped, no AWS
+python -m pytest -q                              # 763 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
