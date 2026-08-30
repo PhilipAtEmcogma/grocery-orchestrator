@@ -555,6 +555,23 @@ proposed, or gated as labelled; it is not implemented.
   scoped prefixes, lifecycle, restore, and deletion tests for approved
   datasets, evaluation results, and review artefacts; use SNS for non-sensitive
   operator and approval notifications.
+  - **Substantially done 2026-08-30 — see `docs/ARCHITECTURE.md` §3l.** Alarm
+    coverage went from 2 to 8, each bound to a metric confirmed present in
+    CloudWatch; the `internal-error` alarm closes the gap where a production
+    stage silently configured as a demo fired nothing at all. A 9-widget
+    dashboard over the EMF metrics and the gateway. AWS Budget at $25/month
+    with 50/80/100% actual and 100% forecast notifications, and the SNS policy
+    extended so Budgets can publish. An alarm drill run and reset. First cost
+    baseline: $17.63 for August, of which **60% is two models the service does
+    not route to** — the live eval sessions, not serving. First latency baseline
+    measured against the DEPLOYED endpoint rather than a laptop: price check p95
+    2.21s warm against a 5s target, meal plan p95 11.7-12.2s against 20s.
+    `apply_alarms.py`'s validator was taught two new cases (EMF-published
+    metrics, and statistic-kind alarms) without loosening its existing rules.
+    **Still open in this task:** the encrypted versioned S3 artefact bucket with
+    lifecycle and restore tests, throttling and stale-data metrics (the alarms
+    are deliberately absent until the metrics exist), and a larger latency run —
+    n=8 and n=3 are a baseline, not a qualification.
   - **Partial, 2026-08-30: end-to-end X-Ray tracing now exists.** API Gateway
     stage tracing was enabled on `woqmel35lk`/`dev`, so a trace's entry point is
     the gateway rather than the Lambda and the gateway hop is measurable for the

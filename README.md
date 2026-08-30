@@ -57,7 +57,7 @@ operational evidence** — not first deployment.
 | 6 · Idempotency fencing, canonical hashing, pagination, PITR | ✅ done · one deferral (6b) |
 | 7 · Scorecards, route qualification, prose/repair evals | ✅ done · one deferral (7b) |
 | **8 · Local read-only MCP** | ⬜ **not started — next** |
-| 9–12 · CDK, service plane, deploy, operations | ⬜ not started (design in `infra/`) — but a service **is** deployed imperatively; these tasks bring it under IaC |
+| 9–12 · CDK, service plane, deploy, operations | 🟡 **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). 9–11 = IaC, not started; the service is deployed imperatively |
 | 13 · Controlled ingestion | ⬜ not started |
 | 14 · AgentCore reviewer | ⬜ proposed, needs ADR 0002 approval |
 | 15 · Recipe catalogue | 🟡 catalogue + coverage gate built; **planning blocked on data** (0 of 175 recipes fully priceable) |

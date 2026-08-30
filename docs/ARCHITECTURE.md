@@ -111,7 +111,9 @@ All of it exists.
 | Products table | `grocery-products-dev` | **2,759 items**, the real catalogue only, GSI1 + GSI2, PAY_PER_REQUEST |
 | Idempotency table | `grocery-idempotency-dev` | TTL ACTIVE |
 | Guardrail | `b1xezpqe04kx` version `2` | v2 published 2026-08-29; DRAFT deliberately not granted in IAM |
-| SNS topic | `grocery-orchestrator-alarms-dev` | alarms: handler-escaped, api-5xx; one confirmed email subscriber |
+| SNS topic | `grocery-orchestrator-alarms-dev` | **8 alarms**; 2 confirmed email subscribers; Budgets granted publish |
+| Dashboard | `grocery-orchestrator-dev` | 9 widgets over the EMF metrics and the gateway |
+| Budget | `grocery-orchestrator-monthly-dev` | $25/month, alerts at 50/80/100% actual + 100% forecast |
 | Usage plan | `grocery-orchestrator-dev-plan` (`v4yd7d`) | 5 rps / burst 10 on stage `dev`; created 2026-08-30 |
 
 **One artefact, two functions.** `scripts/build_lambda.py` now includes
@@ -572,6 +574,120 @@ Budget lowered to $50, where a normal plan fits and a 3x-pack plan does not,
 which is the discrimination a budget case owes. Recorded in the case `note` per
 the eval-discipline rule -- and worth being precise that this is not lowering a
 bar a model failed to clear: the case never exercised its own kind.
+
+## 3l. Operational gates — Pilot Task 12, 2026-08-30
+
+### Alarm coverage: from two to eight
+
+The two shipped alarms did not cover the most consequential failure the service
+has. A production stage silently configured as a demo raises
+`ConfigurationError`, which maps to a contract-valid `INTERNAL_ERROR` at HTTP
+200 -- firing neither `handler-escaped` (it logs `unhandled_exception`, a
+different message) nor `api-5xx` (it is a 200). Req 12.8 asked for the rest and
+they were outstanding.
+
+Six added, each bound to a metric **confirmed present in CloudWatch with the
+dimensions named** -- an alarm on a metric that never reports looks exactly like
+a healthy service:
+
+| Alarm | Watches | Fires at |
+|---|---|---|
+| internal-error | `TurnError` [code=INTERNAL_ERROR] | 3 in 5 min |
+| idempotency-unavailable | `IdempotencyUnavailable` | 5 in 5 min |
+| turn-latency | `TurnLatency` p95 | > 20s over 2 periods |
+| repair-exhausted | `RepairExhausted` | 5 in 15 min |
+| guardrail-interventions | `GuardrailIntervened` | 10 in 15 min |
+| silent-turns | `TurnWithoutContent` [intent=meal_plan] | 10 in 15 min |
+
+**`internal-error` is dimensioned on the code, and that is the whole design.**
+`BUDGET_INFEASIBLE` and `NO_DATA` share the `TurnError` metric and are the
+product working correctly. An alarm without the dimension would page somebody
+every time a shopper asked for a plan that genuinely does not fit their budget,
+and an alarm people mute is worse than no alarm.
+
+**`guardrail-interventions` is not a safety alarm.** An intervention is the
+control working; alarming on one would page on every success. It is a CHANGE
+detector, and it exists because of §3f: the function applied Guardrail version 1
+for days while every document described version 2, refusing benign queries with
+nothing to show for it. A policy change that starts over-blocking looks exactly
+like this.
+
+Deliberately still absent: throttling and stale-data alarms. Neither has a
+metric yet, and adding the alarm before the metric adds the appearance of
+coverage rather than coverage.
+
+### The validator had to learn two things, and kept its teeth
+
+`apply_alarms.py` refused all six. Its rules encoded the assumptions of the
+original two as universal law: every metric comes from a log metric filter
+declared in this config, and every alarm is Sum/1-datapoint/fires-immediately.
+
+Both are wrong in general and were right for what existed. Rather than loosen
+them, the config now DECLARES what the application emits (`emf_metrics`) and
+each alarm declares its `kind` (`count` or `statistic`), with per-kind rules. A
+mistyped metric name still fails; a count alarm still cannot silently become
+statistical. `tests/test_alarms.py` binds `emf_metrics` to the `METRIC_`
+constants in `src/observability/base.py`, so renaming a metric in code without
+updating an alarm fails the build.
+
+### Alarm drill
+
+Not trusted -- watched. `set-alarm-state` drove `internal-error` to ALARM; it
+transitioned, carried the reason, and published to the topic with two confirmed
+subscribers. Reset to OK afterwards.
+
+### Cost baseline (Req 12.6, 12.7), and what it revealed
+
+Budget `grocery-orchestrator-monthly-dev`: **$25/month**, notifying at 50%, 80%
+and 100% actual plus 100% forecast. The SNS topic policy was extended to let
+`budgets.amazonaws.com` publish -- without it the budget is a dashboard widget.
+
+August spend, which is the first time anyone looked:
+
+| | |
+|---|---|
+| Claude Sonnet 4.5 | $5.40 |
+| Claude Haiku 4.5 | $5.21 |
+| Amazon Bedrock (Nova) | $2.92 |
+| Tax | $2.30 |
+| AWS Lambda | $1.77 |
+| CloudWatch / DynamoDB | $0.03 |
+| **total** | **$17.63** |
+
+**60% of the spend is two models the service does not route to.** `models.json`
+routes to Nova, and Sonnet is *disabled* on latency grounds. That $10.61 is the
+live evaluation sessions of 2026-08-28/29 -- experimentation, not serving.
+Serving is Nova plus Lambda, about $4.70 for the month.
+
+That distinction matters for the limit: $10 would have alarmed permanently on a
+month containing normal eval work, and a permanently-alarming budget is one
+nobody reads. $25 leaves room for evals while catching a runaway within days.
+
+### Latency baseline — the first one measured against the deployed service
+
+Every latency figure in this repository had been a laptop measurement.
+`scripts/measure_latency.py` measures the endpoint over HTTPS, including the
+gateway hop, paced at 9/min because the binding Nova Lite quota cannot be raised
+and an unpaced run measures the quota rather than the service.
+
+| | n | p50 | p95 | target |
+|---|---|---|---|---|
+| price check (warm) | 8 | 1.80s | **2.21s** | p95 < 5s ✅ |
+| meal plan | 3-4 | 6.6s | **11.7-12.2s** | p95 < 20s ✅ |
+
+**The first run reported price-check p95 at 5.97s and failed the target.** The
+entire difference was the cold start: request one took 5.97s, every other took
+1.6-2.0s, and at n=8 the p95 IS the cold start. Warm p95 is 2.21s. Both figures
+are true and they answer different questions -- a shopper's first request of the
+day pays it, and SnapStart's `Restore` subsegment (~0.6s, visible in X-Ray since
+§9) is only part of it.
+
+Meal plans sit at roughly half the 20s target with clear room under the ~25s p99
+escalation trigger.
+
+**Do not quote these as qualification.** n=8 and n=3 are a first baseline, and a
+p99 over three samples is just the maximum. Re-run before the pilot with enough
+turns to mean something, and once the recipe/plan path changes.
 
 ## 4. IAM notes worth keeping
 

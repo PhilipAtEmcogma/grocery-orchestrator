@@ -1,32 +1,27 @@
 {
   "_comment": "The two alarms design.md 12.6 says are worth having on day one. Alarms are configuration, not console state, for the same reasons the guardrail is (design.md 10.1): reviewable in a pull request, diffable, reproducible in another account. Apply with scripts/apply_alarms.py.",
-
   "version": "1.0",
   "region": "ap-southeast-2",
   "environment": "dev",
-
   "_naming": "Every name carries the -dev suffix so generated resources can coexist with manually created ones during the migration to IaC (design.md 11, point 2).",
-
   "notification": {
     "topic_name": "grocery-orchestrator-alarms-dev",
-    "_note": "Alarms point here. An alarm with no action is not an alarm, so apply_alarms.py refuses to create one without a topic, and warns when the topic it created has no subscribers — an alarm nobody is subscribed to fails the same way one paragraph further out.",
+    "_note": "Alarms point here. An alarm with no action is not an alarm, so apply_alarms.py refuses to create one without a topic, and warns when the topic it created has no subscribers \u2014 an alarm nobody is subscribed to fails the same way one paragraph further out.",
     "_subscriptions": "Deliberately not declared here. SNS email subscriptions require the recipient to confirm out of band, so a config file cannot make one true; subscribe once, by hand, and the script tells you if you have not."
   },
-
   "metric_filters": [
     {
       "name": "grocery-orchestrator-handler-escaped-dev",
       "log_group": "/aws/lambda/grocery-orchestrator-dev",
-      "_pattern_note": "A JSON selector, NOT the substring \"handler_escaped\". A substring pattern matches any log line that happens to contain the text — an exception message quoting it, a test fixture, a future log line about the alarm itself — and each of those is a page at 3am for nothing. This binds to the structured field Powertools writes.",
+      "_pattern_note": "A JSON selector, NOT the substring \"handler_escaped\". A substring pattern matches any log line that happens to contain the text \u2014 an exception message quoting it, a test fixture, a future log line about the alarm itself \u2014 and each of those is a page at 3am for nothing. This binds to the structured field Powertools writes.",
       "pattern": "{ $.message = \"handler_escaped\" }",
       "metric_name": "HandlerEscaped",
       "namespace": "GroceryOrchestrator",
       "metric_value": "1",
-      "_default_value_note": "0, not absent. Without it the metric has datapoints only when the pattern matches, so the alarm sits in INSUFFICIENT_DATA forever and OK never means 'checked and fine' — it means 'never looked'. With 0-fill, a quiet period is an affirmative all-clear.",
+      "_default_value_note": "0, not absent. Without it the metric has datapoints only when the pattern matches, so the alarm sits in INSUFFICIENT_DATA forever and OK never means 'checked and fine' \u2014 it means 'never looked'. With 0-fill, a quiet period is an affirmative all-clear.",
       "default_value": 0
     }
   ],
-
   "alarms": [
     {
       "name": "grocery-orchestrator-handler-escaped-dev",
@@ -44,7 +39,7 @@
     },
     {
       "name": "grocery-orchestrator-api-5xx-dev",
-      "description": "Any 5xx from the API. The gateway's own metric, so it fires even when the failure is upstream of our code or logging is the thing that broke — which is why it overlaps the handler_escaped alarm deliberately.",
+      "description": "Any 5xx from the API. The gateway's own metric, so it fires even when the failure is upstream of our code or logging is the thing that broke \u2014 which is why it overlaps the handler_escaped alarm deliberately.",
       "namespace": "AWS/ApiGateway",
       "metric_name": "5XXError",
       "_dimensions_note": "ApiName must match the deployed API exactly. A dimension that matches nothing yields a metric with no datapoints, which looks identical to a healthy service.",
@@ -58,12 +53,144 @@
       "threshold": 1,
       "comparison_operator": "GreaterThanOrEqualToThreshold",
       "treat_missing_data": "notBreaching"
+    },
+    {
+      "name": "grocery-orchestrator-internal-error-dev",
+      "description": "The turn failed for a reason the handler could not attribute -- INTERNAL_ERROR, as distinct from an honest refusal. THIS IS THE ALARM THAT WAS MISSING, and its absence was found on 2026-08-30: a production stage missing USE_DYNAMODB or a guardrail version raises ConfigurationError, which maps to a contract-valid INTERNAL_ERROR at HTTP 200. That fires neither handler-escaped (it logs unhandled_exception, not handler_escaped) nor api-5xx (it is a 200). The most consequential failure the service has was invisible to both deployed alarms. Dimensioned on code so an honest BUDGET_INFEASIBLE or NO_DATA never pages anyone.",
+      "namespace": "GroceryOrchestrator",
+      "metric_name": "TurnError",
+      "dimensions": {
+        "service": "grocery-orchestrator",
+        "code": "INTERNAL_ERROR"
+      },
+      "statistic": "Sum",
+      "period": 300,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "threshold": 3,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching",
+      "_threshold_note": "Three in five minutes, not one. A single INTERNAL_ERROR is a transient upstream fault the client retries; a misconfiguration produces one on EVERY turn, so it crosses three almost immediately. The gap between those is what stops this being the alarm people mute."
+    },
+    {
+      "name": "grocery-orchestrator-idempotency-unavailable-dev",
+      "description": "The idempotency store could not be reached. The turn still runs -- degrading to work rather than failing is deliberate (Req 12.3.4) -- so nothing else reports it and a client timeout retry is now charged twice. Silent double-billing is the failure this makes visible.",
+      "namespace": "GroceryOrchestrator",
+      "metric_name": "IdempotencyUnavailable",
+      "dimensions": {
+        "service": "grocery-orchestrator"
+      },
+      "statistic": "Sum",
+      "period": 300,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "threshold": 5,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching"
+    },
+    {
+      "name": "grocery-orchestrator-turn-latency-dev",
+      "description": "p95 turn latency against the 20-second meal-plan target in the pilot acceptance criteria (Req 12.6). Extended statistic rather than Average: an average hides the tail, and the tail is what the 29-second gateway ceiling truncates.",
+      "namespace": "GroceryOrchestrator",
+      "metric_name": "TurnLatency",
+      "dimensions": {
+        "service": "grocery-orchestrator"
+      },
+      "extended_statistic": "p95",
+      "period": 300,
+      "evaluation_periods": 2,
+      "datapoints_to_alarm": 2,
+      "threshold": 20000,
+      "comparison_operator": "GreaterThanThreshold",
+      "treat_missing_data": "notBreaching",
+      "_threshold_note": "Milliseconds. Two consecutive periods, because one slow five minutes on a service doing single-figure turns per minute is one slow request, not a trend.",
+      "kind": "statistic"
+    },
+    {
+      "name": "grocery-orchestrator-repair-exhausted-dev",
+      "description": "The bounded repair loop ran out of attempts and the plan was discarded. Each one is an honest refusal the shopper sees, so a trickle is the system working; a cluster means the planner is producing drafts that cannot be validated -- a prompt regression, a model change, or a catalogue whose candidates no longer satisfy the constraints.",
+      "namespace": "GroceryOrchestrator",
+      "metric_name": "RepairExhausted",
+      "dimensions": {
+        "service": "grocery-orchestrator"
+      },
+      "statistic": "Sum",
+      "period": 900,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "threshold": 5,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching"
+    },
+    {
+      "name": "grocery-orchestrator-guardrail-interventions-dev",
+      "description": "A spike in Guardrail interventions. NOT a safety alarm -- an intervention is the control working, and alarming on one would page somebody every time the policy did its job. It is a CHANGE detector, and it exists because of a real incident: the deployed function applied Guardrail version 1 for days while every document described version 2, and benign grocery queries were refused with nothing to show for it. A policy or version change that starts over-blocking looks exactly like this.",
+      "namespace": "GroceryOrchestrator",
+      "metric_name": "GuardrailIntervened",
+      "dimensions": {
+        "service": "grocery-orchestrator"
+      },
+      "statistic": "Sum",
+      "period": 900,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "threshold": 10,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching"
+    },
+    {
+      "name": "grocery-orchestrator-silent-turns-dev",
+      "description": "Turns that produced no content -- no comparison, no plan, no clarification. Dimensioned by intent, so a rise on meal_plan is distinguishable from a rise on out_of_scope. A shopper who asks and is answered with nothing has had a worse experience than one who was refused, and no other signal reports it: the turn is a 200 with a contract-valid body.",
+      "namespace": "GroceryOrchestrator",
+      "metric_name": "TurnWithoutContent",
+      "dimensions": {
+        "service": "grocery-orchestrator",
+        "intent": "meal_plan"
+      },
+      "statistic": "Sum",
+      "period": 900,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "threshold": 10,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching"
     }
   ],
-
   "tags": [
-    { "key": "Project", "value": "SmartGrocery" },
-    { "key": "Env", "value": "dev" },
-    { "key": "ManagedBy", "value": "config/alarms.json" }
+    {
+      "key": "Project",
+      "value": "SmartGrocery"
+    },
+    {
+      "key": "Env",
+      "value": "dev"
+    },
+    {
+      "key": "ManagedBy",
+      "value": "config/alarms.json"
+    }
+  ],
+  "_coverage_note": "Req 12.8 asks for escaped handlers and API 5xx before pilot traffic, then MEASURED alarms for latency, model errors, Guardrail interventions, throttling, stale data, idempotency failures and silent turns. The first two shipped 2026-08-27; the rest were added 2026-08-30 after an audit found that the most consequential failure the service has -- a production stage silently configured as a demo -- fired neither of them. Every alarm here binds to a metric CONFIRMED present in CloudWatch with the dimensions named, because an alarm on a metric that never reports looks exactly like a healthy service. Still absent deliberately: throttling and stale-data alarms, because neither has a metric yet -- adding the alarm before the metric would be adding the appearance of coverage.",
+  "_emf_note": "Metrics the APPLICATION emits as Embedded Metric Format, as distinct from metric_filters, which CloudWatch derives from log lines. Both end up in the same namespace and an alarm can watch either, but only filters are declared by this file -- so EMF names are listed here explicitly rather than left unvalidated. That keeps the teeth: an alarm on a mistyped metric name still fails validation, and a metric name that never reports looks exactly like a healthy service. tests/test_alarms.py asserts this list matches the METRIC_ constants in src/observability/base.py, so renaming a metric in code without updating an alarm fails the build.",
+  "emf_metrics": [
+    "CacheReadTokens",
+    "GuardrailIntervened",
+    "IdempotencyClaimLost",
+    "IdempotencyUnavailable",
+    "IdempotentReplay",
+    "InputTokens",
+    "InvalidRequest",
+    "ModelCalls",
+    "ModelLatency",
+    "OutputTokens",
+    "PreflightRequests",
+    "RepairAttempts",
+    "RepairExhausted",
+    "RetrievalLatency",
+    "TurnError",
+    "TurnIdReused",
+    "TurnLatency",
+    "TurnWithoutContent",
+    "TurnsProcessed"
   ]
 }
