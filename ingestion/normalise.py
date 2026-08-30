@@ -49,6 +49,28 @@ def gsi1_sk(price: Decimal, store: str, store_location: str) -> str:
     return f"{_cents(price):0{PRICE_KEY_WIDTH}d}#{store_key(store, store_location)}"
 
 
+def gsi2_sk(price: Decimal, product_key: str, store: str, store_location: str) -> str:
+    """
+    GSI2's sort key: zero-padded cents, then the product and store.
+
+    GSI2 partitions by `category` and answers "the cheapest things in this
+    category", which is what `candidates_for_budget` asks on every meal-plan
+    turn. That query used to be a full-table Scan -- defensible while the
+    catalogue was 152 seeded rows and one page, and not defensible at the 2,939
+    the data team's catalogue brings, where a Scan reads the whole table to
+    return about two dozen rows.
+
+    The product key sits in the sort key as well as the store key because the
+    caller wants DISTINCT products, not the same cheap product at ten stores.
+    Including it keeps the key unique per item, and keeps the dedupe cheap:
+    equal-priced rows for one product sort adjacently.
+
+    Zero-padding for the same reason as GSI1 -- lexicographic order only agrees
+    with numeric order at a fixed width.
+    """
+    return f"{_cents(price):0{PRICE_KEY_WIDTH}d}#{product_key}#{store_key(store, store_location)}"
+
+
 def unit_price(price: Decimal, pack_grams: int) -> Decimal:
     """
     Price per kilogram, to the cent -- or the price itself for unit-priced goods.
@@ -95,6 +117,9 @@ def to_item(offer: RawOffer) -> dict:
         "product_key": offer.product_key,
         "gsi1_pk": offer.product_key,
         "gsi1_sk": gsi1_sk(offer.price_nzd, offer.store, offer.store_location),
+        # GSI2 partitions by `category`, which is already an attribute below,
+        # so only the sort key is added here -- the same shape as GSI1.
+        "gsi2_sk": gsi2_sk(offer.price_nzd, offer.product_key, offer.store, offer.store_location),
         "store": offer.store,
         "store_location": offer.store_location,
         "lat": Decimal(str(offer.lat)),

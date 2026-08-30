@@ -29,7 +29,7 @@ from botocore.config import Config
 
 from src.retrieval.base import PriceRecord, PriceRepository, cap_to_budget
 from src.retrieval.filters import FreshnessFilter, NearFilter
-from src.retrieval.memory import SYNONYMS, normalise_term
+from src.retrieval.memory import load_synonyms, normalise_term
 from src.schemas.contract import Store
 
 REGION = "ap-southeast-2"
@@ -77,9 +77,13 @@ class DynamoPriceRepository(PriceRepository):
 
         # Synonym table is the same application-level mapping as the in-memory
         # implementation. It's free-text interpretation, not storage concern.
-        self._synonyms: dict[str, str] = {
-            normalise_term(phrase): key for phrase, key in SYNONYMS.items()
-        }
+        #
+        # Term -> candidate keys, because config/product-synonyms.json covers
+        # more than one catalogue. The in-memory version can filter these at
+        # construction because it holds the whole catalogue; this one cannot,
+        # so it filters at resolve time by querying GSI1. Same answer, reached
+        # differently, which is what the shared contract suite exists to check.
+        self._synonyms: dict[str, list[str]] = load_synonyms()
 
     # ------------------------------------------------------------ interface
 
@@ -183,38 +187,36 @@ class DynamoPriceRepository(PriceRepository):
         if not term:
             return None
 
-        # 1. Synonym table
-        candidate = self._synonyms.get(term)
+        # 1. Synonym table, in preference order. The first candidate with rows
+        #    behind it wins; one that names a product from a catalogue this
+        #    table does not hold is skipped rather than returned empty.
+        for candidate in self._synonyms.get(term, []):
+            if self._has_rows(candidate):
+                return candidate
 
-        # 2. Direct product_key
-        if candidate is None:
-            as_key = term.replace(" ", "-")
-            # Check if this key exists by querying GSI1 (one item is enough)
-            response = self._table.query(
-                IndexName="GSI1",
-                KeyConditionExpression=Key("product_key").eq(as_key),
-                Limit=1,
-                Select="COUNT",
-            )
-            if response.get("Count", 0) > 0:
-                candidate = as_key
+        # 2. Direct product_key, e.g. from a UI chip rather than free text.
+        as_key = term.replace(" ", "-")
+        if self._has_rows(as_key):
+            return as_key
 
-        # 3. Verify the synonym-resolved key actually has records
-        if candidate and candidate not in self._synonyms.values():
-            # Already verified via the GSI1 query above
-            pass
-        elif candidate:
-            # Synonym-resolved — verify it exists
-            response = self._table.query(
-                IndexName="GSI1",
-                KeyConditionExpression=Key("product_key").eq(candidate),
-                Limit=1,
-                Select="COUNT",
-            )
-            if response.get("Count", 0) == 0:
-                return None
+        # 3. No confident match: return None rather than guessing.
+        return None
 
-        return candidate
+    def _has_rows(self, product_key: str) -> bool:
+        """
+        Does this key have any prices? One GSI1 item is enough to know.
+
+        Every synonym is checked through here, so a stale table entry can never
+        produce a key with no prices -- the in-memory implementation gets the
+        same guarantee by filtering against the catalogue it holds.
+        """
+        response = self._table.query(
+            IndexName="GSI1",
+            KeyConditionExpression=Key("product_key").eq(product_key),
+            Limit=1,
+            Select="COUNT",
+        )
+        return response.get("Count", 0) > 0
 
     def candidates_for_budget(
         self,
@@ -230,9 +232,29 @@ class DynamoPriceRepository(PriceRepository):
         """
         Cheapest distinct products per category, excluding dietary categories.
 
-        Scans the base table and filters in application code. At ~150 seed
-        records this is a single page; at scale this would need a category GSI.
-        The contract suite verifies the invariants regardless of implementation.
+        ONE QUERY PER WANTED CATEGORY against GSI2, which partitions by
+        `category` and sorts by zero-padded price, so the cheapest rows are the
+        first ones read and the query stops early.
+
+        This replaced a full-table `Scan`, and the replacement was deferred
+        deliberately until there was evidence to choose it on (Pilot Task 6b).
+        There now is, and it points one way:
+
+        * **The access pattern** is literally partition-by-category,
+          sort-by-price -- `limit_per_category` cheapest distinct products in
+          each of about eight categories.
+        * **The load**: the catalogue is 2,939 rows rather than the 152 seeded
+          ones. A Scan reads every row on every meal-plan turn to return roughly
+          two dozen, and DynamoDB charges for rows read, not rows returned.
+        * **Independent corroboration**: the data team reached the same shape
+          without consulting us -- `smart-grocery-products-dev` carries a
+          `CategoryPriceIndex` on exactly `category`/`price`.
+
+        The filters stay application-side. Distance is geometry, freshness is a
+        non-key attribute, and neither is expressible as a key condition, so
+        this over-fetches and pages exactly as `cheapest_for_product` does --
+        and for the same reason: filtering one page and returning the survivors
+        is the truncation defect that reported `no_data` for a stocked product.
         """
         excluded = set(exclude_categories)
         wanted = set(categories) - excluded
@@ -240,37 +262,50 @@ class DynamoPriceRepository(PriceRepository):
         if not wanted:
             return []
 
-        # Scan the full table. At seed scale (~150 items) this is one page.
-        all_items: list[dict] = []
-        response = self._table.scan()
-        all_items.extend(response.get("Items", []))
-        while "LastEvaluatedKey" in response:
-            response = self._table.scan(ExclusiveStartKey=response["LastEvaluatedKey"])
-            all_items.extend(response.get("Items", []))
+        filtering = near is not None or locations is not None or freshness is not None
+        # Distinct PRODUCTS are wanted, but the index holds one row per store,
+        # so a popular product can occupy many consecutive rows. Over-fetch
+        # enough to see past that, and more again when a filter may discard
+        # most of what comes back.
+        page_size = limit_per_category * (20 if filtering else 5)
 
-        # Convert and sort by price
-        all_records = [_to_record(item) for item in all_items]
-        # Same reasoning as the in-memory implementation: filter the pool before
-        # per-category selection, never after.
-        if near is not None:
-            all_records = [r for r in all_records if near.covers(r.lat, r.lon)]
-        if locations is not None:
-            all_records = [r for r in all_records if r.store_location in locations]
-        if freshness is not None:
-            all_records = [r for r in all_records if freshness.is_fresh(r.valid_date)]
-        all_records.sort(key=lambda r: r.price_nzd)
-
-        # Pick cheapest distinct products per category
         out: list[PriceRecord] = []
         for category in sorted(wanted):
             seen_products: set[str] = set()
-            for rec in all_records:
-                if rec.category != category or rec.product_key in seen_products:
-                    continue
-                seen_products.add(rec.product_key)
-                out.append(rec)
-                if len(seen_products) >= limit_per_category:
+            chosen: list[PriceRecord] = []
+            start_key: dict | None = None
+
+            for _page in range(MAX_QUERY_PAGES):
+                kwargs: dict = {
+                    "IndexName": "GSI2",
+                    "KeyConditionExpression": Key("category").eq(category),
+                    "ScanIndexForward": True,  # zero-padded price: cheapest first
+                    "Limit": page_size,
+                }
+                if start_key is not None:
+                    kwargs["ExclusiveStartKey"] = start_key
+
+                response = self._table.query(**kwargs)
+                for item in response.get("Items", []):
+                    record = _to_record(item)
+                    if near is not None and not near.covers(record.lat, record.lon):
+                        continue
+                    if locations is not None and record.store_location not in locations:
+                        continue
+                    if freshness is not None and not freshness.is_fresh(record.valid_date):
+                        continue
+                    if record.product_key in seen_products:
+                        continue
+                    seen_products.add(record.product_key)
+                    chosen.append(record)
+                    if len(chosen) >= limit_per_category:
+                        break
+
+                start_key = response.get("LastEvaluatedKey")
+                if len(chosen) >= limit_per_category or start_key is None:
                     break
+
+            out.extend(chosen)
 
         # Same cap as the fixture implementation, from the same helper: the
         # contract suite runs over both, so a divergence here would be a

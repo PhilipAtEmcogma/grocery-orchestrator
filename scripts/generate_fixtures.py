@@ -137,6 +137,12 @@ def build() -> list[dict]:
                     # cheapest option is the FIRST result of a single query.
                     "gsi1_pk": key,
                     "gsi1_sk": f"{int(price * 100):09d}#{chain}#{loc_slug}",
+                    # GSI2: partition by CATEGORY, sort by zero-padded price, so
+                    # "cheapest things in this category" is a query rather than a
+                    # full-table Scan. The product key is in the sort key because
+                    # the caller wants distinct products, not one cheap product
+                    # at every store. Partition key is `category` below.
+                    "gsi2_sk": f"{int(price * 100):09d}#{key}#{chain}#{loc_slug}",
                     # attributes
                     "store": chain,
                     "store_location": location,

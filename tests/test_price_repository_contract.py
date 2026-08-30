@@ -49,11 +49,18 @@ from src.retrieval.dynamo import MAX_QUERY_PAGES, DynamoPriceRepository
 from src.retrieval.memory import InMemoryPriceRepository
 from src.schemas.contract import Store
 
-# The row count past which a full-table Scan per meal-plan turn stops being
-# defensible. Not a DynamoDB limit — a judgement, set an order of magnitude
-# above the current fixture set so ordinary growth does not trip it, and far
-# below the point where the read cost of scanning a real catalogue to return
-# fifteen rows becomes the dominant cost of a turn.
+# RESOLVED 2026-08-30 — kept for the reasoning, no longer a ceiling.
+#
+# This was the row count past which a full-table Scan per meal-plan turn stopped
+# being defensible, and the test below failed once the dataset passed it. That
+# was the point: the decision was deferred (Pilot Task 6b) until there was
+# evidence to make it on, and the test forced the choice rather than letting
+# "accepted for the fixture dataset" quietly become production.
+#
+# The forcing worked. `candidates_for_budget` now queries GSI2 (partition by
+# category, sort by zero-padded price) instead of scanning, so the row count is
+# no longer the thing that matters. The number is kept because it is the
+# threshold the judgement was made against, not because anything still checks it.
 SCAN_CEILING_RECORDS = 1000
 
 # --------------------------------------------------------------- registry
@@ -532,26 +539,106 @@ def test_paging_is_bounded_when_nothing_ever_matches():
     assert table.queries == MAX_QUERY_PAGES, "must not walk the whole index"
 
 
-def test_the_scan_ceiling_is_asserted_rather_than_assumed():
+def test_meal_plan_candidates_are_queried_by_category_not_scanned():
     """
-    `candidates_for_budget` SCANS the products table on every meal-plan turn.
+    Pilot Task 6b, resolved: the Scan is gone and must not come back.
 
-    That is defensible at fixture scale — 152 records is one page — and
-    indefensible at pilot scale, where a scan reads the entire catalogue to
-    return about fifteen rows. DYNAMODB-SCHEMA.md says the replacement (a
-    category index, or a materialised candidate view) must be chosen from real
-    access patterns and load evidence, and there is currently neither: no
-    deployment, no traffic.
+    `candidates_for_budget` ran a full-table Scan on every meal-plan turn. That
+    was defensible at 152 seeded rows -- one page -- and indefensible at the
+    2,939 the data team's catalogue brings, where it reads the whole table to
+    return about two dozen rows and DynamoDB charges for rows READ.
 
-    So the decision is deferred deliberately, and this test is what stops
-    "accepted for the fixture dataset" quietly becoming production. When the
-    seed set grows past the ceiling, this fails and forces the choice.
+    The replacement was chosen on the evidence DYNAMODB-SCHEMA.md required:
+    the access pattern is partition-by-category/sort-by-price, the load is now
+    real, and the data team's own table independently carries the same
+    `CategoryPriceIndex` shape.
+
+    Asserted on the CALLS, not on the row count. A row-count ceiling could only
+    ever say "the dataset is still small enough to get away with it"; this says
+    the query pattern is right at any size, which is the property that actually
+    matters.
     """
-    records = InMemoryPriceRepository().all_records
-    assert len(records) <= SCAN_CEILING_RECORDS, (
-        f"the products dataset has {len(records)} records, past the {SCAN_CEILING_RECORDS} "
-        f"at which a full-table Scan per meal-plan turn stops being defensible. "
-        f"Pilot Task 6 requires choosing a queryable candidate pattern before "
-        f"going further — see DYNAMODB-SCHEMA.md, 'Location, freshness and "
-        f"meal-candidate access patterns'."
+    table = _RecordingTable(_dynamo_items())
+    repo = DynamoPriceRepository.__new__(DynamoPriceRepository)
+    repo._table = table  # type: ignore[attr-defined]
+    repo._table_name = "test"  # type: ignore[attr-defined]
+
+    found = repo.candidates_for_budget(
+        categories=["produce", "dairy"], exclude_categories=[], limit_per_category=2
     )
+
+    assert table.scans == 0, "candidates_for_budget must never Scan"
+    assert table.queries > 0
+    assert all(q == "GSI2" for q in table.indexes), table.indexes
+    # One partition per wanted category, not one per row.
+    assert set(table.categories) == {"produce", "dairy"}
+    assert found, "the query returned nothing; the index or the fixture is wrong"
+
+
+def test_the_category_index_is_populated_for_every_seeded_row():
+    """
+    A sparse GSI is silent.
+
+    DynamoDB simply omits an item with no sort-key attribute from the index, so
+    a row missing `gsi2_sk` disappears from meal-plan candidates with no error
+    anywhere -- the plan is just quietly worse. Both the fixture generator and
+    the seed loader must carry it.
+    """
+    import json
+    from pathlib import Path
+
+    fixture = json.loads(
+        (Path(__file__).resolve().parents[1] / "fixtures" / "products.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert fixture, "no fixture records"
+    for record in fixture:
+        assert record.get("gsi2_sk"), f"{record['product_key']} has no gsi2_sk"
+        # Zero-padded cents lead, so lexicographic order is price order.
+        cents, _, rest = record["gsi2_sk"].partition("#")
+        assert cents.isdigit() and len(cents) == 9, record["gsi2_sk"]
+        assert rest.startswith(record["product_key"]), record["gsi2_sk"]
+
+
+class _RecordingTable:
+    """A stand-in that records how it was asked, not just what it returned."""
+
+    def __init__(self, items: list[dict]) -> None:
+        self._items = items
+        self.scans = 0
+        self.queries = 0
+        self.indexes: list[str] = []
+        self.categories: list[str] = []
+
+    def scan(self, **kwargs):
+        self.scans += 1
+        return {"Items": self._items}
+
+    def query(self, **kwargs):
+        self.queries += 1
+        self.indexes.append(kwargs.get("IndexName", ""))
+        # The condition object does not expose its value publicly; the values
+        # are positional on the private tuple, which is stable enough for a
+        # test and far clearer than reconstructing the expression.
+        category = kwargs["KeyConditionExpression"]._values[1]
+        self.categories.append(category)
+        items = [i for i in self._items if i["category"] == category]
+        items.sort(key=lambda i: i["gsi2_sk"])
+        return {"Items": items[: kwargs.get("Limit", len(items))]}
+
+
+def _dynamo_items() -> list[dict]:
+    """The fixture rows in the shape DynamoDB hands back."""
+    import json
+    from pathlib import Path
+
+    raw = json.loads(
+        (Path(__file__).resolve().parents[1] / "fixtures" / "products.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    for record in raw:
+        record["lat"] = Decimal(str(record["lat"]))
+        record["lon"] = Decimal(str(record["lon"]))
+    return raw

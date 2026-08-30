@@ -9,8 +9,8 @@ The current account contains `grocery-products-dev` and
 `grocery-idempotency-dev`; the products table is seeded and both adapters have
 been live-verified. Claim-owner idempotency hardening landed 2026-08-29 and was
 verified against the live table. `grocery-meals-dev`, the production
-candidate-query access pattern, and the CDK definitions are planned; the
-candidate pattern is deliberately deferred until there is load evidence to
+candidate-query access pattern is RESOLVED (GSI2, 2026-08-30) and the CDK
+definitions are planned; the pattern was deferred until there was load evidence to
 choose from, and `tests/test_price_repository_contract.py` fails once the
 dataset outgrows a defensible Scan.
 
@@ -117,20 +117,56 @@ GSI1 remains correct for a bounded price comparison: query by product, then
 apply the request's explicit eligible store/location set before citations are
 created. A location request must never silently widen to national results.
 
-The current `candidates_for_budget()` implementation scans the products table.
-That is accepted only for the 152-record fixture/demo dataset. Before pilot
-scale, Pilot Task 6 must choose and load-test one of:
+**RESOLVED 2026-08-30 (Pilot Task 6b): GSI2, option 1.**
 
-1. a category/location/date-bucket index whose partition cardinality stays
-   healthy and whose query returns price-sortable candidates; or
-2. a materialized candidate-view table maintained by controlled ingestion (or
-   later by DynamoDB Streams), keyed for category + location bucket + freshness
-   window and sorted by price.
+`candidates_for_budget()` used to `Scan` the products table on every meal-plan
+turn. It now issues one `Query` per wanted category against **GSI2**.
 
-The decision is made from real access patterns and load evidence. Production
-meal candidate retrieval must use `Query`, not a table scan. Every record keeps
-`valid_date`; Pilot Task 5 defines the freshness threshold and stale-only
-outcome.
+| Index | PK | SK |
+|---|---|---|
+| **GSI2** | `category` | `gsi2_sk` — `000000297#butter-500g#paknsave#sylvia-park` |
+
+Zero-padded cents lead the sort key, so the cheapest rows are the first read and
+the query stops early. The product key follows, because the caller wants
+*distinct products* rather than one cheap product at ten stores, and it keeps
+the key unique per item. `category` was already a base attribute, so — exactly
+as with GSI1 — only the sort key had to be added.
+
+The decision was deferred until there was evidence to make it on, and the
+evidence points one way:
+
+1. **The access pattern is the index.** `candidates_for_budget` asks for the
+   *N* cheapest distinct products in each of about eight categories. That is
+   partition-by-category, sort-by-price, written out.
+2. **The load is now real.** The catalogue is 2,939 rows, not the 152 seeded
+   ones. A Scan reads every row on every meal-plan turn to return roughly two
+   dozen, and DynamoDB bills rows *read*.
+3. **The data team reached the same shape independently.** Their
+   `smart-grocery-products-dev` carries a `CategoryPriceIndex` on
+   `category`/`price` — two teams, the same question, the same index.
+
+Option 2 — a materialised candidate view — stays unbuilt and is now unnecessary
+at this scale; revisit it only if partition cardinality on `category` becomes
+the constraint, which eight categories over thousands of rows is far from.
+
+Distance and freshness remain application-side filters: neither is expressible
+as a key condition, so the query over-fetches and pages, the same way
+`cheapest_for_product` does and for the same reason — filtering a single page
+and returning the survivors is the truncation defect that reported `no_data`
+for a stocked product.
+
+**A sparse index is silent.** DynamoDB omits an item that lacks the sort-key
+attribute, with no error anywhere, so a row written without `gsi2_sk` simply
+never appears as a meal-plan candidate. Both `ingestion/normalise.py` and
+`scripts/load_seed_data.py` write it, and a test asserts every fixture row
+carries it.
+
+`dynamodb:Scan` has been **removed** from the orchestrator role: no read path
+uses it any more, and a permission nothing needs is one somebody can quietly
+start using again.
+
+Every record keeps `valid_date`; Pilot Task 5 defines the freshness threshold
+and stale-only outcome.
 
 ### Proposed review-trigger path
 

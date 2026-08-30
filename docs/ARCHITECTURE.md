@@ -9,9 +9,22 @@ live red-team run found it refusing benign grocery queries (the foraging topic
 was scoped to an ingredient rather than an activity); PITR was enabled on the
 two upstream data tables and deliberately left off the idempotency cache; and
 the idempotency table's claims became owner-fenced, verified against the real
-table. The application-layer Pilot Tasks 1-7 are closed. **Nothing here is
-deployed as a service yet** — the Lambda, API Gateway and alias in the diagram
-below are the TARGET shape, not the current account.
+table. The application-layer Pilot Tasks 1-7 are closed.
+
+**Corrected 2026-08-30.** The 2026-08-29 amendment previously claimed "nothing
+here is deployed as a service yet — the Lambda, API Gateway and alias in the
+diagram below are the TARGET shape, not the current account." **That was
+false.** It contradicted §3, §5 and §6 of this same file, which were correct,
+and it propagated into the README, `AGENTS.md` and `infra/docs/00`. Everything
+in §3 was re-verified against the account on 2026-08-30 and all of it exists.
+Nothing in the diagram below is aspirational except the dashed retailer link
+and the S3/CloudFront frontend.
+
+The correction is worth more than the fact. A document describing intent was
+edited to overrule a document describing an account, and four files then agreed
+with each other and disagreed with AWS — the same shape as every other finding
+in this repository: **a claim that looked verified because other claims matched
+it.** Check the account.
 
 This file is the **deployment record**: what exists in the account, what it is
 wired to, and what was learned deploying it. `AGENTS.md` remains the working
@@ -79,18 +92,23 @@ is the boundary worth drawing, because it is where untrusted data enters.
 
 ## 3. What is deployed
 
+**Every row below was re-verified against the account on 2026-08-30** with
+`aws apigateway get-rest-apis`, `lambda list-aliases`, `apigateway get-stages`
+and `scheduler list-schedules`, plus a live `POST /dev/chat` returning HTTP 200.
+All of it exists.
+
 | Resource | Identifier | Notes |
 |---|---|---|
 | Orchestrator Lambda | `grocery-orchestrator-dev` | python3.13, x86_64, 1024 MB, 30 s, X-Ray Active |
-| Published version / alias | `5` / `:live` | SnapStart `OptimizationStatus: On` |
+| Published version / alias | `8` / `:live` | SnapStart `OptimizationStatus: On`; v6 (current code), v7 (freshness 45), v8 (GSI2 candidates) all 2026-08-30 |
 | Orchestrator role | `grocery-orchestrator-dev-role` | `config/iam-orchestrator-role.json` |
-| REST API | `grocery-orchestrator-api-dev` (`woqmel35lk`) | regional, stage `dev`, throttle 5 rps / burst 10 |
+| REST API | `grocery-orchestrator-api-dev` (`woqmel35lk`) | regional, stage `dev`, throttle 5 rps / burst 10, X-Ray tracing ON (enabled 2026-08-30) |
 | Endpoint | `POST /dev/chat` | unauthenticated; see §7 |
 | Ingestion Lambda | `grocery-ingestion-dev` | 512 MB, 120 s, handler `ingestion.handler.lambda_handler` |
 | Ingestion role | `grocery-ingestion-dev-role` | `config/iam-ingestion-role.json`; read+write on products only, no Bedrock, no idempotency |
 | State machine | `grocery-ingestion-dev` | `config/ingestion-state-machine.json` |
 | Schedule | `grocery-price-refresh-dev` | `cron(0 3 * * ? *)` Pacific/Auckland, ENABLED |
-| Products table | `grocery-products-dev` | 152 items, GSI1, PAY_PER_REQUEST |
+| Products table | `grocery-products-dev` | 152 items, **GSI1 + GSI2**, PAY_PER_REQUEST |
 | Idempotency table | `grocery-idempotency-dev` | TTL ACTIVE |
 | Guardrail | `b1xezpqe04kx` version `2` | v2 published 2026-08-29; DRAFT deliberately not granted in IAM |
 | SNS topic | `grocery-orchestrator-alarms-dev` | alarms: handler-escaped, api-5xx |
@@ -110,6 +128,204 @@ so it was matched to what CI verifies rather than guessed at.
 **The alias is what gets invoked, not `$LATEST`.** SnapStart applies to
 published versions only. An integration pointed at the unqualified function ARN
 silently forfeits it while still working — nothing breaks, it just gets slower.
+
+## 3a. Code refreshed to current `main` — 2026-08-30
+
+**Resolved.** Alias `live` served version `5` (published 2026-08-27) until
+2026-08-30, which predated Pilot Tasks 4-7. It now serves **version `7`** -- v6 was `main` at commit `2412ac3`, v7 adds
+the freshness decision in section 3c. The defect that mattered is gone: the endpoint
+no longer invents a `$0` budget from a message that never mentioned money.
+
+| Request | v5 (until 2026-08-30) | v6 (now) |
+|---|---|---|
+| `feed my flat of 3 this week` | `BUDGET_INFEASIBLE`: *"I couldn't build a plan within $0"* | `clarification` asking what they want to spend |
+| `cheapest butter` | five citations, presented as current | `STALE_DATA` naming the 2026-07-31 capture date |
+
+### How it was done, and why not the four commands this section used to give
+
+The procedure previously written here -- build, update code, publish, move the
+alias -- moves the alias before anything has invoked the new version. Two
+reasons that is the wrong order here:
+
+- **`build_lambda.py` cannot verify its own archive on Windows.** It says so and
+  skips the import check, because the manylinux wheels will not load on the build
+  host. So a locally built archive is *unverified* until something runs it, and
+  the first thing to run it should not be live traffic.
+- **SnapStart publishes asynchronously.** A freshly published version sits in
+  `State: Pending` while the snapshot is built. Pointing an alias at it before it
+  is `Active` is a race.
+
+The order actually used, which keeps live traffic on the old version throughout:
+
+```bash
+python scripts/build_lambda.py
+aws lambda update-function-code --function-name grocery-orchestrator-dev     --zip-file fileb://build/lambda.zip          # changes $LATEST only; alias untouched
+aws lambda wait function-updated-v2 --function-name grocery-orchestrator-dev
+aws lambda publish-version --function-name grocery-orchestrator-dev   # -> 6, State: Pending
+aws lambda wait published-version-active     --function-name grocery-orchestrator-dev --qualifier 6            # SnapStart snapshot
+aws lambda invoke --function-name grocery-orchestrator-dev --qualifier 6     --cli-binary-format raw-in-base64-out --payload file://probe.json out.json
+# ONLY after that returns a sane body:
+aws lambda update-alias --function-name grocery-orchestrator-dev     --name live --function-version 6
+```
+
+The direct invoke against `--qualifier 6` is the step that earns the cutover: it
+proved the archive imports at all, which the build could not. Rollback is one
+command -- `update-alias ... --function-version 5`.
+
+Two Windows traps hit on the way, both the same shape as the `bash -c` finding
+in `AGENTS.md` -- the tooling altering what was tested:
+
+- `--payload file:///tmp/p.json` and an output path of `/tmp/out.json` do not
+  refer to the same place for Git Bash and for the Windows `aws.exe`. Use a real
+  Windows path for both.
+- The first attempt suppressed stderr with `2>&1 >/dev/null`, so the failure
+  surfaced as a confusing `FileNotFoundError` from the *reader* rather than the
+  actual CLI error. Do not silence the tool you are trying to verify.
+
+### Dependencies moved too
+
+The rebuild resolved newer versions than the 2026-08-27 build, because
+`requirements.txt` pins nothing: boto3 1.43.81 -> 1.43.83, pydantic 2.13.4 ->
+2.13.5, langchain-core 1.6.0 -> 1.6.1, wrapt 2.3.0 -> 2.4.0, and others. So
+version 6 differs from version 5 by more than this repository's own commits, and
+a future rebuild will differ again. Pinning is worth doing before the pilot;
+until then, a redeploy is not a reproducible operation.
+
+## 3b. Two resources in the account that this project does not own
+
+`aws apigateway get-rest-apis` and `lambda list-functions` on 2026-08-30 also
+returned, in the same account (`097087133897`, `ap-southeast-2`):
+
+| Resource | Identifier | Created | Runtime |
+|---|---|---|---|
+| REST API | `Chatbot` (`gxbx2006zc`) | 2026-08-26T16:32 +12:00 | — |
+| Lambda | `Chatbot` | 2026-08-26T04:58 UTC | **python3.14** |
+
+**Nothing in this repository references either.** They predate
+`grocery-orchestrator-api-dev` by a day, and the python3.14 runtime is not this
+project's pinned 3.13, which is some evidence they are not a stray artefact of
+our own deployment scripts.
+
+**Status: open — Philip is asking the team.** Until someone claims them, treat
+them as unidentified: another `Chatbot` REST API is a second public endpoint in
+a shared account, and an unowned Lambda is an unowned execution role.
+
+Three things worth settling when an owner is found:
+
+- **Whose are they, and are they still wanted?** If they are a teammate's
+  frontend spike, they belong in that teammate's documentation, not deleted by
+  us.
+- **What can they reach?** The relevant question is the execution role, not the
+  function — an unowned role with broad DynamoDB or Bedrock grants is a larger
+  finding than an idle endpoint.
+- **Do they belong in the CDK adoption scope (Pilot Task 9)?** Almost certainly
+  not, but that is a decision to record rather than an assumption to make.
+  Tracked in [`infra/docs/08-OPEN-DECISIONS.md`](../infra/docs/08-OPEN-DECISIONS.md) §10.
+
+**Do not delete either without an owner's agreement.** They cost nothing idle,
+and a deletion nobody asked for is worse than an endpoint nobody uses.
+
+## 3c. Freshness threshold raised 14 -> 45, and why — 2026-08-30
+
+**The problem.** Version 6 began enforcing price freshness. Every one of the 152
+seeded rows carries `valid_date: 2026-07-31`, so at 30 days of age against a
+14-day `max_price_age_days` the endpoint answered `STALE_DATA` to every priced
+query. Correct behaviour -- presenting a 30-day-old comparison as "the cheapest
+price" is the exact claim `ACQUISITION-RISK.md` finds the Fair Trading Act
+attaches to -- but it left the deployed service unable to demonstrate anything
+priced.
+
+**Decision (Philip, service owner, 2026-08-30): raise `max_price_age_days` to
+45.** Recorded in full in `config/freshness.json` under `_decision_2026_08_30`,
+which is the durable copy; this is the deployment-side summary.
+
+- **Why 45:** clears the 30-day fixture snapshot with a fortnight of headroom,
+  so the demo does not break again part-way through the sprint.
+- **What it costs:** 45 days spans roughly six weekly special cycles rather than
+  two. A comparison drawn at the limit of that window can be wrong in exactly the
+  way the 14-day figure existed to prevent.
+- **Why that is acceptable here:** the dev stage serves *fixture* prices to the
+  project team, not real prices to real shoppers.
+- **Revert when:** real ingested prices with genuine capture dates back the
+  serving table (Pilot Task 13). Do not carry 45 into any stage a shopper can
+  reach.
+
+**The rejected alternative was re-stamping the fixtures' `valid_date` to today.**
+That fabricates provenance -- those prices were invented on 2026-07-31, and a
+later stamp asserts a capture that never happened. `AGENTS.md` lists "publish a
+price without its capture date" under **Do not**, and the point of that rule is
+the date being *true*, not merely present. Raising a documented threshold is
+visible and reversible; rewriting a capture date is neither, and it would make
+the staleness path untestable against real conditions.
+
+**`config/` is bundled into the Lambda archive**, so a config change is a
+deploy, not a live setting. This one shipped as version `7`. That is also the
+argument for the SSM work in Pilot Task 7b: an operator retuning a threshold
+should not need a Lambda release.
+
+### Verified live after the change
+
+All four paths, through `POST /dev/chat` on version 7:
+
+| Request | Result |
+|---|---|
+| `cheapest butter` | `price_comparison`, 5 citations across 5 stores |
+| `cheapest butter near Albany` | `price_comparison`, **1 citation, Devonport only** -- named regions working in production for the first time |
+| `feed my flat of 3 this week` | `clarification` asking for the budget |
+| `feed 3 people for 5 days on $80` | `meal_plan`, 18 citations, 2 stores |
+
+## 3d. GSI2 added, and the Scan permission removed — 2026-08-30
+
+`candidates_for_budget` ran a full-table `Scan` on every meal-plan turn. It now
+issues one `Query` per category against **GSI2** (partition `category`, sort
+`gsi2_sk` = zero-padded cents + product key + store key). This closes Pilot Task
+6b, which was deferred until there was load evidence to choose the index on --
+`DYNAMODB-SCHEMA.md` has the full reasoning.
+
+Applied in this order, which matters:
+
+1. **Create the index.** Safe while the alias still served the old code, since
+   nothing queried it yet.
+2. **Re-seed the table.** The 152 existing rows had no `gsi2_sk`, so the
+   backfill produced an ACTIVE index holding **zero items**. A sparse GSI is
+   silent -- DynamoDB simply omits an item with no sort-key attribute, with no
+   error anywhere -- so a deploy at this point would have produced meal plans
+   with no candidates and nothing to explain why. `scripts/load_seed_data.py`
+   now writes the attribute.
+3. **Update IAM**, then deploy version 8 and move the alias.
+
+**`dynamodb:Scan` was removed from the orchestrator role**, not merely left
+unused. That turns the deploy into its own proof: a live meal plan succeeded
+after the permission was gone, which cannot happen if anything still scans. A
+permission nothing needs is one somebody can quietly start using again.
+
+Verified live on version 8: `feed 3 people for 5 days on $80` returns a 5-meal
+plan at $57.25 payable, and `vegetarian dinner plan for 2 for 3 days on $50`
+returns 3 meals at $27.92.
+
+## 3e. Store coordinates, and a sentinel that was not one — 2026-08-30
+
+The data team's catalogue carries no geography, so the first version of
+`ingestion/lineage_b.py` wrote `lat`/`lon` as `0.0` and described it in a
+comment as fail-closed.
+
+**0.0/0.0 is a real position in the Atlantic.** `NearFilter.covers()` computed a
+genuine ~18,000km distance and excluded every record, so a shopper who sent
+coordinates matched nothing and the graph reported `no_data` -- "I don't have
+price data near you" about a supermarket in the same suburb. That is exactly the
+silent-exclusion defect Pilot Task 5a fixed for the store filter, reintroduced
+through a different door, and it is the shape this repository keeps meeting: a
+wrong value that produces plausible behaviour is worse than a missing one,
+because nothing distinguishes it from the value being right.
+
+Now `config/store-locations.json` -- thirteen Auckland suburbs, config-as-data
+alongside `regions.json`, and an unknown store **raises** rather than
+defaulting. The coordinates are suburb centroids accurate to roughly a
+kilometre, flagged as unreviewed with the same standing as the region
+membership; an error costs a shopper one option at the edge of a radius, which
+is the under-matching direction this project prefers everywhere. A test asserts
+they agree with the fixture catalogue's own per-record coordinates, so the two
+cannot drift about where a suburb is.
 
 ## 4. IAM notes worth keeping
 
@@ -283,10 +499,18 @@ afterwards.
 
 `models.json` still routes to Nova, which is unaffected either way.
 
-**The pilot blockers in `AGENTS.md` are not discharged by any of this.** Exact
-retrieved-record equality and a
-qualifying live Guardrail result all remain open. Deployment proves wiring, not
-correctness.
+**The pilot blockers in `AGENTS.md` are not discharged by any of this.**
+Deployment proves wiring, not correctness.
+
+*Updated 2026-08-30:* the two blockers this paragraph used to name — exact
+retrieved-record equality, and a qualifying live Guardrail result — were both
+closed on 2026-08-29 (Req 3.5–3.6, and 13/13 + 9/9 against version 2). What
+replaces them is listed in §3a, §3b and §3c: the alias now serves current code
+(§3a, resolved), two resources in the account have no identified owner (§3b),
+and the freshness threshold was raised to keep the fixture-seeded endpoint
+usable (§3c).
+
+**API Gateway stage tracing was off, and is now on** — see §9.
 
 
 ## 8. What the review round changed
@@ -419,3 +643,72 @@ them was diffing output against the thing it was supposed to reproduce, and
 disabling a guard to watch its test fail. `AGENTS.md` already says this --
 "assume the check is the thing that is broken until you have watched it fail" --
 and this round is the seventh entry in that list.
+
+## 9. X-Ray tracing enabled on the API stage — 2026-08-30
+
+**Change:** `tracingEnabled` on stage `dev` of `woqmel35lk`, `false` -> `true`.
+Requested by the service owner; applied and verified the same day.
+
+```bash
+aws apigateway update-stage --rest-api-id woqmel35lk --stage-name dev \
+    --patch-operations op=replace,path=/tracingEnabled,value=true
+```
+
+Stage settings apply immediately -- no `create-deployment` is needed, and the
+deployment id was unchanged (`4x65ir`) before and after. `infra/docs/03-STACK-SPECS.md`
+already specified `tracingEnabled: true`, so this closes a drift between the
+spec and the account rather than adding anything new.
+
+### Why it mattered
+
+The Lambda had X-Ray Active from the start, so traces existed -- but they began
+at the *function*. The gateway hop, which is where a throttle, a 5xx raised
+before our code runs, and integration latency all live, produced no segment.
+A trace that starts after the component you are debugging is not evidence about
+it.
+
+### Verified, not assumed
+
+Enabling and re-reading the flag only proves the flag. The check that matters is
+whether a trace now has the gateway as its **entry point**, so a fresh request
+was traced end to end. Trace `1-6a93bebe-0d7cbc9d063d7f8117304383`:
+
+```
+segment: grocery-orchestrator-api-dev/dev      origin=AWS::ApiGateway::Stage   <- NEW
+     - Lambda                          6.0s
+segment: grocery-orchestrator-dev              origin=AWS::Lambda::Function
+     - Restore                         0.593s     <- SnapStart restore
+     - ## _observed_handler            6.02s
+segment: DynamoDB      x4              origin=AWS::DynamoDB::Table
+segment: bedrock-runtime x2            origin=AWS::bedrock-runtime
+```
+
+`EntryPoint.Name` is `grocery-orchestrator-api-dev/dev` and the whole trace is
+6.761s. Two things are now visible that were not:
+
+- **The gateway hop itself.** The stage segment reports a 6.0s Lambda
+  subsegment inside a 6.761s trace, so the difference is gateway-side and was
+  previously unmeasurable. Small, but it is the part a p95 target is judged on
+  and it had never been in a number.
+- **The SnapStart `Restore` subsegment**, 0.593s, which is the cold-start
+  optimisation actually doing its job. Useful when Pilot Task 12 sets the
+  latency baseline: restore cost belongs in the cold-path figure and not in the
+  warm one.
+
+### One Windows trap worth recording
+
+On Git Bash, the first attempt failed with
+`Invalid method setting path: C:/Program Files/Git/tracingEnabled`. MSYS rewrites
+a leading `/` in an argument into a Windows path, so `path=/tracingEnabled`
+never reached the API. Prefix the command with `MSYS_NO_PATHCONV=1` (or use
+PowerShell). The error names a real API constraint and reads like a bad
+argument, which is what makes it cost time -- the argument was correct and the
+shell edited it in transit. Same family as the `bash -c` finding in
+`AGENTS.md`: the tooling changed the thing being tested.
+
+### Cost
+
+Negligible at this scale. X-Ray's free tier covers 100,000 traces recorded per
+month; this deployment is capped by a Bedrock quota at roughly 300-600 turns an
+hour and is not serving traffic. Revisit under Pilot Task 12's Budgets work if
+that changes.

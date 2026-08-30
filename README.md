@@ -17,9 +17,35 @@ returns validated events.
 **If you are picking this up cold, read this section and nothing else until you
 need to.** Everything below it is detail.
 
-The application layer is built and evidenced. **Nothing is deployed** — there is
-no CDK stack, no API Gateway, no Lambda alias. That is the whole of what remains
-between here and a pilot.
+The application layer is built and evidenced, and **a working service is
+deployed in `ap-southeast-2`** — REST API `woqmel35lk`
+(`grocery-orchestrator-api-dev`), stage `dev`, `POST /dev/chat`, integrated
+against Lambda alias `grocery-orchestrator-dev:live`. Re-verified live on
+2026-08-30: HTTP 200, a real Nova Lite call, five grounded citations, prices as
+strings. Details and identifiers in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3.
+
+**Until 2026-08-30 this section said "nothing is deployed — there is no CDK
+stack, no API Gateway, no Lambda alias".** Two of those three were false, and
+had been since 2026-08-27; `docs/ARCHITECTURE.md` §3 recorded the API and the
+alias correctly the whole time and was not believed. What remains true is the
+CDK half: there is **no IaC**, so nothing about the deployment is reproducible,
+drift-detectable, or reviewable as a unit.
+
+**The code is current as of 2026-08-30.** The alias served version `5` from
+2026-08-27 — before Pilot Tasks 4–7 — and now serves **version `7`**, built from
+`main`. The defect that mattered is gone: the endpoint no longer invents a `$0`
+budget from a message that never mentioned money and then refuses it.
+
+Enforcing freshness then made every priced query return `STALE_DATA` — the
+seeded fixtures are dated 2026-07-31 against a 14-day threshold. **Decision
+2026-08-30: `max_price_age_days` raised 14 → 45** as an explicit, reversible
+dev-stage stopgap, recorded in `config/freshness.json` and
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3c. Re-stamping the fixtures'
+capture date was rejected as fabricated provenance. All four paths — comparison,
+named regions, clarification and meal plan — verified working live on version 7.
+
+So the remaining distance to a pilot is **real ingested data, IaC adoption, and
+operational evidence** — not first deployment.
 
 | Pilot Task | State |
 |---|---|
@@ -31,21 +57,25 @@ between here and a pilot.
 | 6 · Idempotency fencing, canonical hashing, pagination, PITR | ✅ done · one deferral (6b) |
 | 7 · Scorecards, route qualification, prose/repair evals | ✅ done · one deferral (7b) |
 | **8 · Local read-only MCP** | ⬜ **not started — next** |
-| 9–12 · CDK, service plane, deploy, operations | ⬜ not started (design in `infra/`) |
+| 9–12 · CDK, service plane, deploy, operations | ⬜ not started (design in `infra/`) — but a service **is** deployed imperatively; these tasks bring it under IaC |
 | 13 · Controlled ingestion | ⬜ not started |
 | 14 · AgentCore reviewer | ⬜ proposed, needs ADR 0002 approval |
 | 15 · Recipe catalogue | ⬜ not started |
 | 16 · Release gates | ⬜ not started |
 
-**Three deliberate deferrals**, each with the reasoning recorded in `tasks.md`:
+**Two deliberate deferrals remain** (6b closed 2026-08-30), each with the
+reasoning recorded in `tasks.md`:
 
 - **3d** — the Guardrail refuses a bare `price of mushrooms`. The foraging topic
   was scoped to an ingredient rather than an activity; version 2 fixed truffle
   oil and qualified mushrooms, but not the unqualified noun. Not tuned further
   because loosening a safety topic by trial and error is the wrong direction.
-- **6b** — `candidates_for_budget` still `Scan`s. `DYNAMODB-SCHEMA.md` requires
-  the replacement be chosen from real access patterns and load evidence, and
-  there is neither. A test fails once the dataset outgrows a defensible Scan.
+- **6b** — **CLOSED 2026-08-30.** `candidates_for_budget` now queries **GSI2**
+  (partition by `category`, sort by zero-padded price) instead of scanning. The
+  deferral required the replacement be chosen from real access patterns and load
+  evidence; the data team's 2,939-row catalogue supplied both, and their own
+  table independently carries the same `CategoryPriceIndex` shape. The forcing
+  test did its job and is now an assertion that the Scan never returns.
 - **7b** — SSM routing belongs with the CDK stacks, where a parameter is
   declared as infrastructure rather than clicked into an account.
 
@@ -55,7 +85,7 @@ intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%;
 DynamoDB products and idempotency tables with owner-fenced claims proven against
 the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
-**Offline gates:** 597 tests passing, 31 skipped. Five eval suites — intent
+**Offline gates:** 694 tests passing, 31 skipped. Five eval suites — intent
 76.7%, meal plan 100%, prose 100%, repair 100%, guardrail 9/9 must-allow — all
 gated in CI and the pre-commit hook.
 
@@ -64,6 +94,9 @@ gated in CI and the pre-commit hook.
 - `min_grams_per_person_day` decides which meal-plan requests are refused
   outright and has never been reviewed by anyone who knows about food —
   [`docs/OPEN-REVIEW-min-grams-per-person-day.md`](docs/OPEN-REVIEW-min-grams-per-person-day.md).
+- Which product a one-word query returns — "cheapest butter" against fourteen
+  butters — was decided by reading the catalogue, not by anyone who shops there:
+  [`docs/OPEN-REVIEW-head-terms.md`](docs/OPEN-REVIEW-head-terms.md).
 - The frontend team's response shape in `datasets/DATA_SCHEMA.md` is flat JSON
   with different intent names; ours is an event list. Both are reasonable, they
   are not the same thing, and nobody has reconciled them.
@@ -176,9 +209,12 @@ src/
   runner.py                ChatRequest -> graph -> validated ChatResponse
   handler.py               Lambda entrypoint; no path out without a valid body
 
-ingestion/                 Price ingestion: sources, normalise, handler.
-                           Deployed to ap-southeast-2; live retailer acquisition
-                           stays gated on ACQUISITION-RISK.md §8
+ingestion/                 Price ingestion: sources, normalise, handler, and
+                           lineage_b.py — the data team's 3,000-row catalogue
+                           transformed into the serving schema, with a
+                           fail-closed dietary re-classifier. Deployed to
+                           ap-southeast-2; live retailer acquisition stays
+                           gated on ACQUISITION-RISK.md §8
 Philip_demo/               Seven runnable feature demos, offline, no AWS.
                            run_all.py exits non-zero if any drifts from the code
 tests/                     Fast, deterministic, no AWS or network
@@ -187,7 +223,9 @@ scripts/                   Fixture generation, dev server, Lambda build, AWS
                            appliers (guardrail, IAM, alarms, state machine),
                            check_quotas.py, and the pre-commit hook
 config/                    Config-as-data, applied rather than hardcoded:
-                           models, guardrail, feasibility, alarms, IAM, ingestion
+                           models, guardrail, feasibility, freshness, regions,
+                           alarms, IAM, ingestion, product synonyms, store
+                           locations. Each file carries its own reasoning
 samples/                   Example payloads; validate.py checks them in CI
 fixtures/products.json     Generated seed data: 3 chains, 6 store locations,
                            26 products, 152 records, deliberately messy naming
@@ -196,7 +234,8 @@ docs/                      Deployment record, CI gate health, throughput
                            ceiling, an open review, ADRs — see Further reading
 infra/                     AWS CDK (TypeScript). Design docs (infra/docs/00-09)
                            and a reviewable scaffold skeleton now exist; the
-                           stacks are stubs — nothing deployed (Pilot Tasks 9-12)
+                           stacks are stubs — no CDK stack deployed, though the
+                           service itself IS deployed by hand (Pilot Tasks 9-12)
 ```
 
 ## Progress to date, and what it cost
@@ -364,7 +403,7 @@ claimed. Read it before changing any of this, and not before.
 
 ### Tests, evals and CI
 
-- ✅ **597 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **694 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -405,20 +444,28 @@ claimed. Read it before changing any of this, and not before.
 
 Everything below is **not built**. Nothing here is a current capability.
 
-**The critical path is deployment.** Tasks 9–12 turn a working application into
-a running one, and until they are done every latency, cost and SLO figure in
-this repository is a measurement of a laptop.
+**The critical path is reproducibility and operational evidence, not first
+deployment.** A running service already exists — see *Where this is right now*
+— but it was created imperatively, serves code two days older than `main`, and
+has no dashboards, alarms, budget or latency baseline attached. So Tasks 9–12
+now mean *bring the running thing under IaC and make it observable*, which is a
+different job from standing it up. Latency and cost figures quoted anywhere in
+this repository are still laptop measurements: nothing has been measured
+against the deployed endpoint under load.
 
 1. **Task 8 — local read-only MCP.** Coarse operations that invoke the complete
    deterministic service; no raw DynamoDB, SDK, filesystem, network, scraping,
    write, citation or unguarded-generation primitive. Proves schemas, caps,
    audit, direct-service parity and a disable path before any managed exposure.
 2. **Tasks 9–12 — CDK, service plane, deployment, operations.** Adopt the
-   existing tables without replacement; zip Lambda on a published SnapStart
-   alias; REST controls, SSM, strict IAM and CORS; then dashboards, alarms,
-   Budgets, X-Ray and the latency/cost baselines everything else is waiting on.
-   Design documentation and a reviewable scaffold already exist under
-   [`infra/`](infra/) — design only, no stack implemented.
+   existing tables *and the existing API, Lambda, alias, roles and schedule*
+   without replacement; zip Lambda on a published SnapStart alias; REST
+   controls, SSM, strict IAM and CORS; then dashboards, alarms, Budgets, X-Ray
+   and the latency/cost baselines everything else is waiting on. Design
+   documentation and a reviewable scaffold already exist under
+   [`infra/`](infra/) — design only, no stack implemented. Note the adoption
+   surface is larger than `infra/docs/00` says: that table lists the API and
+   alias as "not yet", and they exist.
 3. **Task 13 — controlled ingestion.** EventBridge and Step Functions over
    fixture or recorded adapters, with provenance, partial-failure and
    dead-letter behaviour. **No live retailer traffic**, which stays gated on
@@ -480,7 +527,7 @@ python Philip_demo/run_all.py   # seven feature demos, offline, ~10 seconds
 And to check it:
 
 ```bash
-pytest                     # 597 passing, 31 skipped
+pytest                     # 694 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py       # 76.7% scripted baseline
@@ -607,10 +654,18 @@ specific question arises.
   (`infra/docs/00-09`), a reviewable CDK **scaffold skeleton**, and
   [`docs/adr/0003`](docs/adr/0003-infrastructure-as-code-and-resource-adoption.md).
   Read before starting Pilot Tasks 9–12 — it says what to build and in what
-  order. Design/skeleton only; nothing is deployed from it yet.
+  order. Design/skeleton only — no CDK stack is deployed from it yet, but the
+  service plane it describes already exists, created by hand; see
+  `infra/docs/08` §10 for the adopt-or-replace decision that follows.
 
 **Judgement calls, open and closed**
 
+- [`docs/OPEN-REVIEW-head-terms.md`](docs/OPEN-REVIEW-head-terms.md) — **open,
+  and wants somebody who shops these stores.** Which product a one-word query
+  like "cheapest butter" should return, when the catalogue holds fourteen
+  butters. Fifteen minutes, no code reading. Lower stakes than the review below
+  — a wrong answer here is unhelpful rather than a refusal — but these are the
+  words a demo audience types first.
 - [`docs/OPEN-REVIEW-min-grams-per-person-day.md`](docs/OPEN-REVIEW-min-grams-per-person-day.md)
   — **open, and wants a human.** The one figure in the planning path that is a
   judgement rather than derived from the catalogue. Written for a reviewer who

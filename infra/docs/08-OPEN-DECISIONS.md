@@ -214,6 +214,68 @@ cost of WAF ([07 §4](07-COST-AND-SCALING.md)). No action now beyond keeping the
 
 **Decision needed from:** product owner / mentor, at the public-launch milestone.
 
+## 10. The service plane already exists — adopt it, or replace it? (Tasks 9–11)
+
+**Raised 2026-08-30**, after an account audit found that
+[00-OVERVIEW](00-OVERVIEW.md)'s "what exists" table was wrong: the REST API
+`grocery-orchestrator-api-dev` (`woqmel35lk`), the Lambdas, the `live` alias,
+the state machine and an ENABLED daily schedule all exist and have since
+2026-08-27. The docs said they did not, so every plan written before this date
+assumed CDK would *create* them.
+
+**The question.** For each existing service-plane resource, does CDK adopt it or
+create a replacement and retire the original?
+
+- **Adopt.** The URL survives, so the frontend integration and anything already
+  pointed at `POST /dev/chat` keeps working. Cost: you inherit hand-made state
+  nobody wrote down, and `cdk import` requires the CDK definition to match the
+  live resource exactly — harder for an API with methods, integrations and a
+  stage than for a table.
+- **Replace.** A clean, fully-declared stack. Cost: a **new API id and therefore
+  a new URL**, coordinated with whoever is consuming the old one, plus a cutover
+  window on a live endpoint.
+
+**Recommendation.** Split it, because the resources are not alike:
+
+| Resource | Suggested | Why |
+|---|---|---|
+| DynamoDB tables | **Adopt** (already decided, §1–2) | Data loss risk dominates everything else |
+| Lambdas + `live` alias | **Adopt** | Cheap to import; the alias is the SnapStart seam and the API points at it |
+| REST API + stage | **Replace**, once a consumer is identified | It is small, fully specified in [03](03-STACK-SPECS.md), and its manual state is the least documented thing in the account. Replace *before* the frontend hard-codes the URL, not after |
+| State machine + schedule | **Adopt** | The ASL is already config-as-data (§4) |
+| Guardrail | Per §3 | Unchanged by this finding |
+
+The recommendation to replace the REST API is contingent on it having no
+consumer yet. **If the frontend team has already wired to `woqmel35lk`, adopt
+instead** — a URL change imposed on a teammate to tidy our stack is the wrong
+trade.
+
+**Decision needed from:** the implementing engineer + Philip, before Task 9
+starts.
+
+## 11. Two unidentified resources in the account — whose are they?
+
+**Raised 2026-08-30.** The same audit found a REST API `Chatbot`
+(`gxbx2006zc`) and a Lambda `Chatbot` (**python3.14**), both created
+2026-08-26, in account `097087133897` / `ap-southeast-2`. Nothing in this
+repository references either, and the runtime is not this project's pinned
+3.13.
+
+**Status: Philip is asking the team.** Detail in
+[`docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md) §3b.
+
+**What needs deciding once an owner is found:**
+
+1. Are they in scope for CDK adoption? (Presumed **no** — but record it.)
+2. What does the `Chatbot` Lambda's execution role grant? An unowned role with
+   DynamoDB or Bedrock access is a larger question than an idle endpoint, and
+   is the part worth checking first.
+3. Keep, hand over, or retire — **the owner's call, not ours.** Do not delete
+   either without agreement; idle they cost nothing, and an unrequested
+   deletion is worse than an unused endpoint.
+
+**Decision needed from:** whoever claims them, then Philip.
+
 ---
 
 ## Decision log (fill in as you go)
@@ -229,3 +291,5 @@ cost of WAF ([07 §4](07-COST-AND-SCALING.md)). No action now beyond keeping the
 | 7 | Frontend framework | | | | |
 | 8 | CI/CD approach | | | | |
 | 9 | Cognito/WAF timing | | | | |
+| 10 | Adopt vs replace the existing service plane | | | | |
+| 11 | Ownership of `Chatbot` API + Lambda | | | | |
