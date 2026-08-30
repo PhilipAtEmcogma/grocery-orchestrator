@@ -767,6 +767,22 @@ measurement, not a property, and the service has gained a recipe catalogue
 since), then choose. `infra/docs/08-OPEN-DECISIONS.md` §10 carries the full
 reasoning and the corrected sequence.
 
+**A frontend exists, and this section did not know -- 2026-08-31.** The branch
+`frontend-infra-setup` has carried a working Vite/React client since
+2026-08-21: four commits by a teammate, never merged, never mentioned, 120
+commits behind `main`. Its `VITE_API_URL` defaults to `http://localhost:8000/chat`
+and it has **no deployed URL wired into it at all**, so the condition this
+deferral was waiting on is half met -- there is a consumer to coordinate with,
+and it has not yet chosen a URL to be coordinated.
+
+That is the good case, and it argues for asking now rather than waiting: a
+consumer that has not committed to a URL is the cheapest possible moment to
+pick one, and the CDK plane is the one with finite log retention and tracing on
+from the start. **The blocker is no longer "there is no frontend"; it is that
+nobody has asked the frontend teammate which URL they want.**
+`docs/OPEN-REVIEW-frontend-contract.md` §3 question 5 puts that question in
+front of them, alongside the contract divergences that matter more.
+
 **The sequence this section used to give was wrong.** It said `NAME_SUFFIX=''`,
 deploy, repoint, retire. Step two fails: with an empty suffix the CDK function
 is named `grocery-orchestrator-dev`, which is the hand-made function's name, and
