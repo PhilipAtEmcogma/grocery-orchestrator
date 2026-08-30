@@ -616,11 +616,29 @@ proposed, or gated as labelled; it is not implemented.
   CloudWatch role that `docs/ARCHITECTURE.md` §7 records as unset, and stage
   tracing on from the start.
 
-  **Remaining, and it is a decision rather than a task:** set `NAME_SUFFIX=''`,
-  repoint `scripts/measure_latency.py` / `Philip_demo/_demo_support.py` / the
-  docs, deploy, and retire the hand-made resources — reading a `cdk diff` before
-  each step. It changes a URL that in-progress demo work names, so it waits on
-  the owner. `infra/docs/08` §10.
+  **The cutover is DEFERRED, deliberately — decided 2026-08-31: stay dual until
+  a frontend exists.** Its only real cost is the URL change and its only real
+  question is who that breaks, and nobody knows yet — the frontend is teammates'
+  scope and `CONTRACT-v1.md`'s open questions do not auto-adopt defaults until
+  2026-09-11. Moving a URL to spare a consumer nobody has written is work that
+  would be re-done against the one they actually write.
+
+  Both planes are scale-to-zero so the duplicate costs essentially nothing. The
+  hand-made one stays production, which means production keeps `null` log
+  retention and hand-added tracing — not urgent, and the reason not to let
+  "stay dual" become permanent by default.
+
+  **Revisit when the frontend is built**, not on a date: ask which URL it wired
+  to, RE-RUN the parity table rather than reading the 2026-08-30 one, then
+  choose.
+
+  **The sequence previously recorded here was wrong and is corrected in
+  `infra/docs/08` §10.** `NAME_SUFFIX=''` then deploy fails: the CDK function
+  would be named `grocery-orchestrator-dev`, the hand-made function's name, and
+  CREATE collides — the `-cdk` suffix exists because of exactly that. Consumers
+  must be repointed at `-cdk` and the hand-made resources deleted BEFORE the
+  unsuffixed deploy, so it is two URL changes and a gap, not one clean move.
+  There is no zero-downtime path and the old wording hid it.
 - [ ] **Pilot Task 12 — Add operational acceptance gates and artefact storage.**
   Build CloudWatch dashboards/alarms, X-Ray evidence, Budgets, quota review,
   latency/cost baselines, and alarm drills. Use encrypted versioned S3 with
@@ -869,6 +887,17 @@ proposed, or gated as labelled; it is not implemented.
     the call/token/time/cost/egress caps, teardown evidence, and the labelled
     anomaly evaluation.
   - [ ] **14b — Put ADR 0002 in front of the mentor.** Written 2026-08-31.
+    **Narrowed the same day to the reviewer Runtime only.** Gateway is withdrawn
+    — a managed auth layer over two coarse operations that already work gets a
+    shopper nothing, and it is the easy thing to approve precisely because its
+    precondition is met, which is the wrong reason to ask. The managed
+    evaluations are withdrawn because gate 4 blocks them on US: it wants
+    versioned acceptance datasets and the labelled anomaly set does not exist.
+    Withdrawn, not declined; either may be raised again.
+
+    The reviewer is the one worth asking for because its value is a question
+    nothing else here can answer — we know what our own rules catch, and not
+    whether a model finds defects nobody wrote a rule for.
     `docs/OPEN-REVIEW-adr-0002.md` is the brief: twenty minutes, no code
     reading, same shape as the two other open reviews. It states what approval
     does *not* do (it does not move the shopper path onto AgentCore, and it does

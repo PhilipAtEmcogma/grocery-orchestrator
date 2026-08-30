@@ -20,6 +20,11 @@ criteria, and the decision in front of you is smaller than it looks.
 **May we build three AgentCore-shaped things that sit beside the deterministic
 service, none of which is allowed to touch the shopper's answer?**
 
+**We are asking for one of the three.** See *What we are asking for* at the
+bottom: the recommendation is the reviewer Runtime, and Gateway and the managed
+evaluations are withdrawn from this request rather than left hanging. The
+reasoning is below, and it is the same reasoning whether you agree or not.
+
 ## What approving it does NOT do
 
 Worth saying first, because it is the usual reason an ADR like this stalls.
@@ -121,15 +126,43 @@ document nobody argued with.
 
 ## What we are asking for
 
-A choice, not a signature. Any of these is a usable answer:
+**The reviewer Runtime only.** Recorded 2026-08-31.
 
-- **Approve all three.** Building starts against gates 3–7.
-- **Approve the reviewer Runtime only.** The most learning per dollar, and the
-  half that is already boxed in by code.
-- **Approve Gateway only.** The one whose precondition is fully met.
-- **Approve none.** Then the reviewer's deterministic half becomes a human
-  workflow, Task 14 closes as 14a, and Tasks 8-extension and the evaluation
-  companions close as not-pursued. Nothing else in the project changes.
+Not all three, and the two we are not asking for are worth saying out loud
+rather than leaving on the table:
+
+- **Gateway is withdrawn from this request.** Its precondition is the one that
+  is fully met, which makes it the easy thing to approve and is exactly why it
+  is the wrong thing to ask for. It is a managed authentication and policy layer
+  in front of two coarse operations that already work, and a shopper gets
+  nothing from it they do not have today. The ADR's own warning — service count
+  is not a product outcome — lands hardest here.
+- **The managed evaluations are withdrawn because they cannot start.** Gate 4
+  wants versioned acceptance datasets and negative controls before any
+  evaluation work, and the labelled anomaly set for the reviewer does not exist.
+  Approving them would authorise something that is blocked on us, not on you.
+  They become worth revisiting *after* a reviewer has produced findings worth
+  labelling.
+
+**Why the reviewer is the one worth asking for.** It is the only proposal whose
+value is a question this project cannot answer any other way. We know what a
+deterministic rule catches, because we wrote the rules; what we do not know is
+whether a model finds catalogue defects that nobody thought to write a rule for.
+That is a real hypothesis with a cheap test, and it is the one thing here that
+teaches us something about the data rather than about AWS.
+
+It is also the proposal already boxed in by code. `src/review/` caps what it
+sees at 13 fields and 500 rows, and refuses any finding that cites a row it was
+not given, misquotes one, or proposes a value. So approving it authorises a
+component that is already unable to do the thing that would worry you.
+
+**Other answers remain usable**, and none of them is a bad outcome:
+
+- **Approve all three anyway** if you would rather we got the AgentCore surface
+  breadth — say so, and we will build Gateway too.
+- **Approve none.** The reviewer's deterministic half becomes a human workflow,
+  Task 14 closes as 14a, and Tasks 8-extension and the evaluation companions
+  close as not-pursued. Nothing else in the project changes.
 
 **A decline costs us very little**, which is the point of having built the
 boundary before the thing that sits behind it.
@@ -143,3 +176,11 @@ Update **Status** at the top of
 with the date and which components are covered. If any component is declined,
 say so there explicitly rather than by omission — the tasks that depend on it
 read that line.
+
+A worked example, if the recommendation is what you land on:
+
+```
+- **Status:** Partially approved 2026-09-XX — AgentCore Runtime reviewer only.
+  Gateway and managed evaluations withdrawn by the requester, not declined;
+  either may be raised again as a new request.
+```

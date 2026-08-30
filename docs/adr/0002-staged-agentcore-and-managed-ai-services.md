@@ -1,6 +1,13 @@
 # ADR 0002: Stage AgentCore and managed AI services around the deterministic core
 
 - **Status:** Proposed — mentor approval required
+- **Requested scope, narrowed 2026-08-31:** the **AgentCore Runtime reviewer
+  only**. Gateway and the managed evaluations are described in full below and
+  are **withdrawn from the request**, not declined — Gateway because a managed
+  auth layer over two working coarse operations gets a shopper nothing, and the
+  evaluations because gate 4 blocks them on us rather than on the reviewer. See
+  [`docs/OPEN-REVIEW-adr-0002.md`](../OPEN-REVIEW-adr-0002.md). Either may be
+  raised again as a new request.
 - **Decision date:** 2026-08-23
 - **Scope:** AgentCore Gateway, isolated reviewer Runtime, managed evaluations,
   and companion AWS services
