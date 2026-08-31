@@ -351,19 +351,13 @@ def test_the_unmeasured_tasks_are_named_and_reasoned():
 
     # PINNED TO AN EXACT SET, which fails in BOTH directions.
     #
-    # It was `== set()` from 2026-08-30, when repair_plan left the list and the
-    # gate was fully green for the first time. `select_recipes` joined on
-    # 2026-08-31 as a NEW ROUTED TASK whose suite exists and whose live
-    # measurement does not: evals/run_recipe_select.py has 12 cases, each
-    # verified to discriminate against a model built to fail it, and scoring
-    # nova-lite and claude-haiku against it costs Bedrock quota and money.
-    #
-    # An exact set is what keeps this honest. Asserting `<= EXPECTED` would let
-    # a second exemption in quietly; asserting `== set()` would have forced
-    # either a fabricated scorecard or an unrouted feature. This way adding
-    # another exemption fails, and REMOVING this one without updating the test
-    # fails too -- so the day it is scored, somebody has to come back here.
-    EXPECTED_EXEMPTIONS = {"select_recipes"}
+    # EMPTY AGAIN as of 2026-08-31. `select_recipes` was here for the few hours
+    # between the task being routed and being measured -- 12 cases, three reps
+    # each against nova-lite and claude-haiku, both 100%, recorded in
+    # config/models.json. The exact-set assertion is what brought somebody back
+    # here to delete it: `<= EXPECTED` would have left a stale exemption
+    # passing quietly, which is the shape this repository keeps finding.
+    EXPECTED_EXEMPTIONS: set[str] = set()
 
     assert set(gaps) == EXPECTED_EXEMPTIONS, (
         f"the exemption list changed: {sorted(gaps)} vs {sorted(EXPECTED_EXEMPTIONS)}. "

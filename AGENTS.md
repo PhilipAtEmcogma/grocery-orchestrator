@@ -36,7 +36,8 @@ service into an implementation claim.
   code reading, and says what would change the answer. Read it if you know
   anything about food budgeting.
 - `docs/THROUGHPUT-AND-SCALING.md` — the request-per-minute ceiling (10
-  meal-plan turns/min, 5 with repairs), why it was accepted for workshop
+  meal-plan turns/min before Task 15c, 6.7 after -- run the script), why it was
+  accepted for workshop
   scale, and the two options for production with their costs. Never assume a
   Bedrock quota increase is available: Nova's request limits are not
   adjustable and Claude's are, which is the opposite of what most people
@@ -416,10 +417,19 @@ Three things about it are worth carrying:
   both are right for a plan and fatal for a gate, because a node that repairs
   every mistake qualifies every model.
 
-`select_recipes` is `config/models.json`'s ONE exemption from the scoring gate,
-and it is exempt from the LIVE run rather than from having a suite: 12 cases,
-each verified to discriminate. Close it with
-`python evals/run_recipe_select.py --model nova-lite`. The *imported* 175
+**Scored live 2026-08-31 and the exemption is gone.** Nova Lite 100% and Claude
+Haiku 100%, three identical reps each, zero fallbacks — so the suite CANNOT rank
+them, the same ceiling the meal-plan suite hit. The one measured difference is
+`distinct mains` (Haiku 3.8, Nova Lite 3.4), reported and not scored. Nova Lite
+is preferred on cost; Haiku is the qualified fallback, which matters because
+`select_recipes` is one of three Nova Lite calls a meal-plan turn makes and the
+only one with a second qualified model.
+
+Recording those two scorecards immediately exposed a third model:
+`unscored_routes()` returned `('select_recipes', 'nova-pro')`, because Nova Pro
+declares the fast tier and `available(tier)` offered it as a cost-ordered
+fallback — the `claude-sonnet` defect exactly. Excluded as a routing decision.
+`unscored_tasks()` is empty again. The *imported* 175
 recipes remain unusable and that is now measured against both catalogues: 0 at
 100% against `datasets/` (best 75%, median 17%) and against `fixtures/` (best
 75%, median 12%). Until 2026-08-31 only the fixture figure existed while every
@@ -520,7 +530,7 @@ measurement here, make the instrument name its inputs.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 860 passed, 31 skipped, no AWS
+python -m pytest -q                              # 861 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -984,9 +994,24 @@ alarmed or budgeted. (The running code IS now the code in this repository, as
 of 2026-08-30; what it lacks is fresh data and any operational instrumentation.)
 
 **Not a blocker, but on the record before production:** the deployment is
-capped at 10 meal-plan turns per minute, falling to 5 when the repair loop
-fires, and the binding quota (Nova Lite, 20/min) cannot be raised by
+capped at **6.7 meal-plan turns per minute, falling to 4.0** when the repair
+loop fires, and the binding quota (Nova Lite, 20/min) cannot be raised by
 request. Accepted for workshop scale.
+
+**Re-measured 2026-08-31 against the live account, after Pilot Task 15c:
+6.7 meal-plan turns/min, 4.0 with repairs.** It was 10 and 5. `select_recipes`
+adds a THIRD Nova Lite call to every meal-plan turn, and Nova Lite is the
+binding, unraisable quota -- so the feature that made the plan better made the
+ceiling lower, by a third. The recipe path also drops the Nova Pro call
+entirely (`select_recipes` builds the plan, so `generate_plan` never runs),
+which is a cost saving of roughly 13x per token on that call and a throughput
+loss, because it moves work onto the model that binds.
+
+Run `python scripts/check_quotas.py` rather than quoting any of these numbers,
+including these: it derives them from the live account and the current routing.
+The script's own task list was hand-written and stale until 2026-08-31 -- it
+printed "UNROUTABLE: repair_plan" and omitted Claude Haiku entirely, so the
+tool whose job is naming the binding model had stopped naming one of them.
 
 Run `python scripts/check_quotas.py` rather than quoting a figure from any
 document, including this one. It derives the ceiling from the live account

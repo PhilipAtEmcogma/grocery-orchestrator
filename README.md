@@ -125,7 +125,7 @@ intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%;
 DynamoDB products and idempotency tables with owner-fenced claims proven against
 the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
-**Offline gates:** 860 tests passing, 31 skipped, plus **24 CDK assertions**
+**Offline gates:** 861 tests passing, 31 skipped, plus **24 CDK assertions**
 in `infra/` — run by CI for the first time on 2026-08-31, having found two IAM
 regressions in a stack that was already deployed
 ([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3o). Five eval suites — intent
@@ -568,7 +568,7 @@ claimed. Read it before changing any of this, and not before.
   Powertools is imported by exactly two files and a test walks the import
   graph to keep it that way. Logs are asserted to carry no message text,
   location or dietary information.
-- ✅ **Throughput ceiling measured**: 10 meal-plan turns/minute, 5 when repair
+- ✅ **Throughput ceiling measured**: 6.7 meal-plan turns/minute, 4.0 when repair
   fires, bound by a Nova Lite quota that **cannot be raised by request**.
   Accepted for workshop scale; `scripts/check_quotas.py` derives it live
   rather than trusting this paragraph.

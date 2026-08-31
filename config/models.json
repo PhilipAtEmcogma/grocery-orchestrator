@@ -147,7 +147,13 @@
       "prefer": [
         "nova-lite",
         "claude-haiku"
-      ]
+      ],
+      "exclude": [
+        "nova-pro"
+      ],
+      "_why_exclude": {
+        "nova-pro": "No selection scorecard, and it should not acquire one. It declares the FAST tier as well as quality, so `available(tier)` would hand it this task as a cost-ordered fallback -- which is how `claude-sonnet` once sat as a live fallback for every task while being documented as unfit, and it is what `unscored_routes()` caught here within minutes of the two real scorecards landing. Excluded as a ROUTING decision rather than on a score: selection is a cheap judgement over a shortlist deterministic code has already validated, it runs on every meal-plan turn, and Nova Pro is roughly thirteen times Nova Lite per token. Paying that for a choice between options that are all already correct is a cost regression, not a quality win. Same reasoning as repair_budget and repair_defect."
+      }
     },
     "generate_plan": {
       "tier": "quality",
@@ -216,6 +222,26 @@
         "blocked": 2
       }
     },
+    "select_recipes": {
+      "_source": "evals/run_recipe_select.py, 12 cases, guardrail version 2, live in ap-southeast-2",
+      "_measured": "2026-08-31",
+      "_reps": "THREE reps each, paced at 9/min, zero upstream failures and zero fallbacks in any rep. Every rep identical, which on this suite confirms STABILITY rather than averaging noise: BedrockModelClient sets temperature 0.0, and the task is a choice from a short list rather than free generation.",
+      "_finding": "BOTH MODELS SCORE 100% AND THE SUITE THEREFORE CANNOT RANK THEM. That is the same ceiling the meal-plan suite hit and it is worth saying plainly: every check here is a RULE VIOLATION check -- did you invent an id, did you repeat one while alternatives remained, did you breach a stated exclusion, did you choose enough meals. Neither model breaks rules. Nothing here asks whether the MENU is good, so 100% means 'both models select validly' and says nothing about which selects better.",
+      "_the_one_signal_that_distinguishes_them": "`distinct mains`, reported and NOT scored: Claude Haiku 3.8, Nova Lite 3.4 across the same 12 cases, stable across all three reps. Haiku picks more varied menus. It is not scored because no threshold on variety is right for every request -- three meals from a seven-recipe shortlist cannot beat four from a twelve-recipe one, and scoring it would manufacture a gradient without establishing what it means. Recorded because it is the only measured difference between the two, and because the honest way to rank them later is to add harder cases rather than to promote a reported metric.",
+      "_routing_consequence": "Nova Lite is preferred on cost: $0.00006/1k input against $0.0008, roughly thirteen times cheaper, on a task that runs on EVERY meal-plan turn. Claude Haiku is the qualified fallback, which matters here more than elsewhere -- select_recipes is one of three Nova Lite calls a meal-plan turn now makes, and this is the only one of them with a second qualified model.",
+      "nova-lite": {
+        "rate": 1.0,
+        "scored": 12,
+        "reps": 3,
+        "distinct_mains": 3.4
+      },
+      "claude-haiku": {
+        "rate": 1.0,
+        "scored": 12,
+        "reps": 3,
+        "distinct_mains": 3.8
+      }
+    },
     "generate_plan": {
       "_source": "evals/run_meal_plan.py, 11 cases, three clean reps each, paced",
       "_measured": "2026-08-28",
@@ -270,8 +296,7 @@
       }
     },
     "_unscored_tasks": {
-      "_comment": "Tasks no eval measures, named rather than hidden. The test treats these as accepted gaps; deleting a task from here without adding a scorecard makes the build fail, which is the point.",
-      "select_recipes": "NEW TASK, 2026-08-31, and the ONLY exemption in this file. evals/run_recipe_select.py exists, has 12 cases, and every one was verified to DISCRIMINATE against a model built to fail it -- a fabricated id scores 0%, a repeated selection 8.3%, an under-count 0%, against a 100% scripted baseline. What is missing is a LIVE run: scoring nova-lite and claude-haiku costs Bedrock quota and money, and this change was made without credentials. The exemption is therefore about the measurement, not about the suite. CLOSE IT BY RUNNING: python evals/run_recipe_select.py --model nova-lite (and --model claude-haiku), three reps each, paced, per docs/LIVE-EVAL-RUNBOOK.md -- then record the bands here and delete this entry. tests/test_multimodel.py names this exemption explicitly, so adding a SECOND one still fails the build and removing this one without a scorecard does too."
+      "_comment": "Tasks no eval measures, named rather than hidden. The test treats these as accepted gaps; deleting a task from here without adding a scorecard makes the build fail, which is the point."
     },
     "generate_prose": {
       "_source": "evals/run_prose.py, 11 cases, guardrail version 2, paced 9/min",

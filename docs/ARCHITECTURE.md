@@ -1122,6 +1122,92 @@ design, the three options with what each costs, and the four things that would
 change the answer. **Recorded as a holding position rather than a resolution** —
 the gap is real, the deferred cutover doubled it, and monitoring is not a bound.
 
+## 3r. `select_recipes` scored live, and what the run cost the ceiling — 2026-08-31
+
+Two things came out of one 10-minute session against the live account, and the
+second was not what the session was for.
+
+### The scorecards
+
+`evals/run_recipe_select.py`, 12 cases, guardrail version 2, paced at 9/min,
+three reps per model, zero upstream failures and zero fallbacks in any rep.
+
+| model | rate | reps | distinct mains |
+|---|---|---|---|
+| Amazon Nova Lite | **100%** | 3/3 identical | 3.4 |
+| Claude Haiku 4.5 | **100%** | 3/3 identical | 3.8 |
+
+Total spend: under two cents.
+
+**BOTH AT 100% MEANS THE SUITE CANNOT RANK THEM**, and that is the same ceiling
+the meal-plan suite hit. Every check here is a rule-violation check — did you
+invent an id, repeat one while alternatives remained, breach a stated exclusion,
+choose enough meals. Neither model breaks rules. Nothing asks whether the MENU
+is good, so 100% means "both select validly" and says nothing about which
+selects better.
+
+The one measured difference is `distinct mains`: Haiku 3.8, Nova Lite 3.4,
+stable across all three reps. Haiku picks more varied menus. It is reported and
+NOT scored, because no threshold on variety is right for every request — three
+meals from a seven-recipe shortlist cannot beat four from a twelve-recipe one —
+and scoring it would manufacture a gradient without establishing what it means.
+Nova Lite is preferred on cost (~13x cheaper on a call every meal-plan turn
+makes); Haiku is the qualified fallback.
+
+### The gate caught a third model within minutes
+
+With both scorecards recorded, `unscored_routes()` returned
+`[('select_recipes', 'nova-pro')]`. Nova Pro declares the FAST tier as well as
+quality, so `available(tier)` offered it as a cost-ordered fallback for a task
+nothing had scored it on — **exactly** the defect the registry documents about
+`claude-sonnet` sitting as a live fallback for every task while documented as
+unfit. Excluded as a routing decision rather than scored: selection is a cheap
+judgement over a shortlist code has already validated, and paying 13x for it is
+a cost regression, not a quality win.
+
+`unscored_routes()`, `unscored_tasks()` and `unevidenced_models()` are all empty
+again.
+
+### THE THROUGHPUT CEILING MOVED, AND NOTHING HAD NOTICED
+
+`scripts/check_quotas.py` was run first, as the runbook requires. It printed:
+
+```
+  repair_plan        UNROUTABLE: No routing rule for task 'repair_plan'
+```
+
+Its task list was hand-written, so the repair split had left it naming a task
+that no longer exists and omitting both replacements — and with them Claude
+Haiku, which meant the tool whose whole job is naming the binding model had
+stopped listing one of the models that binds. Fixed to enumerate from
+`ModelRegistry.tasks`.
+
+With the list correct, the real finding:
+
+| | before 15c | after 15c |
+|---|---|---|
+| meal plan, no repair | 10.0/min | **6.7/min** |
+| meal plan, 2 repairs | 5.0/min | **4.0/min** |
+| price check | 10.0/min | 10.0/min |
+
+**Pilot Task 15c cost a third of the meal-plan throughput.** `select_recipes`
+adds a THIRD Nova Lite call to every meal-plan turn, and Nova Lite is the
+binding, unraisable quota. The feature that made the plan better made the
+ceiling lower, and the figure quoted in five documents (10/min, 5 with repairs)
+was measured before the node existed.
+
+The recipe path also drops the Nova Pro call entirely — `select_recipes` builds
+the plan, so `generate_plan` never runs — which is a cost saving of roughly 13x
+on that call and a throughput loss, because it moves work onto the model that
+binds. Both paths are now modelled separately by the script rather than
+averaged.
+
+**Neither number was measured by anything before this run**, which is the point
+worth keeping: a feature can move a documented ceiling by a third and no gate in
+this repository would say so. `check_quotas.py` derives it from the live account
+and is the only thing that knows — so run it after any change to the routing
+table, and never quote a throughput figure from a document, including this one.
+
 ## 4. IAM notes worth keeping
 
 **Cross-region inference profiles need two grants.** `config/models.json`
@@ -1223,7 +1309,7 @@ not.
 ## 6a. Throughput ceiling, measured
 
 The account's Bedrock request-per-minute quotas cap this deployment at **10
-meal-plan turns per minute, falling to 5 when the repair loop fires** —
+meal-plan turns per minute, falling to 5 when the repair loop fires** — RE-MEASURED 2026-08-31 as 6.7 and 4.0 after Pilot Task 15c added a third Nova Lite call to every meal-plan turn; see §3r —
 service-wide across all users, so roughly 300-600 an hour. The binding limit is
 Amazon Nova Lite at 20 cross-region requests per minute, against the 2 Nova
 Lite calls a clean meal-plan turn makes and the 4 a fully repaired one makes.
