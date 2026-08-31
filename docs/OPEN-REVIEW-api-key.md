@@ -172,8 +172,10 @@ one — the gap is real, it is now doubled, and monitoring is not a bound.
   them.
 - **A demo outside the team.** The provenance question already gates that
   (`README.md` open questions); this should gate it too.
-- **A Bedrock bill that moves.** The $25 budget in `ObservabilityStack` is the
-  tripwire. If it fires and nobody on the team caused it, the answer is A, that
+- **A Bedrock bill that moves.** `grocery-orchestrator-monthly-dev`, $25, is
+  the tripwire — the HAND-MADE budget from `ARCHITECTURE.md` §3l, confirmed live
+  2026-08-31. `ObservabilityStack` declares one too, and that one does not exist
+  yet because the stack is not deployed. If it fires and nobody on the team caused it, the answer is A, that
   day.
 
 ## 7. The question, in one line

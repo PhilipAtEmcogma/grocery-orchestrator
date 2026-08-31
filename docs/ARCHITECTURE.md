@@ -1159,6 +1159,52 @@ Three things follow, and only the first was already written down:
    being paid, and it is one of the two reasons the CDK plane is the better
    cutover target.
 
+### PAUSED, waiting on the frontend teammate — decided 2026-08-31
+
+**`Grocery-Obs-dev` is written, tested, merged and DELIBERATELY NOT DEPLOYED.**
+The owner's decision: the teammate who owns the frontend is working on
+something related, and the sensible order is to let that work land on GitHub
+first, then re-evaluate this whole area once rather than twice.
+
+That is the right call and worth stating why, so nobody "helpfully" deploys it:
+this stack, the URL choice, the plane retirement and the API key are **one
+decision wearing four hats**. Deploying the alarms now would commit to alarm
+names and a second budget before knowing which plane survives, and every one of
+those is cheaper to decide after the frontend exists than before.
+
+**What is true while paused**, so nobody mistakes intent for an account:
+
+- The CDK plane's gateway has **no 5xx alarm** and its log group has **no
+  handler-escaped filter**. Six of eight alarms cover it via the shared
+  `service` dimension; the two bound to a physical name do not.
+- The hand-made plane is fully covered and is still the one serving.
+- **The cost tripwire is real and is not this stack's.**
+  `grocery-orchestrator-monthly-dev` at $25 exists, created by hand (§3l),
+  confirmed live 2026-08-31. `ObservabilityStack` declares its own; deploying it
+  would create a SECOND budget. Two are free, so that is untidy rather than
+  costly, but it is a duplicate somebody should collapse at cutover.
+
+### The checklist for when this comes back
+
+In order, because two of these are prerequisites rather than preferences:
+
+1. **Read the teammate's work.** Which host, which URL, and whether they call
+   from a browser — that decides whether `CORS_ORIGIN` stops being `*`, which is
+   the second trigger on the API-key tripwire.
+2. **`cdk deploy Grocery-Obs-dev`.** Before any consumer is pointed at the CDK
+   plane, not after. Collapse the duplicate budget while doing it.
+3. **Re-run the parity table.** Parity is a measurement, not a property, and
+   the service has gained recipe planning since the 2026-08-30 run.
+4. **Choose the URL**, and record which and why. `-cdk` never appears in the
+   URL, so choosing the CDK plane costs nothing cosmetically and needs no later
+   rename.
+5. **Take the API key in the same change** (option A, decided —
+   `docs/OPEN-REVIEW-api-key.md`). `infra/test/app.test.ts` fails at this point
+   by either route, so it cannot be missed.
+6. **Retire the other plane**, and record the teardown — including the
+   account-level API Gateway CloudWatch role §3m notes, which a destroy does not
+   obviously restore.
+
 ### What else the stack carries
 
 | | |
