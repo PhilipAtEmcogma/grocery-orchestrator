@@ -44,6 +44,12 @@ service into an implementation claim.
 - `docs/CI-GATE-HEALTH.md` — latent gaps in the gate: where it can go red for
   a reason unrelated to your change, and where a green local run does not mean
   a green CI run. Read before widening the evals or bumping a checker pin.
+- `docs/AUDIT-RESPONSE-2026-08-30.md` and `-2026-08-31.md` — two outside
+  audits received, with a disposition per finding and a commit attached. Read
+  the second before re-raising anything: it records where an audit was
+  UNDERSTATED (the Scan really had come back), where a recommendation was wrong
+  (splitting repair does not restore a fallback), and what was declined and why.
+  This is the shape this project uses for external input.
 - `docs/ARCHITECTURE.md` — the **deployment record**: what exists in
   `ap-southeast-2`, its identifiers, the IAM shapes that took two attempts to
   get right, and two defects that only appeared once the thing was deployed.

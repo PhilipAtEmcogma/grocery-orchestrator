@@ -764,6 +764,24 @@ no daemon is needed. Namespacing is configurable via `POWERTOOLS_SERVICE_NAME`
 and `POWERTOOLS_METRICS_NAMESPACE`; `LOG_LEVEL` sets log verbosity.
 `POWERTOOLS_LOGGER_LOG_EVENT` is deliberately ignored — see design.md §12.4.
 
+## Responding to outside review
+
+Two external audits have been received, and the response to each is a document
+with a disposition per finding and a commit attached:
+
+- [`docs/AUDIT-RESPONSE-2026-08-30.md`](docs/AUDIT-RESPONSE-2026-08-30.md)
+- [`docs/AUDIT-RESPONSE-2026-08-31.md`](docs/AUDIT-RESPONSE-2026-08-31.md)
+
+The second is worth reading for three things it records rather than for the
+list of fixes: where the audit was **understated** (`dynamodb:Scan` really had
+come back, in the deployed plane, put there by a CDK grant helper), where a
+recommendation was **wrong on a point that matters** (splitting repair does not
+restore a fallback — each half still has one qualified model), and what was
+**declined** with the argument.
+
+Both follow the same rule: an audit is evidence, not a verdict, and the correct
+response to one is to go and check.
+
 ## Further reading
 
 **Cold start:** [Where this is right now](#where-this-is-right-now) above, then
