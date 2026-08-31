@@ -1,5 +1,5 @@
 {
-  "//": "SCAFFOLD — CDK app entrypoint + context. The stacks are stubs today; `cdk synth` will produce near-empty templates until lib/*.ts are implemented per infra/docs/03-STACK-SPECS.md.",
+  "//": "CDK app entrypoint + context. Stateful, Service and Observability are REAL (Stateful and Service deployed 2026-08-30; Observability written 2026-08-31 and deliberately not deployed — ARCHITECTURE.md §3q). Ingestion and Frontend are still stubs and synth near-empty; implement per infra/docs/03-STACK-SPECS.md.",
   "app": "npx ts-node --prefer-ts-exts bin/grocery.ts",
   "watch": {
     "include": ["**"],

@@ -583,16 +583,17 @@ claimed. Read it before changing any of this, and not before.
 
 ## What is left, and in what order
 
-Everything below is **not built**. Nothing here is a current capability.
+**Not everything below is unbuilt.** Items struck through landed while this
+list stood and are kept for the sequence rather than the status; anything not
+struck through is not a current capability.
 
-**The critical path is reproducibility and operational evidence, not first
-deployment.** A running service already exists — see *Where this is right now*
-— but it was created imperatively, serves code two days older than `main`, and
-has no dashboards, alarms, budget or latency baseline attached. So Tasks 9–12
-now mean *bring the running thing under IaC and make it observable*, which is a
-different job from standing it up. Latency and cost figures quoted anywhere in
-this repository are still laptop measurements: nothing has been measured
-against the deployed endpoint under load.
+**The critical path is operational evidence and the frontend cutover, not first
+deployment.** A running service already exists — see *Where this is right now* —
+and since 2026-08-30 it is under IaC and carries a dashboard, 8 alarms, a $25
+Budget, API-stage X-Ray and the first latency and cost baselines measured
+against the deployed endpoint rather than a laptop. What it does not carry is a
+**load** run: those figures are n=3 and n=8, which is a baseline and not a
+qualification, and four parked decisions wait on the 200-turn run.
 
 1. ~~**Task 8 — local read-only MCP.**~~ **Done 2026-08-30.** `src/mcp/`, two
    coarse tools over stdio JSON-RPC with no new dependency, default-off, rate
@@ -614,14 +615,16 @@ against the deployed endpoint under load.
    fixture or recorded adapters, with provenance, partial-failure and
    dead-letter behaviour. **No live retailer traffic**, which stays gated on
    [`ACQUISITION-RISK.md`](ACQUISITION-RISK.md) §8.
-4. **Task 15c — wire recipe selection into the graph.** Models select recipe
-   ids and product citations; code owns scaling, safety and totals. **The
-   deterministic half is built** (`src/recipes/`): 29 curated recipes, every
-   ingredient priceable against the real catalogue by construction, and
-   `planning.py` assembling them into the same `PlanDraft` that
-   `assemble_plan`, `validate_plan`, `assert_arithmetic` and the bounded repair
-   loop already consume. What remains is the selection prompt, the graph
-   branch, and an eval suite for recipe-constrained plans.
+4. ~~**Task 15c — wire recipe selection into the graph.**~~ **Done
+   2026-08-31.** A meal-plan turn is built from named curated recipes:
+   `retrieve_prices` resolves the catalogue's 27 distinct ingredient terms,
+   cites them, and shortlists the recipes that are costable, dietary-viable
+   *against the resolved products*, and affordable as a set. The model's whole
+   contribution is a list of recipe ids; `src/recipes/planning.py` scales and
+   costs them into the same `PlanDraft` that `assemble_plan`, `validate_plan`,
+   `assert_arithmetic` and the bounded repair loop already consume. A turn the
+   catalogue cannot serve falls back to free composition and says so in a
+   notice. Gated by `evals/run_recipe_select.py`, 12 cases, in CI at 0.90.
 
    **The imported 175 stay unusable, and that is now measured against both
    catalogues** — zero fully priceable against the real one (best 75%, median
