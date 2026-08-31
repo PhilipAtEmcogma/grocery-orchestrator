@@ -174,7 +174,11 @@ validate_input -> classify_intent
                          +-- all prices stale ---> emit_stale_data
                          +-- budget impossible --> emit_budget_infeasible
                          +-- price_check -> generate_comparison -> generate_prose
-                         `-- meal_plan -> generate_plan -> validate_plan
+                         `-- meal_plan -> select_recipes
+                                            +-- selected -> validate_plan
+                                            `-- fallback (with a notice)
+                                                 v
+                                          generate_plan -> validate_plan
                                           ^ bounded repair (2) |
                                           `--------------------'
                                                               |
@@ -380,8 +384,32 @@ deferred by decision, `ARCHITECTURE.md` §3m), **Task 14a** (the reviewer's
 boundary), and **Task 15b** (29 curated recipes, 29/29 costable against the
 real catalogue, assembled by `src/recipes/planning.py`).
 
-**Task 15 is no longer blocked on data; 15c is blocked on nothing but work** —
-the selection prompt, the graph branch, and an eval suite. The *imported* 175
+**Task 15 is DONE as of 2026-08-31.** A meal-plan turn is built from named
+curated recipes: `retrieve_prices` resolves the catalogue's 27 distinct
+ingredient terms and shortlists recipes that are costable, dietary-viable
+against the RESOLVED products, and affordable as a SET; `select_recipes` asks
+the model for ids only; deterministic code scales, costs and validates. When
+nothing fits, the turn falls back to free composition **and says so**.
+
+Three things about it are worth carrying:
+
+* **How many meals is derived from `min_grams_per_person_day`, not from
+  `days`.** One recipe per day under-fed every household in the suite —
+  invariants 100% -> 45%, budget used 69% -> 24%. A day is not a meal, and the
+  count now comes from the same figure the feasibility refusal uses.
+* **The budget is enforced on the SET, not per recipe.** A per-recipe cap at
+  `budget / meals` rejects on a number no plan ever pays, because
+  `assemble_plan` aggregates packs across meals and rounds up once. It collapsed
+  a 29-recipe shortlist to one.
+* **The scorecard reads what the MODEL returned, not what the node served.**
+  `select_recipes` tops a short selection up and trims meals that do not fit;
+  both are right for a plan and fatal for a gate, because a node that repairs
+  every mistake qualifies every model.
+
+`select_recipes` is `config/models.json`'s ONE exemption from the scoring gate,
+and it is exempt from the LIVE run rather than from having a suite: 12 cases,
+each verified to discriminate. Close it with
+`python evals/run_recipe_select.py --model nova-lite`. The *imported* 175
 recipes remain unusable and that is now measured against both catalogues: 0 at
 100% against `datasets/` (best 75%, median 17%) and against `fixtures/` (best
 75%, median 12%). Until 2026-08-31 only the fixture figure existed while every
@@ -468,12 +496,13 @@ measurement here, make the instrument name its inputs.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 845 passed, 31 skipped, no AWS
+python -m pytest -q                              # 860 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
     tests/test_sample_fixtures.py                # rewrite samples/ from the server
 python evals/run_intent.py                       # 76.7% scripted baseline
+python evals/run_recipe_select.py                 # 100% scripted; select_recipes (15c)
 python evals/run_intent.py --model nova-lite     # 92.9% live, guardrail v2
 python evals/run_intent.py --model nova-pro      # 100% live (Nova Pro)
 python evals/run_meal_plan.py                    # 100% invariants baseline

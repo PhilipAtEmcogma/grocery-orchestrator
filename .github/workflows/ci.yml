@@ -240,8 +240,22 @@ jobs:
       - name: Prose rule compliance
         run: python evals/run_prose.py --min-pass-rate 0.90
 
+      # Repair became TWO tasks on 2026-08-31 (repair_budget, repair_defect) and
+      # the floor applies to EACH half, not to the average -- a model perfect at
+      # one and weak at the other clears a combined bar comfortably, which is
+      # the shape the split exists to describe.
       - name: Repair pass
         run: python evals/run_repair.py --min-pass-rate 0.90
+
+      # Recipe selection, added with the task it scores (Pilot Task 15c). The
+      # rule here is that a new routed task arrives with its suite, not after
+      # it: `config/models.json` records select_recipes as the file's ONE
+      # exemption, and it is exempt from the LIVE scorecard rather than from
+      # having a suite at all. Every case was verified to discriminate against a
+      # model built to fail it -- a fabricated id scores 0%, a repeated
+      # selection 8.3%, an under-count 0%, against a 100% scripted baseline.
+      - name: Recipe selection
+        run: python evals/run_recipe_select.py --min-pass-rate 0.90
 
   package:
     name: Lambda deployment package

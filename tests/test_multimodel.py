@@ -348,22 +348,37 @@ def test_the_unmeasured_tasks_are_named_and_reasoned():
     failing -- which is the intended direction.
     """
     gaps = ModelRegistry().unscored_tasks()
-    # The list is EMPTY, and getting there is the history of this project's
-    # model plane. generate_prose left it on 2026-08-29 when evals/run_prose.py
-    # gave it a scorecard. repair_plan left it on 2026-08-30: it had been
-    # measured but ungated because six cases could not support a threshold, and
-    # the fix was to expand the suite to twelve rather than to lower the bar.
+
+    # PINNED TO AN EXACT SET, which fails in BOTH directions.
     #
-    # Asserted as EMPTY rather than deleted, because the assertion still has a
-    # job: adding a task without a scorecard, or exempting one, now fails here.
-    # An exemption should be hard to add quietly.
-    assert set(gaps) == set(), (
-        f"a task is exempt from scoring again: {sorted(gaps)}. Every exemption "
-        "is a route nothing measures -- add a scorecard or argue the exemption "
-        "in config/models.json, where the reason will be read."
+    # It was `== set()` from 2026-08-30, when repair_plan left the list and the
+    # gate was fully green for the first time. `select_recipes` joined on
+    # 2026-08-31 as a NEW ROUTED TASK whose suite exists and whose live
+    # measurement does not: evals/run_recipe_select.py has 12 cases, each
+    # verified to discriminate against a model built to fail it, and scoring
+    # nova-lite and claude-haiku against it costs Bedrock quota and money.
+    #
+    # An exact set is what keeps this honest. Asserting `<= EXPECTED` would let
+    # a second exemption in quietly; asserting `== set()` would have forced
+    # either a fabricated scorecard or an unrouted feature. This way adding
+    # another exemption fails, and REMOVING this one without updating the test
+    # fails too -- so the day it is scored, somebody has to come back here.
+    EXPECTED_EXEMPTIONS = {"select_recipes"}
+
+    assert set(gaps) == EXPECTED_EXEMPTIONS, (
+        f"the exemption list changed: {sorted(gaps)} vs {sorted(EXPECTED_EXEMPTIONS)}. "
+        "Every exemption is a route nothing measures. If you added one, argue it in "
+        "config/models.json where the reason will be read. If you SCORED one, delete "
+        "it from both places -- this assertion is the reminder."
     )
     for task, reason in gaps.items():
         assert len(reason) > 80, f"{task} needs a real reason, not a label"
+        # An exemption must say what would close it. "Not measured yet" ages;
+        # "run this command" expires the moment somebody runs it.
+        assert "evals/run_" in reason, (
+            f"{task}'s exemption does not name the eval that would close it. An "
+            f"exemption with no exit is a permanent one wearing a temporary label."
+        )
 
 
 def test_a_model_excluded_on_latency_is_not_a_silent_fallback():

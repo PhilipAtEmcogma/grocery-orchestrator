@@ -58,6 +58,17 @@ CASES: dict[str, dict[str, Any]] = {
         "turn_id": "turn-0005-d3a2",
         "message": "price of butter and wagyu ribeye",
     },
+    # The meal plan. ADDED 2026-08-31, and it should have been here from the
+    # start: Pilot Task 15c changed what this endpoint returns for a meal-plan
+    # turn -- meals now carry curated recipe NAMES rather than "Scripted Dinner
+    # 1" -- and the committed sample went stale with nothing to notice. It is
+    # the published contract the frontend reads, and two of the four samples
+    # this file could cover were the two it did.
+    "response_meal_plan.json": json.loads(
+        (Path(__file__).resolve().parents[1] / "samples" / "request_meal_plan.json").read_text(
+            encoding="utf-8"
+        )
+    ),
 }
 
 # `json.tool`, which produced the committed files.

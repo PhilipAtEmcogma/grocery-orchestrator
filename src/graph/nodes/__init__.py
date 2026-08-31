@@ -20,6 +20,16 @@ from src.graph.feasibility import minimum_spend
 from src.graph.nodes.intent import classify_intent as classify_intent
 from src.graph.nodes.plan import generate_plan as generate_plan
 from src.graph.nodes.prose import generate_prose as generate_prose
+from src.graph.nodes.recipes import route_after_recipe_selection as route_after_recipe_selection
+from src.graph.nodes.recipes import select_recipes as select_recipes
+from src.graph.recipe_plan import (
+    TooManyIngredients,
+    affordable_set,
+    curated_recipes,
+    meals_needed,
+    resolve_ingredients,
+    shortlist,
+)
 from src.graph.regions import known_regions, locations_for, resolve_region
 from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState
 from src.retrieval.base import PriceRepository
@@ -271,6 +281,14 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
     events: list = []
     seq = _next_seq(state)
     ref_n = 0
+    recipe_shortlist: list[str] = []
+    recipe_refs: dict[str, dict[str, str]] = {}
+    recipe_meals_wanted = 0
+    # `id(record) -> ref`, so the recipe path can reuse a citation the candidate
+    # sweep already produced instead of citing the same price twice. Identity,
+    # not equality: `PriceRecord` is frozen and two stores can hold
+    # byte-identical rows, and the ref belongs to the record retrieval cited.
+    ref_by_record: dict[int, str] = {}
 
     def add(rec) -> str:
         nonlocal ref_n
@@ -294,6 +312,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         )
         citations.append(citation)
         records.append(rec)
+        ref_by_record[id(rec)] = ref
         events.append(CitationEvent(seq=seq + len(events), citation=citation))
         return ref
 
@@ -390,6 +409,74 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         for rec in candidates:
             add(rec)
 
+        # ---- recipes (Req 2.9, Pilot Task 15c) -------------------------
+        #
+        # THE RECIPE PATH RETRIEVES THROUGH THIS NODE, LIKE EVERYTHING ELSE.
+        # A `select_recipes` node placed BEFORE retrieval would have been the
+        # smaller change and it would have put a model call upstream of the only
+        # thing allowed to produce a Citation. That topology -- "generate_* is
+        # unreachable except through retrieve_prices; no edge skips it" -- is one
+        # of the three independent enforcements of Invariant 1, and it is worth
+        # more than the convenience.
+        #
+        # So the ingredient terms of the curated catalogue are resolved HERE,
+        # cited HERE, and `select_recipes` is offered only recipes already proven
+        # costable, dietary-viable against the resolved products, and affordable
+        # at this household's share of the budget. The model chooses among
+        # options that are all already correct.
+        #
+        # `shortlist` is empty on a turn where nothing survives. That is a
+        # FALLBACK, not an error -- see `select_recipes`.
+        try:
+            resolved_ingredients = resolve_ingredients(
+                repo,
+                curated_recipes(),
+                near=near,
+                locations=locations,
+                freshness=freshness,
+            )
+        except TooManyIngredients:
+            # The catalogue outgrew the per-turn bound. Refusing the recipe path
+            # and falling back to free composition is the honest outcome; a
+            # truncated ingredient set would silently offer recipes whose
+            # costability depended on iteration order.
+            resolved_ingredients = {}
+
+        # Cite the recipe ingredients that are not already in the candidate set.
+        # `add()` numbers refs globally, so a ref identifies exactly one price
+        # everywhere it appears -- including across the two retrieval modes.
+        for record in resolved_ingredients.values():
+            if id(record) not in ref_by_record:
+                add(record)
+
+        wanted = meals_needed(curated_recipes(), household_size=household_size, days=days_covered)
+        citation_map = {c.ref: c for c in citations}
+        record_map = dict(zip([c.ref for c in citations], records, strict=True))
+        offers = shortlist(
+            curated_recipes(),
+            resolved_ingredients,
+            ref_by_record,
+            citation_map,
+            household_size=household_size,
+            days=days_covered,
+            exclude_categories=exclude_categories,
+        )
+        # Trim the offer to a set that fits the budget TOGETHER, so any
+        # selection the model makes is affordable by construction. Same reason
+        # `candidates_for_budget` caps its candidate set: a price-blind model
+        # cannot keep itself inside a budget, and the set it chooses from can.
+        offers = affordable_set(
+            offers,
+            citation_map,
+            record_map,
+            household_size=household_size,
+            days=days_covered,
+            budget_nzd=budget,
+        )
+        recipe_shortlist = [o.recipe.recipe_id for o in offers]
+        recipe_refs = {o.recipe.recipe_id: o.refs for o in offers}
+        recipe_meals_wanted = wanted
+
     # Honest gaps for items we could not answer, alongside the ones we could.
     # Only when SOME items resolved; if none did, routing sends the turn to
     # the terminal no_data path instead.
@@ -434,6 +521,9 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         "unresolved_items": unresolved,
         "skipped_items": skipped,
         "budget_impossible": infeasible_upfront,
+        "recipe_shortlist": recipe_shortlist,
+        "recipe_refs": recipe_refs,
+        "recipe_meals_wanted": recipe_meals_wanted,
         "events": events,
     }
 

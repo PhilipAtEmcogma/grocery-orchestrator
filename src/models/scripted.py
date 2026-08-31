@@ -19,6 +19,7 @@ from src.models.base import ModelClient, ModelError, ModelTier, T
 from src.prompts.intent import MAX_EXTRACTED_ITEMS, IntentResult
 from src.prompts.meal_plan import DraftIngredient, DraftMeal, PlanDraft
 from src.prompts.prose import ProseResult
+from src.prompts.recipe_select import RecipeSelection
 from src.schemas.contract import Intent
 
 _MEAL_WORDS = ("meal", "plan", "dinner", "feed", "recipe", "cook", "week of")
@@ -163,6 +164,9 @@ class ScriptedModelClient(ModelClient):
 
         if schema is PlanDraft:
             return cast(T, self._plan(user, tier))
+
+        if schema is RecipeSelection:
+            return cast(T, self._select_recipes(user))
 
         if schema is ProseResult:
             return cast(T, self._prose(user))
@@ -372,6 +376,53 @@ class ScriptedModelClient(ModelClient):
             )
 
         return PlanDraft(meals=meals, reasoning="Scripted selection.")
+
+    def _select_recipes(self, user: str) -> RecipeSelection:
+        """
+        Pick recipe ids off the shortlist the prompt offered.
+
+        DELIBERATELY PARSED FROM THE PROMPT, not read from the catalogue. The
+        point of the offline baseline is to exercise the wiring end to end --
+        shortlist -> prompt -> selection -> validation -> costing -- and a
+        stand-in that consulted the catalogue directly would skip the two steps
+        most likely to be wrong. It is the same reasoning that makes the repair
+        baseline drive the real prompt builders.
+
+        Spreads across main ingredients rather than taking the first N, so the
+        "prefer variety" rule in the prompt is exercised by something rather
+        than merely stated. This is not a claim that the heuristic is good: it
+        measures the harness, not a model.
+        """
+        offered: list[tuple[str, str]] = []
+        for line in user.splitlines():
+            parts = [p.strip() for p in line.split("|")]
+            if len(parts) == 3 and parts[0] and " " not in parts[0]:
+                first_ingredient = parts[2].split(",")[0].strip()
+                offered.append((parts[0], first_ingredient))
+        if not offered:
+            raise ModelError("no recipes offered in the selection prompt")
+
+        wanted = 1
+        match = re.search(r"[Cc]hoose (\d+) meal", user)
+        if match:
+            wanted = int(match.group(1))
+
+        chosen: list[str] = []
+        seen_mains: set[str] = set()
+        # First pass: one recipe per distinct main ingredient.
+        for rid, main in offered:
+            if len(chosen) >= wanted:
+                break
+            if main not in seen_mains:
+                seen_mains.add(main)
+                chosen.append(rid)
+        # Second pass: top up in order if variety ran out before the count did.
+        for rid, _ in offered:
+            if len(chosen) >= wanted:
+                break
+            if rid not in chosen:
+                chosen.append(rid)
+        return RecipeSelection(recipe_ids=chosen)
 
     def _prose(self, user: str) -> ProseResult:
         """Placeholder-only prose, mirroring what a well-behaved model returns."""

@@ -1102,8 +1102,80 @@ proposed, or gated as labelled; it is not implemented.
     The deterministic half — which is what Req 2.9 actually specifies as code's
     responsibility — is done and tested.
 
-  - [ ] **15c — Wire selection into the graph.** Recipe-constrained
-    planning is deliberately NOT wired into the graph. A recipe is usable only
+  - [x] **15c — Selection wired into the graph. Done 2026-08-31.**
+    Req 2.9 is delivered on the shopper path: a meal-plan turn is built from
+    NAMED CURATED RECIPES, and falls back to free composition with a notice when
+    it cannot be.
+
+    **The topology decision is the one worth reviewing.** The obvious shape — a
+    `select_recipes` node BEFORE retrieval, picking from the catalogue, with
+    retrieval then fetching the chosen ingredients — was rejected. It puts a
+    model call upstream of the only node allowed to create a Citation, and the
+    topology ("no edge skips `retrieve_prices`") is one of three independent
+    enforcements of Invariant 1. The node produces no price and could not, so
+    the exception would have been harmless today and load-bearing later.
+
+    Instead retrieval gained a recipe mode: it resolves the catalogue's **27
+    distinct ingredient terms** (not ~120 recipe lines), cites them, and
+    shortlists recipes that are (1) costable — every ingredient resolved, all or
+    nothing; (2) dietary-viable judged from the RESOLVED products, not from the
+    recipe's name; and (3) affordable AS A SET. The model is offered only what
+    survives, so it cannot select an uncostable, unsafe or unaffordable recipe —
+    those options never reach it. Stronger than validating the selection
+    afterwards, and the same argument `candidates_for_budget` already makes.
+
+    **Two designs were tried and measured, and the eval caught both.**
+
+    *A day is not a meal.* The first version asked for one recipe per day. The
+    meal-plan suite went from 100% invariants to **45%**, budget used from 69% to
+    **24%**, and `min_budget_used` fired on four cases — which is exactly the
+    under-feeding that check was added to catch. The count now comes from
+    `min_grams_per_person_day` in `config/feasibility.json`, the same figure the
+    feasibility refusal uses, so the two cannot disagree about how much a
+    household eats.
+
+    *A per-recipe budget cap rejects on a number no plan ever pays.* The second
+    version capped each recipe at `budget / meals`. `assemble_plan` aggregates
+    packs across meals and rounds up ONCE, so recipes sharing rice and onions
+    cost far less together than apart: the cap collapsed a 29-recipe shortlist to
+    **one** against the fixtures, and the suite read the result as under-feeding
+    again. The budget is now enforced on the SET (`affordable_set`, greedy
+    cheapest-first, skipping rather than stopping) plus a marginal-cost trim
+    after selection. Verified against an exhaustive search: for "a week of
+    dinners for one person on $35" the greedy set finds the same five meals that
+    checking every combination finds, and no six-meal combination fits.
+
+    **The scorecard reads what the MODEL returned, not what the node served.**
+    `select_recipes` tops a short selection up from unused recipes and trims
+    meals that do not fit. Both are right for a plan and fatal for a gate: with
+    the eval scoring the served list, a planted model that returns one meal every
+    time scored **100%**. `recipe_selection_model` carries the raw answer.
+
+    **Gates.** `evals/run_recipe_select.py`, 12 cases, wired into CI at 0.90.
+    Every case verified to DISCRIMINATE against a model built to fail it — a
+    fabricated id scores 0%, a repeated selection 8.3%, an under-count 0%,
+    against a 100% scripted baseline. `tests/test_recipe_selection.py` adds 13
+    tests. `samples/response_meal_plan.json` regenerated and, for the first time,
+    covered by `tests/test_sample_fixtures.py` — it had been stale and unguarded,
+    which is how the published contract came to describe "Scripted Dinner 1".
+
+    **`select_recipes` is `config/models.json`'s one exemption from the scoring
+    gate**, and it is exempt from the LIVE measurement rather than from having a
+    suite. Close it with `python evals/run_recipe_select.py --model nova-lite`,
+    three reps, paced. `tests/test_multimodel.py` pins the exemption set exactly,
+    so adding a second fails the build and removing this one without a scorecard
+    does too.
+
+    **What the fallback costs, stated rather than hidden.** Against the
+    26-product offline fixtures many curated recipes do not fully resolve, so a
+    narrow diet reaches the fallback often; against the real 528-product
+    catalogue 29/29 are costable and vegan viability is 7/29. The notice names
+    the reason, because "Tuesday: Sausages and Mash" and a list of cheap products
+    are different products and the shopper should know which they got.
+
+    ---
+
+    *The original blocker, kept for the reasoning.* A recipe is usable only
     if EVERY ingredient can be priced: a payable total computed from part of a
     shopping list is a number the shopper cannot spend to, and `within_budget`
     derived from it is a false promise — the one failure this codebase exists to

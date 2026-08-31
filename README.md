@@ -67,6 +67,16 @@ capture date was rejected as fabricated provenance. All four paths — compariso
 named regions, clarification and meal plan — verified working live at the time
 of the freshness change (`docs/ARCHITECTURE.md` §3c).
 
+**Req 2.9 shipped on 2026-08-31** (Pilot Task 15c). A meal plan is now built
+from NAMED CURATED RECIPES rather than free composition: `retrieve_prices`
+resolves the catalogue's 27 distinct ingredient terms and shortlists the recipes
+that are costable, dietary-viable *against the resolved products*, and
+affordable as a set; the model's whole contribution is a list of recipe ids;
+deterministic code scales, costs and validates. A turn that cannot be served
+from the catalogue falls back to free composition and says so. This is the only
+differentiating capability a user can see, and it was one graph edge away for a
+fortnight.
+
 So the remaining distance to a pilot is **real ingested data, IaC adoption, and
 operational evidence** — not first deployment.
 
@@ -83,7 +93,7 @@ operational evidence** — not first deployment.
 | 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done** — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). Cutover deferred by decision, not pending |
 | 13 · Controlled ingestion | 🟡 **anomaly rejection wired 2026-08-31** — `implausible_unit_price` refuses a row before it is written, with a metric and an alarm. Measured over the real catalogue: 0 rejections clean, **522 of 2,759** with the historical defect reintroduced (§3p). The rest of Task 13 is unstarted |
 | 14 · AgentCore reviewer | 🟡 **14a done** — the sanitised snapshot boundary and finding validation, which are needed whoever reviews. The Runtime needs ADR 0002; the request was narrowed to it alone on 2026-08-31 |
-| 15 · Recipe catalogue | 🟡 **15a and 15b done** — 29 curated recipes, 29/29 priceable against the real catalogue (14/29 against the offline fixtures), and `src/recipes/planning.py` assembles them into a `PlanDraft`. **15c — wiring selection into the graph — is the remainder.** The imported 175 stay unusable: 0/175 against *both* catalogues |
+| 15 · Recipe catalogue | ✅ **done 2026-08-31** — 29 curated recipes, and **15c wired**: a meal-plan turn is built from named recipes, with the model choosing ids from a shortlist retrieval has already proven costable, dietary-viable and affordable as a set. Falls back to free composition with a notice when nothing fits. The imported 175 stay unusable: 0/175 against *both* catalogues |
 | 16 · Release gates | ⬜ not started |
 
 **Two deliberate deferrals remain** (6b closed 2026-08-30), each with the
@@ -115,7 +125,7 @@ intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%;
 DynamoDB products and idempotency tables with owner-fenced claims proven against
 the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
-**Offline gates:** 845 tests passing, 31 skipped, plus **24 CDK assertions**
+**Offline gates:** 860 tests passing, 31 skipped, plus **24 CDK assertions**
 in `infra/` — run by CI for the first time on 2026-08-31, having found two IAM
 regressions in a stack that was already deployed
 ([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3o). Five eval suites — intent

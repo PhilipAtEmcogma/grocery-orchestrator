@@ -52,3 +52,30 @@ def _cold_graph_cache():
     clear_graph_cache()
     yield
     clear_graph_cache()
+
+
+@pytest.fixture
+def no_recipes(monkeypatch):
+    """
+    Run a meal-plan turn down the FREE-COMPOSITION path.
+
+    Since Pilot Task 15c a meal_plan turn tries the curated catalogue first and
+    only falls through to `generate_plan` when no recipe fits. That is the right
+    default for the product and the wrong one for a test whose subject IS
+    `generate_plan` -- the repair loop, the tier a plan call uses, the four
+    failure terminals. Those tests would otherwise pass while exercising a node
+    they never reach.
+
+    Emptying the catalogue is how production reaches the same path (a diet that
+    excludes everything, a budget nothing fits, a catalogue with no viable
+    recipe), so this is the real fallback rather than a switch invented for
+    tests. `select_recipes` emits its notice and routes to `generate_plan`,
+    exactly as it would for a shopper.
+
+    Named in each test's signature rather than made autouse: a fixture that
+    silently disables a shipped feature for a whole suite is how a suite ends up
+    testing a configuration nobody runs.
+    """
+    monkeypatch.setattr("src.graph.recipe_plan.curated_recipes", lambda: [])
+    monkeypatch.setattr("src.graph.nodes.curated_recipes", lambda: [])
+    monkeypatch.setattr("src.graph.nodes.recipes.curated_recipes", lambda: [])

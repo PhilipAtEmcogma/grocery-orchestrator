@@ -222,10 +222,11 @@ price.
 | `validate_input` | no | Emit session event, initialise state |
 | `classify_intent` | yes, low-cost | Classify, extract constraints, record any unmappable dietary terms |
 | `emit_dietary_unsupported` | no | Honest refusal for a dietary term we cannot honour (Req 5.6) |
-| `retrieve_prices` | no | Query price store; **only** creator of references |
+| `retrieve_prices` | no | Query price store; **only** creator of references. On a meal-plan turn it also resolves the curated catalogue's ingredients and builds the recipe shortlist |
 | `emit_no_data` | no | Honest "no data" outcome (Req 4.1) |
 | `generate_comparison` | **no** | Assemble comparison from references |
-| `generate_plan` | yes | Produce price-free draft |
+| `select_recipes` | yes, low-cost | Choose recipe ids from the shortlist (Req 2.9). Returns ids ONLY |
+| `generate_plan` | yes | Produce price-free draft (free composition, the fallback) |
 | `validate_plan` | no | Verify arithmetic and budget (Req 2.3) |
 | `repair_plan` | no | Increment attempt counter |
 | `emit_budget_infeasible` | no | Honest refusal (Req 4.4) |
@@ -253,9 +254,44 @@ second says we did not look — and conflating them would put a false claim in
 the user's hands. Both exist because a partial answer that does not announce
 itself is indistinguishable from a complete one.
 
+**`select_recipes` is a MODEL NODE PLACED AFTER RETRIEVAL, deliberately.**
+Req 2.9 says the model selects recipe ids while deterministic code owns scaling,
+dietary verification and totals. `RecipeSelection` has exactly one field and it
+holds ids, so there is no slot for a quantity, a pack count or a price.
+
+Putting it after `retrieve_prices` is the part worth arguing about, because it
+would have been simpler before: the model could pick recipes from the catalogue
+and retrieval could then fetch their ingredients. That order was rejected. The
+grounding invariant is enforced three ways and one of them is the TOPOLOGY --
+"generation nodes are unreachable except through `retrieve_prices`; no edge
+skips it" -- and an invariant with an exception is one somebody has to remember.
+`select_recipes` produces no price and could not, so the exception would have
+been harmless today and load-bearing the day the node grew.
+
+Placing it after retrieval also makes the guarantee stronger rather than merely
+preserving it. Retrieval resolves the catalogue's ingredient terms, keeps only
+recipes every ingredient of which priced, filters them against the dietary
+exclusions using the RESOLVED product categories, and trims the result to a set
+that fits the budget together. The model is offered only what survives, so it
+cannot select an uncostable, unsafe or unaffordable recipe -- not because the
+selection is checked afterwards, but because those options never reach it. That
+is the same argument `candidates_for_budget` makes for capping its candidate set.
+
+**The recipe path falls back to free composition, and says so.** Too few viable
+recipes (vegan is 7 of 29), nothing affordable, or a model that returned no
+usable id sends the turn to `generate_plan` with a `notice` event naming the
+reason. Both outcomes are honest and they are different products -- "Tuesday:
+Sausages and Mash" and a list of cheap products are not the same thing -- so not
+saying which one the shopper got would be the quiet substitution this design
+refuses everywhere else. Refusing the turn instead was considered and rejected:
+it would regress requests that work today.
+
 **The cycle** `generate_plan -> validate_plan -> repair_plan -> generate_plan`
 is the reason a graph library is used rather than sequential code. Bounded at a
-configured maximum (Req 2.4).
+configured maximum (Req 2.4). A recipe-built plan enters `validate_plan` like
+any other: it is produced by deterministic code, which is exactly why it is not
+trusted -- a path that validated its own output would be the one place in this
+graph where a plan is believed rather than checked.
 
 **Failed drafts are discarded** on the infeasible path (Req 4.5). Delivering an
 over-budget plan beside a message saying no plan was possible is incoherent.

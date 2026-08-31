@@ -16,6 +16,10 @@ Graph assembly.
       |--- budget impossible -> emit_budget_infeasible -----------> finalise
       |--- price_check ------> generate_comparison -> generate_prose -> finalise
       v (meal_plan)
+  select_recipes             <-- Req 2.9: ids only, from a costed shortlist
+      |--- selected --------> validate_plan
+      |--- model unreachable -> emit_upstream_failure ------------> finalise
+      v (fallback, with a notice)
   generate_plan  <----------------+
       v                           |
   validate_plan                   | repair (bounded)
@@ -34,7 +38,10 @@ them told users to raise a budget that was never the problem.
 Two safety guarantees are the shape itself:
 
 * generate_* is unreachable except through retrieve_prices (grounding,
-  Invariant 1). There is no edge that skips it.
+  Invariant 1). There is no edge that skips it. `select_recipes` calls a model
+  and therefore sits AFTER retrieval too, even though it produces no price and
+  could not: the invariant is enforced by the topology, and a topology with an
+  exception is a topology somebody has to remember.
 * A meal_plan turn with a stated dietary exclusion we cannot map refuses
   BEFORE retrieval (Invariant 3). We do not do the work for a plan we
   cannot safely verify — see src/graph/dietary.py for the mapping and the
@@ -71,6 +78,7 @@ def build_graph(repo: PriceRepository, model: ModelClient):
     g.add_node("emit_dietary_unsupported", nodes.emit_dietary_unsupported)
     g.add_node("emit_clarification", nodes.emit_clarification)
     g.add_node("generate_comparison", nodes.generate_comparison)
+    g.add_node("select_recipes", partial(nodes.select_recipes, model=model))
     g.add_node("generate_plan", partial(nodes.generate_plan, model=model))
     g.add_node("validate_plan", nodes.validate_plan)
     g.add_node("repair_plan", nodes.repair_plan)
@@ -104,8 +112,27 @@ def build_graph(repo: PriceRepository, model: ModelClient):
             "stale": "emit_stale_data",
             "unknown_region": "emit_unknown_region",
             "comparison": "generate_comparison",
-            "plan": "generate_plan",
+            # Req 2.9's entry point. A meal plan tries the curated catalogue
+            # first and falls through to free composition with a notice, rather
+            # than the other way round: a plan built from named recipes is the
+            # product, and free composition is the honest second best.
+            "plan": "select_recipes",
             "infeasible": "emit_budget_infeasible",
+        },
+    )
+
+    g.add_conditional_edges(
+        "select_recipes",
+        nodes.route_after_recipe_selection,
+        {
+            # A recipe plan is already costed by deterministic code, so it goes
+            # STRAIGHT to validation. It does not skip validation: the arithmetic
+            # assertions are the same ones a model-authored plan faces, and a
+            # path that trusted its own output would be the one place in this
+            # graph where a plan is believed rather than checked.
+            "validate": "validate_plan",
+            "compose": "generate_plan",
+            "upstream_failed": "emit_upstream_failure",
         },
     )
 

@@ -58,6 +58,11 @@ class ModelTier(StrEnum):
 # Three test files and two demos carried a third and fourth copy. See
 # `config/models.json` `scorecards._split_note` for why the split happened.
 
+#: Choose recipe ids from a shortlist retrieval has already proven costable,
+#: dietary-viable and affordable. FAST tier: the hard part was done in code, and
+#: what is left is judgement about variety over options that are all correct.
+TASK_SELECT_RECIPES = "select_recipes"
+
 #: One model call producing a `PlanDraft`. QUALITY tier.
 TASK_GENERATE_PLAN = "generate_plan"
 

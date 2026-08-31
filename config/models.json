@@ -141,6 +141,14 @@
         "claude-haiku"
       ]
     },
+    "select_recipes": {
+      "tier": "fast",
+      "_why": "Req 2.9, Pilot Task 15c. The model chooses recipe ids from a shortlist retrieval has already proven costable, dietary-viable against the RESOLVED products, and affordable as a set. FAST tier because the hard part is done in code: what is left is judgement about variety over options that are all already correct, and there is no field in RecipeSelection for a quantity or a price.",
+      "prefer": [
+        "nova-lite",
+        "claude-haiku"
+      ]
+    },
     "generate_plan": {
       "tier": "quality",
       "prefer": [
@@ -262,7 +270,8 @@
       }
     },
     "_unscored_tasks": {
-      "_comment": "Tasks no eval measures, named rather than hidden. The test treats these as accepted gaps; deleting a task from here without adding a scorecard makes the build fail, which is the point."
+      "_comment": "Tasks no eval measures, named rather than hidden. The test treats these as accepted gaps; deleting a task from here without adding a scorecard makes the build fail, which is the point.",
+      "select_recipes": "NEW TASK, 2026-08-31, and the ONLY exemption in this file. evals/run_recipe_select.py exists, has 12 cases, and every one was verified to DISCRIMINATE against a model built to fail it -- a fabricated id scores 0%, a repeated selection 8.3%, an under-count 0%, against a 100% scripted baseline. What is missing is a LIVE run: scoring nova-lite and claude-haiku costs Bedrock quota and money, and this change was made without credentials. The exemption is therefore about the measurement, not about the suite. CLOSE IT BY RUNNING: python evals/run_recipe_select.py --model nova-lite (and --model claude-haiku), three reps each, paced, per docs/LIVE-EVAL-RUNBOOK.md -- then record the bands here and delete this entry. tests/test_multimodel.py names this exemption explicitly, so adding a SECOND one still fails the build and removing this one without a scorecard does too."
     },
     "generate_prose": {
       "_source": "evals/run_prose.py, 11 cases, guardrail version 2, paced 9/min",
