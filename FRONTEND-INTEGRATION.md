@@ -433,7 +433,28 @@ other was ever heard — which reads as the app ignoring them.
 | `token` | Streaming prose | Append `ev.text` to the message bubble. Already includes its own leading space where needed — don't add one. |
 | `price_comparison` | `price_check` turns | Render a comparison table. **Possibly several per turn — append, don't replace.** Resolve each `citation_ref` against your citation map for the prices. |
 | `meal_plan` | `meal_plan` turns | Render meals plus the per-store shopping list. All prices via `citation_ref`. `repair_attempts` is observability — don't show it. |
-| `notice` | Occasionally, mid-turn | Small inline note: data age, an overridden hint, items we didn't check. Non-fatal, non-blocking. |
+| `notice` | Occasionally, mid-turn | Small inline note: data age, an overridden hint, items we didn't check, or a meal plan built from products rather than named recipes. Non-fatal, non-blocking. |
+
+**One notice worth rendering rather than collapsing (added 2026-08-31).** A
+meal-plan turn is normally built from a curated recipe catalogue, so
+`Meal.name` reads "Sausages and Mash". When no recipe fits the request -- a
+narrow diet, a tight budget -- the turn falls back to composing a plan from
+individual products and emits:
+
+```
+I couldn't build this from my recipe collection (nothing in it fits your budget
+and preferences), so I've put together a shopping list of affordable items
+instead.
+```
+
+The response SHAPE is identical either way: same `meal_plan` event, same
+`MealPlan`, same arithmetic guarantees. Only `Meal.name` differs -- a recipe
+name in the first case, a composed label in the second. Nothing in your client
+needs to branch on it, and there is no new field.
+
+It is a notice rather than a silent difference because those two are different
+products, and a shopper who asked for meal ideas should know which one they
+got. Render it near the plan.
 | `clarification` | A plan needs one more fact | **Not an error.** Raise the control named in `missing` (a `hints` field) and resend; see §3.2. |
 | `no_data` | We have no data for an item | Render as a **normal assistant reply, not an error**. May appear alongside results (§3.3), and more than once. |
 | `error` | On failure | Show `ev.message` — it's already written to be user-safe. Offer retry if `ev.retryable`. |

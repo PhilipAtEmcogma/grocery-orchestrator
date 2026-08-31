@@ -90,7 +90,7 @@ operational evidence** — not first deployment.
 | 6 · Idempotency fencing, canonical hashing, pagination, PITR | ✅ done · one deferral (6b) |
 | 7 · Scorecards, route qualification, prose/repair evals | ✅ done · one deferral (7b) |
 | 8 · Local read-only MCP | ✅ done — 2 coarse tools, default-off, capped, parity-tested |
-| 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done** — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). Cutover deferred by decision, not pending |
+| 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done**, ObservabilityStack written 2026-08-31 and alarming **both** planes — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). Cutover deferred by decision, not pending |
 | 13 · Controlled ingestion | 🟡 **anomaly rejection wired 2026-08-31** — `implausible_unit_price` refuses a row before it is written, with a metric and an alarm. Measured over the real catalogue: 0 rejections clean, **522 of 2,759** with the historical defect reintroduced (§3p). The rest of Task 13 is unstarted |
 | 14 · AgentCore reviewer | 🟡 **14a done** — the sanitised snapshot boundary and finding validation, which are needed whoever reviews. The Runtime needs ADR 0002; the request was narrowed to it alone on 2026-08-31 |
 | 15 · Recipe catalogue | ✅ **done 2026-08-31** — 29 curated recipes, and **15c wired**: a meal-plan turn is built from named recipes, with the model choosing ids from a shortlist retrieval has already proven costable, dietary-viable and affordable as a set. Falls back to free composition with a notice when nothing fits. The imported 175 stay unusable: 0/175 against *both* catalogues |
@@ -178,6 +178,12 @@ evidence gathered and its options written down; none needed more code first.
 
 **Known open questions that want a human**, not more code:
 
+- **Who holds an API key, if the endpoints get one?** Two public,
+  unauthenticated, Bedrock-invoking APIs exist and both are now alarmed, which
+  makes abuse visible without bounding it. Requiring a key changes
+  `CONTRACT-v1.md` and breaks a teammate's working client, so it is designed
+  and not applied:
+  [`docs/OPEN-REVIEW-api-key.md`](docs/OPEN-REVIEW-api-key.md).
 - `min_grams_per_person_day` decides which meal-plan requests are refused
   outright and has never been reviewed by anyone who knows about food —
   [`docs/OPEN-REVIEW-min-grams-per-person-day.md`](docs/OPEN-REVIEW-min-grams-per-person-day.md).

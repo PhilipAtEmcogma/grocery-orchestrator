@@ -12,8 +12,10 @@
  *                          throttling, usage plan. Runs BESIDE the hand-made
  *                          plane under a `-cdk` name suffix; the cutover is
  *                          deferred by decision (docs/ARCHITECTURE.md §3m).
- *   Grocery-Obs-dev        STUB. Next, because it is the one that makes the
- *                          CDK plane safe to cut over to.
+ *   Grocery-Obs-dev        REAL, not yet deployed. SNS, metric filters and
+ *                          alarms from config/alarms.json ON BOTH PLANES,
+ *                          a dashboard, a $25 budget, and the artefact bucket.
+ *                          Deploy it before the cutover, not after.
  *   Grocery-Ingestion-dev  STUB.
  *   Grocery-Frontend-dev   STUB.
  *

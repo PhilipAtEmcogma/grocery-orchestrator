@@ -951,6 +951,52 @@ proposed, or gated as labelled; it is not implemented.
   references tables that do not exist; and the region guard, which refused
   `cdk synth` locally and never ran in CI, became a pin plus a test.
 
+- [x] **Pilot Task 12c — ObservabilityStack, watching both planes. Written 2026-08-31.**
+  Real, tested, and NOT YET DEPLOYED — deploy it before the cutover, not after.
+  SNS, metric filters and alarms built from `config/alarms.json`, a dashboard, a
+  $25 budget, and the encrypted versioned artefact bucket (audit top-10 #15).
+
+  **A correction to the second audit's Finding 3.** It says the CDK plane is
+  "unalarmed, undashboarded". Two of three are right: SIX of the nine alarms
+  already covered both planes, because they watch EMF metrics dimensioned on
+  `service` and `POWERTOOLS_SERVICE_NAME` is `grocery-orchestrator` on both.
+  The gap was the two alarms bound to a PHYSICAL name — the API 5xx alarm and
+  the handler-escaped metric filter. Those are now created per plane, derived
+  from `cfg.suffix`, and collapse to one set when the suffix is empty, so the
+  deploy that retires the hand-made plane needs no edit.
+
+  **And the shared dimension is half a win, recorded as such.** Six alarms
+  covering both planes also means a metric cannot say which plane produced it:
+  while dual-running, a spike on the unused CDK plane is indistinguishable from
+  one on the plane serving shoppers. Splitting the dimension would split every
+  historical series with it, so it is deliberately not done — the cutover is
+  the fix, and if dual-running becomes permanent this is a reason it should not.
+
+  **No SNS subscription is declared**, and a test asserts that. An email
+  subscription needs out-of-band confirmation, so a declared one sits
+  `PendingConfirmation` and reads — in a console and in a template — exactly
+  like somebody who would be paged.
+
+  12 assertions, each watched to fail against a mutated stack.
+
+- [ ] **Pilot Task 12d — Bound the endpoints, not just watch them.** DESIGNED,
+  NOT APPLIED, and waiting on a person: `docs/OPEN-REVIEW-api-key.md`.
+
+  Alarming both planes makes abuse VISIBLE; it does not BOUND it. An API key
+  plus a usage-plan quota turns an unbounded Bedrock bill into a number chosen
+  in advance, and it is minutes of CDK. What it costs is not the CDK: it adds a
+  required `x-api-key` header to `CONTRACT-v1.md`, returns API Gateway's own 403
+  body rather than the contract-valid `ChatResponse` this service guarantees on
+  every other path, and breaks the working Vite/React client on
+  `frontend-infra-setup` that has been building against the contract since
+  2026-08-21. Nobody has agreed who holds the key, and a key in a public bundle
+  bounds cost rather than authenticating anybody.
+
+  The review carries the design, the three options with what each costs, and the
+  four things that would change the answer — a frontend cutover date, any
+  outside traffic, a demo outside the team, or the $25 budget firing for a
+  reason nobody on the team caused.
+
 - [x] **Pilot Task 12b — A skip that expires. Done 2026-08-31.**
   `tests/test_skip_markers.py` fails when a skip carries no machine-checkable
   condition, in Python and TypeScript alike, and refuses `.only` because it

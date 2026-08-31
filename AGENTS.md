@@ -27,6 +27,10 @@ service into an implementation claim.
 - `ACQUISITION-RISK.md` — terms-of-service assessment for live price
   acquisition (Task 7.9). **Read before touching acquisition.** §8 is the
   condition list Task 11.4 is gated on.
+- `docs/OPEN-REVIEW-api-key.md` — two public unauthenticated endpoints, now
+  alarmed but still unbounded. Designed and not applied, because a key changes
+  the published contract and breaks a teammate's client. Needs a person to say
+  who holds it.
 - `docs/OPEN-REVIEW-min-grams-per-person-day.md` — the one judgement in the
   planning path that has NOT had domain review. Self-contained, needs no
   code reading, and says what would change the answer. Read it if you know

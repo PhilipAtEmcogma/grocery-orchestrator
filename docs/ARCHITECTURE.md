@@ -1066,6 +1066,62 @@ So the ADR 0002 decision now has a measurement under it rather than a belief,
 and it points somewhere specific: the next thing worth building is the history
 table, not the Runtime.
 
+## 3q. ObservabilityStack, and how much of the second plane was actually unwatched — 2026-08-31
+
+The second audit's Finding 3 says the CDK plane is "unalarmed, undashboarded,
+and equally invocable by anyone who finds the URL". Two of those three are
+right. The middle one is more precise than that, and the precise version is the
+one worth acting on.
+
+**Six of the nine alarms already covered both planes.** They watch EMF metrics
+dimensioned on `service`, and `POWERTOOLS_SERVICE_NAME` is `grocery-orchestrator`
+on both — `service-stack.ts` does not suffix it. A handler error, a latency
+breach, an exhausted repair loop or a guardrail spike on either plane fires the
+same alarm and always did.
+
+**Two were bound to a physical name, and those were the gap:** the API 5xx alarm
+(`ApiName = grocery-orchestrator-api-dev`) and the handler-escaped metric filter
+(`/aws/lambda/grocery-orchestrator-dev`). `ObservabilityStack` creates both per
+plane, derived from `cfg.suffix`, and collapses to one set when the suffix is
+empty — so the deploy that retires the hand-made plane needs no edit here, which
+is the property that stops the list going stale.
+
+**The shared dimension is itself worth recording, and it is half a win.** Six
+alarms covering both planes also means a metric cannot say WHICH plane produced
+it: while dual-running, a latency spike on the unused CDK plane is
+indistinguishable from one on the plane serving shoppers. Splitting the
+dimension would fix that and split every historical series with it, so it is
+deliberately not done — the dual-run is temporary and the cutover is the fix.
+If dual-running becomes permanent, this is a reason it should not.
+
+### What else the stack carries
+
+| | |
+|---|---|
+| SNS topic | From `config/alarms.json`, which refuses an alarm with no action. **No subscription is declared**: an SNS email subscription needs out-of-band confirmation, so a declared one sits `PendingConfirmation` and reads, in a console and in a template, exactly like somebody who would be paged. |
+| Dashboard | Turns and errors, p95 latencies, tokens (the Bedrock bill before it is a bill), repair/guardrail/idempotency. |
+| Budget | $25/month, notifying the alarm topic at 80% and 100%. Two budgets are free, and this is the control that does not depend on our own instrumentation working — the same reason the 5xx alarm watches the gateway's metric rather than one we publish. |
+| Artefact bucket | Encrypted, versioned, public access blocked, SSL enforced, **RETAIN**. Eval results and latency baselines live in Markdown today, which makes a measurement's provenance a commit message. The point of keeping baselines is that they outlive the stack that made them. |
+
+12 assertions in `infra/test/observability-stack.test.ts`, each watched to fail
+against a mutated stack — dropping the per-plane 5xx alarm fails one, removing
+the 0-fill from a metric filter fails another.
+
+### The identity gap is still open, and is now designed rather than merely noted
+
+Alarming both planes makes abuse VISIBLE. It does not BOUND it. An API key plus
+a usage-plan quota is what turns an unbounded Bedrock bill into a number chosen
+in advance, and it is minutes of CDK — but it adds a required `x-api-key`
+header to `CONTRACT-v1.md`, returns API Gateway's own 403 body rather than the
+contract-valid `ChatResponse` this service guarantees everywhere else, and
+breaks a teammate's working client that has been building against the contract
+since 2026-08-21. Nobody has agreed who holds the key.
+
+So it is written down and not applied: `docs/OPEN-REVIEW-api-key.md` carries the
+design, the three options with what each costs, and the four things that would
+change the answer. **Recorded as a holding position rather than a resolution** —
+the gap is real, the deferred cutover doubled it, and monitoring is not a bound.
+
 ## 4. IAM notes worth keeping
 
 **Cross-region inference profiles need two grants.** `config/models.json`
