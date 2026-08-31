@@ -1128,6 +1128,37 @@ dimension would fix that and split every historical series with it, so it is
 deliberately not done — the dual-run is temporary and the cutover is the fix.
 If dual-running becomes permanent, this is a reason it should not.
 
+### Verified against the account, 2026-08-31, AFTER the analysis above
+
+The paragraph above was reasoned from `config/alarms.json` and the CDK source.
+Checked against the live account afterwards, because this file's own rule is
+that a deployment claim is about an account rather than about a document:
+
+```
+describe-alarms          8 alarms. ONE carries an ApiName dimension
+                         (grocery-orchestrator-api-5xx-dev -> grocery-orchestrator-api-dev).
+                         The other seven carry none -- they are the EMF
+                         alarms on `service`, which both planes share.
+describe-metric-filters  ONE filter, on /aws/lambda/grocery-orchestrator-dev.
+list-stacks              Grocery-Stateful-dev, Grocery-Service-dev. NO Grocery-Obs-dev.
+describe-log-groups      /aws/lambda/grocery-orchestrator-dev      retention None
+                         /aws/lambda/grocery-orchestrator-dev-cdk  retention 14
+```
+
+Three things follow, and only the first was already written down:
+
+1. **The analysis was right.** Six of eight alarms cover both planes; the two
+   bound to a physical name cover the hand-made plane only.
+2. **`ObservabilityStack` IS NOT DEPLOYED.** It is written, tested and merged,
+   and the account has never seen it. Until `cdk deploy Grocery-Obs-dev` runs,
+   the CDK plane's gateway has no 5xx alarm and its log group has no
+   handler-escaped filter. **Do not point a consumer at the CDK plane before
+   deploying it.**
+3. **The hand-made log group still never expires.** `retentionInDays: None`
+   against the CDK plane's 14. That is the cost-of-waiting §3m names, still
+   being paid, and it is one of the two reasons the CDK plane is the better
+   cutover target.
+
 ### What else the stack carries
 
 | | |
