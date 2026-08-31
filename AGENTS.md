@@ -454,7 +454,21 @@ path.** That is the remaining half of what the second audit asked for.
   via `src/models/guardrail.py`. Note the prompt-attack filter does *nothing*
   without tagging.
 - **Nodes are `state → partial state`.** Pure functions, independently
-  testable.
+  testable. They live in five modules and **the seams are the invariants**:
+  `retrieval.py` holds the only creator of Citations plus the terminals that
+  say what it could not find; `plan.py` free composition; `recipes.py` Req 2.9
+  selection; `prose.py` the one node allowed to fail without failing the turn;
+  `__init__.py` everything else and the ROUTING. Split out of one 925-line file
+  on 2026-08-31, mechanically — the graph topology is byte-identical and every
+  name is re-exported, because `compiled_graph` resolves node functions from
+  `src.graph.nodes` AT BUILD TIME and a test monkeypatching that namespace must
+  keep working.
+- **Patch a node where it is LOOKED UP, not where it is defined.** `from x
+  import f` binds the function into the importing module, so patching the
+  definition changes nothing for a caller that already imported it. The
+  `no_recipes` fixture patches three namespaces for that reason, and one of
+  them moved during the node split — caught because `monkeypatch.setattr`
+  raises on a missing attribute rather than creating one.
 - **The compiled graph is memoised, so clear the cache if you patch a node.**
   `compiled_graph()` in `src/graph/build.py` keys on the `(repo, model)` pair —
   the compile measured 13.4 ms and was 78% of an offline turn, on a path where

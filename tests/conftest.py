@@ -75,7 +75,17 @@ def no_recipes(monkeypatch):
     Named in each test's signature rather than made autouse: a fixture that
     silently disables a shipped feature for a whole suite is how a suite ends up
     testing a configuration nobody runs.
+
+    PATCHED AT EVERY LOOKUP SITE, not at the definition. `from x import f` binds
+    the function into the importing module's namespace, so patching
+    `src.graph.recipe_plan.curated_recipes` alone changes nothing for a caller
+    that already imported it. One of these three moved when the retrieval half
+    was split out of `src/graph/nodes/__init__.py`, and monkeypatch's
+    `AttributeError` is what caught it -- `setattr` on a missing name RAISES
+    rather than silently creating one, which is the behaviour that turns a
+    stale patch target into a failing test instead of a passing one that
+    patches nothing.
     """
     monkeypatch.setattr("src.graph.recipe_plan.curated_recipes", lambda: [])
-    monkeypatch.setattr("src.graph.nodes.curated_recipes", lambda: [])
+    monkeypatch.setattr("src.graph.nodes.retrieval.curated_recipes", lambda: [])
     monkeypatch.setattr("src.graph.nodes.recipes.curated_recipes", lambda: [])
