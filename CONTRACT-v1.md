@@ -464,10 +464,9 @@ additionally needs its schema gap closed whichever way it goes — the current
 
 ### They have questions of their own, and a different contract
 
-**Found 2026-08-31 on the branch `frontend-infra-setup`, which was merged into
-`main` the same day — so `docs/API-CONTRACT.md` is now in the repository, with a
-banner pointing here.** THIS document is what the service implements. The
-frontend side
+**Found 2026-08-31 on the branch `frontend-infra-setup`, merged into `main` the
+same day. `docs/API-CONTRACT.md` is now a POINTER at this file** — there is one
+contract document, and it is this one. The frontend side
 wrote their own `docs/API-CONTRACT.md`, provisionally, from a commit predating
 this document. It assumes a flat object rather than an event list, numeric
 prices rather than strings, no `turn_id`, and `location` as a required string —

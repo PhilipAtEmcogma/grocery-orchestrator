@@ -951,7 +951,8 @@ proposed, or gated as labelled; it is not implemented.
   references tables that do not exist; and the region guard, which refused
   `cdk synth` locally and never ran in CI, became a pin plus a test.
 
-- [x] **Pilot Task 12c — ObservabilityStack, watching both planes. Written 2026-08-31.**
+- [x] **Pilot Task 12c — ObservabilityStack, watching both planes. Written
+  2026-08-31. NOT DEPLOYED, paused by decision — see the note at the end.**
   Real, tested, and NOT YET DEPLOYED — deploy it before the cutover, not after.
   SNS, metric filters and alarms built from `config/alarms.json`, a dashboard, a
   $25 budget, and the encrypted versioned artefact bucket (audit top-10 #15).
@@ -978,6 +979,22 @@ proposed, or gated as labelled; it is not implemented.
   like somebody who would be paged.
 
   12 assertions, each watched to fail against a mutated stack.
+
+  **PAUSED 2026-08-31, waiting on the frontend teammate.** The owner's call: the
+  teammate who owns the frontend is working on something in this area, so let
+  that land on GitHub and re-evaluate once rather than twice. This stack, the
+  URL choice, the plane retirement and the API key are one decision wearing four
+  hats, and deploying the alarms first would commit to alarm names and a second
+  budget before knowing which plane survives.
+
+  **While paused, the CDK plane's gateway has no 5xx alarm** and its log group
+  has no handler-escaped filter — six of eight alarms cover it through the
+  shared `service` dimension, the two bound to a physical name do not. The cost
+  tripwire is real and is NOT this stack's: `grocery-orchestrator-monthly-dev`
+  at $25 exists, made by hand (`ARCHITECTURE.md` §3l), confirmed live.
+
+  The ordered checklist for coming back is `docs/ARCHITECTURE.md` §3q. Step 2 is
+  "deploy this stack BEFORE pointing a consumer at the CDK plane, not after".
 
 - [ ] **Pilot Task 12d — Bound the endpoints, not just watch them.** DECIDED
   2026-08-31 by the owner, and DEFERRED TO A TRIGGER rather than to a date:

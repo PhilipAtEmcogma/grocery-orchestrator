@@ -27,8 +27,12 @@ service into an implementation claim.
 - `ACQUISITION-RISK.md` — terms-of-service assessment for live price
   acquisition (Task 7.9). **Read before touching acquisition.** §8 is the
   condition list Task 11.4 is gated on.
-- `docs/OPEN-REVIEW-api-key.md` — two public unauthenticated endpoints, now
-  alarmed but still unbounded. **Decided 2026-08-31: the key lands with the
+- **`Grocery-Obs-dev` is WRITTEN AND NOT DEPLOYED.** Merged 2026-08-31, paused
+  by decision while the frontend teammate's work lands. The CDK plane's gateway
+  therefore has no 5xx alarm today. Do not point a consumer at it before running
+  `cdk deploy Grocery-Obs-dev`; the ordered checklist is `ARCHITECTURE.md` §3q.
+- `docs/OPEN-REVIEW-api-key.md` — two public unauthenticated endpoints, one of
+  them only partly alarmed, both unbounded. **Decided 2026-08-31: the key lands with the
   frontend cutover, not before**, so the URL change and the new required header
   are one coordinated break. Do not apply it early without reading that
   document — and do not forget it either: `infra/test/app.test.ts` fails the

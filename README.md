@@ -90,7 +90,7 @@ operational evidence** — not first deployment.
 | 6 · Idempotency fencing, canonical hashing, pagination, PITR | ✅ done · one deferral (6b) |
 | 7 · Scorecards, route qualification, prose/repair evals | ✅ done · one deferral (7b) |
 | 8 · Local read-only MCP | ✅ done — 2 coarse tools, default-off, capped, parity-tested |
-| 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done**, ObservabilityStack written 2026-08-31 and alarming **both** planes — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). Cutover deferred by decision, not pending |
+| 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done**. ObservabilityStack written 2026-08-31 and **NOT DEPLOYED** — it alarms both planes when it is, and the account has never seen it — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). Cutover deferred by decision, not pending |
 | 13 · Controlled ingestion | 🟡 **anomaly rejection wired 2026-08-31** — `implausible_unit_price` refuses a row before it is written, with a metric and an alarm. Measured over the real catalogue: 0 rejections clean, **522 of 2,759** with the historical defect reintroduced (§3p). The rest of Task 13 is unstarted |
 | 14 · AgentCore reviewer | 🟡 **14a done** — the sanitised snapshot boundary and finding validation, which are needed whoever reviews. The Runtime needs ADR 0002; the request was narrowed to it alone on 2026-08-31 |
 | 15 · Recipe catalogue | ✅ **done 2026-08-31** — 29 curated recipes, and **15c wired**: a meal-plan turn is built from named recipes, with the model choosing ids from a shortlist retrieval has already proven costable, dietary-viable and affordable as a set. Falls back to free composition with a notice when nothing fits. The imported 175 stay unusable: 0/175 against *both* catalogues |
@@ -208,10 +208,11 @@ evidence gathered and its options written down; none needed more code first.
   worse than `datasets/DATA_SCHEMA.md` suggested: the branch
   `frontend-infra-setup` carries a second contract document assuming flat
   objects, numeric prices, no `turn_id` and `location` as a required string.
-  **That branch was merged into `main` on 2026-08-31**, so the second document
-  is now in the repository: `docs/API-CONTRACT.md`, carrying a banner naming
-  `CONTRACT-v1.md` as authoritative. The banner stops a reader implementing the
-  wrong one; it is not the fix. The fix is one document.
+  **That branch was merged into `main` on 2026-08-31 and the contract question
+  was settled the same day**: `docs/API-CONTRACT.md` is now a pointer at
+  `CONTRACT-v1.md`, so there is one contract document again. The field-by-field
+  comparison and the six questions it raised are preserved in
+  [`docs/OPEN-REVIEW-frontend-contract.md`](docs/OPEN-REVIEW-frontend-contract.md).
   Their shipped client works against ours; their document, implemented, returns
   HTTP 400. Field-by-field diff and their six questions answered in
   [`docs/OPEN-REVIEW-frontend-contract.md`](docs/OPEN-REVIEW-frontend-contract.md).

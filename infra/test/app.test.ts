@@ -90,14 +90,27 @@ describe('the API-key decision, deferred with a tripwire', () => {
    * exists because of it. The rule that came out of that is to state the
    * condition in code so it expires on its own.
    *
-   * `FrontendStack` creating its first resource IS the condition. It is a stub
-   * today; the moment it is implemented, its CloudFront domain becomes
-   * `CORS_ORIGIN`, the frontend is being wired to a deployed URL, and that is
-   * the change the owner named. This test fails then, in CI, with the review
-   * document in the failure message.
+   * TWO CONDITIONS, because there are two ways a frontend can arrive and only
+   * one of them touches this app:
+   *
+   *   1. `FrontendStack` creates its first resource. It is a stub today; the
+   *      moment it is implemented, its CloudFront domain becomes `CORS_ORIGIN`
+   *      and the frontend is being wired to a deployed URL.
+   *   2. `CORS_ORIGIN` is set to a real origin. A frontend hosted ANYWHERE
+   *      ELSE -- Netlify, Vercel, an S3 bucket somebody made by hand -- never
+   *      touches `FrontendStack`, but it cannot call this API from a browser
+   *      without a named origin, because a wildcard `*` is refused for any
+   *      production stage and is the giveaway that no real client exists.
+   *
+   * Condition 1 alone was the first version of this test, and it had a hole
+   * exactly the size of "the frontend was not deployed with our CDK" -- which
+   * is the likely case, given the existing client is a Vite app with no
+   * infrastructure of its own. A tripwire with a hole is the shape this
+   * repository keeps finding.
    */
-  it('fires when FrontendStack stops being a stub', () => {
+  it('fires when a frontend appears, by either route', () => {
     const app = buildApp();
+    const cfg = loadConfig('dev');
     const frontend = Template.fromStack(
       app.node.findChild('Grocery-Frontend-dev') as cdk.Stack,
     ).toJSON();
@@ -108,9 +121,12 @@ describe('the API-key decision, deferred with a tripwire', () => {
     const frontendResources = Object.entries(frontend.Resources ?? {}).filter(
       ([id]) => id !== 'CDKMetadata',
     );
+    const realOrigin = cfg.corsOrigin !== '*';
 
-    if (frontendResources.length === 0) {
-      expect(frontendResources).toEqual([]); // still a stub: decision not yet due
+    if (frontendResources.length === 0 && !realOrigin) {
+      // Neither condition met: no frontend, decision not yet due.
+      expect(frontendResources).toEqual([]);
+      expect(cfg.corsOrigin).toBe('*');
       return;
     }
 
@@ -128,8 +144,9 @@ describe('the API-key decision, deferred with a tripwire', () => {
         [
           'THE API-KEY DECISION IS NOW DUE.',
           '',
-          'FrontendStack creates resources, so a frontend is being deployed and',
-          'wired to a URL. That is the exact moment the owner deferred this to on',
+          'A frontend has appeared -- either FrontendStack now creates resources,',
+          'or CORS_ORIGIN names a real origin. Either way a browser client is being',
+          'wired to this API. That is the exact moment the owner deferred this to on',
           '2026-08-31: stay open (option C) while the endpoints have no consumer,',
           'take the key (option A) in the SAME change that repoints the frontend,',
           'so the URL change and the header change land together instead of',
