@@ -807,7 +807,7 @@ anonymous pool and cannot tell a shopper from a script.
 Requiring a key is minutes of CDK. What it costs is a required `x-api-key`
 header in `CONTRACT-v1.md`, API Gateway's own 403 body instead of the
 contract-valid `ChatResponse` this service guarantees on every other path, and
-a working client that has been building against the contract since 2026-08-21.
+a working client that has been CALLING this endpoint since 2026-08-21.
 So the decision was to take it WITH the cutover rather than before it: the URL
 change and the header change are one coordinated break instead of two.
 
@@ -1146,8 +1146,8 @@ a usage-plan quota is what turns an unbounded Bedrock bill into a number chosen
 in advance, and it is minutes of CDK — but it adds a required `x-api-key`
 header to `CONTRACT-v1.md`, returns API Gateway's own 403 body rather than the
 contract-valid `ChatResponse` this service guarantees everywhere else, and
-breaks a teammate's working client that has been building against the contract
-since 2026-08-21. Nobody has agreed who holds the key.
+breaks a teammate's working client that has been calling this endpoint since
+2026-08-21. Nobody has agreed who holds the key.
 
 So it is written down and not applied: `docs/OPEN-REVIEW-api-key.md` carries the
 design, the three options with what each costs, and the four things that would

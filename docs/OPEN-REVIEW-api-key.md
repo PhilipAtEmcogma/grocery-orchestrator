@@ -110,7 +110,7 @@ Applying it is minutes of CDK. What it costs is not the CDK.
   That is a real change to what the frontend must handle.
 - **It breaks a client that already exists.** The branch
   `frontend-infra-setup` carries a working Vite/React client that has been
-  building against this contract since 2026-08-21. Requiring a key without
+  calling this endpoint since 2026-08-21. Requiring a key without
   telling them is the kind of change that gets discovered as an outage.
 - **Nobody has agreed who holds it.** A key in a static site's JavaScript is
   public. A key held server-side means a proxy, which means a backend the

@@ -74,7 +74,7 @@ describe('the API-key decision, deferred with a tripwire', () => {
    * it costs is a required `x-api-key` header in `CONTRACT-v1.md`, API
    * Gateway's own 403 body instead of the contract-valid `ChatResponse` this
    * service guarantees on every other path, and a teammate's working client
-   * that has been building against the contract since 2026-08-21.
+   * that has been calling this endpoint since 2026-08-21.
    *
    * So the decision was: stay open while the endpoints have no consumer, and
    * take the key in the SAME change that repoints the frontend at the CDK
