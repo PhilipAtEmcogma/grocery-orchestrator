@@ -140,7 +140,7 @@ you what happened.
 | `token` | Streaming | Append to the message bubble |
 | `price_comparison` | `price_check` turns | Render comparison table |
 | `meal_plan` | `meal_plan` turns | Render plan + shopping list |
-| `notice` | Occasionally | Small inline note (data age, hint override) |
+| `notice` | Occasionally | Small inline note (data age, hint override, or a meal plan composed from products rather than named recipes) |
 | `no_data` | When we have no data | Render as a normal assistant reply, **not** an error |
 | `error` | On failure | Show `message` — it's already user-safe |
 | `done` | Always last | Stop spinner. Present even after an `error`. |

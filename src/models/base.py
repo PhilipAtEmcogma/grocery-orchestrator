@@ -36,6 +36,49 @@ class ModelTier(StrEnum):
     QUALITY = "quality"
 
 
+# --------------------------------------------------------------------- tasks
+#
+# The routed task names, defined ONCE and here.
+#
+# `task` is a parameter of `ModelClient.structured` below, so the set of legal
+# values belongs with the protocol that takes them -- and this module is the
+# only leaf both the graph and `src/observability/base.py` already import.
+# Observability deliberately cannot import the graph (`src/handler.py`: nothing
+# below the handler knows observability exists), so a constant either lives here
+# or gets written twice.
+#
+# It DID get written twice, and the two copies disagreed the moment they were
+# tested. `src/observability/base.py` held
+# `PLAN_TASKS = frozenset({"generate_plan", "repair_plan"})` while
+# `src/graph/nodes/plan.py` passed the strings inline; splitting `repair_plan`
+# into two tasks on 2026-08-31 updated the graph and left the observability copy
+# matching nothing, so `RepairAttempts` silently reported 0 on a turn that
+# repaired twice. A metric reading zero looks exactly like a healthy turn.
+#
+# Three test files and two demos carried a third and fourth copy. See
+# `config/models.json` `scorecards._split_note` for why the split happened.
+
+#: Choose recipe ids from a shortlist retrieval has already proven costable,
+#: dietary-viable and affordable. FAST tier: the hard part was done in code, and
+#: what is left is judgement about variety over options that are all correct.
+TASK_SELECT_RECIPES = "select_recipes"
+
+#: One model call producing a `PlanDraft`. QUALITY tier.
+TASK_GENERATE_PLAN = "generate_plan"
+
+#: The previous plan was costed and came out over. FAST tier.
+TASK_REPAIR_BUDGET = "repair_budget"
+
+#: The previous plan was rejected for something that is not about money. FAST.
+TASK_REPAIR_DEFECT = "repair_defect"
+
+#: A turn takes ONE of these per repair attempt, never both.
+REPAIR_TASKS = frozenset({TASK_REPAIR_BUDGET, TASK_REPAIR_DEFECT})
+
+#: Every task on the meal-plan path, for latency attribution and call counting.
+PLAN_TASKS = frozenset({TASK_GENERATE_PLAN}) | REPAIR_TASKS
+
+
 T = TypeVar("T", bound=BaseModel)
 
 

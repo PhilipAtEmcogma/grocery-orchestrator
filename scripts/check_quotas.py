@@ -43,9 +43,31 @@ from src.graph.state import MAX_REPAIR_ATTEMPTS
 from src.models.registry import ModelRegistry, UnroutableTask
 
 # The model calls one turn makes, by task, as the graph executes them.
-# `repair_plan` is bounded by MAX_REPAIR_ATTEMPTS; the best case is zero.
-MEAL_PLAN_TASKS_MIN = ["classify_intent", "generate_plan", "generate_prose"]
-MEAL_PLAN_TASKS_MAX = MEAL_PLAN_TASKS_MIN + ["repair_plan"] * MAX_REPAIR_ATTEMPTS
+# Repair is bounded by MAX_REPAIR_ATTEMPTS; the best case is zero.
+#
+# THE WORST CASE USES `repair_budget`, not both repair tasks. Repair split into
+# `repair_budget` and `repair_defect` on 2026-08-31, and a turn takes one or the
+# other per attempt, never both -- `generate_plan`'s branch picks by whether the
+# rejection was about money. Budget is the one that costs the ceiling most,
+# because it routes to Nova Lite, which is the account's BINDING quota; defect
+# repairs go to Claude Haiku and therefore spend a different budget. Counting
+# both would overstate the load on the constraint, and counting the cheaper one
+# would understate it.
+# PILOT TASK 15c ADDED A CALL TO EVERY MEAL-PLAN TURN, and it lands on the
+# binding quota. `select_recipes` runs before the plan is built, on Nova Lite,
+# so a meal-plan turn now makes THREE Nova Lite calls where it made two. The
+# ceiling this script derives moved with it, and the figure quoted throughout
+# the repository (10 meal-plan turns/min) was measured before the node existed.
+#
+# The recipe path also DROPS the Nova Pro call, because `select_recipes` builds
+# the plan itself and `generate_plan` never runs. That is a cost saving -- Nova
+# Pro is roughly thirteen times Nova Lite per token -- and a throughput loss,
+# because it moves work onto the model that binds. Both paths are modelled
+# below rather than averaged: the fallback is the worse one for the ceiling and
+# it is the one a narrow diet reaches.
+MEAL_PLAN_RECIPE = ["classify_intent", "select_recipes", "generate_prose"]
+MEAL_PLAN_TASKS_MIN = [*MEAL_PLAN_RECIPE, "generate_plan"]
+MEAL_PLAN_TASKS_MAX = MEAL_PLAN_TASKS_MIN + ["repair_budget"] * MAX_REPAIR_ATTEMPTS
 PRICE_CHECK_TASKS = ["classify_intent", "generate_prose"]
 
 # Cross-region, because the configured model ids carry `apac.` / `au.` prefixes
@@ -123,7 +145,12 @@ def main() -> int:
     print(f"Bedrock request quotas in {args.region} (cross-region profiles)\n")
     print(f"  {'task':<18} {'model':<22}")
     print(f"  {'-' * 18} {'-' * 22}")
-    for task in ("classify_intent", "generate_plan", "repair_plan", "generate_prose"):
+    # EVERY routed task, from the config. This was a hand-written list of four
+    # and it went stale the moment `repair_plan` became `repair_budget` and
+    # `repair_defect`: the table printed "UNROUTABLE: No routing rule for task
+    # 'repair_plan'" and showed neither replacement, so the tool whose job is
+    # naming the binding model stopped naming one of the models that binds.
+    for task in registry.tasks:
         try:
             print(f"  {task:<18} {registry.route(task).display_name:<22}")
         except UnroutableTask as exc:
@@ -131,11 +158,7 @@ def main() -> int:
 
     print(f"\n  {'model':<22} {'req/min':>8} {'adjustable':>11}")
     print(f"  {'-' * 22} {'-' * 8} {'-' * 11}")
-    routed = {
-        registry.route(t).display_name
-        for t in ("classify_intent", "generate_plan", "repair_plan", "generate_prose")
-        if _routable(registry, t)
-    }
+    routed = {registry.route(t).display_name for t in registry.tasks if _routable(registry, t)}
     for display_name in sorted(routed):
         quota = quota_for(quotas, display_name)
         if quota is None:
@@ -146,7 +169,8 @@ def main() -> int:
 
     print("\nturns per minute, service-wide across all users\n")
     for label, tasks in (
-        ("meal plan, no repair", MEAL_PLAN_TASKS_MIN),
+        ("meal plan, from a recipe", MEAL_PLAN_RECIPE),
+        ("meal plan, free composition", MEAL_PLAN_TASKS_MIN),
         (f"meal plan, {MAX_REPAIR_ATTEMPTS} repairs", MEAL_PLAN_TASKS_MAX),
         ("price check", PRICE_CHECK_TASKS),
     ):

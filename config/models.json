@@ -141,6 +141,20 @@
         "claude-haiku"
       ]
     },
+    "select_recipes": {
+      "tier": "fast",
+      "_why": "Req 2.9, Pilot Task 15c. The model chooses recipe ids from a shortlist retrieval has already proven costable, dietary-viable against the RESOLVED products, and affordable as a set. FAST tier because the hard part is done in code: what is left is judgement about variety over options that are all already correct, and there is no field in RecipeSelection for a quantity or a price.",
+      "prefer": [
+        "nova-lite",
+        "claude-haiku"
+      ],
+      "exclude": [
+        "nova-pro"
+      ],
+      "_why_exclude": {
+        "nova-pro": "No selection scorecard, and it should not acquire one. It declares the FAST tier as well as quality, so `available(tier)` would hand it this task as a cost-ordered fallback -- which is how `claude-sonnet` once sat as a live fallback for every task while being documented as unfit, and it is what `unscored_routes()` caught here within minutes of the two real scorecards landing. Excluded as a ROUTING decision rather than on a score: selection is a cheap judgement over a shortlist deterministic code has already validated, it runs on every meal-plan turn, and Nova Pro is roughly thirteen times Nova Lite per token. Paying that for a choice between options that are all already correct is a cost regression, not a quality win. Same reasoning as repair_budget and repair_defect."
+      }
+    },
     "generate_plan": {
       "tier": "quality",
       "prefer": [
@@ -148,8 +162,9 @@
         "claude-sonnet"
       ]
     },
-    "repair_plan": {
+    "repair_budget": {
       "tier": "fast",
+      "_why": "The previous plan was costed and came out over. The repair must cut money payable while still covering the household and days -- `build_repair_prompt` names the overage and offers cheaper options.",
       "prefer": [
         "nova-lite"
       ],
@@ -158,8 +173,23 @@
         "nova-pro"
       ],
       "_why_exclude": {
-        "claude-haiku": "83.3% on repair across three identical reps, below the 90% floor. Perfect on defect repair and 71.4% on budget repair -- a structural weakness, not variance. It stays enabled and qualified for classify_intent (96.4%) and generate_plan (100%): `exclude` exists precisely so a model can be excellent at one task and barred from another, which `enabled: false` could never express.",
-        "nova-pro": "No repair scorecard, and it should not acquire one. It declares the fast tier so `available(tier)` would offer it as a cost-ordered fallback, but it is the quality-tier model -- routing repairs to it is a cost regression, not a quality win. Excluded as a routing decision, independent of any score."
+        "claude-haiku": "71.4% on budget repair (5/7), below the 90% floor. Perfect on DEFECT repair, which is why it serves repair_defect instead. This is the whole reason `exclude` exists: a model can be excellent at one task and below the floor on another.",
+        "nova-pro": "No repair scorecard, and it should not acquire one. It declares the fast tier so `available(tier)` would offer it as a cost-ordered fallback, but it is the quality-tier model -- routing repairs to it is a cost regression, not a quality win."
+      }
+    },
+    "repair_defect": {
+      "tier": "fast",
+      "_why": "The previous plan was rejected for something that is NOT about money: an invented price in a meal name, an unknown citation ref, broken arithmetic. `build_defect_repair_prompt` names the defects. Telling this case 'you came to $0 OVER the $X budget' describes none of them, which is why the two prompts exist -- and, as of 2026-08-31, why the two ROUTES do.",
+      "prefer": [
+        "claude-haiku"
+      ],
+      "exclude": [
+        "nova-lite",
+        "nova-pro"
+      ],
+      "_why_exclude": {
+        "nova-lite": "80% on defect repair (4/5), below the 90% floor. Perfect on BUDGET repair, which is why it serves repair_budget instead. The mirror image of claude-haiku's exclusion above, which is what makes the split worth having.",
+        "nova-pro": "Same reason as repair_budget: quality tier, no repair scorecard, and routing repairs to it is a cost regression."
       }
     },
     "generate_prose": {
@@ -192,6 +222,26 @@
         "blocked": 2
       }
     },
+    "select_recipes": {
+      "_source": "evals/run_recipe_select.py, 12 cases, guardrail version 2, live in ap-southeast-2",
+      "_measured": "2026-08-31",
+      "_reps": "THREE reps each, paced at 9/min, zero upstream failures and zero fallbacks in any rep. Every rep identical, which on this suite confirms STABILITY rather than averaging noise: BedrockModelClient sets temperature 0.0, and the task is a choice from a short list rather than free generation.",
+      "_finding": "BOTH MODELS SCORE 100% AND THE SUITE THEREFORE CANNOT RANK THEM. That is the same ceiling the meal-plan suite hit and it is worth saying plainly: every check here is a RULE VIOLATION check -- did you invent an id, did you repeat one while alternatives remained, did you breach a stated exclusion, did you choose enough meals. Neither model breaks rules. Nothing here asks whether the MENU is good, so 100% means 'both models select validly' and says nothing about which selects better.",
+      "_the_one_signal_that_distinguishes_them": "`distinct mains`, reported and NOT scored: Claude Haiku 3.8, Nova Lite 3.4 across the same 12 cases, stable across all three reps. Haiku picks more varied menus. It is not scored because no threshold on variety is right for every request -- three meals from a seven-recipe shortlist cannot beat four from a twelve-recipe one, and scoring it would manufacture a gradient without establishing what it means. Recorded because it is the only measured difference between the two, and because the honest way to rank them later is to add harder cases rather than to promote a reported metric.",
+      "_routing_consequence": "Nova Lite is preferred on cost: $0.00006/1k input against $0.0008, roughly thirteen times cheaper, on a task that runs on EVERY meal-plan turn. Claude Haiku is the qualified fallback, which matters here more than elsewhere -- select_recipes is one of three Nova Lite calls a meal-plan turn now makes, and this is the only one of them with a second qualified model.",
+      "nova-lite": {
+        "rate": 1.0,
+        "scored": 12,
+        "reps": 3,
+        "distinct_mains": 3.4
+      },
+      "claude-haiku": {
+        "rate": 1.0,
+        "scored": 12,
+        "reps": 3,
+        "distinct_mains": 3.8
+      }
+    },
     "generate_plan": {
       "_source": "evals/run_meal_plan.py, 11 cases, three clean reps each, paced",
       "_measured": "2026-08-28",
@@ -203,6 +253,45 @@
       "claude-haiku": {
         "rate": 1.0,
         "scored": 11,
+        "reps": 3
+      }
+    },
+    "repair_budget": {
+      "_source": "evals/run_repair.py, DERIVED from the combined repair_plan run of 2026-08-30 rather than measured under these task names. That run scored 12 cases (7 budget, 5 defect) over three identical reps per model and reported budget_rate and defect_rate separately, because the harness has always separated the two case classes -- the split of the ROUTING TASK is what is new, not the measurement. Recorded as derived rather than presented as fresh: `_derived_from` names the run, and run_repair.py now scores these task names natively, so the next run measures them directly instead of inheriting.",
+      "_derived_from": "scorecards.repair_plan as of 2026-08-30, field `budget_rate`",
+      "_measured": "2026-08-30",
+      "_cases": 7,
+      "_finding": "Nova Lite is perfect here across three identical reps. Claude Haiku drops two of seven, which is a structural weakness rather than variance -- the shape did not move across reps, and it is the exact inverse of the defect half.",
+      "nova-lite": {
+        "rate": 1.0,
+        "scored": 7,
+        "reps": 3
+      },
+      "claude-haiku": {
+        "rate": 0.714,
+        "scored": 7,
+        "reps": 3
+      },
+      "_history": {
+        "_was": "scorecards._measured_not_gated.repair_plan, until 2026-08-31",
+        "_status": "GATED 2026-08-30. This entry is kept for the reasoning, not because it still applies. The suite was six cases and could not support a threshold; it was expanded to twelve, every case verified to discriminate against a model built to fail it, and re-measured over three reps per model. Nova Lite clears the 90% floor and serves repair; Claude Haiku does not and is excluded from this task only. See scorecards.repair_plan and routing.repair_plan.exclude.",
+        "_option_kept_on_record": "SPLIT THE TASK, if repair quality ever becomes the bottleneck. The two models are COMPLEMENTARY rather than ranked: Nova Lite scores 100% on budget repair and Claude Haiku 100% on defect repair. Routing `repair_budget` to one and `repair_defect` to the other would give 100% on both, where choosing either model alone gives up something. The graph already knows which kind of repair it is doing -- evals/run_repair.py separates them and src/prompts/ carries two distinct repair prompts, because a budget repair and a defect repair need different instructions. What it would cost: a second routing task, a scorecard per sub-task, and the qualification gate widening to cover both. Recorded here rather than built, because it is machinery for a problem that is not yet biting: a failed repair exhausts the bounded loop and produces an honest refusal, so the cost of the current arrangement is a refusal the shopper can act on rather than a wrong answer they cannot detect."
+      }
+    },
+    "repair_defect": {
+      "_source": "evals/run_repair.py, DERIVED from the combined repair_plan run of 2026-08-30 rather than measured under these task names. That run scored 12 cases (7 budget, 5 defect) over three identical reps per model and reported budget_rate and defect_rate separately, because the harness has always separated the two case classes -- the split of the ROUTING TASK is what is new, not the measurement. Recorded as derived rather than presented as fresh: `_derived_from` names the run, and run_repair.py now scores these task names natively, so the next run measures them directly instead of inheriting.",
+      "_derived_from": "scorecards.repair_plan as of 2026-08-30, field `defect_rate`",
+      "_measured": "2026-08-30",
+      "_cases": 5,
+      "_finding": "Claude Haiku is perfect here; Nova Lite drops one of five. FIVE CASES IS A COARSE INSTRUMENT and that is worth saying out loud: at n=5 a single failure reads as 80%, so this half cannot distinguish 'below the floor' from 'one bad draw' as confidently as the budget half can. The repair suite's own history is the argument for expanding it -- at six combined cases the failures read as variance and at twelve they were structural.",
+      "claude-haiku": {
+        "rate": 1.0,
+        "scored": 5,
+        "reps": 3
+      },
+      "nova-lite": {
+        "rate": 0.8,
+        "scored": 5,
         "reps": 3
       }
     },
@@ -230,31 +319,8 @@
       }
     },
     "_measured_not_gated": {
-      "_comment": "Measured, reported, and deliberately NOT used to gate routing, because the suite is too small for any threshold on it to mean anything. Distinct from _unscored_tasks, which is for tasks nothing measures at all. Expand the case set before gating.",
-      "repair_plan": {
-        "_status": "GATED 2026-08-30. This entry is kept for the reasoning, not because it still applies. The suite was six cases and could not support a threshold; it was expanded to twelve, every case verified to discriminate against a model built to fail it, and re-measured over three reps per model. Nova Lite clears the 90% floor and serves repair; Claude Haiku does not and is excluded from this task only. See scorecards.repair_plan and routing.repair_plan.exclude.",
-        "_option_kept_on_record": "SPLIT THE TASK, if repair quality ever becomes the bottleneck. The two models are COMPLEMENTARY rather than ranked: Nova Lite scores 100% on budget repair and Claude Haiku 100% on defect repair. Routing `repair_budget` to one and `repair_defect` to the other would give 100% on both, where choosing either model alone gives up something. The graph already knows which kind of repair it is doing -- evals/run_repair.py separates them and src/prompts/ carries two distinct repair prompts, because a budget repair and a defect repair need different instructions. What it would cost: a second routing task, a scorecard per sub-task, and the qualification gate widening to cover both. Recorded here rather than built, because it is machinery for a problem that is not yet biting: a failed repair exhausts the bounded loop and produces an honest refusal, so the cost of the current arrangement is a refusal the shopper can act on rather than a wrong answer they cannot detect."
-      }
+      "_comment": "Measured, reported, and deliberately NOT used to gate routing, because the suite is too small for any threshold on it to mean anything. Distinct from _unscored_tasks, which is for tasks nothing measures at all. Expand the case set before gating. EMPTY as of 2026-08-31, and that is the point: repair_plan sat here carrying `_status: GATED` for a day -- a gated task filed under a heading meaning ungated. The reasoning it held was worth keeping, so it moved to scorecards.repair_plan._history rather than being deleted."
     },
-    "repair_plan": {
-      "_source": "evals/run_repair.py, 12 cases (7 budget, 5 defect), guardrail version 2, live",
-      "_measured": "2026-08-30",
-      "_reps": "THREE reps each, and every rep identical. BedrockModelClient sets temperature 0.0, so these calls are near-deterministic: reps here confirm STABILITY rather than averaging out noise. The 18-point spread AGENTS.md warns about came from a different suite and configuration. Reps are still the right discipline -- they separate a stable number from a lucky one -- but on this suite they are cheap confirmation, not sampling.",
-      "_finding": "THE FAILURES ARE STRUCTURED AND OPPOSITE, not scattered. Nova Lite is perfect on budget repair and drops a defect repair; Claude Haiku is perfect on defect repair and drops two budget repairs. At six cases this looked like variance -- 'each failed a different case' -- and that reading was correct FOR THAT SUITE and wrong about the models. Twelve cases, three reps each, and the shape does not move.",
-      "nova-lite": {
-        "rate": 0.917,
-        "scored": 12,
-        "budget_rate": 1.0,
-        "defect_rate": 0.8,
-        "reps": 3
-      },
-      "claude-haiku": {
-        "rate": 0.833,
-        "scored": 12,
-        "budget_rate": 0.714,
-        "defect_rate": 1.0,
-        "reps": 3
-      }
-    }
+    "_split_note": "repair_plan was ONE task until 2026-08-31, gated at 90% with claude-haiku excluded, which left `routable_models('repair_plan') == ['nova-lite']` -- a single model on the account's binding, unraisable 20 rpm quota, on the code path that fires when the system is already under load. Splitting does NOT restore a per-task fallback: each half still has exactly one qualified model, because the model that fails each half fails it below the floor. What it does is stop the whole repair path depending on one model. A Nova Lite quota event now degrades budget repair only, and defect repair keeps working on Haiku; before, it took out both. Quality also rises to 100% on each half, where choosing either model alone gave up one of them."
   }
 }

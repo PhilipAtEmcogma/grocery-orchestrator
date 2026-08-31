@@ -6,19 +6,31 @@
   "_naming": "Every name carries the -dev suffix so generated resources can coexist with manually created ones during the migration to IaC (design.md 11, point 2).",
   "notification": {
     "topic_name": "grocery-orchestrator-alarms-dev",
-    "_note": "Alarms point here. An alarm with no action is not an alarm, so apply_alarms.py refuses to create one without a topic, and warns when the topic it created has no subscribers \u2014 an alarm nobody is subscribed to fails the same way one paragraph further out.",
+    "_note": "Alarms point here. An alarm with no action is not an alarm, so apply_alarms.py refuses to create one without a topic, and warns when the topic it created has no subscribers — an alarm nobody is subscribed to fails the same way one paragraph further out.",
     "_subscriptions": "Deliberately not declared here. SNS email subscriptions require the recipient to confirm out of band, so a config file cannot make one true; subscribe once, by hand, and the script tells you if you have not."
   },
   "metric_filters": [
     {
       "name": "grocery-orchestrator-handler-escaped-dev",
       "log_group": "/aws/lambda/grocery-orchestrator-dev",
-      "_pattern_note": "A JSON selector, NOT the substring \"handler_escaped\". A substring pattern matches any log line that happens to contain the text \u2014 an exception message quoting it, a test fixture, a future log line about the alarm itself \u2014 and each of those is a page at 3am for nothing. This binds to the structured field Powertools writes.",
+      "_pattern_note": "A JSON selector, NOT the substring \"handler_escaped\". A substring pattern matches any log line that happens to contain the text — an exception message quoting it, a test fixture, a future log line about the alarm itself — and each of those is a page at 3am for nothing. This binds to the structured field Powertools writes.",
       "pattern": "{ $.message = \"handler_escaped\" }",
       "metric_name": "HandlerEscaped",
       "namespace": "GroceryOrchestrator",
       "metric_value": "1",
-      "_default_value_note": "0, not absent. Without it the metric has datapoints only when the pattern matches, so the alarm sits in INSUFFICIENT_DATA forever and OK never means 'checked and fine' \u2014 it means 'never looked'. With 0-fill, a quiet period is an affirmative all-clear.",
+      "_default_value_note": "0, not absent. Without it the metric has datapoints only when the pattern matches, so the alarm sits in INSUFFICIENT_DATA forever and OK never means 'checked and fine' — it means 'never looked'. With 0-fill, a quiet period is an affirmative all-clear.",
+      "default_value": 0
+    },
+    {
+      "name": "grocery-ingestion-row-rejected-dev",
+      "log_group": "/aws/lambda/grocery-ingestion-dev",
+      "_why": "The ingestion Lambda REFUSES a row whose unit price is implausible against its own pack size -- the $2,490-broccoli class, which reached the live products table once and was invisible because a diff reports change and a defect on a FIRST write is not a change. A refused row is dropped rather than corrected, so without this metric the only trace is a count in a Step Functions execution nobody reads on a good day.",
+      "_pattern_note": "A JSON selector on the structured field ingestion/handler.py::_log_rejection writes, for the same reason the handler-escaped filter is: a substring pattern would also match this comment quoted in an exception, a test fixture, or a future log line about the alarm itself.",
+      "_no_powertools_note": "The ingestion Lambda prints the line as plain JSON rather than through Powertools. AGENTS.md forbids importing aws_lambda_powertools outside src/handler.py and src/observability/powertools.py, because that import is what would end the no-AWS property CI depends on -- and tests/test_ingestion.py runs this module with no account. A metric filter needs no library at either end.",
+      "pattern": "{ $.message = \"ingestion_row_rejected\" }",
+      "metric_name": "IngestionRowRejected",
+      "namespace": "GroceryOrchestrator",
+      "metric_value": "1",
       "default_value": 0
     }
   ],
@@ -39,7 +51,7 @@
     },
     {
       "name": "grocery-orchestrator-api-5xx-dev",
-      "description": "Any 5xx from the API. The gateway's own metric, so it fires even when the failure is upstream of our code or logging is the thing that broke \u2014 which is why it overlaps the handler_escaped alarm deliberately.",
+      "description": "Any 5xx from the API. The gateway's own metric, so it fires even when the failure is upstream of our code or logging is the thing that broke — which is why it overlaps the handler_escaped alarm deliberately.",
       "namespace": "AWS/ApiGateway",
       "metric_name": "5XXError",
       "_dimensions_note": "ApiName must match the deployed API exactly. A dimension that matches nothing yields a metric with no datapoints, which looks identical to a healthy service.",
@@ -152,6 +164,22 @@
       "evaluation_periods": 1,
       "datapoints_to_alarm": 1,
       "threshold": 10,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching"
+    },
+    {
+      "name": "grocery-ingestion-row-rejected-dev",
+      "description": "Ingestion refused at least one row as implausible. NOT an outage: the row was dropped, the previous good row survives and will age into STALE_DATA, and the shopper sees an honest gap rather than a wrong price. It means the normaliser, the source data, or a pack size changed -- run `python scripts/check_ingestion_anomalies.py` and read the rejected sample in the Step Functions execution.",
+      "_threshold_note": "One row, not a percentage. The original defect hit six rows out of 2,759 (0.2%), so any percentage gate loose enough to tolerate a real special would have slept straight through it. Verified 2026-08-31 by reintroducing the defect: 522 of 2,759 rows would have been refused against the REAL catalogue, because 19% of it is sold-each. The six was an artefact of the seeded fixture set, not the size of the class.",
+      "namespace": "GroceryOrchestrator",
+      "metric_name": "IngestionRowRejected",
+      "dimensions": {},
+      "statistic": "Sum",
+      "_period_note": "An hour, not the five minutes the request-path alarms use. The refresh is a DAILY schedule, so a five-minute window is mostly empty by construction and the signal would depend on which window the run landed in.",
+      "period": 3600,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "threshold": 1,
       "comparison_operator": "GreaterThanOrEqualToThreshold",
       "treat_missing_data": "notBreaching"
     }

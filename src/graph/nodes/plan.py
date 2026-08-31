@@ -4,7 +4,8 @@ Meal plan node.
 Three parts:
   generate_plan  — one model call producing a PlanDraft (no prices)
   assemble_plan  — computes EVERY monetary value in Python from records
-  repair_plan    — builds targeted feedback and re-runs generation
+  repair         — builds targeted feedback and re-runs generation, routed as
+                   `repair_budget` or `repair_defect` depending on which
 
 The split matters. `assemble_plan` is pure arithmetic over retrieved data, so
 it is exhaustively testable and cannot be wrong in the way a model can be.
@@ -16,6 +17,10 @@ from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 
 from src.graph.state import GroceryState, usage_from
 from src.models.base import (
+    PLAN_TASKS,
+    TASK_GENERATE_PLAN,
+    TASK_REPAIR_BUDGET,
+    TASK_REPAIR_DEFECT,
     GuardrailBlocked,
     ModelClient,
     ModelError,
@@ -38,6 +43,11 @@ from src.schemas.contract import (
     MealPlan,
     StoreBasket,
 )
+
+#: Re-exported: `tests/test_plan.py` and `Philip_demo/04` build model doubles
+#: that fail only on the plan path, and importing the set from the node they are
+#: exercising reads better than reaching into `src.models.base` for it.
+__all__ = ["PLAN_TASKS", "TASK_GENERATE_PLAN", "TASK_REPAIR_BUDGET", "TASK_REPAIR_DEFECT"]
 
 CENT = Decimal("0.01")
 
@@ -201,7 +211,7 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
 
     if attempts == 0:
         tier = ModelTier.QUALITY
-        task = "generate_plan"
+        task = TASK_GENERATE_PLAN
         user_prompt = build_user_prompt(
             message=state["message"],
             household_size=household,
@@ -218,7 +228,18 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
         # describes none of them, so the attempt was spent asking the model to
         # fix a defect nobody had named.
         tier = ModelTier.FAST
-        task = "repair_plan"
+        # A SEPARATE ROUTED TASK from the budget repair below, since 2026-08-31.
+        # The two prompts already differed because the two failures do; the two
+        # MODELS now differ because the measurement did. Claude Haiku repairs
+        # defects perfectly (5/5) and drops two of seven budget repairs; Nova
+        # Lite is the exact inverse. Routing each half to the model that is
+        # perfect at it gives 100% on both, where either model alone gives up
+        # one -- and it stops the whole repair path resting on one model on the
+        # account's binding, unraisable quota. `config/models.json`
+        # `scorecards._split_note` records what the split does NOT buy: each
+        # half still has one qualified model, so this is degradation-in-half,
+        # not a fallback.
+        task = TASK_REPAIR_DEFECT
         user_prompt = build_defect_repair_prompt(
             products=products,
             budget=budget,
@@ -229,7 +250,7 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
         )
     else:
         tier = ModelTier.FAST
-        task = "repair_plan"
+        task = TASK_REPAIR_BUDGET
         previous = state.get("plan")
         # How much to cut, measured in money the shopper would actually hand
         # over. Telling the repair pass to save the consumption overage would

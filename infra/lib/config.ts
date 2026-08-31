@@ -1,5 +1,5 @@
 /**
- * SCAFFOLD — deployment configuration for the Smart Grocery CDK app.
+ * Deployment configuration for the Smart Grocery CDK app.
  *
  * Centralises the physical resource names, the production-mode flags, and the
  * paths to the repo's config-as-data files. Names are defined ONCE here because
@@ -8,6 +8,7 @@
  * to `ApiName = grocery-orchestrator-api-dev`. If a stack names a resource
  * anything else, the alarms watch nothing. See infra/docs/02-CDK-SCAFFOLD.md §5.
  */
+import * as fs from 'fs';
 import * as path from 'path';
 
 export interface GroceryConfig {
@@ -30,8 +31,24 @@ export interface GroceryConfig {
   readonly guardrailId: string;
   readonly guardrailVersion: string;
 
-  // Physical names (the -dev suffix lets generated resources coexist with the
-  // manually-created ones during the migration — config/*.json headers).
+  /**
+   * Suffix on the names of the ADOPTED tables -- a different axis from `stage`.
+   *
+   * `grocery-products-dev` is the name of a table that EXISTS and holds 2,759
+   * real price records. It does not become `grocery-products-prod` because
+   * somebody synthesised a prod stack, and until 2026-08-31 it did: the adopted
+   * names were derived from the stage, so the first real `stage=prod` synth
+   * would have referenced two tables that do not exist and adopted nothing --
+   * a stack that deploys clean and grants access to nothing.
+   *
+   * Adoption points at something already there, so its name is an INPUT.
+   * `DATA_SUFFIX` overrides it the day a second data environment exists.
+   */
+  readonly dataSuffix: string;
+
+  // Physical names. Two groups, and the distinction is the point:
+  //   - CREATED by this app: named from the stage plus `suffix`.
+  //   - ADOPTED from the account: named from `dataSuffix`, never the stage.
   readonly names: {
     readonly productsTable: string;
     readonly idempotencyTable: string;
@@ -54,6 +71,7 @@ export interface GroceryConfig {
     readonly iamIngestion: string;
     readonly stateMachine: string;
     readonly feasibility: string;
+    readonly stages: string;
   };
 
   // Path to the built Lambda archive (scripts/build_lambda.py → build/lambda.zip).
@@ -67,13 +85,43 @@ export interface GroceryConfig {
 
 const REPO_ROOT = path.resolve(__dirname, '..', '..'); // infra/lib -> repo root
 
+const STAGES_FILE = path.join(REPO_ROOT, 'config', 'stages.json');
+
+/**
+ * Which stage names mean production, READ FROM `config/stages.json`.
+ *
+ * This used to be `stage === 'prod'`, while `src/handler.py` independently held
+ * `{prod, production, pilot}`. Two halves of Req 12.5 disagreeing about what
+ * production means, and the cheaper half -- this one, which runs at synth,
+ * before an account is touched -- was the one that fired LESS. `stage=pilot`
+ * synthesised happily with wildcard CORS and then failed at Lambda startup.
+ *
+ * Policy is data in this repository: the guardrail, the alarms, the IAM roles
+ * and the routing table are all JSON that more than one runtime reads. The
+ * production stage list is policy, so it is data too.
+ */
+export function productionStages(): ReadonlySet<string> {
+  const raw = JSON.parse(fs.readFileSync(STAGES_FILE, 'utf-8'));
+  const names: string[] = raw.production_stages;
+  if (!Array.isArray(names) || names.length === 0) {
+    throw new Error(`config/stages.json has no production_stages list. Refusing to synth: an ` +
+      `empty list silently makes every stage non-production, which is the failure ` +
+      `direction Req 12.5 exists to close.`);
+  }
+  return new Set(names.map((n) => n.trim().toLowerCase()));
+}
+
 export function loadConfig(stage: string): GroceryConfig {
-  const isProduction = stage === 'prod';
+  const isProduction = productionStages().has(stage.trim().toLowerCase());
   const suffix = stage; // dev | prod
+
+  // Never `stage`. See GroceryConfig.dataSuffix.
+  const dataSuffix = process.env.DATA_SUFFIX ?? 'dev';
 
   const cfg: GroceryConfig = {
     stage,
     isProduction,
+    dataSuffix,
     // Default '-cdk' so a first deploy cannot collide with the hand-made
     // plane. Deliberately explicit rather than clever: someone cutting over
     // sets NAME_SUFFIX='' and reads the diff.
@@ -81,9 +129,11 @@ export function loadConfig(stage: string): GroceryConfig {
     guardrailId: process.env.BEDROCK_GUARDRAIL_ID ?? 'b1xezpqe04kx',
     guardrailVersion: process.env.BEDROCK_GUARDRAIL_VERSION ?? '2',
     names: {
-      productsTable: `grocery-products-${suffix}`,
-      idempotencyTable: `grocery-idempotency-${suffix}`,
-      mealsTable: `grocery-meals-${suffix}`,
+      // ---- ADOPTED (dataSuffix, never stage) ----
+      productsTable: `grocery-products-${dataSuffix}`,
+      idempotencyTable: `grocery-idempotency-${dataSuffix}`,
+      mealsTable: `grocery-meals-${dataSuffix}`,
+      // ---- CREATED (stage) ----
       orchestratorFn: `grocery-orchestrator-${suffix}`,
       ingestionFn: `grocery-ingestion-${suffix}`,
       orchestratorRole: `grocery-orchestrator-${suffix}-role`,
@@ -100,6 +150,7 @@ export function loadConfig(stage: string): GroceryConfig {
       iamIngestion: path.join(REPO_ROOT, 'config', 'iam-ingestion-role.json'),
       stateMachine: path.join(REPO_ROOT, 'config', 'ingestion-state-machine.json'),
       feasibility: path.join(REPO_ROOT, 'config', 'feasibility.json'),
+      stages: STAGES_FILE,
     },
     lambdaAssetPath: path.join(REPO_ROOT, 'build', 'lambda.zip'),
     requireGuardrail: true,

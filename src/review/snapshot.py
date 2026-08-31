@@ -182,6 +182,43 @@ def snapshot_to_dicts(snapshot: ReviewSnapshot) -> list[dict]:
     return [{field: getattr(row, field) for field in SNAPSHOT_FIELDS} for row in snapshot.rows]
 
 
+#: The multiple of the derived unit price at which a row stops being a rounding
+#: difference and starts being a defect. An order of magnitude, not a cent: the
+#: defect this rule exists for was off by a factor of a THOUSAND, and a check
+#: that fires on rounding gets switched off by the third person it wakes.
+IMPLAUSIBILITY_FACTOR = 10
+
+
+def implausible_unit_price_values(
+    *, price_nzd: str | Decimal, unit_price_nzd: str | Decimal, pack_grams: int
+) -> bool:
+    """
+    The rule itself, over three values rather than over a row type.
+
+    ONE DEFINITION, TWO CALLERS, AND THAT IS THE POINT. The review boundary
+    hands it a `SnapshotRow`; `ingestion.handler` hands it a DynamoDB item it is
+    about to write. Those are different shapes at different ends of the system,
+    and a rule copied into both is the dangerous kind of duplicate -- nothing is
+    wrong, so nothing flags the day one copy is tuned. `LITERAL_MONEY` in
+    `src/schemas/contract.py` carries the same rule for the same reason.
+
+    Money arrives as `str` from storage and the wire and as `Decimal` in Python,
+    so both are accepted and neither is coerced through float.
+    """
+    price = Decimal(price_nzd)
+    unit_price = Decimal(unit_price_nzd)
+    if pack_grams <= 1:
+        # `pack_grams == 1` is the SOLD-EACH sentinel: one unit, not one gram.
+        # For a sold-each product the unit price IS the price, and the defect
+        # below is what happens when the sentinel is read as a weight.
+        return unit_price != price
+    expected = price * Decimal(1000) / Decimal(pack_grams)
+    return (
+        unit_price > expected * IMPLAUSIBILITY_FACTOR
+        or unit_price * IMPLAUSIBILITY_FACTOR < expected
+    )
+
+
 def implausible_unit_price(row: SnapshotRow) -> bool:
     """
     The defect that actually reached the live table, as a deterministic check.
@@ -194,12 +231,15 @@ def implausible_unit_price(row: SnapshotRow) -> bool:
     might notice it; a comparison cannot fail to. The reviewer's value is the
     anomalies nobody thought to write a rule for, and giving it the ones we did
     think of would be paying a language model to do arithmetic.
+
+    IT NOW HAS A CALLER. Between 2026-08-31 and this change it was written,
+    tested, and invoked by nothing: `ingestion/handler.py` diffed before writing
+    and did not validate, so the one defect class known to have reached the live
+    table was still undetected in production. A rule nobody runs is a comment
+    with a test suite. See `ingestion.handler.reject_implausible`.
     """
-    price = Decimal(row.price_nzd)
-    unit_price = Decimal(row.unit_price_nzd)
-    if row.pack_grams <= 1:
-        return unit_price != price
-    expected = price * Decimal(1000) / Decimal(row.pack_grams)
-    # An order of magnitude, not a cent: rounding differences are not defects
-    # and a check that fires on them gets switched off.
-    return unit_price > expected * 10 or unit_price * 10 < expected
+    return implausible_unit_price_values(
+        price_nzd=row.price_nzd,
+        unit_price_nzd=row.unit_price_nzd,
+        pack_grams=row.pack_grams,
+    )

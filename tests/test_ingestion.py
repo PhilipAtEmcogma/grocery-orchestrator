@@ -6,11 +6,13 @@ so these run in CI alongside everything else.
 from __future__ import annotations
 
 import json
+import re
 from decimal import Decimal
+from pathlib import Path
 
 import pytest
 
-from ingestion.handler import diff_items
+from ingestion.handler import diff_items, reject_implausible
 from ingestion.normalise import gsi1_sk, store_key, to_item, unit_price
 from ingestion.sources import (
     FIXTURES,
@@ -341,3 +343,179 @@ def test_handler_passes_dry_run_through_from_the_event(monkeypatch):
     h.lambda_handler({"retailer": "paknsave", "dry_run": True})
 
     assert seen == {"retailer": "paknsave", "dry_run": True}
+
+
+# ------------------------------------------- the anomaly rule, and its wiring
+#
+# `_row(**over)` is the diff section's helper above: one normalised item with
+# fields overridden. Reused rather than redefined -- a second copy was written
+# here first and pyright caught it as a redeclaration, which is the cheap
+# version of the "equivalent copies are the dangerous kind" rule this repository
+# applies to LITERAL_MONEY.
+
+
+def test_a_plausible_row_is_written():
+    accepted, rejected = reject_implausible([_row()])
+    assert (len(accepted), len(rejected)) == (1, 0)
+
+
+def test_the_two_thousand_four_hundred_and_ninety_dollar_broccoli_is_refused():
+    """
+    The exact defect that reached the live table, as a row.
+
+    `pack_grams == 1` is the SOLD-EACH sentinel -- one unit, not one gram. The
+    first version of `unit_price()` divided by it anyway and wrote a per-kilo
+    figure a thousand times the shelf price into `unit_price_nzd`, which is read
+    straight into the Citation a shopper sees. Six rows, no signal.
+    """
+    broccoli = _row(
+        product_key="broccoli-ea",
+        pack_grams=1,
+        price_nzd="2.49",
+        unit_price_nzd="2490.00",
+    )
+    accepted, rejected = reject_implausible([broccoli])
+    assert (len(accepted), len(rejected)) == (0, 1)
+    assert rejected[0]["product_key"] == "broccoli-ea"
+
+
+def test_a_sold_each_row_whose_unit_price_equals_its_price_is_fine():
+    """The other side of the sentinel: correct sold-each rows must not be lost."""
+    accepted, rejected = reject_implausible(
+        [_row(product_key="broccoli-ea", pack_grams=1, price_nzd="2.49", unit_price_nzd="2.49")]
+    )
+    assert (len(accepted), len(rejected)) == (1, 0)
+
+
+def test_rounding_differences_are_not_defects():
+    """
+    A cent of disagreement is not a finding.
+
+    The rule fires at an order of magnitude because the defect it exists for was
+    off by a factor of a thousand, and a check that wakes somebody over
+    ROUND_HALF_EVEN versus ROUND_HALF_UP is a check that gets switched off.
+    """
+    accepted, _ = reject_implausible(
+        [_row(pack_grams=500, price_nzd="2.97", unit_price_nzd="5.95")]  # derived: 5.94
+    )
+    assert len(accepted) == 1
+
+
+def test_a_refused_row_is_never_written(monkeypatch):
+    """
+    The wiring, not the rule. `implausible_unit_price` existed and was correct
+    for a day while nothing called it, so the property worth asserting is that
+    a bad row does not reach `batch_writer`.
+    """
+    from ingestion import handler as h
+
+    table = _FakeTable()
+    monkeypatch.setattr(
+        h.boto3, "resource", lambda *a, **k: type("R", (), {"Table": lambda s, n: table})()
+    )
+    bad = _row(product_key="broccoli-ea", pack_grams=1, price_nzd="2.49", unit_price_nzd="2490.00")
+    monkeypatch.setattr(h, "to_item", lambda offer: bad)
+
+    result = h.refresh("new_world", table_name="grocery-products-dev")
+
+    assert result["rejected"] == result["fetched"] > 0
+    assert result["written"] == 0
+    assert table.written == [], "a row we refused to publish reached the table"
+    assert result["sample_rejected"], "the refusal left no trace to act on"
+
+
+def test_a_refused_row_is_not_counted_as_unchanged(monkeypatch):
+    """
+    Validation runs BEFORE the diff.
+
+    A rejected row is not being written, so reporting it as `unchanged` would
+    describe a table state that will not exist -- and `unchanged == fetched` is
+    exactly what this module's docstring offers as the proof that a re-run is
+    idempotent.
+    """
+    from ingestion import handler as h
+
+    table = _FakeTable()
+    monkeypatch.setattr(
+        h.boto3, "resource", lambda *a, **k: type("R", (), {"Table": lambda s, n: table})()
+    )
+    bad = _row(product_key="broccoli-ea", pack_grams=1, price_nzd="2.49", unit_price_nzd="2490.00")
+    monkeypatch.setattr(h, "to_item", lambda offer: bad)
+
+    result = h.refresh("new_world", table_name="grocery-products-dev", dry_run=True)
+
+    assert result["added"] == result["changed"] == result["unchanged"] == 0
+
+
+def test_the_rejection_log_line_matches_the_metric_filter(monkeypatch, capsys):
+    """
+    The config against the CODE, for the ingestion filter.
+
+    `config/alarms.json` binds `IngestionRowRejected` to a JSON selector over a
+    field this module writes. Nothing keeps the two together: rename the field
+    and the filter still deploys, still reads correctly in the console, and
+    matches nothing forever -- which looks exactly like an ingestion run with
+    nothing wrong. `tests/test_alarms.py` makes the same check for the
+    handler-escaped filter and explains why at length.
+    """
+    from ingestion import handler as h
+    from scripts.apply_alarms import CONFIG, load_config
+
+    table = _FakeTable()
+    monkeypatch.setattr(
+        h.boto3, "resource", lambda *a, **k: type("R", (), {"Table": lambda s, n: table})()
+    )
+    bad = _row(product_key="broccoli-ea", pack_grams=1, price_nzd="2.49", unit_price_nzd="2490.00")
+    monkeypatch.setattr(h, "to_item", lambda offer: bad)
+    h.refresh("new_world", table_name="grocery-products-dev", dry_run=True)
+
+    lines = [
+        json.loads(line)
+        for line in capsys.readouterr().out.splitlines()
+        if line.strip().startswith("{")
+    ]
+    assert lines, "a refused row wrote no log line at all"
+
+    cfg = load_config(Path(CONFIG))
+    pattern = next(
+        f["pattern"] for f in cfg["metric_filters"] if f["metric_name"] == "IngestionRowRejected"
+    )
+    match = re.fullmatch(r'\s*\{\s*\$\.([\w.]+)\s*=\s*"([^"]*)"\s*\}\s*', pattern)
+    assert match, f"unsupported filter pattern: {pattern!r}"
+    field, expected = match.group(1), match.group(2)
+
+    assert [r for r in lines if r.get(field) == expected], (
+        f"the metric filter looks for {field}={expected!r}, which no line a real "
+        f"rejection emits contains. The alarm would never fire.\n"
+        f"emitted: {[r.get(field) for r in lines]}"
+    )
+
+
+def test_the_rejection_line_carries_no_shopper_data():
+    """
+    Req 11.5. A rejected row is a product, a store and three numbers.
+
+    Asserted rather than assumed because this is a NEW log line, and the two
+    privacy defects this repository has found were both a log line that carried
+    more than its author intended.
+    """
+    from ingestion import handler as h
+
+    fields = set(
+        json.loads(
+            json.dumps(
+                {
+                    "message": h.REJECT_LOG_MESSAGE,
+                    "reason": "implausible_unit_price",
+                    "retailer": "new_world",
+                    "store_key": "x",
+                    "product_key": "y",
+                    "price_nzd": "1",
+                    "unit_price_nzd": "2",
+                    "pack_grams": 3,
+                }
+            )
+        )
+    )
+    forbidden = {"message_text", "session_id", "location", "dietary_exclusions", "near", "user"}
+    assert not (fields & forbidden)

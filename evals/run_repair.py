@@ -1,10 +1,10 @@
 """
 Repair eval — can this model fix a plan it did not write?
 
-`repair_plan` is a SEPARATE routed task from `generate_plan`, and the two
-resolve to different models: generation runs on the QUALITY tier, repair on
-FAST. So the model that repairs a plan is usually not the model that produced
-it, and nothing measured the repairer. The meal-plan suite exercises repair only
+Repair is SEPARATELY ROUTED from `generate_plan`, and resolves to a different
+model: generation runs on the QUALITY tier, repair on FAST. So the model that
+repairs a plan is usually not the model that produced it, and nothing measured
+the repairer. The meal-plan suite exercises repair only
 incidentally — it fires during those runs and its output is scored through the
 same invariants — so a repair-specific regression would surface as a slightly
 lower meal-plan score with no indication of where it came from.
@@ -12,6 +12,16 @@ lower meal-plan score with no indication of where it came from.
 This drives `generate_plan` directly with `repair_attempts` already set, the way
 `run_intent.py` drives `classify_intent`, and scores the repaired draft against
 the thing repair exists to achieve.
+
+TWO KINDS OF REPAIR, AND SINCE 2026-08-31 TWO ROUTED TASKS. This harness has
+always scored the two kinds separately; `config/models.json` now routes them
+separately too, `repair_budget` to Nova Lite and `repair_defect` to Claude
+Haiku, each perfect at its half and below the 90% floor on the other.
+
+So the per-kind rates below are the SCORECARDS, not a breakdown, and
+`--min-pass-rate` gates each half independently. Gating the combined rate would
+let a model that is perfect at one half and weak at the other clear the bar on
+the average -- which is exactly the situation the split exists to describe.
 
 Two kinds of repair, because the graph feeds it two kinds of failure:
 
@@ -45,13 +55,28 @@ from src.graph.dietary import map_exclusions
 from src.graph.nodes import validate_plan
 from src.graph.nodes.plan import generate_plan
 from src.graph.state import GroceryState
-from src.models.base import GuardrailBlocked, ModelClient, ModelError
+from src.models.base import (
+    TASK_REPAIR_BUDGET,
+    TASK_REPAIR_DEFECT,
+    GuardrailBlocked,
+    ModelClient,
+    ModelError,
+)
 from src.models.registry import ModelSpec
 from src.retrieval.filters import pin_to_fixture_snapshot
 from src.retrieval.memory import InMemoryPriceRepository
 from src.schemas.contract import Citation, MealPlan, SourceRef, find_literal_money_in_plan
 
 CASES = Path(__file__).parent / "cases" / "repair.json"
+
+#: Case kind -> the routed task it measures.
+#:
+#: The `kind` field predates the routing split and stays as the case
+#: vocabulary; this is the single place the two are tied together, so a new
+#: kind cannot quietly score no task and a renamed task cannot quietly score no
+#: cases. `tests/test_eval_harness.py` asserts it covers every kind in the
+#: suite and every repair task in `config/models.json`.
+KIND_TO_TASK = {"budget": TASK_REPAIR_BUDGET, "defect": TASK_REPAIR_DEFECT}
 
 MEAL_CATEGORIES = ["protein", "carbohydrate", "vegetable", "dairy", "pantry"]
 
@@ -291,9 +316,15 @@ def run(model: ModelClient, label: str) -> Scorecard:
 
 def report(card: Scorecard) -> None:
     print(f"\n=== {card.model_label} ===")
-    print(f"  repair success   {card.pass_rate:.1%}  ({card.passed}/{len(card.scored)})")
-    print(f"    budget cases   {card.rate_for('budget'):.1%}")
-    print(f"    defect cases   {card.rate_for('defect'):.1%}")
+    # Per ROUTED TASK, because that is what routing and the qualification gate
+    # read. The combined figure is printed last and labelled as not the
+    # scorecard: it is the number that hid Claude Haiku's 71.4% budget half
+    # behind its perfect defect half while the two were one task.
+    for kind, task in KIND_TO_TASK.items():
+        subset = [r for r in card.scored if r.kind == kind]
+        passed = sum(1 for r in subset if r.passed)
+        print(f"  {task:<15} {card.rate_for(kind):.1%}  ({passed}/{len(subset)} cases)")
+    print(f"  (combined)      {card.pass_rate:.1%}  - reported, NOT the scorecard")
     if card.blocked:
         print(
             f"  guardrail        {len(card.blocked)} repair prompts REFUSED "
@@ -320,10 +351,25 @@ def _gate(card: Scorecard, floor: float | None) -> int:
         return 2
     if floor is None:
         return 0
-    if card.pass_rate < floor:
-        print(f"\nFAIL: repair success {card.pass_rate:.1%} is below the floor of {floor:.1%}")
+
+    # EACH HALF, NOT THE AVERAGE, since 2026-08-31.
+    #
+    # `repair_budget` and `repair_defect` are separately routed tasks, so the
+    # floor has to be met by each of them or the gate is measuring something no
+    # turn experiences. It also closes the shape that made the split necessary:
+    # Claude Haiku scored 83.3% combined -- one number, comfortably readable as
+    # "a bit weak" -- while being 100% on defect repair and 71.4% on budget.
+    # Averaging a strength against a weakness hides both.
+    failures = [
+        (task, card.rate_for(kind))
+        for kind, task in KIND_TO_TASK.items()
+        if any(r.kind == kind for r in card.scored) and card.rate_for(kind) < floor
+    ]
+    if failures:
+        for task, rate in failures:
+            print(f"\nFAIL: {task} {rate:.1%} is below the floor of {floor:.1%}")
         return 1
-    print(f"\nOK: repair success {card.pass_rate:.1%} meets the floor of {floor:.1%}")
+    print(f"\nOK: every repair task meets the floor of {floor:.1%}")
     return 0
 
 
@@ -359,7 +405,11 @@ def main() -> int:
     from src.models.registry import ModelRegistry, RoutingPolicy
 
     spec: ModelSpec = ModelRegistry().route(
-        "repair_plan", policy=RoutingPolicy.PINNED, pinned_key=args.model
+        # Either repair task resolves the same pinned model; PINNED bypasses
+        # the routing rule entirely and only needs a task that exists.
+        TASK_REPAIR_BUDGET,
+        policy=RoutingPolicy.PINNED,
+        pinned_key=args.model,
     )
     card = run(BedrockModelClient(pinned_spec=spec), spec.display_name)
     report(card)

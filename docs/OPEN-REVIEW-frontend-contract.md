@@ -1,4 +1,67 @@
+> **One change is already queued for whenever this conversation happens.**
+> Both `POST /chat` endpoints are public and unauthenticated today. The owner
+> decided on 2026-08-31 that an API key lands in the SAME change that repoints
+> the frontend at the CDK plane — so the URL change and a new required
+> `x-api-key` header arrive together rather than breaking the client twice.
+> A request without the header gets API Gateway's own 403, not the
+> contract-valid `ChatResponse` this service guarantees on every other path,
+> which is the part worth raising with whoever owns the client.
+> `docs/OPEN-REVIEW-api-key.md`.
+
 # Open review — the frontend team's contract does not match ours
+
+## 0. What is actually ON that branch — inspected 2026-08-31
+
+`origin/frontend-infra-setup` is the ONLY unmerged branch in the repository.
+Four commits, last one 2026-08-21, and it is now ~130 commits behind `main`.
+Inspected rather than assumed, because everything below turns on what it
+contains:
+
+| | |
+|---|---|
+| `frontend/` | A working Vite/React client. `chatClient.js` POSTs JSON and returns `{status, body}`; `App.jsx` renders `<pre>{JSON.stringify(response)}</pre>` |
+| `docs/API-CONTRACT.md` | 180 lines. A SECOND contract document |
+| 5 files | `REPOSITORY_AUDIT.md`, `docs/DEPLOYMENT-RUNBOOK.md`, `docs/IAM-MATRIX.md`, `docs/LOCAL-DEVELOPMENT.md`, `docs/OBSERVABILITY.md` — **all 0 bytes** |
+
+**Their CLIENT works against our contract. Their DOCUMENT does not.** The client
+sends `version`, `session_id`, `turn_id: crypto.randomUUID()` and `message` —
+verified against `ChatRequest`, it validates. Their document describes flat
+JSON with numeric prices, `location` as a required string and no `turn_id`,
+which would return HTTP 400. **The client works because it does not follow its
+own document.**
+
+It also does not CONSUME our contract: it dumps the raw JSON into a `<pre>`
+rather than handling the event list. So "the frontend is built against our
+contract" would be too generous in both directions — the transport works, the
+rendering is a placeholder, and the written contract disagrees.
+
+### Why it has not been merged, and why that is the right call for now
+
+Merging it today would create the exact failure this document exists to warn
+about. `docs/API-CONTRACT.md` would land beside `CONTRACT-v1.md` and **two
+contracts would be standing in `main`**, one of which returns HTTP 400 if
+implemented. It would also add five empty placeholder files to the repository
+root and `docs/`.
+
+None of that is a criticism of the branch — it is four days of early scaffolding
+that has been waiting ten days for this conversation. But the merge is a
+decision for whoever owns it, and it should happen with the contract question
+settled rather than before it. **Nothing in the backend depends on it**: it
+touches no file the orchestrator touches, so there is no conflict either way.
+
+### What to settle in the same conversation
+
+1. **One contract, not two.** Either `docs/API-CONTRACT.md` is deleted in
+   favour of `CONTRACT-v1.md`, or it becomes a frontend-facing summary that
+   cites rather than restates. Two documents that disagree is the failure mode.
+2. **The five empty files** — delete or fill.
+3. **Which URL the client wires to**, which is the cutover question
+   (`docs/ARCHITECTURE.md` §3m).
+4. **The API key**, which lands in that same change (see the note above).
+
+---
+
+
 
 **Open, and wants the frontend teammate.** Fifteen minutes, no code reading.
 

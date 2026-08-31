@@ -884,6 +884,137 @@ proposed, or gated as labelled; it is not implemented.
 > fetches 0 rows — the dataset covers two chains — which is honest but means the
 > product's "three chains" claim is currently true only of the fixtures.
 
+> **Pilot Task 13, anomaly rejection wired 2026-08-31.** `refresh()` now
+> VALIDATES, then diffs, then writes. `ingestion.handler.reject_implausible`
+> applies `src/review/snapshot.py`'s rule to every normalised row and refuses the
+> ones that fail; the count and a sample land in the Step Functions execution,
+> and `config/alarms.json` derives `IngestionRowRejected` from a structured log
+> line at a threshold of one row.
+>
+> **The rule existed for a day with no caller.** It was written on 2026-08-31
+> with the $2,490 broccoli in its docstring, tested, and invoked by nothing — so
+> the one defect class known to have reached the live products table was still
+> undetected in production, while ADR 0002 requested a Runtime to find the
+> anomalies nobody had thought of. The rules that HAD been thought of were not
+> running.
+>
+> **Measured over the real catalogue, and the clean number is the less useful
+> one.** `python scripts/check_ingestion_anomalies.py` reports 0 rejections
+> across 2,759 rows. A clean result from a rule nobody has watched fail is
+> indistinguishable from a rule that cannot fire, so the historical defect was
+> reintroduced — remove the `pack_grams <= 1` sold-each guard from `unit_price()`
+> — and the same run rejects **522 of 2,759**, broccoli included.
+>
+> **522, not six.** Six is the number this repository has quoted since the
+> incident, and it was the size of the *seeded fixture set*, not of the defect
+> class. Against the real catalogue that one-line omission corrupts 19% of every
+> shopper-facing unit price, on a first write, where the diff reports nothing
+> because a defect on a first write is not a change. 0.2% and 19% also settle
+> the threshold question: no percentage gate catches both, so there is none.
+>
+> **What the rules cannot see is recorded too** (`docs/ARCHITECTURE.md` §3p), and
+> it points somewhere: the largest invisible category needs a BASELINE — "this
+> price doubled overnight" — which is the append-only price-history table, not a
+> reviewer. That is ADR 0002 gate 4's acceptance data, and it argues for building
+> the history table first.
+
+- [x] **Pilot Task 12a — Put a gate under the CDK. Done 2026-08-31.**
+  `infra/` had no CI job of any kind — no `tsc`, no `jest`, no `cdk synth` —
+  while `infra/lib/service-stack.ts` is where the security posture is declared,
+  and `infra/test/service-stack.test.ts` was `describe.skip` under a header
+  reading "SKIPPED until ServiceStack is implemented (it is a stub today)". The
+  stack had been 230 lines and deployed for a day.
+
+  **Running the suite found two IAM regressions in a plane that was serving.**
+  `tables.products.grantReadData(role)` had reintroduced `dynamodb:Scan` — the
+  permission Pilot Task 6b removed the day before, with
+  `config/iam-orchestrator-role.json` warning in as many words that "a Scan
+  permission nothing needs is a Scan somebody can reintroduce without noticing".
+  It also widened `index/GSI1`/`GSI2` to `index/*` and added Streams reads.
+  `grantReadWriteData` on idempotency added `DeleteItem`, against a config
+  comment saying expiry is by TTL. A CDK grant helper does not CHECK a policy
+  loaded from `config/`; it appends a second one.
+
+  **And two assertions were theatre.** `it('the only Resource:"*" is X-Ray')`
+  had an empty body. The write test matched a regex spanning unrelated
+  statements and FAILED on a policy with no write on products at all. Rewritten
+  to parse the policy document and compare action sets per resource; 24
+  assertions now, each watched to fail against a mutated stack.
+
+  Also closed in the same pass: the SSM parameter that published
+  `models.json[:4096]` — invalid JSON, since the file is 10,930 bytes and
+  neither SSM tier holds it — now publishes the routing block and THROWS at
+  synth rather than slicing; `APP_STAGE` is set from `cfg.stage`, so Req 12.5's
+  runtime check is no longer inert under CDK; `config/stages.json` gives the
+  Python and TypeScript halves of that check one definition of "production";
+  adopted table names moved off the stage axis, so `stage=prod` no longer
+  references tables that do not exist; and the region guard, which refused
+  `cdk synth` locally and never ran in CI, became a pin plus a test.
+
+- [x] **Pilot Task 12c — ObservabilityStack, watching both planes. Written 2026-08-31.**
+  Real, tested, and NOT YET DEPLOYED — deploy it before the cutover, not after.
+  SNS, metric filters and alarms built from `config/alarms.json`, a dashboard, a
+  $25 budget, and the encrypted versioned artefact bucket (audit top-10 #15).
+
+  **A correction to the second audit's Finding 3.** It says the CDK plane is
+  "unalarmed, undashboarded". Two of three are right: SIX of the nine alarms
+  already covered both planes, because they watch EMF metrics dimensioned on
+  `service` and `POWERTOOLS_SERVICE_NAME` is `grocery-orchestrator` on both.
+  The gap was the two alarms bound to a PHYSICAL name — the API 5xx alarm and
+  the handler-escaped metric filter. Those are now created per plane, derived
+  from `cfg.suffix`, and collapse to one set when the suffix is empty, so the
+  deploy that retires the hand-made plane needs no edit.
+
+  **And the shared dimension is half a win, recorded as such.** Six alarms
+  covering both planes also means a metric cannot say which plane produced it:
+  while dual-running, a spike on the unused CDK plane is indistinguishable from
+  one on the plane serving shoppers. Splitting the dimension would split every
+  historical series with it, so it is deliberately not done — the cutover is
+  the fix, and if dual-running becomes permanent this is a reason it should not.
+
+  **No SNS subscription is declared**, and a test asserts that. An email
+  subscription needs out-of-band confirmation, so a declared one sits
+  `PendingConfirmation` and reads — in a console and in a template — exactly
+  like somebody who would be paged.
+
+  12 assertions, each watched to fail against a mutated stack.
+
+- [ ] **Pilot Task 12d — Bound the endpoints, not just watch them.** DECIDED
+  2026-08-31 by the owner, and DEFERRED TO A TRIGGER rather than to a date:
+  **option C now, option A in the same change that repoints the frontend at the
+  CDK plane.** `docs/OPEN-REVIEW-api-key.md`.
+
+  **The trigger is a test, not a note.** `infra/test/app.test.ts` fails the
+  moment `FrontendStack` creates its first resource — which is when a frontend
+  is being deployed and wired to a URL — and its failure message carries the
+  review document and the two options. Verified by implementing a stub bucket in
+  `FrontendStack` and watching it fire. A note saying "revisit when the frontend
+  lands" is the same shape as "SKIPPED until ServiceStack is implemented", and
+  two audits have now found those.
+
+  Alarming both planes makes abuse VISIBLE; it does not BOUND it. An API key
+  plus a usage-plan quota turns an unbounded Bedrock bill into a number chosen
+  in advance, and it is minutes of CDK. What it costs is not the CDK: it adds a
+  required `x-api-key` header to `CONTRACT-v1.md`, returns API Gateway's own 403
+  body rather than the contract-valid `ChatResponse` this service guarantees on
+  every other path, and breaks the working Vite/React client on
+  `frontend-infra-setup` that has been building against the contract since
+  2026-08-21. Nobody has agreed who holds the key, and a key in a public bundle
+  bounds cost rather than authenticating anybody.
+
+  The review carries the design, the three options with what each costs, and the
+  four things that would change the answer — a frontend cutover date, any
+  outside traffic, a demo outside the team, or the $25 budget firing for a
+  reason nobody on the team caused.
+
+- [x] **Pilot Task 12b — A skip that expires. Done 2026-08-31.**
+  `tests/test_skip_markers.py` fails when a skip carries no machine-checkable
+  condition, in Python and TypeScript alike, and refuses `.only` because it
+  disables every other test in a file without the word "skipped" appearing
+  anywhere. The sibling of `tests/test_ci_workflow.py`, and it would have caught
+  all three instances of this pattern the two audits found: the coverage
+  instrument, the forcing test behind it, and the infrastructure suite.
+
 - [ ] **Pilot Task 14 — Add the bounded data-quality reviewer.** After ADR 0002
   mentor approval, deploy it separately in AgentCore Runtime over capped
   sanitised ingestion snapshots with an isolated least-privilege identity,
@@ -1027,8 +1158,80 @@ proposed, or gated as labelled; it is not implemented.
     The deterministic half — which is what Req 2.9 actually specifies as code's
     responsibility — is done and tested.
 
-  - [ ] **15c — Wire selection into the graph.** Recipe-constrained
-    planning is deliberately NOT wired into the graph. A recipe is usable only
+  - [x] **15c — Selection wired into the graph. Done 2026-08-31.**
+    Req 2.9 is delivered on the shopper path: a meal-plan turn is built from
+    NAMED CURATED RECIPES, and falls back to free composition with a notice when
+    it cannot be.
+
+    **The topology decision is the one worth reviewing.** The obvious shape — a
+    `select_recipes` node BEFORE retrieval, picking from the catalogue, with
+    retrieval then fetching the chosen ingredients — was rejected. It puts a
+    model call upstream of the only node allowed to create a Citation, and the
+    topology ("no edge skips `retrieve_prices`") is one of three independent
+    enforcements of Invariant 1. The node produces no price and could not, so
+    the exception would have been harmless today and load-bearing later.
+
+    Instead retrieval gained a recipe mode: it resolves the catalogue's **27
+    distinct ingredient terms** (not ~120 recipe lines), cites them, and
+    shortlists recipes that are (1) costable — every ingredient resolved, all or
+    nothing; (2) dietary-viable judged from the RESOLVED products, not from the
+    recipe's name; and (3) affordable AS A SET. The model is offered only what
+    survives, so it cannot select an uncostable, unsafe or unaffordable recipe —
+    those options never reach it. Stronger than validating the selection
+    afterwards, and the same argument `candidates_for_budget` already makes.
+
+    **Two designs were tried and measured, and the eval caught both.**
+
+    *A day is not a meal.* The first version asked for one recipe per day. The
+    meal-plan suite went from 100% invariants to **45%**, budget used from 69% to
+    **24%**, and `min_budget_used` fired on four cases — which is exactly the
+    under-feeding that check was added to catch. The count now comes from
+    `min_grams_per_person_day` in `config/feasibility.json`, the same figure the
+    feasibility refusal uses, so the two cannot disagree about how much a
+    household eats.
+
+    *A per-recipe budget cap rejects on a number no plan ever pays.* The second
+    version capped each recipe at `budget / meals`. `assemble_plan` aggregates
+    packs across meals and rounds up ONCE, so recipes sharing rice and onions
+    cost far less together than apart: the cap collapsed a 29-recipe shortlist to
+    **one** against the fixtures, and the suite read the result as under-feeding
+    again. The budget is now enforced on the SET (`affordable_set`, greedy
+    cheapest-first, skipping rather than stopping) plus a marginal-cost trim
+    after selection. Verified against an exhaustive search: for "a week of
+    dinners for one person on $35" the greedy set finds the same five meals that
+    checking every combination finds, and no six-meal combination fits.
+
+    **The scorecard reads what the MODEL returned, not what the node served.**
+    `select_recipes` tops a short selection up from unused recipes and trims
+    meals that do not fit. Both are right for a plan and fatal for a gate: with
+    the eval scoring the served list, a planted model that returns one meal every
+    time scored **100%**. `recipe_selection_model` carries the raw answer.
+
+    **Gates.** `evals/run_recipe_select.py`, 12 cases, wired into CI at 0.90.
+    Every case verified to DISCRIMINATE against a model built to fail it — a
+    fabricated id scores 0%, a repeated selection 8.3%, an under-count 0%,
+    against a 100% scripted baseline. `tests/test_recipe_selection.py` adds 13
+    tests. `samples/response_meal_plan.json` regenerated and, for the first time,
+    covered by `tests/test_sample_fixtures.py` — it had been stale and unguarded,
+    which is how the published contract came to describe "Scripted Dinner 1".
+
+    **`select_recipes` is `config/models.json`'s one exemption from the scoring
+    gate**, and it is exempt from the LIVE measurement rather than from having a
+    suite. Close it with `python evals/run_recipe_select.py --model nova-lite`,
+    three reps, paced. `tests/test_multimodel.py` pins the exemption set exactly,
+    so adding a second fails the build and removing this one without a scorecard
+    does too.
+
+    **What the fallback costs, stated rather than hidden.** Against the
+    26-product offline fixtures many curated recipes do not fully resolve, so a
+    narrow diet reaches the fallback often; against the real 528-product
+    catalogue 29/29 are costable and vegan viability is 7/29. The notice names
+    the reason, because "Tuesday: Sausages and Mash" and a list of cheap products
+    are different products and the shopper should know which they got.
+
+    ---
+
+    *The original blocker, kept for the reasoning.* A recipe is usable only
     if EVERY ingredient can be priced: a payable total computed from part of a
     shopping list is a number the shopper cannot spend to, and `within_budget`
     derived from it is a false promise — the one failure this codebase exists to

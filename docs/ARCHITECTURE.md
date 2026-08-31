@@ -136,14 +136,44 @@ silently forfeits it while still working — nothing breaks, it just gets slower
 ## 3a. Code refreshed to current `main` — 2026-08-30
 
 **Resolved.** Alias `live` served version `5` (published 2026-08-27) until
-2026-08-30, which predated Pilot Tasks 4-7. It now serves **version `7`** -- v6 was `main` at commit `2412ac3`, v7 adds
-the freshness decision in section 3c. The defect that mattered is gone: the endpoint
-no longer invents a `$0` budget from a message that never mentioned money.
+2026-08-30, which predated Pilot Tasks 4-7. The defect that mattered is gone:
+the endpoint no longer invents a `$0` budget from a message that never
+mentioned money.
 
-| Request | v5 (until 2026-08-30) | v6 (now) |
+| Request | v5 (until 2026-08-30) | v7 onwards |
 |---|---|---|
 | `feed my flat of 3 this week` | `BUDGET_INFEASIBLE`: *"I couldn't build a plan within $0"* | `clarification` asking what they want to spend |
 | `cheapest butter` | five citations, presented as current | `STALE_DATA` naming the 2026-07-31 capture date |
+
+### The published versions, and why no document states the current one
+
+| version | what it added | recorded in |
+|---|---|---|
+| 5 | `main` at 2026-08-27, predating Pilot Tasks 4-7 | §3a |
+| 6 | `main` at commit `2412ac3` | §3a |
+| 7 | the freshness decision, 14 -> 45 days | §3c |
+| 9 | `BEDROCK_GUARDRAIL_VERSION` corrected from `1` to `2` | §3f |
+| 11 | the real 2,759-row catalogue, GSI2, Scan revoked | §3i, §3d |
+
+**A VERSION NUMBER IN PROSE IS A CLAIM THAT EXPIRES AND NOTHING RE-CHECKS IT.**
+Until 2026-08-31 four numbers described one alias across three documents at
+once: this section said 7 while its own table header said "v6 (now)", §3f said
+9 forty lines later, and `README.md` said 7 twice and 11 once, forty lines
+apart in the same section. None of them was a lie when it was written; each was
+a snapshot nobody went back to. It is the same shape as
+`infra/test/service-stack.test.ts` saying "SKIPPED until ServiceStack is
+implemented", and it has the same fix -- state the condition, not the answer.
+
+So the table above is a HISTORY, which cannot go stale, and no document states
+which version is live. One command does:
+
+```bash
+aws lambda get-alias --function-name grocery-orchestrator-dev --name live     --query FunctionVersion --output text
+```
+
+`AGENTS.md` already required running it before quoting a live behaviour as
+current. What has changed is that no document now offers a number to quote
+instead.
 
 ### How it was done, and why not the four commands this section used to give
 
@@ -767,6 +797,38 @@ measurement, not a property, and the service has gained a recipe catalogue
 since), then choose. `infra/docs/08-OPEN-DECISIONS.md` §10 carries the full
 reasoning and the corrected sequence.
 
+**THE API KEY LANDS IN THE SAME CHANGE. Decided by the owner, 2026-08-31.**
+Both `POST /chat` endpoints are public and unauthenticated, and the account
+holds no API keys at all (`aws apigateway get-api-keys` returns nothing; both
+methods report `apiKeyRequired: false`, `authorizationType: NONE`). The usage
+plans exist and throttle, but a plan with no key throttles everyone as one
+anonymous pool and cannot tell a shopper from a script.
+
+Requiring a key is minutes of CDK. What it costs is a required `x-api-key`
+header in `CONTRACT-v1.md`, API Gateway's own 403 body instead of the
+contract-valid `ChatResponse` this service guarantees on every other path, and
+a working client that has been CALLING this endpoint since 2026-08-21.
+So the decision was to take it WITH the cutover rather than before it: the URL
+change and the header change are one coordinated break instead of two.
+
+The exposure while waiting was costed rather than asserted. Bounded by the Nova
+Lite quota -- which cannot be raised and is therefore acting as an accidental
+cost ceiling -- an abuser spamming meal plans 24/7 reaches roughly **$2,030 a
+month**, price checks roughly **$140**. The $25 budget alarms, but AWS Budgets
+refresh about three times a day, so expect to hear about it $25-70 in. **The
+money is the smaller problem**: an abuser consuming the 20/min quota makes the
+service unusable for real shoppers while they do it, and no budget bounds that.
+
+Acceptable only because nobody outside the team has either URL. Move
+immediately on any of: a demo outside the team, either URL published anywhere,
+or the budget alarm firing for a reason nobody on the team caused.
+
+**It is a test, not a note.** `infra/test/app.test.ts` fails the moment
+`FrontendStack` creates its first resource, with the review document and the
+two options in the failure message. A note saying "revisit when the frontend
+lands" is the same shape as "SKIPPED until ServiceStack is implemented", and
+this repository has spent two audits finding those.
+
 **A frontend exists, and this section did not know -- 2026-08-31.** The branch
 `frontend-infra-setup` has carried a working Vite/React client since
 2026-08-21: four commits by a teammate, never merged, never mentioned, 120
@@ -871,6 +933,313 @@ identity, the call/token/time/cost/egress caps, teardown evidence, and the
 labelled anomaly evaluation. 20 tests cover what exists.
 
 
+## 3o. The infrastructure suite was run for the first time, and found two live IAM regressions — 2026-08-31
+
+`infra/test/service-stack.test.ts` was `describe.skip(…)` under a header saying
+"SKIPPED until ServiceStack is implemented (it is a stub today)". The stack had
+been 230 lines with zero TODOs and **deployed as `Grocery-Service-dev`** for a
+day. No CI job touched `infra/` at all — no `tsc`, no `jest`, no `cdk synth` —
+so the file that DEFINES this project's security posture was the only code in
+the repository with no gate under it.
+
+Removing `.skip` was three hours of work and it was not the interesting part.
+
+### What the run found
+
+**1. `dynamodb:Scan` was back on the products table, in the deployed plane.**
+
+Pilot Task 6b removed that permission on 2026-08-30 when `candidates_for_budget`
+moved to GSI2, and `config/iam-orchestrator-role.json` carries a paragraph
+saying why, ending: *"a Scan permission nothing needs is a Scan somebody can
+reintroduce without noticing."* Two lines in `service-stack.ts` reintroduced it
+the next day:
+
+```ts
+tables.products.grantReadData(role);        // + Scan, + index/*, + Streams
+tables.idempotency.grantReadWriteData(role);  // + DeleteItem, + BatchWriteItem
+```
+
+The grant helpers do not CHECK the JSON policy the stack loads three
+constructs earlier — they ADD a second statement beside it, using the CDK's
+idea of "read" and "write" rather than this project's. `grantReadData` also
+widened the explicit `index/GSI1` and `index/GSI2` ARNs to `index/*` and granted
+Streams reads on a table with no stream. `grantReadWriteData` granted
+`DeleteItem`, against a config comment reading *"No Delete -- expiry is by TTL,
+which requires no permission."*
+
+Fixed by deleting both calls. The role already carries exactly what the JSON
+declares; anything a grant helper adds is by definition something nobody wrote
+down.
+
+**2. One assertion had inverted, and passed BECAUSE of finding 1.**
+
+`it('orchestrator role CAN Scan products')` asserted the permission was present.
+It is the assertion the second audit predicted would "either fail, or pass and
+thereby prove the Scan came back". It passed.
+
+**3. Two assertions were theatre, and un-skipping them would have shipped a
+green check that verifies nothing.**
+
+- `it('the only Resource:"*" is X-Ray')` had an **empty body** — a comment and
+  no expectation.
+- The write test matched `/dynamodb:PutItem[\s\S]*grocery-products/` over
+  `JSON.stringify(policies)`. That pattern spans unrelated statements, so it
+  FAILED on a policy with no write on products at all: `PutItem` appears in the
+  idempotency statement and `grocery-products` appears later in the blob. A
+  false negative and a false positive in one suite.
+
+The rewritten assertions parse the policy document and compare action sets per
+resource. A security check that cannot say which statement it matched is not a
+security check.
+
+### What else the same pass fixed
+
+| | |
+|---|---|
+| **SSM published invalid JSON** | `readFileSync(models.json).slice(0, 4096)` of a 10,930-byte file. `json.loads` on the result fails at line 132. Nothing broke because nothing reads it, which is the worst reason for a defect to survive. `publishJson` now THROWS at synth, and what is published is the routing block — scorecards are measured evidence, and an operator who can edit them can qualify a route by typing. |
+| **`APP_STAGE` was never set** | So Req 12.5's runtime check returned immediately and stayed inert under the CDK plane too. Now set from `cfg.stage`. |
+| **Two definitions of "production"** | `src/handler.py` had `{prod, production, pilot}`; `infra/lib/config.ts` had `stage === 'prod'`. A `pilot` stage passed synth with wildcard CORS and then failed at startup — the earlier, cheaper guard was the one that did not fire. Both now read `config/stages.json`. |
+| **The prod path adopted nothing** | Adopted table names were derived from the stage, so `stage=prod` referenced `grocery-products-prod`, which does not exist. Adoption points at something already there, so the name is an input (`DATA_SUFFIX`) on its own axis. |
+| **The region guard fired in the wrong places** | `bin/grocery.ts` threw when `CDK_DEFAULT_REGION !== ap-southeast-2`. That variable is set by the CDK CLI from the resolved AWS profile, so the guard refused `cdk synth` — which touches no account — for anyone whose default region differed, and in CI, where there are no credentials, it never ran at all. The pin on every stack's `env` is the real control; `infra/test/app.test.ts` now asserts it, so CI checks what the guard only claimed. |
+
+### The gate
+
+CI job `infra`: `npm ci`, build the Lambda asset synth points at, `tsc
+--noEmit`, `npm test`, `cdk synth`. Wired into `summary.needs`, so
+`tests/test_ci_workflow.py` covers it like every other job. 24 assertions, and
+each was watched to fail against a mutated stack before being kept.
+
+**And a control against the recurrence.** `tests/test_skip_markers.py` fails when
+a skip carries no machine-checkable condition, in Python and TypeScript alike —
+`@pytest.mark.skip`, condition-less `xfail`, `describe.skip`, `it.only`. The
+distinction it enforces is the only one that matters: `skipif(not
+DATASET.exists())` stops skipping the moment the dataset appears, and "SKIPPED
+until X is implemented" never stops, because nothing evaluates the English.
+
+## 3p. The anomaly rule was switched on, and measured — 2026-08-31
+
+`implausible_unit_price()` was written on 2026-08-31 with the $2,490 broccoli in
+its docstring, tested, and **called by nothing**. `ingestion/handler.py` diffed
+before writing and did not validate, so the one defect class known to have
+reached the live products table was still undetected in production — while an
+AgentCore Runtime was being proposed, in ADR 0002, to find the anomalies nobody
+had thought of. The rules that HAD been thought of were not running.
+
+They are now. `ingestion.handler.reject_implausible` refuses the row, the count
+and a sample land in the Step Functions execution, and
+`config/alarms.json` derives `IngestionRowRejected` from a structured log line.
+
+### The run, over the whole catalogue
+
+```
+$ python scripts/check_ingestion_anomalies.py
+catalogue: datasets (datasets/data/dynamodb_products) -- 3000 source rows,
+           2759 after transform (61 non-food dropped, 180 duplicates collapsed)
+rule:      implausible_unit_price, factor 10x
+
+  rows checked  2759
+  accepted      2759
+  REJECTED      0
+```
+
+**Zero findings, and zero is not the interesting number.** A clean result from a
+rule nobody has watched fail is indistinguishable from a rule that cannot fire —
+which is the defect this whole fortnight has been about. So the historical
+defect was reintroduced and the run repeated: remove the `pack_grams <= 1`
+sold-each guard from `ingestion/normalise.py::unit_price`, exactly as the first
+version of that function omitted it, and
+
+```
+  rows checked  2759
+  accepted      2237
+  REJECTED      522
+
+  new_world#albany/broccoli-ea   Broccoli
+      price 1.79  stored unit 1790.00  derived 1.79  pack_grams 1
+```
+
+**522 of 2,759, not six.** The original incident hit six rows, and that number
+has been quoted in this repository ever since as the size of the class. It is
+not: six was the number of sold-each products in the *seeded fixture set* at the
+time. Against the real catalogue the same one-line omission corrupts **19% of
+every shopper-facing unit price**, and it does so on a first write, where the
+diff — the only control that existed — reports nothing, because a defect on a
+first write is not a change.
+
+That also settles the threshold question. 0.2% and 19% cannot both be caught by
+one percentage gate, so there is no percentage gate: the alarm fires at one row.
+
+### What the deterministic rules can and cannot see
+
+Recorded because ADR 0002 gate 4 asks for acceptance data, and because the
+argument FOR a reviewer — "its value is the anomalies nobody thought to write a
+rule for" — only becomes evidence once the rules that were thought of are
+running and observably missing things. Half of that is now true.
+
+**Caught:** a unit price that disagrees with its own pack size by an order of
+magnitude, in either direction, including every misuse of the sold-each
+sentinel.
+
+**Structurally invisible to this rule**, and the honest list:
+
+- a price that is simply wrong but internally consistent — $12.99 for a $1.29
+  item, with a matching unit price, passes every check here;
+- a `pack_grams` that is wrong at SOURCE, since the unit price is then correctly
+  derived from a wrong weight;
+- a mis-categorised product — the vegan-safety class — which
+  `ingestion/lineage_b.py` handles separately and fail-closed;
+- a stale capture date, which `src/retrieval/filters.py` owns;
+- **anything needing a baseline.** "This price doubled overnight" is the largest
+  category here and it is not a rule problem: it needs the append-only
+  price-history table, which does not exist. That is a cheaper and better-defined
+  piece of work than a reviewer, and it is a prerequisite for one.
+
+So the ADR 0002 decision now has a measurement under it rather than a belief,
+and it points somewhere specific: the next thing worth building is the history
+table, not the Runtime.
+
+## 3q. ObservabilityStack, and how much of the second plane was actually unwatched — 2026-08-31
+
+The second audit's Finding 3 says the CDK plane is "unalarmed, undashboarded,
+and equally invocable by anyone who finds the URL". Two of those three are
+right. The middle one is more precise than that, and the precise version is the
+one worth acting on.
+
+**Six of the nine alarms already covered both planes.** They watch EMF metrics
+dimensioned on `service`, and `POWERTOOLS_SERVICE_NAME` is `grocery-orchestrator`
+on both — `service-stack.ts` does not suffix it. A handler error, a latency
+breach, an exhausted repair loop or a guardrail spike on either plane fires the
+same alarm and always did.
+
+**Two were bound to a physical name, and those were the gap:** the API 5xx alarm
+(`ApiName = grocery-orchestrator-api-dev`) and the handler-escaped metric filter
+(`/aws/lambda/grocery-orchestrator-dev`). `ObservabilityStack` creates both per
+plane, derived from `cfg.suffix`, and collapses to one set when the suffix is
+empty — so the deploy that retires the hand-made plane needs no edit here, which
+is the property that stops the list going stale.
+
+**The shared dimension is itself worth recording, and it is half a win.** Six
+alarms covering both planes also means a metric cannot say WHICH plane produced
+it: while dual-running, a latency spike on the unused CDK plane is
+indistinguishable from one on the plane serving shoppers. Splitting the
+dimension would fix that and split every historical series with it, so it is
+deliberately not done — the dual-run is temporary and the cutover is the fix.
+If dual-running becomes permanent, this is a reason it should not.
+
+### What else the stack carries
+
+| | |
+|---|---|
+| SNS topic | From `config/alarms.json`, which refuses an alarm with no action. **No subscription is declared**: an SNS email subscription needs out-of-band confirmation, so a declared one sits `PendingConfirmation` and reads, in a console and in a template, exactly like somebody who would be paged. |
+| Dashboard | Turns and errors, p95 latencies, tokens (the Bedrock bill before it is a bill), repair/guardrail/idempotency. |
+| Budget | $25/month, notifying the alarm topic at 80% and 100%. Two budgets are free, and this is the control that does not depend on our own instrumentation working — the same reason the 5xx alarm watches the gateway's metric rather than one we publish. |
+| Artefact bucket | Encrypted, versioned, public access blocked, SSL enforced, **RETAIN**. Eval results and latency baselines live in Markdown today, which makes a measurement's provenance a commit message. The point of keeping baselines is that they outlive the stack that made them. |
+
+12 assertions in `infra/test/observability-stack.test.ts`, each watched to fail
+against a mutated stack — dropping the per-plane 5xx alarm fails one, removing
+the 0-fill from a metric filter fails another.
+
+### The identity gap is still open, and is now designed rather than merely noted
+
+Alarming both planes makes abuse VISIBLE. It does not BOUND it. An API key plus
+a usage-plan quota is what turns an unbounded Bedrock bill into a number chosen
+in advance, and it is minutes of CDK — but it adds a required `x-api-key`
+header to `CONTRACT-v1.md`, returns API Gateway's own 403 body rather than the
+contract-valid `ChatResponse` this service guarantees everywhere else, and
+breaks a teammate's working client that has been calling this endpoint since
+2026-08-21. Nobody has agreed who holds the key.
+
+So it is written down and not applied: `docs/OPEN-REVIEW-api-key.md` carries the
+design, the three options with what each costs, and the four things that would
+change the answer. **Recorded as a holding position rather than a resolution** —
+the gap is real, the deferred cutover doubled it, and monitoring is not a bound.
+
+## 3r. `select_recipes` scored live, and what the run cost the ceiling — 2026-08-31
+
+Two things came out of one 10-minute session against the live account, and the
+second was not what the session was for.
+
+### The scorecards
+
+`evals/run_recipe_select.py`, 12 cases, guardrail version 2, paced at 9/min,
+three reps per model, zero upstream failures and zero fallbacks in any rep.
+
+| model | rate | reps | distinct mains |
+|---|---|---|---|
+| Amazon Nova Lite | **100%** | 3/3 identical | 3.4 |
+| Claude Haiku 4.5 | **100%** | 3/3 identical | 3.8 |
+
+Total spend: under two cents.
+
+**BOTH AT 100% MEANS THE SUITE CANNOT RANK THEM**, and that is the same ceiling
+the meal-plan suite hit. Every check here is a rule-violation check — did you
+invent an id, repeat one while alternatives remained, breach a stated exclusion,
+choose enough meals. Neither model breaks rules. Nothing asks whether the MENU
+is good, so 100% means "both select validly" and says nothing about which
+selects better.
+
+The one measured difference is `distinct mains`: Haiku 3.8, Nova Lite 3.4,
+stable across all three reps. Haiku picks more varied menus. It is reported and
+NOT scored, because no threshold on variety is right for every request — three
+meals from a seven-recipe shortlist cannot beat four from a twelve-recipe one —
+and scoring it would manufacture a gradient without establishing what it means.
+Nova Lite is preferred on cost (~13x cheaper on a call every meal-plan turn
+makes); Haiku is the qualified fallback.
+
+### The gate caught a third model within minutes
+
+With both scorecards recorded, `unscored_routes()` returned
+`[('select_recipes', 'nova-pro')]`. Nova Pro declares the FAST tier as well as
+quality, so `available(tier)` offered it as a cost-ordered fallback for a task
+nothing had scored it on — **exactly** the defect the registry documents about
+`claude-sonnet` sitting as a live fallback for every task while documented as
+unfit. Excluded as a routing decision rather than scored: selection is a cheap
+judgement over a shortlist code has already validated, and paying 13x for it is
+a cost regression, not a quality win.
+
+`unscored_routes()`, `unscored_tasks()` and `unevidenced_models()` are all empty
+again.
+
+### THE THROUGHPUT CEILING MOVED, AND NOTHING HAD NOTICED
+
+`scripts/check_quotas.py` was run first, as the runbook requires. It printed:
+
+```
+  repair_plan        UNROUTABLE: No routing rule for task 'repair_plan'
+```
+
+Its task list was hand-written, so the repair split had left it naming a task
+that no longer exists and omitting both replacements — and with them Claude
+Haiku, which meant the tool whose whole job is naming the binding model had
+stopped listing one of the models that binds. Fixed to enumerate from
+`ModelRegistry.tasks`.
+
+With the list correct, the real finding:
+
+| | before 15c | after 15c |
+|---|---|---|
+| meal plan, no repair | 10.0/min | **6.7/min** |
+| meal plan, 2 repairs | 5.0/min | **4.0/min** |
+| price check | 10.0/min | 10.0/min |
+
+**Pilot Task 15c cost a third of the meal-plan throughput.** `select_recipes`
+adds a THIRD Nova Lite call to every meal-plan turn, and Nova Lite is the
+binding, unraisable quota. The feature that made the plan better made the
+ceiling lower, and the figure quoted in five documents (10/min, 5 with repairs)
+was measured before the node existed.
+
+The recipe path also drops the Nova Pro call entirely — `select_recipes` builds
+the plan, so `generate_plan` never runs — which is a cost saving of roughly 13x
+on that call and a throughput loss, because it moves work onto the model that
+binds. Both paths are now modelled separately by the script rather than
+averaged.
+
+**Neither number was measured by anything before this run**, which is the point
+worth keeping: a feature can move a documented ceiling by a third and no gate in
+this repository would say so. `check_quotas.py` derives it from the live account
+and is the only thing that knows — so run it after any change to the routing
+table, and never quote a throughput figure from a document, including this one.
+
 ## 4. IAM notes worth keeping
 
 **Cross-region inference profiles need two grants.** `config/models.json`
@@ -972,7 +1341,7 @@ not.
 ## 6a. Throughput ceiling, measured
 
 The account's Bedrock request-per-minute quotas cap this deployment at **10
-meal-plan turns per minute, falling to 5 when the repair loop fires** —
+meal-plan turns per minute, falling to 5 when the repair loop fires** — RE-MEASURED 2026-08-31 as 6.7 and 4.0 after Pilot Task 15c added a third Nova Lite call to every meal-plan turn; see §3r —
 service-wide across all users, so roughly 300-600 an hour. The binding limit is
 Amazon Nova Lite at 20 cross-region requests per minute, against the 2 Nova
 Lite calls a clean meal-plan turn makes and the 4 a fully repaired one makes.

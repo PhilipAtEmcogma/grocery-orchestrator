@@ -23,6 +23,7 @@ from src.review.snapshot import (
     SnapshotTooLarge,
     build_snapshot,
     implausible_unit_price,
+    implausible_unit_price_values,
     snapshot_to_dicts,
 )
 
@@ -38,6 +39,7 @@ __all__ = [
     "ValidatedFindings",
     "build_snapshot",
     "implausible_unit_price",
+    "implausible_unit_price_values",
     "snapshot_to_dicts",
     "validate_findings",
 ]

@@ -37,10 +37,26 @@ hand-made one is still production — cutting over is a decision that was
 deliberately deferred on 2026-08-31 until a frontend exists to coordinate the
 URL change with. `docs/ARCHITECTURE.md` §3m.
 
+**And it had no gate under it until 2026-08-31.** The suite defining its
+security invariants was `describe.skip`, its header still called the stack a
+stub, and no CI job ran `tsc`, `jest` or `cdk synth`. Running it found
+`dynamodb:Scan` back on the products table in the deployed plane — the exact
+permission Task 6b had removed the day before, reintroduced by
+`grantReadData()`, which adds a statement beside the JSON policy rather than
+checking it. Two more assertions turned out to verify nothing at all. Full
+account in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3o.
+
 **The code is current as of 2026-08-30.** The alias served version `5` from
-2026-08-27 — before Pilot Tasks 4–7 — and now serves **version `7`**, built from
-`main`. The defect that mattered is gone: the endpoint no longer invents a `$0`
+2026-08-27 — before Pilot Tasks 4–7 — and has been republished several times
+since. The defect that mattered is gone: the endpoint no longer invents a `$0`
 budget from a message that never mentioned money and then refuses it.
+
+**This paragraph used to name a version, and so did two others in this section
+— `7`, `7` and `11`, forty lines apart.** None was wrong when it was written;
+each was a snapshot nobody returned to, which is the same shape as a test
+skipped "until X is implemented". The published history is in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3a, and which version is *live*
+is a question for `aws lambda get-alias`, not for a document.
 
 Enforcing freshness then made every priced query return `STALE_DATA` — the
 seeded fixtures are dated 2026-07-31 against a 14-day threshold. **Decision
@@ -48,7 +64,18 @@ seeded fixtures are dated 2026-07-31 against a 14-day threshold. **Decision
 dev-stage stopgap, recorded in `config/freshness.json` and
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3c. Re-stamping the fixtures'
 capture date was rejected as fabricated provenance. All four paths — comparison,
-named regions, clarification and meal plan — verified working live on version 7.
+named regions, clarification and meal plan — verified working live at the time
+of the freshness change (`docs/ARCHITECTURE.md` §3c).
+
+**Req 2.9 shipped on 2026-08-31** (Pilot Task 15c). A meal plan is now built
+from NAMED CURATED RECIPES rather than free composition: `retrieve_prices`
+resolves the catalogue's 27 distinct ingredient terms and shortlists the recipes
+that are costable, dietary-viable *against the resolved products*, and
+affordable as a set; the model's whole contribution is a list of recipe ids;
+deterministic code scales, costs and validates. A turn that cannot be served
+from the catalogue falls back to free composition and says so. This is the only
+differentiating capability a user can see, and it was one graph edge away for a
+fortnight.
 
 So the remaining distance to a pilot is **real ingested data, IaC adoption, and
 operational evidence** — not first deployment.
@@ -63,10 +90,10 @@ operational evidence** — not first deployment.
 | 6 · Idempotency fencing, canonical hashing, pagination, PITR | ✅ done · one deferral (6b) |
 | 7 · Scorecards, route qualification, prose/repair evals | ✅ done · one deferral (7b) |
 | 8 · Local read-only MCP | ✅ done — 2 coarse tools, default-off, capped, parity-tested |
-| 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done** — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). Cutover deferred by decision, not pending |
-| 13 · Controlled ingestion | ⬜ not started |
+| 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done**, ObservabilityStack written 2026-08-31 and alarming **both** planes — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). Cutover deferred by decision, not pending |
+| 13 · Controlled ingestion | 🟡 **anomaly rejection wired 2026-08-31** — `implausible_unit_price` refuses a row before it is written, with a metric and an alarm. Measured over the real catalogue: 0 rejections clean, **522 of 2,759** with the historical defect reintroduced (§3p). The rest of Task 13 is unstarted |
 | 14 · AgentCore reviewer | 🟡 **14a done** — the sanitised snapshot boundary and finding validation, which are needed whoever reviews. The Runtime needs ADR 0002; the request was narrowed to it alone on 2026-08-31 |
-| 15 · Recipe catalogue | 🟡 **15a and 15b done** — 29 curated recipes, 29/29 priceable against the real catalogue (14/29 against the offline fixtures), and `src/recipes/planning.py` assembles them into a `PlanDraft`. **15c — wiring selection into the graph — is the remainder.** The imported 175 stay unusable: 0/175 against *both* catalogues |
+| 15 · Recipe catalogue | ✅ **done 2026-08-31** — 29 curated recipes, and **15c wired**: a meal-plan turn is built from named recipes, with the model choosing ids from a shortlist retrieval has already proven costable, dietary-viable and affordable as a set. Falls back to free composition with a notice when nothing fits. The imported 175 stay unusable: 0/175 against *both* catalogues |
 | 16 · Release gates | ⬜ not started |
 
 **Two deliberate deferrals remain** (6b closed 2026-08-30), each with the
@@ -85,8 +112,8 @@ reasoning recorded in `tasks.md`:
 - **7b** — SSM routing belongs with the CDK stacks, where a parameter is
   declared as infrastructure rather than clicked into an account.
 
-**Deployed and operating** (2026-08-30): alias `live` → **v11** serving current
-`main`, the **real 2,759-row catalogue**, Guardrail **v2** applied, GSI2 for
+**Deployed and operating** (2026-08-30): the alias serving current `main`, the
+**real 2,759-row catalogue**, Guardrail **v2** applied, GSI2 for
 meal-plan candidates with `Scan` revoked, **8 alarms** + dashboard + a $25
 Budget, API-stage X-Ray, and the first latency baseline measured against the
 endpoint rather than a laptop — price check p95 **2.21s** (target 5s), meal plan
@@ -98,12 +125,16 @@ intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%;
 DynamoDB products and idempotency tables with owner-fenced claims proven against
 the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
-**Offline gates:** 811 tests passing, 31 skipped. Five eval suites — intent
+**Offline gates:** 861 tests passing, 31 skipped, plus **24 CDK assertions**
+in `infra/` — run by CI for the first time on 2026-08-31, having found two IAM
+regressions in a stack that was already deployed
+([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3o). Five eval suites — intent
 76.7%, meal plan 100%, prose 100%, repair 100% (12 cases), guardrail 9/9
-must-allow — all gated in CI and the pre-commit hook. **Repair is now gated on
-model choice too**: three reps each, Nova Lite 91.7% and Claude Haiku 83.3%,
-identical every rep. Haiku is excluded from `repair_plan` and keeps serving the
-tasks it qualifies for — `config/models.json` `routing.repair_plan.exclude`.
+must-allow — all gated in CI and the pre-commit hook. **Repair is two routed tasks**
+as of 2026-08-31: `repair_budget` to Nova Lite (7/7) and `repair_defect` to
+Claude Haiku (5/5), each perfect at its half and below the 90% floor on the
+other. The eval gates each half separately, because 83.3% combined is one
+number that hid a 71.4% and a 100%.
 
 **Two defects found and fixed on 2026-08-30**, both backend, both invisible to
 every offline gate because nothing offline can read a deployed environment
@@ -112,7 +143,7 @@ variable:
 - ~~**Guardrail version drift**~~ — **fixed 2026-08-30.** The Lambda applied
   version `1` while all evidence described version `2`, so `how much is truffle
   oil` — a documented `must_allow` case — was refused live while the record said
-  9/9. Now version `2` (alias v9), both must-allow mushroom cases verified.
+  9/9. Now version `2`, both must-allow mushroom cases verified.
   [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3f.
 - ~~**Silent demo mode**~~ — **check implemented 2026-08-30** (Req 12.5).
   Dropping `USE_DYNAMODB` or `USE_BEDROCK` used to fall back to fixtures and the
@@ -133,16 +164,29 @@ evidence gathered and its options written down; none needed more code first.
    work (Tasks 9–11) because Task 15 is prompt-and-data work with almost no
    AWS surface; both landed on 2026-08-30/31, so the sequencing is history
    rather than a plan. `tasks.md` Pilot Task 15b.
-2. ~~**Gate repair at 90%?**~~ **Decided and applied 2026-08-30.** Three reps
-   each confirmed the structure — Nova Lite 91.7%, Claude Haiku 83.3%, identical
-   every rep, failing in opposite halves. Haiku is excluded from `repair_plan`
-   only; it still serves the tasks it qualifies for. Every task now has a
-   scorecard: `unscored_tasks()` is empty for the first time.
+2. ~~**Gate repair at 90%?**~~ **Decided and applied 2026-08-30, and then split
+   2026-08-31.** Three reps each confirmed the structure — Nova Lite 91.7%,
+   Claude Haiku 83.3%, identical every rep, failing in opposite halves. Gating
+   the combined task left one routable model on the account's binding,
+   unraisable quota, on the path that fires under load; the halves are now
+   separate tasks, `repair_budget` and `repair_defect`, each routed to the model
+   that is perfect at it. That does **not** restore a fallback — each half still
+   has one qualified model — but a Nova Lite quota event now degrades one half
+   instead of all repair. Every task still has a scorecard.
 3. **Who owns the `Chatbot` API and Lambda** in the same account?
    `docs/ARCHITECTURE.md` §3b — untouched pending an owner.
 
 **Known open questions that want a human**, not more code:
 
+- ~~**Who holds an API key, if the endpoints get one?**~~ **Decided
+  2026-08-31: at the frontend cutover, not before.** Two public,
+  unauthenticated, Bedrock-invoking APIs exist and both are now alarmed — abuse
+  is visible but not bounded. Requiring a key changes `CONTRACT-v1.md` and
+  breaks a teammate's working client, so it lands in the SAME change that
+  repoints the frontend, as one coordinated break instead of two. Acceptable
+  only while neither URL is published. **`infra/test/app.test.ts` fails the
+  moment `FrontendStack` creates a resource**, so nothing has to remember.
+  [`docs/OPEN-REVIEW-api-key.md`](docs/OPEN-REVIEW-api-key.md).
 - `min_grams_per_person_day` decides which meal-plan requests are refused
   outright and has never been reviewed by anyone who knows about food —
   [`docs/OPEN-REVIEW-min-grams-per-person-day.md`](docs/OPEN-REVIEW-min-grams-per-person-day.md).
@@ -527,7 +571,7 @@ claimed. Read it before changing any of this, and not before.
   Powertools is imported by exactly two files and a test walks the import
   graph to keep it that way. Logs are asserted to carry no message text,
   location or dietary information.
-- ✅ **Throughput ceiling measured**: 10 meal-plan turns/minute, 5 when repair
+- ✅ **Throughput ceiling measured**: 6.7 meal-plan turns/minute, 4.0 when repair
   fires, bound by a Nova Lite quota that **cannot be raised by request**.
   Accepted for workshop scale; `scripts/check_quotas.py` derives it live
   rather than trusting this paragraph.
@@ -722,6 +766,24 @@ them from in production. X-Ray tracing switches itself off outside Lambda, so
 no daemon is needed. Namespacing is configurable via `POWERTOOLS_SERVICE_NAME`
 and `POWERTOOLS_METRICS_NAMESPACE`; `LOG_LEVEL` sets log verbosity.
 `POWERTOOLS_LOGGER_LOG_EVENT` is deliberately ignored — see design.md §12.4.
+
+## Responding to outside review
+
+Two external audits have been received, and the response to each is a document
+with a disposition per finding and a commit attached:
+
+- [`docs/AUDIT-RESPONSE-2026-08-30.md`](docs/AUDIT-RESPONSE-2026-08-30.md)
+- [`docs/AUDIT-RESPONSE-2026-08-31.md`](docs/AUDIT-RESPONSE-2026-08-31.md)
+
+The second is worth reading for three things it records rather than for the
+list of fixes: where the audit was **understated** (`dynamodb:Scan` really had
+come back, in the deployed plane, put there by a CDK grant helper), where a
+recommendation was **wrong on a point that matters** (splitting repair does not
+restore a fallback — each half still has one qualified model), and what was
+**declined** with the argument.
+
+Both follow the same rule: an audit is evidence, not a verdict, and the correct
+response to one is to go and check.
 
 ## Further reading
 

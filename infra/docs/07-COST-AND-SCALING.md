@@ -48,7 +48,7 @@ Bedrock is pay-per-token with no free tier. Three things keep it near-zero:
    **$0.00006/1k input, $0.00024/1k output**) and only `generate_plan` to the
    *quality* tier. A full meal-plan turn is fractions of a cent.
 2. **A throughput ceiling already exists and is measured.** The README records
-   *10 meal-plan turns/minute (5 when repair fires), bound by a Nova Lite quota
+   *6.7 meal-plan turns/minute (4.0 when repair fires), bound by a Nova Lite quota
    that cannot be raised by request.* `scripts/check_quotas.py` derives it live.
    That ceiling doubles as a natural cost cap — you cannot spend fast.
 3. **An AWS Budget with an alarm** (Observability stack, [03](03-STACK-SPECS.md)):

@@ -174,6 +174,47 @@ class GroceryState(TurnInput, total=False):
     # would be a different lie from saying nothing.
     skipped_items: list[str]
 
+    # ---- recipes (Req 2.9, Pilot Task 15c)
+    #
+    # Populated by `retrieve_prices` on a meal_plan turn, alongside the
+    # category candidates. Retrieval resolves the ingredient terms of the
+    # curated catalogue so that `select_recipes` can offer the model a
+    # shortlist of recipes that are ALREADY proven costable and affordable --
+    # the model cannot pick an uncostable recipe because uncostable ones never
+    # reach it. Same shape as `candidates_for_budget` capping the candidate set:
+    # constraining what a price-blind model chooses FROM is the only way to keep
+    # its choice inside a budget.
+    #
+    # Empty on a price_check turn, and empty on a meal_plan turn where nothing
+    # survives the filters -- which is a fallback, not an error. See
+    # `recipe_fallback`.
+
+    #: Recipe ids offered to the model: costable, dietary-viable against the
+    #: RESOLVED products, and individually affordable at budget/days.
+    recipe_shortlist: list[str]
+    #: recipe_id -> {ingredient key -> citation ref}. Built by retrieval, so
+    #: every ref in it is one retrieval produced.
+    recipe_refs: dict[str, dict[str, str]]
+    #: What the MODEL returned, after fabricated ids are dropped and before the
+    #: node tops the list up or trims it to fit. The scorecard measures this;
+    #: the shopper is served `selected_recipes`. Kept apart because a node that
+    #: silently repairs every model mistake qualifies every model.
+    recipe_selection_model: list[str]
+    #: What the model chose. Validated against `recipe_shortlist` before use:
+    #: an id outside the shortlist is a fabrication and is dropped, the same
+    #: way a citation ref nobody retrieved is.
+    selected_recipes: list[str]
+    #: How many meals this household needs, derived by retrieval from
+    #: `min_grams_per_person_day` -- the same figure the feasibility refusal
+    #: uses. NOT `days`: a day is not a meal, and asking for one recipe per day
+    #: under-fed every household in the eval suite.
+    recipe_meals_wanted: int
+    #: Why the turn fell back to free composition, or "" if it did not. Kept as
+    #: a reason rather than a bool because the shopper is told which plan they
+    #: got, and "no recipe fits your budget" and "you excluded too much" are
+    #: different facts about their request.
+    recipe_fallback: str
+
     # ---- generation
     comparisons: list[PriceComparison]
     plan: MealPlan | None

@@ -56,6 +56,14 @@ export class StatefulStack extends cdk.Stack {
       tableName: names.idempotencyTable,
     });
 
+    // `cdk synth` emits "Resources section must exist and be non-empty" for this
+    // stack on every run. THAT WARNING IS THE ADOPTION EVIDENCE, not a defect:
+    // an empty Resources section is precisely what proves CloudFormation cannot
+    // create, replace or delete the tables holding 2,759 real price records.
+    // It is left visible rather than suppressed, and
+    // `infra/test/service-stack.test.ts` asserts the same absence as a check
+    // rather than as a log line somebody has to read.
+
     // Outputs, not resources. This stack deliberately creates nothing, so the
     // outputs are what make it worth deploying: they publish the adopted names
     // for review and for cross-stack reference, and their presence in the

@@ -57,6 +57,7 @@ from _demo_support import (
     section,
 )
 
+from src.graph.nodes.plan import PLAN_TASKS
 from src.models.base import ModelError, ModelOutputInvalid
 from src.models.scripted import ScriptedModelClient
 from src.retrieval.memory import InMemoryPriceRepository
@@ -96,7 +97,7 @@ class UnreachableModel(ScriptedModelClient):
         self.message = message
 
     def structured(self, **kw):
-        if kw.get("task") in ("generate_plan", "repair_plan"):
+        if kw.get("task") in PLAN_TASKS:
             raise ModelError(self.message)
         return super().structured(**kw)
 
@@ -105,7 +106,7 @@ class MalformedDraftModel(ScriptedModelClient):
     """The model answers; the answer will not satisfy PlanDraft."""
 
     def structured(self, **kw):
-        if kw.get("task") in ("generate_plan", "repair_plan"):
+        if kw.get("task") in PLAN_TASKS:
             raise ModelOutputInvalid("PlanDraft failed validation: reasoning too long")
         return super().structured(**kw)
 

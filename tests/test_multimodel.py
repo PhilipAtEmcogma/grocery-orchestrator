@@ -45,8 +45,17 @@ def test_tasks_route_to_their_configured_tier(registry):
 
 
 def test_repair_uses_a_fast_model_not_the_expensive_one(registry):
-    """Repair is substitution, not planning. Routing it to QUALITY is a cost bug."""
-    assert ModelTier.FAST in registry.route("repair_plan").tiers
+    """
+    Repair is substitution, not planning. Routing it to QUALITY is a cost bug.
+
+    Over every repair task rather than a named one: `repair_plan` split into
+    `repair_budget` and `repair_defect` on 2026-08-31, and a test naming one
+    task keeps passing while covering half of what it claims.
+    """
+    repair_tasks = [t for t in registry.tasks if t.startswith("repair_")]
+    assert repair_tasks, "no repair task in the routing table; this test lost its input"
+    for task in repair_tasks:
+        assert ModelTier.FAST in registry.route(task).tiers, task
 
 
 def test_unknown_task_raises_rather_than_guessing(registry):
@@ -63,8 +72,8 @@ def test_pinning_an_unconfigured_model_raises(registry, monkeypatch):
 
 def test_disabled_models_are_not_routed_to(registry):
     """A disabled model must not be selected regardless of tier or preference."""
-    for task in ("classify_intent", "generate_plan", "repair_plan"):
-        assert registry.route(task).enabled
+    for task in registry.tasks:
+        assert registry.route(task).enabled, task
 
 
 # ------------------------------------------------------------- capabilities
@@ -339,22 +348,31 @@ def test_the_unmeasured_tasks_are_named_and_reasoned():
     failing -- which is the intended direction.
     """
     gaps = ModelRegistry().unscored_tasks()
-    # The list is EMPTY, and getting there is the history of this project's
-    # model plane. generate_prose left it on 2026-08-29 when evals/run_prose.py
-    # gave it a scorecard. repair_plan left it on 2026-08-30: it had been
-    # measured but ungated because six cases could not support a threshold, and
-    # the fix was to expand the suite to twelve rather than to lower the bar.
+
+    # PINNED TO AN EXACT SET, which fails in BOTH directions.
     #
-    # Asserted as EMPTY rather than deleted, because the assertion still has a
-    # job: adding a task without a scorecard, or exempting one, now fails here.
-    # An exemption should be hard to add quietly.
-    assert set(gaps) == set(), (
-        f"a task is exempt from scoring again: {sorted(gaps)}. Every exemption "
-        "is a route nothing measures -- add a scorecard or argue the exemption "
-        "in config/models.json, where the reason will be read."
+    # EMPTY AGAIN as of 2026-08-31. `select_recipes` was here for the few hours
+    # between the task being routed and being measured -- 12 cases, three reps
+    # each against nova-lite and claude-haiku, both 100%, recorded in
+    # config/models.json. The exact-set assertion is what brought somebody back
+    # here to delete it: `<= EXPECTED` would have left a stale exemption
+    # passing quietly, which is the shape this repository keeps finding.
+    EXPECTED_EXEMPTIONS: set[str] = set()
+
+    assert set(gaps) == EXPECTED_EXEMPTIONS, (
+        f"the exemption list changed: {sorted(gaps)} vs {sorted(EXPECTED_EXEMPTIONS)}. "
+        "Every exemption is a route nothing measures. If you added one, argue it in "
+        "config/models.json where the reason will be read. If you SCORED one, delete "
+        "it from both places -- this assertion is the reminder."
     )
     for task, reason in gaps.items():
         assert len(reason) > 80, f"{task} needs a real reason, not a label"
+        # An exemption must say what would close it. "Not measured yet" ages;
+        # "run this command" expires the moment somebody runs it.
+        assert "evals/run_" in reason, (
+            f"{task}'s exemption does not name the eval that would close it. An "
+            f"exemption with no exit is a permanent one wearing a temporary label."
+        )
 
 
 def test_a_model_excluded_on_latency_is_not_a_silent_fallback():
@@ -363,7 +381,7 @@ def test_a_model_excluded_on_latency_is_not_a_silent_fallback():
     reachable for any task while it has no scorecard.
     """
     registry = ModelRegistry()
-    for task in ("classify_intent", "generate_plan", "repair_plan", "generate_prose"):
+    for task in registry.tasks:
         assert "claude-sonnet" not in registry.routable_models(task), (
             f"claude-sonnet is reachable for {task} despite having no scorecard"
         )
@@ -484,3 +502,59 @@ def test_exclusion_is_honoured_by_route_and_routable_models_alike(tmp_path):
     assert registry.routable_models("repair_plan") == []
     with pytest.raises(UnroutableTask):
         registry.route("repair_plan")
+
+
+# ------------------------------------------------- the task names, in one place
+
+
+def test_the_routing_table_and_the_task_constants_agree():
+    """
+    `config/models.json` and `src/models/base.py` must name the same tasks.
+
+    THE FAILURE THIS CATCHES ALREADY HAPPENED. `src/observability/base.py` held
+    its own `PLAN_TASKS = frozenset({"generate_plan", "repair_plan"})`. Splitting
+    repair into `repair_budget` and `repair_defect` updated the graph and the
+    config and left that copy matching nothing, so `TurnStats.record_model`
+    stopped counting repairs: the `RepairAttempts` metric reported **0 on a turn
+    that repaired twice**, and a metric reading zero is indistinguishable from a
+    healthy turn.
+
+    Both directions, because only one of them is the interesting one. A constant
+    with no routing rule is dead code; a ROUTING RULE WITH NO CONSTANT is a task
+    the graph can execute and the metrics cannot see.
+    """
+    from src.models.base import PLAN_TASKS, REPAIR_TASKS
+
+    configured = set(ModelRegistry().tasks)
+    configured_repairs = {t for t in configured if t.startswith("repair_")}
+
+    assert REPAIR_TASKS == configured_repairs, (
+        f"config/models.json routes {sorted(configured_repairs)} but "
+        f"src/models/base.py knows {sorted(REPAIR_TASKS)}. A repair task the "
+        f"metrics do not know about is a repair loop that reports zero attempts."
+    )
+    assert PLAN_TASKS <= configured, (
+        f"src/models/base.py names plan tasks with no routing rule: "
+        f"{sorted(PLAN_TASKS - configured)}"
+    )
+
+
+def test_every_repair_task_has_a_qualified_model_of_its_own():
+    """
+    The split is only worth having if each half is separately routable.
+
+    `repair_budget` and `repair_defect` exist because Nova Lite and Claude Haiku
+    are perfect at opposite halves. If either half fell back to the other's
+    model, the split would cost a routing rule and buy nothing.
+    """
+    registry = ModelRegistry()
+    routes = {t: registry.routable_models(t) for t in registry.tasks if t.startswith("repair_")}
+    assert len(routes) == 2, routes
+    for task, models in routes.items():
+        assert models, f"{task} has no routable model at all"
+    budget, defect = routes["repair_budget"], routes["repair_defect"]
+    assert set(budget).isdisjoint(defect), (
+        f"repair_budget {budget} and repair_defect {defect} share a model. The "
+        f"whole point of the split is that the model perfect at one half is "
+        f"below the floor on the other."
+    )

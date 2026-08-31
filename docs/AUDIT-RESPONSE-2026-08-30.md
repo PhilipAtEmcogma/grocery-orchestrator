@@ -93,6 +93,16 @@ latency grounds until a load run defines p99 — which is undefined at n=3.
 
 ### Finding 3 · "The recipe blocker is a name-resolution problem" — **CLOSED (`0146263`), one part ACCEPTED**
 
+**Scope, added 2026-08-31 after the second audit.** What is CLOSED is the
+*blocker* — the claim that Req 2.9 could not proceed until head terms resolved.
+It is not recipe planning, which is built and, as of this note, still not on the
+shopper path: there is no graph node, and `recipes_to_draft` is called only by
+tests (Task 15c). `README.md` and `tasks.md` both say so; this heading, read
+alone, does not, and the second audit was right that a mentor skimming it would
+conclude recipe planning works. A disposition covers the finding it is filed
+under and nothing adjacent to it — which is the whole reason a disposition names
+a commit.
+
 Superseded by Task 15b, which landed the day the audit was taken. The blocker
 was not resolved by curating head terms; it was routed around by writing 29
 recipes against the catalogue we have. Measured at HEAD: **29/29 costable

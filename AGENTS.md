@@ -27,12 +27,19 @@ service into an implementation claim.
 - `ACQUISITION-RISK.md` — terms-of-service assessment for live price
   acquisition (Task 7.9). **Read before touching acquisition.** §8 is the
   condition list Task 11.4 is gated on.
+- `docs/OPEN-REVIEW-api-key.md` — two public unauthenticated endpoints, now
+  alarmed but still unbounded. **Decided 2026-08-31: the key lands with the
+  frontend cutover, not before**, so the URL change and the new required header
+  are one coordinated break. Do not apply it early without reading that
+  document — and do not forget it either: `infra/test/app.test.ts` fails the
+  moment `FrontendStack` creates a resource.
 - `docs/OPEN-REVIEW-min-grams-per-person-day.md` — the one judgement in the
   planning path that has NOT had domain review. Self-contained, needs no
   code reading, and says what would change the answer. Read it if you know
   anything about food budgeting.
 - `docs/THROUGHPUT-AND-SCALING.md` — the request-per-minute ceiling (10
-  meal-plan turns/min, 5 with repairs), why it was accepted for workshop
+  meal-plan turns/min before Task 15c, 6.7 after -- run the script), why it was
+  accepted for workshop
   scale, and the two options for production with their costs. Never assume a
   Bedrock quota increase is available: Nova's request limits are not
   adjustable and Claude's are, which is the opposite of what most people
@@ -40,6 +47,12 @@ service into an implementation claim.
 - `docs/CI-GATE-HEALTH.md` — latent gaps in the gate: where it can go red for
   a reason unrelated to your change, and where a green local run does not mean
   a green CI run. Read before widening the evals or bumping a checker pin.
+- `docs/AUDIT-RESPONSE-2026-08-30.md` and `-2026-08-31.md` — two outside
+  audits received, with a disposition per finding and a commit attached. Read
+  the second before re-raising anything: it records where an audit was
+  UNDERSTATED (the Scan really had come back), where a recommendation was wrong
+  (splitting repair does not restore a fallback), and what was declined and why.
+  This is the shape this project uses for external input.
 - `docs/ARCHITECTURE.md` — the **deployment record**: what exists in
   `ap-southeast-2`, its identifiers, the IAM shapes that took two attempts to
   get right, and two defects that only appeared once the thing was deployed.
@@ -174,7 +187,11 @@ validate_input -> classify_intent
                          +-- all prices stale ---> emit_stale_data
                          +-- budget impossible --> emit_budget_infeasible
                          +-- price_check -> generate_comparison -> generate_prose
-                         `-- meal_plan -> generate_plan -> validate_plan
+                         `-- meal_plan -> select_recipes
+                                            +-- selected -> validate_plan
+                                            `-- fallback (with a notice)
+                                                 v
+                                          generate_plan -> validate_plan
                                           ^ bounded repair (2) |
                                           `--------------------'
                                                               |
@@ -279,6 +296,32 @@ and wrong about the models.
 `routable_models()` alike -- they must agree, or the qualification gate reports
 a pair no turn can reach and a gate that cries wolf gets switched off.
 
+**Repair is TWO tasks as of 2026-08-31: `repair_budget` and `repair_defect`.**
+The prompts already differed because the failures do -- "you came to $X over
+budget" describes none of a bad ref, broken arithmetic or an invented price in a
+meal name. The MODELS now differ because the measurement did: Nova Lite is 7/7
+on budget repair and 4/5 on defect, Claude Haiku the exact inverse at 5/5 and
+5/7. Each half routes to the model that is perfect at it.
+
+**What the split does NOT buy is a fallback, and the audit that recommended it
+said it did.** Each half still has exactly one qualified model, because the
+model that fails each half fails it *below the floor* -- so `exclude` removes it
+and nothing takes its place. What actually improves is blast radius: a Nova Lite
+quota event used to take out all repair, and now degrades budget repair only
+while defect repair keeps working on Haiku. That is worth having, and it is a
+different claim. `config/models.json` `scorecards._split_note` states it.
+
+**`generate_plan` has one routable model too** (`nova-pro`), and always has.
+Two of five tasks have no alternative, not one.
+
+**Task names have ONE definition, in `src/models/base.py`.** They were written in
+five places -- the node, `src/observability/base.py`, two test files and two
+demos -- and the split broke every one at once. The observability copy is the
+one worth remembering: it silently stopped matching, so `RepairAttempts`
+reported **0 on a turn that repaired twice**, and a metric reading zero looks
+exactly like a healthy turn. `tests/test_multimodel.py` now asserts the routing
+table and the constants name the same tasks, in both directions.
+
 It exists because per-task scoring implies per-task exclusion and the config
 could not express it. A model can clear the floor on one task and fall below it
 on another; `available(tier)` would still hand it the second task as a
@@ -318,10 +361,13 @@ drift detection, or deployed SLO/cost/recovery evidence. No latency or
 throughput figure in this repository has been measured against the endpoint
 under load; they are all laptop measurements.
 
-**The deployed code is current as of 2026-08-30** — alias `live` moved from
-version `5` (2026-08-27, predating Tasks 4–7) to version `7`, built from `main`.
-The `$0`-budget defect is gone. Still: **check which version the alias points at
-before quoting a live behaviour as current**, and cut over the way
+**The deployed code is current as of 2026-08-30** — the alias moved off version
+`5` (2026-08-27, predating Tasks 4–7) and has been republished several times
+since; `docs/ARCHITECTURE.md` §3a holds the history and deliberately does not
+say which version is live. The `$0`-budget defect is gone. Still: **check which
+version the alias points at before quoting a live behaviour as current** —
+`aws lambda get-alias --function-name grocery-orchestrator-dev --name live` —
+and cut over the way
 `docs/ARCHITECTURE.md` §3a describes — publish, wait for SnapStart, invoke the
 new version *directly*, and only then move the alias. `build_lambda.py` cannot
 verify its own archive on Windows, so the first thing to execute a locally built
@@ -351,8 +397,41 @@ deferred by decision, `ARCHITECTURE.md` §3m), **Task 14a** (the reviewer's
 boundary), and **Task 15b** (29 curated recipes, 29/29 costable against the
 real catalogue, assembled by `src/recipes/planning.py`).
 
-**Task 15 is no longer blocked on data; 15c is blocked on nothing but work** —
-the selection prompt, the graph branch, and an eval suite. The *imported* 175
+**Task 15 is DONE as of 2026-08-31.** A meal-plan turn is built from named
+curated recipes: `retrieve_prices` resolves the catalogue's 27 distinct
+ingredient terms and shortlists recipes that are costable, dietary-viable
+against the RESOLVED products, and affordable as a SET; `select_recipes` asks
+the model for ids only; deterministic code scales, costs and validates. When
+nothing fits, the turn falls back to free composition **and says so**.
+
+Three things about it are worth carrying:
+
+* **How many meals is derived from `min_grams_per_person_day`, not from
+  `days`.** One recipe per day under-fed every household in the suite —
+  invariants 100% -> 45%, budget used 69% -> 24%. A day is not a meal, and the
+  count now comes from the same figure the feasibility refusal uses.
+* **The budget is enforced on the SET, not per recipe.** A per-recipe cap at
+  `budget / meals` rejects on a number no plan ever pays, because
+  `assemble_plan` aggregates packs across meals and rounds up once. It collapsed
+  a 29-recipe shortlist to one.
+* **The scorecard reads what the MODEL returned, not what the node served.**
+  `select_recipes` tops a short selection up and trims meals that do not fit;
+  both are right for a plan and fatal for a gate, because a node that repairs
+  every mistake qualifies every model.
+
+**Scored live 2026-08-31 and the exemption is gone.** Nova Lite 100% and Claude
+Haiku 100%, three identical reps each, zero fallbacks — so the suite CANNOT rank
+them, the same ceiling the meal-plan suite hit. The one measured difference is
+`distinct mains` (Haiku 3.8, Nova Lite 3.4), reported and not scored. Nova Lite
+is preferred on cost; Haiku is the qualified fallback, which matters because
+`select_recipes` is one of three Nova Lite calls a meal-plan turn makes and the
+only one with a second qualified model.
+
+Recording those two scorecards immediately exposed a third model:
+`unscored_routes()` returned `('select_recipes', 'nova-pro')`, because Nova Pro
+declares the fast tier and `available(tier)` offered it as a cost-ordered
+fallback — the `claude-sonnet` defect exactly. Excluded as a routing decision.
+`unscored_tasks()` is empty again. The *imported* 175
 recipes remain unusable and that is now measured against both catalogues: 0 at
 100% against `datasets/` (best 75%, median 17%) and against `fixtures/` (best
 75%, median 12%). Until 2026-08-31 only the fixture figure existed while every
@@ -366,6 +445,23 @@ waits for the CDK stacks (7b). **6b closed 2026-08-30** — candidate retrieval
 queries GSI2 (category / zero-padded price) instead of scanning, chosen on the
 load evidence the deferral required.
 
+**2026-08-31: gates went under the last fortnight's work, and two of the three
+capabilities it added turned out to need them.** `infra/` had no CI job of any
+kind — no `tsc`, no `jest`, no `cdk synth` — while `service-stack.ts` was the
+file that DEFINES the security posture, and its test suite was `describe.skip`
+under a header calling the deployed stack a stub. Running it found
+`dynamodb:Scan` reintroduced on the products table by `grantReadData()`, plus
+`DeleteItem` on idempotency, plus two assertions that verified nothing.
+`implausible_unit_price` had been written, tested and called by nothing, so the
+one defect class known to have reached the live table was still undetected;
+wired into ingestion and run over the real catalogue it rejects 0 rows clean and
+**522 of 2,759** with the historical defect reintroduced — not the six the
+incident is usually quoted as, because six was the size of the *fixture* set.
+Details in `docs/ARCHITECTURE.md` §3o–§3p.
+
+**15c is still the differentiating capability and is still not on the shopper
+path.** That is the remaining half of what the second audit asked for.
+
 ---
 
 ## Conventions
@@ -376,7 +472,21 @@ load evidence the deferral required.
   via `src/models/guardrail.py`. Note the prompt-attack filter does *nothing*
   without tagging.
 - **Nodes are `state → partial state`.** Pure functions, independently
-  testable.
+  testable. They live in five modules and **the seams are the invariants**:
+  `retrieval.py` holds the only creator of Citations plus the terminals that
+  say what it could not find; `plan.py` free composition; `recipes.py` Req 2.9
+  selection; `prose.py` the one node allowed to fail without failing the turn;
+  `__init__.py` everything else and the ROUTING. Split out of one 925-line file
+  on 2026-08-31, mechanically — the graph topology is byte-identical and every
+  name is re-exported, because `compiled_graph` resolves node functions from
+  `src.graph.nodes` AT BUILD TIME and a test monkeypatching that namespace must
+  keep working.
+- **Patch a node where it is LOOKED UP, not where it is defined.** `from x
+  import f` binds the function into the importing module, so patching the
+  definition changes nothing for a caller that already imported it. The
+  `no_recipes` fixture patches three namespaces for that reason, and one of
+  them moved during the node split — caught because `monkeypatch.setattr`
+  raises on a missing attribute rather than creating one.
 - **The compiled graph is memoised, so clear the cache if you patch a node.**
   `compiled_graph()` in `src/graph/build.py` keys on the `(repo, model)` pair —
   the compile measured 13.4 ms and was 78% of an offline turn, on a path where
@@ -422,12 +532,13 @@ measurement here, make the instrument name its inputs.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 811 passed, 31 skipped, no AWS
+python -m pytest -q                              # 861 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
     tests/test_sample_fixtures.py                # rewrite samples/ from the server
 python evals/run_intent.py                       # 76.7% scripted baseline
+python evals/run_recipe_select.py                 # 100% scripted; select_recipes (15c)
 python evals/run_intent.py --model nova-lite     # 92.9% live, guardrail v2
 python evals/run_intent.py --model nova-pro      # 100% live (Nova Pro)
 python evals/run_meal_plan.py                    # 100% invariants baseline
@@ -451,6 +562,10 @@ python scripts/check_recipe_coverage.py --missing 20   # imported recipes vs the
 python scripts/check_recipe_coverage.py --recipes curated              # 29/29 costable
 python scripts/check_recipe_coverage.py --recipes curated --catalogue fixtures  # 14/29
 python scripts/measure_latency.py                 # latency against the DEPLOYED endpoint
+python scripts/check_ingestion_anomalies.py       # deterministic rules over the REAL catalogue
+python scripts/check_ingestion_anomalies.py --catalogue fixtures
+cd infra && npm ci && npm test                    # 24 CDK security assertions, no AWS
+cd infra && npx tsc --noEmit && npx cdk synth --quiet   # what the `infra` CI job runs
 ```
 
 The pre-commit hook lives in `scripts/hooks/pre-commit` — **version
@@ -492,6 +607,51 @@ pass". Keep that list honest if either side changes.
 CI (`.github/workflows/ci.yml`) runs the same checks plus those two — **no AWS
 credentials needed anywhere**, which is a design outcome of the protocol
 boundaries.
+
+### A CDK grant helper ADDS to a policy; it does not check one
+
+`ServiceStack` builds the orchestrator role from
+`config/iam-orchestrator-role.json` verbatim, and then called
+`tables.products.grantReadData(role)` two constructs later. That helper does not
+compare itself to the JSON — it appends a second statement using the CDK's idea
+of "read", which includes `dynamodb:Scan`, widens explicit index ARNs to
+`index/*`, and adds Streams permissions on a table with no stream.
+`grantReadWriteData` on the idempotency table added `DeleteItem`, against a
+config comment reading "No Delete -- expiry is by TTL".
+
+**Pilot Task 6b removed the Scan on 2026-08-30. The CDK deploy put it back on
+2026-08-31, in a plane that was already serving.** The config file's own comment
+had called it: *"a Scan permission nothing needs is a Scan somebody can
+reintroduce without noticing."*
+
+So: **policy-as-data means the data is the whole policy.** If a stack loads a
+policy from `config/`, it must not also grant. `infra/test/service-stack.test.ts`
+asserts the action set per resource and fails on any statement the JSON does not
+declare — not by grepping `JSON.stringify`, which is how two of that suite's
+original assertions managed to be a false positive and a false negative at once.
+
+### A skip must carry a condition, not a sentence
+
+`@pytest.mark.skipif(not DATASET.exists(), …)` stops skipping the moment the
+dataset is checked out. `describe.skip` under "SKIPPED until ServiceStack is
+implemented" never stops, because nothing evaluates the English — and that one
+sat over seven security assertions for a day after the stack was deployed, by
+which time one of the assertions had inverted.
+
+`tests/test_skip_markers.py` fails on any skip without a machine-checkable
+condition, in Python and TypeScript alike, and refuses `.only` for the same
+reason — it silently disables every other test in the file, so the suite shrinks
+without the word "skipped" appearing anywhere. Use
+`(cond ? describe : describe.skip)(…)` in TypeScript, or delete the suite.
+
+### Do not quote a deployed version number in prose
+
+Four numbers described one Lambda alias across three documents at once — `7`,
+`9` and `11`, with one table header saying "v6 (now)" directly under prose
+saying 7. None was wrong when written. `docs/ARCHITECTURE.md` §3a now holds the
+version HISTORY, which cannot go stale, and deliberately does not say which
+version is live. `aws lambda get-alias --function-name grocery-orchestrator-dev
+--name live` does.
 
 ### Tool version drift is a known failure mode here
 
@@ -677,7 +837,7 @@ idempotency outcomes; Nova Lite/Pro invocation; Guardrail
 `b1xezpqe04kx` version `2` verified 13/13 + 9/9; and, re-confirmed 2026-08-30,
 the deployed service plane — REST API `woqmel35lk` returning HTTP 200 on
 `POST /dev/chat` in ~7s with a real Nova Lite call and grounded citations,
-Lambda alias `live` → version `7` (cut over from `5` on 2026-08-30), and
+Lambda alias `live` cut over from `5` on 2026-08-30 and republished since, and
 schedule `grocery-price-refresh-dev` ENABLED. This is evidence about the
 resources, not about behaviour: it does not prove live red-team quality.
 (Stale-claim ownership IS now proven against the live idempotency table.) (Retrieved-record/value equality is now proven offline on
@@ -836,9 +996,24 @@ alarmed or budgeted. (The running code IS now the code in this repository, as
 of 2026-08-30; what it lacks is fresh data and any operational instrumentation.)
 
 **Not a blocker, but on the record before production:** the deployment is
-capped at 10 meal-plan turns per minute, falling to 5 when the repair loop
-fires, and the binding quota (Nova Lite, 20/min) cannot be raised by
+capped at **6.7 meal-plan turns per minute, falling to 4.0** when the repair
+loop fires, and the binding quota (Nova Lite, 20/min) cannot be raised by
 request. Accepted for workshop scale.
+
+**Re-measured 2026-08-31 against the live account, after Pilot Task 15c:
+6.7 meal-plan turns/min, 4.0 with repairs.** It was 10 and 5. `select_recipes`
+adds a THIRD Nova Lite call to every meal-plan turn, and Nova Lite is the
+binding, unraisable quota -- so the feature that made the plan better made the
+ceiling lower, by a third. The recipe path also drops the Nova Pro call
+entirely (`select_recipes` builds the plan, so `generate_plan` never runs),
+which is a cost saving of roughly 13x per token on that call and a throughput
+loss, because it moves work onto the model that binds.
+
+Run `python scripts/check_quotas.py` rather than quoting any of these numbers,
+including these: it derives them from the live account and the current routing.
+The script's own task list was hand-written and stale until 2026-08-31 -- it
+printed "UNROUTABLE: repair_plan" and omitted Claude Haiku entirely, so the
+tool whose job is naming the binding model had stopped naming one of them.
 
 Run `python scripts/check_quotas.py` rather than quoting a figure from any
 document, including this one. It derives the ceiling from the live account

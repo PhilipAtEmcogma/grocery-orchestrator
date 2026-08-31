@@ -45,6 +45,7 @@ import os
 import time
 from collections.abc import Mapping
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from pydantic import ValidationError
@@ -126,7 +127,35 @@ _idempotency: IdempotencyStore | None = None
 # --------------------------------------------------------------------------
 
 STAGE_ENV = "APP_STAGE"
-PRODUCTION_STAGES = frozenset({"prod", "production", "pilot"})
+
+#: Which stages this check applies to, READ FROM `config/stages.json` rather
+#: than written here.
+#:
+#: It was a literal `frozenset({"prod", "production", "pilot"})` until
+#: 2026-08-31, and `infra/lib/config.ts` independently held
+#: `stage === 'prod'`. Two halves of one rule, disagreeing about what the rule
+#: covers: a stack synthesised with `stage=pilot` passed the CDK's wildcard-CORS
+#: refusal and then failed this check at startup, so the earlier and cheaper of
+#: the two guards was the one that did not fire. Both planes now load this file,
+#: and `tests/test_production_config.py` plus `infra/test/config.test.ts` assert
+#: against it from either side.
+#:
+#: `config/` ships inside the Lambda archive (AGENTS.md), so this resolves in
+#: the deployed function exactly as `src/graph/feasibility.py` does.
+STAGES_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "stages.json"
+
+
+def _load_production_stages(config_path: Path | None = None) -> frozenset[str]:
+    """The production stage names from `config/stages.json`, lowercased."""
+    raw = json.loads((config_path or STAGES_CONFIG_PATH).read_text(encoding="utf-8"))
+    return frozenset(name.strip().lower() for name in raw["production_stages"])
+
+
+#: Kept as a module-level name because it is part of this module's surface --
+#: `tests/test_production_config.py` parametrises over it and
+#: `Philip_demo/17` prints it. It is a snapshot of the file, not a second
+#: definition: there is exactly one place the names are written down.
+PRODUCTION_STAGES: frozenset[str] = _load_production_stages()
 
 # What a stage serving real shoppers must have. Each maps to a dependency that
 # otherwise falls back to a DEMO implementation, silently.

@@ -33,6 +33,7 @@ import uuid
 
 import pytest
 
+from src.models.base import TASK_REPAIR_BUDGET
 from src.observability.base import (
     METRIC_CACHE_READ_TOKENS,
     METRIC_GUARDRAIL_INTERVENED,
@@ -871,7 +872,7 @@ def test_correlation_state_does_not_survive_into_the_next_invocation(captured):
 # --------------------------------------------------- Req 12.2: X-Ray subsegments
 
 
-def test_subsegments_cover_retrieval_and_every_model_call(xray_segment, captured):
+def test_subsegments_cover_retrieval_and_every_model_call(no_recipes, xray_segment, captured):
     from src.handler import lambda_handler
 
     # Needs a turn that actually reaches generation: the default body is
@@ -887,7 +888,9 @@ def test_subsegments_cover_retrieval_and_every_model_call(xray_segment, captured
     assert "model.generate_plan" in names
 
 
-def test_each_repair_attempt_is_its_own_subsegment(xray_segment, captured, never_affordable):
+def test_each_repair_attempt_is_its_own_subsegment(
+    no_recipes, xray_segment, captured, never_affordable
+):
     """
     The repair loop spans four graph nodes, so it is traced as one subsegment
     per attempt rather than one wrapping span — which is also the more useful
@@ -903,7 +906,7 @@ def test_each_repair_attempt_is_its_own_subsegment(xray_segment, captured, never
     subsegments = _subsegments(xray_segment)
     assert [s.name for s in subsegments].count("model.generate_plan") == 1
 
-    repairs = [sub for sub in subsegments if sub.name == "model.repair_plan"]
+    repairs = [sub for sub in subsegments if sub.name == f"model.{TASK_REPAIR_BUDGET}"]
     assert len(repairs) == MAX_REPAIR_ATTEMPTS
 
     # Numbered within the turn, so a trace shows which attempt cost what.
@@ -911,7 +914,9 @@ def test_each_repair_attempt_is_its_own_subsegment(xray_segment, captured, never
     assert attempts == list(range(MAX_REPAIR_ATTEMPTS))
 
 
-def test_model_subsegments_are_annotated_for_latency_attribution(xray_segment, captured):
+def test_model_subsegments_are_annotated_for_latency_attribution(
+    no_recipes, xray_segment, captured
+):
     from src.handler import lambda_handler
 
     # Needs a turn that actually reaches generation: the default body is
@@ -975,7 +980,7 @@ def test_turn_emits_the_core_metrics(captured):
     assert _metric(emf, METRIC_TURN_LATENCY)[0][0] > 0
 
 
-def test_model_latency_is_dimensioned_by_model_and_task(captured, never_affordable):
+def test_model_latency_is_dimensioned_by_model_and_task(no_recipes, captured, never_affordable):
     from src.handler import lambda_handler
 
     lambda_handler(_event(_repairable_body()))
@@ -986,11 +991,11 @@ def test_model_latency_is_dimensioned_by_model_and_task(captured, never_affordab
 
     assert by_task["classify_intent"] == "scripted-fast"
     assert by_task["generate_plan"] == "scripted-quality"
-    assert by_task["repair_plan"] == "scripted-fast"
+    assert by_task[TASK_REPAIR_BUDGET] == "scripted-fast"
     assert all("service" in dimensions for _, dimensions in emitted)
 
 
-def test_repair_attempts_are_counted_when_the_loop_exhausts(captured, never_affordable):
+def test_repair_attempts_are_counted_when_the_loop_exhausts(no_recipes, captured, never_affordable):
     from src.graph.state import MAX_REPAIR_ATTEMPTS
     from src.handler import lambda_handler
 
@@ -1003,7 +1008,7 @@ def test_repair_attempts_are_counted_when_the_loop_exhausts(captured, never_affo
     assert _metric(emf, METRIC_REPAIR_EXHAUSTED)[0][0] == 1.0
 
 
-def test_repair_metric_matches_the_plan_that_was_returned(captured):
+def test_repair_metric_matches_the_plan_that_was_returned(no_recipes, captured):
     """
     On a turn that succeeds, the metric and the MealPlan agree. Two
     independent counts of the same thing — the wrapper's model calls and the

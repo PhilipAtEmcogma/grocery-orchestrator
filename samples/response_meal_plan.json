@@ -1,658 +1,748 @@
 {
-  "version": "1.0",
-  "session_id": "sess-7f3a9c21",
-  "turn_id": "turn-0002-c9d1",
-  "events": [
-    {
-      "seq": 0,
-      "type": "session",
-      "session_id": "sess-7f3a9c21",
-      "turn_id": "turn-0002-c9d1",
-      "version": "1.0"
-    },
-    {
-      "seq": 1,
-      "type": "intent",
-      "intent": "meal_plan",
-      "confidence": 0.94
-    },
-    {
-      "seq": 2,
-      "type": "citation",
-      "citation": {
-        "ref": "c1",
-        "store": "paknsave",
-        "store_location": "Sylvia Park",
-        "product_name": "Pams White Bread 700g",
-        "price_nzd": "2.19",
-        "unit": "700g",
-        "unit_price_nzd": "3.13",
-        "on_special": false,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "paknsave#sylvia-park",
-          "sk": "bread-white-700g"
+    "version": "1.0",
+    "session_id": "sess-7f3a9c21",
+    "turn_id": "turn-0002-c9d1",
+    "events": [
+        {
+            "seq": 0,
+            "type": "session",
+            "session_id": "sess-7f3a9c21",
+            "turn_id": "turn-0002-c9d1",
+            "version": "1.0"
+        },
+        {
+            "seq": 1,
+            "type": "intent",
+            "intent": "meal_plan",
+            "confidence": 0.94
+        },
+        {
+            "seq": 2,
+            "type": "citation",
+            "citation": {
+                "ref": "c1",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams White Bread 700g",
+                "price_nzd": "2.19",
+                "unit": "700g",
+                "unit_price_nzd": "3.13",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "bread-white-700g"
+                }
+            }
+        },
+        {
+            "seq": 3,
+            "type": "citation",
+            "citation": {
+                "ref": "c2",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Size 7 Eggs Dozen",
+                "price_nzd": "8.49",
+                "unit": "12ea",
+                "unit_price_nzd": "707.50",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "eggs-size7-dozen"
+                }
+            }
+        },
+        {
+            "seq": 4,
+            "type": "citation",
+            "citation": {
+                "ref": "c3",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Butter 500g",
+                "price_nzd": "2.97",
+                "unit": "500g",
+                "unit_price_nzd": "5.94",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "butter-500g"
+                }
+            }
+        },
+        {
+            "seq": 5,
+            "type": "citation",
+            "citation": {
+                "ref": "c4",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Milk 2L",
+                "price_nzd": "4.19",
+                "unit": "2L",
+                "unit_price_nzd": "2.10",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "milk-2l"
+                }
+            }
+        },
+        {
+            "seq": 6,
+            "type": "citation",
+            "citation": {
+                "ref": "c5",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Plain Yoghurt 1kg",
+                "price_nzd": "4.99",
+                "unit": "1kg",
+                "unit_price_nzd": "4.99",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "yoghurt-plain-1kg"
+                }
+            }
+        },
+        {
+            "seq": 7,
+            "type": "citation",
+            "citation": {
+                "ref": "c6",
+                "store": "woolworths",
+                "store_location": "Mt Wellington",
+                "product_name": "Frozen Peas, 1kg",
+                "price_nzd": "2.85",
+                "unit": "1kg",
+                "unit_price_nzd": "2.85",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "woolworths#mt-wellington",
+                    "sk": "frozen-peas-1kg"
+                }
+            }
+        },
+        {
+            "seq": 8,
+            "type": "citation",
+            "citation": {
+                "ref": "c7",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Mixed Frozen Veg 1kg",
+                "price_nzd": "3.49",
+                "unit": "1kg",
+                "unit_price_nzd": "3.49",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "frozen-mixed-veg-1kg"
+                }
+            }
+        },
+        {
+            "seq": 9,
+            "type": "citation",
+            "citation": {
+                "ref": "c8",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Pork Sausages 500g",
+                "price_nzd": "5.49",
+                "unit": "500g",
+                "unit_price_nzd": "10.98",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "pork-sausages-500g"
+                }
+            }
+        },
+        {
+            "seq": 10,
+            "type": "citation",
+            "citation": {
+                "ref": "c9",
+                "store": "woolworths",
+                "store_location": "Mt Wellington",
+                "product_name": "Chicken Thighs, 1kg",
+                "price_nzd": "9.51",
+                "unit": "1kg",
+                "unit_price_nzd": "9.51",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "woolworths#mt-wellington",
+                    "sk": "chicken-thigh-1kg"
+                }
+            }
+        },
+        {
+            "seq": 11,
+            "type": "citation",
+            "citation": {
+                "ref": "c10",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Beef Mince 1kg",
+                "price_nzd": "10.19",
+                "unit": "1kg",
+                "unit_price_nzd": "10.19",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "beef-mince-1kg"
+                }
+            }
+        },
+        {
+            "seq": 12,
+            "type": "citation",
+            "citation": {
+                "ref": "c11",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Pasta Spirals 500g",
+                "price_nzd": "1.10",
+                "unit": "500g",
+                "unit_price_nzd": "2.20",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "pasta-spirals-500g"
+                }
+            }
+        },
+        {
+            "seq": 13,
+            "type": "citation",
+            "citation": {
+                "ref": "c12",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Chopped Tomatoes 400g",
+                "price_nzd": "1.10",
+                "unit": "400g",
+                "unit_price_nzd": "2.75",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "tomatoes-canned-400g"
+                }
+            }
+        },
+        {
+            "seq": 14,
+            "type": "citation",
+            "citation": {
+                "ref": "c13",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Baked Beans 420g",
+                "price_nzd": "1.59",
+                "unit": "420g",
+                "unit_price_nzd": "3.79",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "beans-baked-420g"
+                }
+            }
+        },
+        {
+            "seq": 15,
+            "type": "citation",
+            "citation": {
+                "ref": "c14",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Carrots 1kg",
+                "price_nzd": "1.99",
+                "unit": "1kg",
+                "unit_price_nzd": "1.99",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "carrots-1kg"
+                }
+            }
+        },
+        {
+            "seq": 16,
+            "type": "citation",
+            "citation": {
+                "ref": "c15",
+                "store": "woolworths",
+                "store_location": "Mt Wellington",
+                "product_name": "Brown Onions, 1.5kg",
+                "price_nzd": "2.38",
+                "unit": "1.5kg",
+                "unit_price_nzd": "1.59",
+                "on_special": true,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "woolworths#mt-wellington",
+                    "sk": "onions-brown-1-5kg"
+                }
+            }
+        },
+        {
+            "seq": 17,
+            "type": "citation",
+            "citation": {
+                "ref": "c16",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Broccoli Head",
+                "price_nzd": "2.49",
+                "unit": "each",
+                "unit_price_nzd": "2.49",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "broccoli-each"
+                }
+            }
+        },
+        {
+            "seq": 18,
+            "type": "citation",
+            "citation": {
+                "ref": "c17",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Bananas 1kg",
+                "price_nzd": "3.29",
+                "unit": "1kg",
+                "unit_price_nzd": "3.29",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "bananas-1kg"
+                }
+            }
+        },
+        {
+            "seq": 19,
+            "type": "citation",
+            "citation": {
+                "ref": "c18",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Plain Flour 1.5kg",
+                "price_nzd": "2.49",
+                "unit": "1.5kg",
+                "unit_price_nzd": "1.66",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "flour-plain-1-5kg"
+                }
+            }
+        },
+        {
+            "seq": 20,
+            "type": "citation",
+            "citation": {
+                "ref": "c19",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Rolled Oats 1kg",
+                "price_nzd": "3.19",
+                "unit": "1kg",
+                "unit_price_nzd": "3.19",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "oats-rolled-1kg"
+                }
+            }
+        },
+        {
+            "seq": 21,
+            "type": "citation",
+            "citation": {
+                "ref": "c20",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Canola Oil 750ml",
+                "price_nzd": "5.49",
+                "unit": "750ml",
+                "unit_price_nzd": "7.32",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "oil-canola-750ml"
+                }
+            }
+        },
+        {
+            "seq": 22,
+            "type": "citation",
+            "citation": {
+                "ref": "c21",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Washed Potatoes 2kg",
+                "price_nzd": "4.49",
+                "unit": "2kg",
+                "unit_price_nzd": "2.24",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "potatoes-washed-2kg"
+                }
+            }
+        },
+        {
+            "seq": 23,
+            "type": "citation",
+            "citation": {
+                "ref": "c22",
+                "store": "paknsave",
+                "store_location": "Sylvia Park",
+                "product_name": "Pams Long Grain Rice 1kg",
+                "price_nzd": "2.79",
+                "unit": "1kg",
+                "unit_price_nzd": "2.79",
+                "on_special": false,
+                "valid_date": "2026-07-31",
+                "source": {
+                    "table": "grocery-products-dev",
+                    "pk": "paknsave#sylvia-park",
+                    "sk": "rice-longgrain-1kg"
+                }
+            }
+        },
+        {
+            "seq": 24,
+            "type": "token",
+            "text": "This plan comes to the plan total against your budget of your budget."
+        },
+        {
+            "seq": 25,
+            "type": "token",
+            "text": " Reusing one pack across several meals kept the cost down."
+        },
+        {
+            "seq": 26,
+            "type": "meal_plan",
+            "data": {
+                "household_size": 3,
+                "days": 7,
+                "budget_nzd": "90",
+                "total_nzd": "28.04",
+                "payable_total_nzd": "58.43",
+                "within_budget": true,
+                "repair_attempts": 0,
+                "meals": [
+                    {
+                        "name": "Banana and Oat Porridge (dairy-free)",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "Pams Rolled Oats 1kg",
+                                "qty": "65g per serving",
+                                "citation_ref": "c19",
+                                "packs": "0.195",
+                                "line_cost_nzd": "0.62"
+                            },
+                            {
+                                "item": "Pams Bananas 1kg",
+                                "qty": "110g per serving",
+                                "citation_ref": "c17",
+                                "packs": "0.33",
+                                "line_cost_nzd": "1.09"
+                            }
+                        ],
+                        "subtotal_nzd": "1.71"
+                    },
+                    {
+                        "name": "Rice, Broccoli and Carrot Bowl",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "Pams Long Grain Rice 1kg",
+                                "qty": "95g per serving",
+                                "citation_ref": "c22",
+                                "packs": "0.285",
+                                "line_cost_nzd": "0.80"
+                            },
+                            {
+                                "item": "Pams Broccoli Head",
+                                "qty": "110g per serving",
+                                "citation_ref": "c16",
+                                "packs": "1",
+                                "line_cost_nzd": "2.49"
+                            },
+                            {
+                                "item": "Pams Carrots 1kg",
+                                "qty": "80g per serving",
+                                "citation_ref": "c14",
+                                "packs": "0.24",
+                                "line_cost_nzd": "0.48"
+                            },
+                            {
+                                "item": "Pams Canola Oil 750ml",
+                                "qty": "10g per serving",
+                                "citation_ref": "c20",
+                                "packs": "0.04",
+                                "line_cost_nzd": "0.22"
+                            }
+                        ],
+                        "subtotal_nzd": "3.99"
+                    },
+                    {
+                        "name": "Baked Potato with Roast Vegetables",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "Pams Washed Potatoes 2kg",
+                                "qty": "300g per serving",
+                                "citation_ref": "c21",
+                                "packs": "0.45",
+                                "line_cost_nzd": "2.02"
+                            },
+                            {
+                                "item": "Pams Carrots 1kg",
+                                "qty": "90g per serving",
+                                "citation_ref": "c14",
+                                "packs": "0.27",
+                                "line_cost_nzd": "0.54"
+                            },
+                            {
+                                "item": "Brown Onions, 1.5kg",
+                                "qty": "60g per serving",
+                                "citation_ref": "c15",
+                                "packs": "0.12",
+                                "line_cost_nzd": "0.29"
+                            },
+                            {
+                                "item": "Pams Canola Oil 750ml",
+                                "qty": "12g per serving",
+                                "citation_ref": "c20",
+                                "packs": "0.048",
+                                "line_cost_nzd": "0.26"
+                            }
+                        ],
+                        "subtotal_nzd": "3.11"
+                    },
+                    {
+                        "name": "Sausages and Mash",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "Pams Pork Sausages 500g",
+                                "qty": "150g per serving",
+                                "citation_ref": "c8",
+                                "packs": "0.9",
+                                "line_cost_nzd": "4.94"
+                            },
+                            {
+                                "item": "Pams Washed Potatoes 2kg",
+                                "qty": "250g per serving",
+                                "citation_ref": "c21",
+                                "packs": "0.375",
+                                "line_cost_nzd": "1.68"
+                            },
+                            {
+                                "item": "Pams Butter 500g",
+                                "qty": "15g per serving",
+                                "citation_ref": "c3",
+                                "packs": "0.09",
+                                "line_cost_nzd": "0.27"
+                            },
+                            {
+                                "item": "Pams Milk 2L",
+                                "qty": "40g per serving",
+                                "citation_ref": "c4",
+                                "packs": "0.06",
+                                "line_cost_nzd": "0.25"
+                            }
+                        ],
+                        "subtotal_nzd": "7.14"
+                    },
+                    {
+                        "name": "Beef and Vegetable Stew",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "Pams Beef Mince 1kg",
+                                "qty": "120g per serving",
+                                "citation_ref": "c10",
+                                "packs": "0.36",
+                                "line_cost_nzd": "3.67"
+                            },
+                            {
+                                "item": "Pams Washed Potatoes 2kg",
+                                "qty": "180g per serving",
+                                "citation_ref": "c21",
+                                "packs": "0.27",
+                                "line_cost_nzd": "1.21"
+                            },
+                            {
+                                "item": "Pams Carrots 1kg",
+                                "qty": "80g per serving",
+                                "citation_ref": "c14",
+                                "packs": "0.24",
+                                "line_cost_nzd": "0.48"
+                            },
+                            {
+                                "item": "Brown Onions, 1.5kg",
+                                "qty": "60g per serving",
+                                "citation_ref": "c15",
+                                "packs": "0.12",
+                                "line_cost_nzd": "0.29"
+                            }
+                        ],
+                        "subtotal_nzd": "5.65"
+                    },
+                    {
+                        "name": "Porridge with Banana",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "Pams Rolled Oats 1kg",
+                                "qty": "60g per serving",
+                                "citation_ref": "c19",
+                                "packs": "0.18",
+                                "line_cost_nzd": "0.57"
+                            },
+                            {
+                                "item": "Pams Milk 2L",
+                                "qty": "200g per serving",
+                                "citation_ref": "c4",
+                                "packs": "0.3",
+                                "line_cost_nzd": "1.26"
+                            },
+                            {
+                                "item": "Pams Bananas 1kg",
+                                "qty": "100g per serving",
+                                "citation_ref": "c17",
+                                "packs": "0.3",
+                                "line_cost_nzd": "0.99"
+                            }
+                        ],
+                        "subtotal_nzd": "2.82"
+                    },
+                    {
+                        "name": "Yoghurt, Banana and Oat Breakfast Bowl",
+                        "serves": 3,
+                        "ingredients": [
+                            {
+                                "item": "Pams Plain Yoghurt 1kg",
+                                "qty": "150g per serving",
+                                "citation_ref": "c5",
+                                "packs": "0.45",
+                                "line_cost_nzd": "2.25"
+                            },
+                            {
+                                "item": "Pams Bananas 1kg",
+                                "qty": "100g per serving",
+                                "citation_ref": "c17",
+                                "packs": "0.3",
+                                "line_cost_nzd": "0.99"
+                            },
+                            {
+                                "item": "Pams Rolled Oats 1kg",
+                                "qty": "40g per serving",
+                                "citation_ref": "c19",
+                                "packs": "0.12",
+                                "line_cost_nzd": "0.38"
+                            }
+                        ],
+                        "subtotal_nzd": "3.62"
+                    }
+                ],
+                "baskets": [
+                    {
+                        "store": "paknsave",
+                        "store_location": "Sylvia Park",
+                        "citation_refs": [
+                            "c3",
+                            "c4",
+                            "c5",
+                            "c8",
+                            "c10",
+                            "c14",
+                            "c16",
+                            "c17",
+                            "c19",
+                            "c20",
+                            "c21",
+                            "c22"
+                        ],
+                        "basket_total_nzd": "56.05"
+                    },
+                    {
+                        "store": "woolworths",
+                        "store_location": "Mt Wellington",
+                        "citation_refs": [
+                            "c15"
+                        ],
+                        "basket_total_nzd": "2.38"
+                    }
+                ],
+                "dietary_exclusions_applied": [
+                    "seafood"
+                ]
+            }
+        },
+        {
+            "seq": 27,
+            "type": "done",
+            "usage": {
+                "model_ids": [
+                    "scripted-fast"
+                ],
+                "input_tokens": 955,
+                "output_tokens": 120,
+                "latency_ms": 8420,
+                "guardrail_intervened": false
+            },
+            "server_time": "2026-07-30T19:45:03Z"
         }
-      }
-    },
-    {
-      "seq": 3,
-      "type": "citation",
-      "citation": {
-        "ref": "c2",
-        "store": "paknsave",
-        "store_location": "Sylvia Park",
-        "product_name": "Pams Size 7 Eggs Dozen",
-        "price_nzd": "8.49",
-        "unit": "12ea",
-        "unit_price_nzd": "707.50",
-        "on_special": false,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "paknsave#sylvia-park",
-          "sk": "eggs-size7-dozen"
-        }
-      }
-    },
-    {
-      "seq": 4,
-      "type": "citation",
-      "citation": {
-        "ref": "c3",
-        "store": "paknsave",
-        "store_location": "Sylvia Park",
-        "product_name": "Pams Butter 500g",
-        "price_nzd": "2.97",
-        "unit": "500g",
-        "unit_price_nzd": "5.94",
-        "on_special": true,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "paknsave#sylvia-park",
-          "sk": "butter-500g"
-        }
-      }
-    },
-    {
-      "seq": 5,
-      "type": "citation",
-      "citation": {
-        "ref": "c4",
-        "store": "paknsave",
-        "store_location": "Sylvia Park",
-        "product_name": "Pams Milk 2L",
-        "price_nzd": "4.19",
-        "unit": "2L",
-        "unit_price_nzd": "2.10",
-        "on_special": false,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "paknsave#sylvia-park",
-          "sk": "milk-2l"
-        }
-      }
-    },
-    {
-      "seq": 6,
-      "type": "citation",
-      "citation": {
-        "ref": "c5",
-        "store": "paknsave",
-        "store_location": "Sylvia Park",
-        "product_name": "Pams Plain Yoghurt 1kg",
-        "price_nzd": "4.99",
-        "unit": "1kg",
-        "unit_price_nzd": "4.99",
-        "on_special": false,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "paknsave#sylvia-park",
-          "sk": "yoghurt-plain-1kg"
-        }
-      }
-    },
-    {
-      "seq": 7,
-      "type": "citation",
-      "citation": {
-        "ref": "c6",
-        "store": "woolworths",
-        "store_location": "Mt Wellington",
-        "product_name": "Frozen Peas, 1kg",
-        "price_nzd": "2.85",
-        "unit": "1kg",
-        "unit_price_nzd": "2.85",
-        "on_special": true,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "woolworths#mt-wellington",
-          "sk": "frozen-peas-1kg"
-        }
-      }
-    },
-    {
-      "seq": 8,
-      "type": "citation",
-      "citation": {
-        "ref": "c7",
-        "store": "paknsave",
-        "store_location": "Sylvia Park",
-        "product_name": "Pams Mixed Frozen Veg 1kg",
-        "price_nzd": "3.49",
-        "unit": "1kg",
-        "unit_price_nzd": "3.49",
-        "on_special": false,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "paknsave#sylvia-park",
-          "sk": "frozen-mixed-veg-1kg"
-        }
-      }
-    },
-    {
-      "seq": 9,
-      "type": "citation",
-      "citation": {
-        "ref": "c8",
-        "store": "paknsave",
-        "store_location": "Sylvia Park",
-        "product_name": "Pams Pork Sausages 500g",
-        "price_nzd": "5.49",
-        "unit": "500g",
-        "unit_price_nzd": "10.98",
-        "on_special": false,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "paknsave#sylvia-park",
-          "sk": "pork-sausages-500g"
-        }
-      }
-    },
-    {
-      "seq": 10,
-      "type": "citation",
-      "citation": {
-        "ref": "c9",
-        "store": "woolworths",
-        "store_location": "Mt Wellington",
-        "product_name": "Chicken Thighs, 1kg",
-        "price_nzd": "9.51",
-        "unit": "1kg",
-        "unit_price_nzd": "9.51",
-        "on_special": true,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "woolworths#mt-wellington",
-          "sk": "chicken-thigh-1kg"
-        }
-      }
-    },
-    {
-      "seq": 11,
-      "type": "citation",
-      "citation": {
-        "ref": "c10",
-        "store": "paknsave",
-        "store_location": "Sylvia Park",
-        "product_name": "Pams Beef Mince 1kg",
-        "price_nzd": "10.19",
-        "unit": "1kg",
-        "unit_price_nzd": "10.19",
-        "on_special": true,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "paknsave#sylvia-park",
-          "sk": "beef-mince-1kg"
-        }
-      }
-    },
-    {
-      "seq": 12,
-      "type": "citation",
-      "citation": {
-        "ref": "c11",
-        "store": "paknsave",
-        "store_location": "Sylvia Park",
-        "product_name": "Pams Pasta Spirals 500g",
-        "price_nzd": "1.10",
-        "unit": "500g",
-        "unit_price_nzd": "2.20",
-        "on_special": true,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "paknsave#sylvia-park",
-          "sk": "pasta-spirals-500g"
-        }
-      }
-    },
-    {
-      "seq": 13,
-      "type": "citation",
-      "citation": {
-        "ref": "c12",
-        "store": "paknsave",
-        "store_location": "Sylvia Park",
-        "product_name": "Pams Chopped Tomatoes 400g",
-        "price_nzd": "1.10",
-        "unit": "400g",
-        "unit_price_nzd": "2.75",
-        "on_special": false,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "paknsave#sylvia-park",
-          "sk": "tomatoes-canned-400g"
-        }
-      }
-    },
-    {
-      "seq": 14,
-      "type": "citation",
-      "citation": {
-        "ref": "c13",
-        "store": "paknsave",
-        "store_location": "Sylvia Park",
-        "product_name": "Pams Baked Beans 420g",
-        "price_nzd": "1.59",
-        "unit": "420g",
-        "unit_price_nzd": "3.79",
-        "on_special": false,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "paknsave#sylvia-park",
-          "sk": "beans-baked-420g"
-        }
-      }
-    },
-    {
-      "seq": 15,
-      "type": "citation",
-      "citation": {
-        "ref": "c14",
-        "store": "paknsave",
-        "store_location": "Sylvia Park",
-        "product_name": "Pams Carrots 1kg",
-        "price_nzd": "1.99",
-        "unit": "1kg",
-        "unit_price_nzd": "1.99",
-        "on_special": false,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "paknsave#sylvia-park",
-          "sk": "carrots-1kg"
-        }
-      }
-    },
-    {
-      "seq": 16,
-      "type": "citation",
-      "citation": {
-        "ref": "c15",
-        "store": "woolworths",
-        "store_location": "Mt Wellington",
-        "product_name": "Brown Onions, 1.5kg",
-        "price_nzd": "2.38",
-        "unit": "1.5kg",
-        "unit_price_nzd": "1.59",
-        "on_special": true,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "woolworths#mt-wellington",
-          "sk": "onions-brown-1-5kg"
-        }
-      }
-    },
-    {
-      "seq": 17,
-      "type": "citation",
-      "citation": {
-        "ref": "c16",
-        "store": "paknsave",
-        "store_location": "Sylvia Park",
-        "product_name": "Pams Broccoli Head",
-        "price_nzd": "2.49",
-        "unit": "each",
-        "unit_price_nzd": "2.49",
-        "on_special": false,
-        "valid_date": "2026-07-31",
-        "source": {
-          "table": "grocery-products-dev",
-          "pk": "paknsave#sylvia-park",
-          "sk": "broccoli-each"
-        }
-      }
-    },
-    {
-      "seq": 18,
-      "type": "token",
-      "text": "This plan comes to the plan total against your budget of your budget."
-    },
-    {
-      "seq": 19,
-      "type": "token",
-      "text": " Reusing one pack across several meals kept the cost down."
-    },
-    {
-      "seq": 20,
-      "type": "meal_plan",
-      "data": {
-        "household_size": 3,
-        "days": 7,
-        "budget_nzd": "90",
-        "total_nzd": "37.21",
-        "payable_total_nzd": "60.14",
-        "within_budget": true,
-        "repair_attempts": 0,
-        "meals": [
-          {
-            "name": "Scripted Dinner 1",
-            "serves": 3,
-            "ingredients": [
-              {
-                "item": "item c1",
-                "qty": "portion",
-                "citation_ref": "c1",
-                "packs": "0.3",
-                "line_cost_nzd": "0.66"
-              },
-              {
-                "item": "item c2",
-                "qty": "portion",
-                "citation_ref": "c2",
-                "packs": "0.3",
-                "line_cost_nzd": "2.55"
-              },
-              {
-                "item": "item c3",
-                "qty": "portion",
-                "citation_ref": "c3",
-                "packs": "0.3",
-                "line_cost_nzd": "0.89"
-              },
-              {
-                "item": "item c4",
-                "qty": "portion",
-                "citation_ref": "c4",
-                "packs": "0.3",
-                "line_cost_nzd": "1.26"
-              }
-            ],
-            "subtotal_nzd": "5.36"
-          },
-          {
-            "name": "Scripted Dinner 2",
-            "serves": 3,
-            "ingredients": [
-              {
-                "item": "item c3",
-                "qty": "portion",
-                "citation_ref": "c3",
-                "packs": "0.3",
-                "line_cost_nzd": "0.89"
-              },
-              {
-                "item": "item c4",
-                "qty": "portion",
-                "citation_ref": "c4",
-                "packs": "0.3",
-                "line_cost_nzd": "1.26"
-              },
-              {
-                "item": "item c5",
-                "qty": "portion",
-                "citation_ref": "c5",
-                "packs": "0.3",
-                "line_cost_nzd": "1.50"
-              },
-              {
-                "item": "item c6",
-                "qty": "portion",
-                "citation_ref": "c6",
-                "packs": "0.3",
-                "line_cost_nzd": "0.86"
-              }
-            ],
-            "subtotal_nzd": "4.51"
-          },
-          {
-            "name": "Scripted Dinner 3",
-            "serves": 3,
-            "ingredients": [
-              {
-                "item": "item c5",
-                "qty": "portion",
-                "citation_ref": "c5",
-                "packs": "0.3",
-                "line_cost_nzd": "1.50"
-              },
-              {
-                "item": "item c6",
-                "qty": "portion",
-                "citation_ref": "c6",
-                "packs": "0.3",
-                "line_cost_nzd": "0.86"
-              },
-              {
-                "item": "item c7",
-                "qty": "portion",
-                "citation_ref": "c7",
-                "packs": "0.3",
-                "line_cost_nzd": "1.05"
-              },
-              {
-                "item": "item c8",
-                "qty": "portion",
-                "citation_ref": "c8",
-                "packs": "0.3",
-                "line_cost_nzd": "1.65"
-              }
-            ],
-            "subtotal_nzd": "5.06"
-          },
-          {
-            "name": "Scripted Dinner 4",
-            "serves": 3,
-            "ingredients": [
-              {
-                "item": "item c7",
-                "qty": "portion",
-                "citation_ref": "c7",
-                "packs": "0.3",
-                "line_cost_nzd": "1.05"
-              },
-              {
-                "item": "item c8",
-                "qty": "portion",
-                "citation_ref": "c8",
-                "packs": "0.3",
-                "line_cost_nzd": "1.65"
-              },
-              {
-                "item": "item c9",
-                "qty": "portion",
-                "citation_ref": "c9",
-                "packs": "0.3",
-                "line_cost_nzd": "2.85"
-              },
-              {
-                "item": "item c10",
-                "qty": "portion",
-                "citation_ref": "c10",
-                "packs": "0.3",
-                "line_cost_nzd": "3.06"
-              }
-            ],
-            "subtotal_nzd": "8.61"
-          },
-          {
-            "name": "Scripted Dinner 5",
-            "serves": 3,
-            "ingredients": [
-              {
-                "item": "item c9",
-                "qty": "portion",
-                "citation_ref": "c9",
-                "packs": "0.3",
-                "line_cost_nzd": "2.85"
-              },
-              {
-                "item": "item c10",
-                "qty": "portion",
-                "citation_ref": "c10",
-                "packs": "0.3",
-                "line_cost_nzd": "3.06"
-              },
-              {
-                "item": "item c11",
-                "qty": "portion",
-                "citation_ref": "c11",
-                "packs": "0.3",
-                "line_cost_nzd": "0.33"
-              },
-              {
-                "item": "item c12",
-                "qty": "portion",
-                "citation_ref": "c12",
-                "packs": "0.3",
-                "line_cost_nzd": "0.33"
-              }
-            ],
-            "subtotal_nzd": "6.57"
-          },
-          {
-            "name": "Scripted Dinner 6",
-            "serves": 3,
-            "ingredients": [
-              {
-                "item": "item c11",
-                "qty": "portion",
-                "citation_ref": "c11",
-                "packs": "0.3",
-                "line_cost_nzd": "0.33"
-              },
-              {
-                "item": "item c12",
-                "qty": "portion",
-                "citation_ref": "c12",
-                "packs": "0.3",
-                "line_cost_nzd": "0.33"
-              },
-              {
-                "item": "item c13",
-                "qty": "portion",
-                "citation_ref": "c13",
-                "packs": "0.3",
-                "line_cost_nzd": "0.48"
-              },
-              {
-                "item": "item c14",
-                "qty": "portion",
-                "citation_ref": "c14",
-                "packs": "0.3",
-                "line_cost_nzd": "0.60"
-              }
-            ],
-            "subtotal_nzd": "1.74"
-          },
-          {
-            "name": "Scripted Dinner 7",
-            "serves": 3,
-            "ingredients": [
-              {
-                "item": "item c1",
-                "qty": "portion",
-                "citation_ref": "c1",
-                "packs": "0.3",
-                "line_cost_nzd": "0.66"
-              },
-              {
-                "item": "item c2",
-                "qty": "portion",
-                "citation_ref": "c2",
-                "packs": "0.3",
-                "line_cost_nzd": "2.55"
-              },
-              {
-                "item": "item c3",
-                "qty": "portion",
-                "citation_ref": "c3",
-                "packs": "0.3",
-                "line_cost_nzd": "0.89"
-              },
-              {
-                "item": "item c4",
-                "qty": "portion",
-                "citation_ref": "c4",
-                "packs": "0.3",
-                "line_cost_nzd": "1.26"
-              }
-            ],
-            "subtotal_nzd": "5.36"
-          }
-        ],
-        "baskets": [
-          {
-            "store": "paknsave",
-            "store_location": "Sylvia Park",
-            "citation_refs": [
-              "c1",
-              "c2",
-              "c3",
-              "c4",
-              "c5",
-              "c7",
-              "c8",
-              "c10",
-              "c11",
-              "c12",
-              "c13",
-              "c14"
-            ],
-            "basket_total_nzd": "47.78"
-          },
-          {
-            "store": "woolworths",
-            "store_location": "Mt Wellington",
-            "citation_refs": [
-              "c6",
-              "c9"
-            ],
-            "basket_total_nzd": "12.36"
-          }
-        ],
-        "dietary_exclusions_applied": [
-          "seafood"
-        ]
-      }
-    },
-    {
-      "seq": 21,
-      "type": "done",
-      "usage": {
-        "model_ids": [
-          "scripted-fast",
-          "scripted-quality"
-        ],
-        "input_tokens": 1373,
-        "output_tokens": 120,
-        "latency_ms": 8420,
-        "guardrail_intervened": false
-      },
-      "server_time": "2026-07-30T19:45:03Z"
-    }
-  ]
+    ]
 }

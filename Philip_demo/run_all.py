@@ -24,7 +24,7 @@ that do not support the selected mode are reported as SKIPPED and are not
 counted as passing. The default is `local`: fixtures plus the scripted model
 client, with no AWS account, credentials or network access, and no spend.
 
-    local        (default)  offline. 17 of the 19 demos run here.
+    local        (default)  offline. ALL 19 demos run here, and pass.
     integration             the deployed HTTPS endpoint, and the MCP server
                             over a real stdio subprocess. Needs network
                             access; needs NO AWS credentials. Costs a few

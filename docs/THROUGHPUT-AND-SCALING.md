@@ -48,7 +48,7 @@ live account rather than by hand:
 | meal plan, 2 repairs | **5.0** | Amazon Nova Lite |
 | price check | 10.0 | Amazon Nova Lite |
 
-So 5-10 meal-plan turns per minute service-wide, depending on how often repair
+So 4.0-6.7 meal-plan turns per minute service-wide, depending on how often repair
 fires — roughly 300-600 an hour. Nova Pro is not the constraint at one call
 per turn against 25/min.
 

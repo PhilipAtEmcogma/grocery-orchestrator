@@ -13,7 +13,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from src.graph.nodes.plan import assemble_plan
+from src.graph.nodes.plan import PLAN_TASKS, assemble_plan
 from src.graph.state import MAX_REPAIR_ATTEMPTS
 from src.models.base import ModelError, ModelOutputInvalid, ModelTier
 from src.models.scripted import ScriptedModelClient
@@ -279,7 +279,7 @@ def test_hallucinated_ref_raises_rather_than_dropping_silently():
         )
 
 
-def test_hallucinated_ref_does_not_reach_the_user(repo):
+def test_hallucinated_ref_does_not_reach_the_user(no_recipes, repo):
     model = ScriptedModelClient(hallucinate_ref="c99")
     resp = run_turn(
         _plan_request("meal plan for the week", budget_nzd=30, household_size=2),
@@ -309,14 +309,14 @@ def test_plan_output_is_grounded(repo):
 # ------------------------------------------------------------- repair loop
 
 
-def test_first_attempt_uses_quality_tier(repo):
+def test_first_attempt_uses_quality_tier(no_recipes, repo):
     model = ScriptedModelClient()
     run_turn(_plan_request("plan dinners", budget_nzd=40, household_size=2), repo, model)
     plan_calls = [t for t, s in model.calls if s == "PlanDraft"]
     assert plan_calls[0] == ModelTier.QUALITY
 
 
-def test_repair_passes_use_fast_tier(uncapped_repo):
+def test_repair_passes_use_fast_tier(no_recipes, uncapped_repo):
     """
     Repair is substitution, not creative planning — the cheap model suffices.
 
@@ -519,13 +519,13 @@ class _UnreachableModel(ScriptedModelClient):
         self.plan_calls = 0
 
     def structured(self, **kw):
-        if kw.get("task") in ("generate_plan", "repair_plan"):
+        if kw.get("task") in PLAN_TASKS:
             self.plan_calls += 1
             raise ModelError(self.message)
         return super().structured(**kw)
 
 
-def test_unreachable_model_is_not_reported_as_a_budget_problem(repo):
+def test_unreachable_model_is_not_reported_as_a_budget_problem(no_recipes, repo):
     model = _UnreachableModel()
     resp = run_turn(_plan_request("plan dinners", budget_nzd=30, household_size=2), repo, model)
     errors = [e for e in resp.events if e.type == "error"]
@@ -542,21 +542,21 @@ def test_unreachable_model_message_does_not_blame_the_budget(repo):
     assert "$30" not in text
 
 
-def test_upstream_failure_is_retryable(repo):
+def test_upstream_failure_is_retryable(no_recipes, repo):
     """Unlike an infeasible budget, trying again is the correct advice."""
     model = _UnreachableModel()
     resp = run_turn(_plan_request("plan dinners", budget_nzd=30, household_size=2), repo, model)
     assert next(e for e in resp.events if e.type == "error").retryable is True
 
 
-def test_upstream_failure_does_not_burn_the_repair_loop(repo):
+def test_upstream_failure_does_not_burn_the_repair_loop(no_recipes, repo):
     """Re-prompting a client we know is failing wastes the latency budget."""
     model = _UnreachableModel()
     run_turn(_plan_request("plan dinners", budget_nzd=30, household_size=2), repo, model)
     assert model.plan_calls == 1
 
 
-def test_timeout_and_misconfiguration_get_distinct_codes(repo):
+def test_timeout_and_misconfiguration_get_distinct_codes(no_recipes, repo):
     timed_out = _UnreachableModel(message="Read timeout on endpoint URL")
     misconfigured = _UnreachableModel(message="BEDROCK_GUARDRAIL_ID is not set")
     req = _plan_request("plan dinners", budget_nzd=30, household_size=2)
@@ -610,7 +610,7 @@ class _InvalidOutputModel(ScriptedModelClient):
         self.plan_calls = 0
 
     def structured(self, **kw):
-        if kw.get("task") in ("generate_plan", "repair_plan"):
+        if kw.get("task") in PLAN_TASKS:
             self.plan_calls += 1
             raise ModelOutputInvalid(
                 "PlanDraft failed validation: 1 validation error for PlanDraft\n"
@@ -619,7 +619,7 @@ class _InvalidOutputModel(ScriptedModelClient):
         return super().structured(**kw)
 
 
-def test_schema_failure_is_not_reported_as_an_outage(repo):
+def test_schema_failure_is_not_reported_as_an_outage(no_recipes, repo):
     """Nor as a budget problem: it is our failure to generate, and says so."""
     model = _InvalidOutputModel()
     resp = run_turn(_plan_request("plan dinners", budget_nzd=30, household_size=2), repo, model)
@@ -628,7 +628,7 @@ def test_schema_failure_is_not_reported_as_an_outage(repo):
     assert err.retryable is True
 
 
-def test_schema_failure_is_repaired_not_abandoned(repo):
+def test_schema_failure_is_repaired_not_abandoned(no_recipes, repo):
     """The model is reachable and answering, which is what repair is for."""
     model = _InvalidOutputModel()
     run_turn(_plan_request("plan dinners", budget_nzd=30, household_size=2), repo, model)
@@ -640,7 +640,7 @@ def test_model_output_invalid_is_a_model_error():
     assert issubclass(ModelOutputInvalid, ModelError)
 
 
-def test_transport_failure_and_schema_failure_diverge(repo):
+def test_transport_failure_and_schema_failure_diverge(no_recipes, repo):
     """The two must not collapse back into one another in either direction."""
     req = _plan_request("plan dinners", budget_nzd=30, household_size=2)
     unreachable = next(
@@ -726,7 +726,7 @@ def test_a_genuinely_malformed_draft_is_still_rejected():
 # upstream path was fixed for, reached a different way.
 
 
-def test_exhausted_on_invalid_drafts_does_not_blame_the_budget(repo):
+def test_exhausted_on_invalid_drafts_does_not_blame_the_budget(no_recipes, repo):
     resp = run_turn(
         _plan_request("plan dinners", budget_nzd=500, household_size=2),
         repo,
@@ -749,7 +749,7 @@ def test_a_real_over_budget_plan_still_reports_budget_infeasible(repo):
     assert err.retryable is False
 
 
-def test_generation_failure_is_retryable_but_budget_failure_is_not(repo):
+def test_generation_failure_is_retryable_but_budget_failure_is_not(no_recipes, repo):
     """Retrying a budget that genuinely does not stretch cannot help."""
     gen = next(
         e
@@ -1085,7 +1085,7 @@ def _money_plan_turn(model: ScriptedModelClient, repo) -> tuple:
     return response, plan_prompts
 
 
-def test_a_non_budget_rejection_is_repaired_with_the_defect_prompt(repo):
+def test_a_non_budget_rejection_is_repaired_with_the_defect_prompt(no_recipes, repo):
     """
     The first draft names a meal "... for $9.99"; the second does not.
 
@@ -1117,7 +1117,7 @@ def test_a_non_budget_rejection_is_repaired_with_the_defect_prompt(repo):
     assert any(e.type == "meal_plan" for e in response.events)
 
 
-def test_money_in_plan_text_that_repair_cannot_fix_fails_honestly(repo):
+def test_money_in_plan_text_that_repair_cannot_fix_fails_honestly(no_recipes, repo):
     """
     Exhausted repair must say we could not build a plan -- not that the budget
     was too small.

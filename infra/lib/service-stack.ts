@@ -39,6 +39,49 @@ import { Construct } from 'constructs';
 import { GroceryConfig } from './config';
 import { StatefulStack } from './stateful-stack';
 
+/**
+ * An SSM standard parameter caps at 4,096 bytes. Advanced caps at 8,192 and
+ * costs money per parameter per month, so it is a decision rather than a
+ * default -- and it would not have saved the models file anyway.
+ */
+const SSM_STANDARD_MAX_BYTES = 4096;
+
+/**
+ * Publish a JSON value to SSM, or FAIL THE SYNTH. Never truncate.
+ *
+ * The predecessor of this function was `.slice(0, 4096)` inline, and it shipped
+ * a fragment of `config/models.json` that does not parse. That is the shape this
+ * repository keeps finding and keeps writing rules against: something that looks
+ * like the thing you wanted, produced by a step that quietly gave up. A
+ * parameter holding half a config file is worse than no parameter, because the
+ * name tells the next person it is safe to load.
+ *
+ * Throwing at synth is the cheapest possible place to find out: before an
+ * account, before a deploy, and in a `cdk synth` that CI now runs.
+ */
+function publishJson(
+  scope: Construct,
+  id: string,
+  opts: { parameterName: string; value: unknown; description: string },
+): ssm.StringParameter {
+  const body = JSON.stringify(opts.value, null, 2);
+  const bytes = Buffer.byteLength(body, 'utf-8');
+  if (bytes > SSM_STANDARD_MAX_BYTES) {
+    throw new Error(
+      `SSM parameter ${opts.parameterName} would be ${bytes} bytes, over the ` +
+        `${SSM_STANDARD_MAX_BYTES}-byte standard-tier limit. Publish a smaller ` +
+        `slice of the config, or move the file to S3 and put the pointer here. ` +
+        `Do NOT truncate: a fragment of JSON under a name that promises the ` +
+        `whole file is a defect nothing downstream can detect.`,
+    );
+  }
+  return new ssm.StringParameter(scope, id, {
+    parameterName: opts.parameterName,
+    stringValue: body,
+    description: opts.description,
+  });
+}
+
 export interface ServiceStackProps extends cdk.StackProps {
   readonly cfg: GroceryConfig;
   readonly tables: StatefulStack;
@@ -135,6 +178,14 @@ export class ServiceStack extends cdk.Stack {
         LOG_LEVEL: 'INFO',
         POWERTOOLS_SERVICE_NAME: 'grocery-orchestrator',
         POWERTOOLS_METRICS_NAMESPACE: 'GroceryOrchestrator',
+        // Req 12.5's fail-closed check reads APP_STAGE and does nothing when it
+        // is unset -- which is how the check stayed inert after being
+        // implemented (docs/ARCHITECTURE.md §3g). Setting it FROM cfg.stage
+        // means arming is a consequence of deploying a production stage rather
+        // than a second thing somebody has to remember. `cfg.isProduction` and
+        // the handler's PRODUCTION_STAGES now read the same config/stages.json,
+        // so synth and runtime cannot disagree about what production means.
+        APP_STAGE: cfg.stage,
         // POWERTOOLS_LOGGER_LOG_EVENT is deliberately ABSENT. Setting it true
         // dumps the whole API Gateway event — which contains the shopper's
         // message — into CloudWatch, turning a config change into a privacy
@@ -154,8 +205,31 @@ export class ServiceStack extends cdk.Stack {
       version: this.orchestrator.currentVersion,
     });
 
-    tables.products.grantReadData(role);
-    tables.idempotency.grantReadWriteData(role);
+    // NO `grantReadData` / `grantReadWriteData` HERE, DELIBERATELY, AND THIS IS
+    // NOT A STYLE PREFERENCE. Those helpers ADD a second statement on top of the
+    // JSON above rather than checking it, and their action sets are the CDK's
+    // idea of "read" and "write", not this project's:
+    //
+    //   - `grantReadData(products)` grants `dynamodb:Scan` on the table AND on
+    //     `index/*`. Pilot Task 6b REMOVED Scan on 2026-08-30 once
+    //     `candidates_for_budget` moved to GSI2, and
+    //     `config/iam-orchestrator-role.json` says why in its own comment: "a
+    //     Scan permission nothing needs is a Scan somebody can reintroduce
+    //     without noticing." That is exactly what this line did, one commit
+    //     later, in a plane that is deployed. It also widens GSI1/GSI2 to
+    //     `index/*` and adds Streams reads against a table with no stream.
+    //   - `grantReadWriteData(idempotency)` grants `DeleteItem` and
+    //     `BatchWriteItem`. The JSON grants GetItem/PutItem/UpdateItem and says
+    //     "No Delete -- expiry is by TTL, which requires no permission."
+    //
+    // The role already carries exactly the statements the JSON declares, with
+    // explicit index ARNs. Anything a grant helper would add is by definition
+    // something nobody wrote down. `infra/test/service-stack.test.ts` asserts
+    // the resulting action sets per resource, so this cannot come back quietly.
+    //
+    // `tables` is still a required prop: it is what makes StatefulStack a
+    // dependency of this stack, so the adopted names resolve from one place.
+    void tables;
 
     // ---------------------------------------------------------------- SSM
 
@@ -164,14 +238,50 @@ export class ServiceStack extends cdk.Stack {
     // so this is the forward path, not a live control. infra/docs/08 §6 records
     // that gap; wiring the code to read SSM is a separate application task and
     // pretending otherwise would be claiming a capability that does not exist.
-    new ssm.StringParameter(this, 'ModelsParam', {
-      parameterName: `/grocery/${cfg.stage}${cfg.suffix}/models`,
-      stringValue: fs.readFileSync(cfg.configFiles.models, 'utf-8').slice(0, 4096),
-      description: 'config/models.json. NOT read at runtime yet - see infra/docs/08 §6.',
+    //
+    // BOTH OF THESE USED TO BE `readFileSync(...).slice(0, 4096)`. That is not a
+    // smaller config file, it is INVALID JSON published under a name that
+    // invites someone to load it: config/models.json is 10,930 bytes, and
+    // `json.loads` on the first 4,096 fails at line 132. Nothing broke only
+    // because nothing reads it yet, which is the worst reason for a defect to
+    // stay hidden. A silent cap is precisely what this repository refuses
+    // everywhere else, and `publishJson` below throws at synth instead.
+    //
+    // The tier does not rescue it either: SSM standard caps at 4 KB and
+    // advanced at 8 KB, so a 10,930-byte file fits NEITHER. This needed a shape
+    // change, not a flag.
+    //
+    // SO WHAT IS PUBLISHED IS THE ROUTING BLOCK, NOT THE WHOLE FILE. Routing is
+    // the part Task 7b would let an operator retune — which model serves which
+    // task. `scorecards` is 4,868 of the 10,930 bytes and is measured evidence
+    // rather than a knob; an operator who could edit it could qualify a route by
+    // typing, which is the one thing the qualification gate exists to prevent.
+    // `models` is a capability inventory that changes with a deploy, not with an
+    // operator's judgement. Neither belongs behind a console text box.
+    const models = JSON.parse(fs.readFileSync(cfg.configFiles.models, 'utf-8'));
+    publishJson(this, 'ModelsParam', {
+      // Renamed from `…/models`: the old name promised the whole file. Changing
+      // the parameterName replaces the resource, which also removes the
+      // truncated value currently sitting in /grocery/dev-cdk/models.
+      parameterName: `/grocery/${cfg.stage}${cfg.suffix}/models/routing`,
+      value: {
+        _comment:
+          'Routing only, from config/models.json. Scorecards and the model ' +
+          'inventory are deliberately NOT published here - see service-stack.ts.',
+        version: models.version,
+        region: models.region,
+        default_policy: models.default_policy,
+        routing: models.routing,
+      },
+      description: 'config/models.json routing block. NOT read at runtime yet - infra/docs/08 §6.',
     });
-    new ssm.StringParameter(this, 'FeasibilityParam', {
+    publishJson(this, 'FeasibilityParam', {
       parameterName: `/grocery/${cfg.stage}${cfg.suffix}/feasibility`,
-      stringValue: fs.readFileSync(cfg.configFiles.feasibility, 'utf-8').slice(0, 4096),
+      // Verbatim: 2,859 bytes today, and it fits. The guard is here anyway
+      // because "it fits today" is what the models parameter could have said
+      // once too, and the day it stops fitting is the day the old code would
+      // have started publishing a fragment instead of failing.
+      value: JSON.parse(fs.readFileSync(cfg.configFiles.feasibility, 'utf-8')),
       description: 'config/feasibility.json. NOT read at runtime yet - see infra/docs/08 §6.',
     });
 

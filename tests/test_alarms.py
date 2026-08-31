@@ -164,6 +164,19 @@ def _json_selector(pattern: str) -> tuple[str, str]:
     return match.group(1), match.group(2)
 
 
+def _filter_for(config: dict, metric_name: str) -> dict:
+    """
+    The filter publishing a named metric.
+
+    BY NAME, NOT BY INDEX. These tests read `metric_filters[0]` until
+    2026-08-31, which was correct while there was one filter and became a test
+    of whichever filter happened to be first the moment there were two.
+    """
+    matches = [f for f in config["metric_filters"] if f["metric_name"] == metric_name]
+    assert len(matches) == 1, f"expected exactly one filter publishing {metric_name}"
+    return matches[0]
+
+
 @pytest.fixture
 def log_stream():
     """
@@ -218,7 +231,7 @@ def test_the_filter_matches_the_line_the_handler_actually_emits(config, log_stre
     ]
     assert records, "the last-resort path wrote no log line at all"
 
-    field, expected = _json_selector(config["metric_filters"][0]["pattern"])
+    field, expected = _json_selector(_filter_for(config, "HandlerEscaped")["pattern"])
     matched = [r for r in records if r.get(field) == expected]
 
     assert matched, (
@@ -262,28 +275,47 @@ def test_the_filter_does_not_match_an_ordinary_turn(config, log_stream):
         for line in log_stream.getvalue().splitlines()
         if line.strip().startswith("{")
     ]
-    field, expected = _json_selector(config["metric_filters"][0]["pattern"])
+    field, expected = _json_selector(_filter_for(config, "HandlerEscaped")["pattern"])
     assert not [r for r in records if r.get(field) == expected], (
         "the metric filter matched a successful turn"
     )
 
 
-def test_the_log_group_names_the_deployed_function(config):
+def test_every_log_group_names_a_function_this_repo_deploys(config):
     """
     A metric filter on a log group that does not exist is created happily and
     matches nothing. This cannot verify the deployment, but it can verify the
-    two halves of the name agree with the service the code identifies as.
+    name is shaped like one of the two functions this repository builds.
+
+    IT USED TO READ `metric_filters[0]` AND ONLY THAT. With one filter that was
+    the whole config; the moment a second arrived — the ingestion reject filter,
+    2026-08-31 — the test kept passing while checking half of what its name
+    claims. That is the shape this repository keeps finding, so it is asserted
+    over every filter and the count is asserted too: a loop over an empty list
+    passes just as quietly.
     """
     from src.observability.powertools import SERVICE_NAME
 
-    log_group = config["metric_filters"][0]["log_group"]
-    assert log_group.startswith("/aws/lambda/"), log_group
-    function = log_group.removeprefix("/aws/lambda/")
-    assert function.startswith(SERVICE_NAME), (
-        f"log group {log_group} does not name the {SERVICE_NAME} function; "
-        f"the filter would attach to the wrong log group or none"
+    filters = config["metric_filters"]
+    assert len(filters) >= 2, "the scan lost a filter, or this test lost its input"
+
+    env = config["environment"]
+    functions = set()
+    for f in filters:
+        log_group = f["log_group"]
+        assert log_group.startswith("/aws/lambda/"), f"{f['name']}: {log_group}"
+        function = log_group.removeprefix("/aws/lambda/")
+        assert function.startswith("grocery-"), (
+            f"filter {f['name']} attaches to {log_group}, which is not one of "
+            f"this project's functions; it would match nothing, forever"
+        )
+        assert function.endswith(f"-{env}"), f"{f['name']}: {log_group} is not the {env} stage"
+        functions.add(function)
+
+    assert f"{SERVICE_NAME}-{env}" in functions, (
+        f"nothing watches the {SERVICE_NAME} log group any more; the "
+        f"handler-escaped filter is the one alarm that reports WHAT broke"
     )
-    assert function.endswith(f"-{config['environment']}")
 
 
 # ---------------------------------------------------------------- EMF metrics
