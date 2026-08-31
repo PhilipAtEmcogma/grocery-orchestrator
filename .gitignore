@@ -15,10 +15,22 @@ infra/manual/
 # shared .claude/settings.json remains possible.
 .claude/settings.local.json
 
+# Node, for the frontend the teammate's branch brings in. `frontend/` has its
+# own .gitignore too; these are the ones worth having at the root so a stray
+# `npm install` from the wrong directory cannot commit a dependency tree.
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+
 # macOS Finder view state (icon positions, window size). Finder writes it into
 # any directory a Mac user merely browses, so it arrives without anyone
 # choosing to add it -- datasets/.DS_Store reached main exactly that way. It is
 # binary, machine-specific, and rewritten on every window resize, so tracking
 # it means a file that is permanently dirty in git status. Unanchored, so it
 # matches at any depth rather than the repo root alone.
+#
+# `.DS_Store` alone already matches at any depth; `**/.DS_Store` from the
+# frontend branch is the same rule spelled longer, so it is not carried over.
 .DS_Store

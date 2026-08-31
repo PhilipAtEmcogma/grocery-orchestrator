@@ -10,10 +10,27 @@
 
 # Open review — the frontend team's contract does not match ours
 
-## 0. What is actually ON that branch — inspected 2026-08-31
+## 0. MERGED 2026-08-31 — which makes this review urgent rather than open
 
-`origin/frontend-infra-setup` is the ONLY unmerged branch in the repository.
-Four commits, last one 2026-08-21, and it is now ~130 commits behind `main`.
+**The owner merged `frontend-infra-setup` into `main` on 2026-08-31**, after
+being shown what it contains and what merging it would cost. So the situation
+this document was written to warn about is no longer hypothetical: **two
+contract documents now stand in `main`**, and one of them returns HTTP 400 if
+implemented.
+
+That is a deliberate decision, not an accident, and it is the right kind of
+deliberate — the frontend work is real, it had waited ten days, and holding it
+hostage to a document would have been the worse trade. But it converts this
+review from "something to settle before merging" into "something to settle
+now", and the four items in §0.3 are the settling.
+
+`docs/API-CONTRACT.md` carries a banner naming `CONTRACT-v1.md` as
+authoritative. That is the minimum that stops a reader implementing the wrong
+one; it is not the fix. The fix is one document.
+
+### 0.1 What was on the branch — inspected before merging
+
+Four commits, last one 2026-08-21, ~130 commits behind `main` when merged.
 Inspected rather than assumed, because everything below turns on what it
 contains:
 
@@ -35,21 +52,26 @@ rather than handling the event list. So "the frontend is built against our
 contract" would be too generous in both directions — the transport works, the
 rendering is a placeholder, and the written contract disagrees.
 
-### Why it has not been merged, and why that is the right call for now
+### 0.2 What merging it cost, recorded rather than smoothed over
 
-Merging it today would create the exact failure this document exists to warn
-about. `docs/API-CONTRACT.md` would land beside `CONTRACT-v1.md` and **two
-contracts would be standing in `main`**, one of which returns HTTP 400 if
-implemented. It would also add five empty placeholder files to the repository
-root and `docs/`.
+The merge was clean — one conflict, in `.gitignore`, resolved by keeping both
+rules — and the full gate passes on the merged tree: 861 tests, the secret scan
+over `frontend/package-lock.json` (the obvious risk, and it came back clean),
+ruff, pyright, `validate.py`. **Nothing in the backend depends on the frontend
+and no file overlaps**, which is why there was nothing to reconcile in code.
 
-None of that is a criticism of the branch — it is four days of early scaffolding
-that has been waiting ten days for this conversation. But the merge is a
-decision for whoever owns it, and it should happen with the contract question
-settled rather than before it. **Nothing in the backend depends on it**: it
-touches no file the orchestrator touches, so there is no conflict either way.
+What it did cost:
 
-### What to settle in the same conversation
+- **Two contract documents in `main`.** `docs/API-CONTRACT.md` beside
+  `CONTRACT-v1.md`. Banner added; document unchanged otherwise.
+- **Five 0-byte files** now tracked: `REPOSITORY_AUDIT.md`,
+  `docs/DEPLOYMENT-RUNBOOK.md`, `docs/IAM-MATRIX.md`,
+  `docs/LOCAL-DEVELOPMENT.md`, `docs/OBSERVABILITY.md`. Left as-is by decision.
+  Worth naming that `docs/OBSERVABILITY.md` at 0 bytes is worse than absent —
+  somebody looking for observability documentation will find it and find
+  nothing, while `docs/ARCHITECTURE.md` §3q holds the real material.
+
+### 0.3 What to settle now
 
 1. **One contract, not two.** Either `docs/API-CONTRACT.md` is deleted in
    favour of `CONTRACT-v1.md`, or it becomes a frontend-facing summary that
@@ -240,7 +262,8 @@ frontend, on a branch, that nobody told us about.
 
 ## 6. Provenance of this document
 
-Written 2026-08-31 from `origin/frontend-infra-setup` at `9a09d87`, four
+Written 2026-08-31 from `origin/frontend-infra-setup` at `9a09d87` — merged
+into `main` the same day, see §0 — four
 commits by a teammate dated 2026-08-19 to 2026-08-21, branched from `1e479c9`
 and 120 commits behind `main`. Every behavioural claim above was produced by
 posting the shape through `src/handler.py` and recording what came back.

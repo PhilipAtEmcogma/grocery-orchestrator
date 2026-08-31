@@ -831,8 +831,10 @@ this repository has spent two audits finding those.
 
 **A frontend exists, and this section did not know -- 2026-08-31.** The branch
 `frontend-infra-setup` has carried a working Vite/React client since
-2026-08-21: four commits by a teammate, never merged, never mentioned, 120
-commits behind `main`. Its `VITE_API_URL` defaults to `http://localhost:8000/chat`
+2026-08-21: four commits by a teammate, never mentioned, 120 commits behind
+`main`. **Merged into `main` on 2026-08-31** by owner decision, with the
+contract reconciliation still open — see `docs/OPEN-REVIEW-frontend-contract.md`
+§0, which records what merging it cost. Its `VITE_API_URL` defaults to `http://localhost:8000/chat`
 and it has **no deployed URL wired into it at all**, so the condition this
 deferral was waiting on is half met -- there is a consumer to coordinate with,
 and it has not yet chosen a URL to be coordinated.
