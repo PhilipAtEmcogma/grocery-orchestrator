@@ -37,10 +37,26 @@ hand-made one is still production — cutting over is a decision that was
 deliberately deferred on 2026-08-31 until a frontend exists to coordinate the
 URL change with. `docs/ARCHITECTURE.md` §3m.
 
+**And it had no gate under it until 2026-08-31.** The suite defining its
+security invariants was `describe.skip`, its header still called the stack a
+stub, and no CI job ran `tsc`, `jest` or `cdk synth`. Running it found
+`dynamodb:Scan` back on the products table in the deployed plane — the exact
+permission Task 6b had removed the day before, reintroduced by
+`grantReadData()`, which adds a statement beside the JSON policy rather than
+checking it. Two more assertions turned out to verify nothing at all. Full
+account in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3o.
+
 **The code is current as of 2026-08-30.** The alias served version `5` from
-2026-08-27 — before Pilot Tasks 4–7 — and now serves **version `7`**, built from
-`main`. The defect that mattered is gone: the endpoint no longer invents a `$0`
+2026-08-27 — before Pilot Tasks 4–7 — and has been republished several times
+since. The defect that mattered is gone: the endpoint no longer invents a `$0`
 budget from a message that never mentioned money and then refuses it.
+
+**This paragraph used to name a version, and so did two others in this section
+— `7`, `7` and `11`, forty lines apart.** None was wrong when it was written;
+each was a snapshot nobody returned to, which is the same shape as a test
+skipped "until X is implemented". The published history is in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3a, and which version is *live*
+is a question for `aws lambda get-alias`, not for a document.
 
 Enforcing freshness then made every priced query return `STALE_DATA` — the
 seeded fixtures are dated 2026-07-31 against a 14-day threshold. **Decision
@@ -48,7 +64,8 @@ seeded fixtures are dated 2026-07-31 against a 14-day threshold. **Decision
 dev-stage stopgap, recorded in `config/freshness.json` and
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3c. Re-stamping the fixtures'
 capture date was rejected as fabricated provenance. All four paths — comparison,
-named regions, clarification and meal plan — verified working live on version 7.
+named regions, clarification and meal plan — verified working live at the time
+of the freshness change (`docs/ARCHITECTURE.md` §3c).
 
 So the remaining distance to a pilot is **real ingested data, IaC adoption, and
 operational evidence** — not first deployment.
@@ -64,7 +81,7 @@ operational evidence** — not first deployment.
 | 7 · Scorecards, route qualification, prose/repair evals | ✅ done · one deferral (7b) |
 | 8 · Local read-only MCP | ✅ done — 2 coarse tools, default-off, capped, parity-tested |
 | 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done** — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). Cutover deferred by decision, not pending |
-| 13 · Controlled ingestion | ⬜ not started |
+| 13 · Controlled ingestion | 🟡 **anomaly rejection wired 2026-08-31** — `implausible_unit_price` refuses a row before it is written, with a metric and an alarm. Measured over the real catalogue: 0 rejections clean, **522 of 2,759** with the historical defect reintroduced (§3p). The rest of Task 13 is unstarted |
 | 14 · AgentCore reviewer | 🟡 **14a done** — the sanitised snapshot boundary and finding validation, which are needed whoever reviews. The Runtime needs ADR 0002; the request was narrowed to it alone on 2026-08-31 |
 | 15 · Recipe catalogue | 🟡 **15a and 15b done** — 29 curated recipes, 29/29 priceable against the real catalogue (14/29 against the offline fixtures), and `src/recipes/planning.py` assembles them into a `PlanDraft`. **15c — wiring selection into the graph — is the remainder.** The imported 175 stay unusable: 0/175 against *both* catalogues |
 | 16 · Release gates | ⬜ not started |
@@ -85,8 +102,8 @@ reasoning recorded in `tasks.md`:
 - **7b** — SSM routing belongs with the CDK stacks, where a parameter is
   declared as infrastructure rather than clicked into an account.
 
-**Deployed and operating** (2026-08-30): alias `live` → **v11** serving current
-`main`, the **real 2,759-row catalogue**, Guardrail **v2** applied, GSI2 for
+**Deployed and operating** (2026-08-30): the alias serving current `main`, the
+**real 2,759-row catalogue**, Guardrail **v2** applied, GSI2 for
 meal-plan candidates with `Scan` revoked, **8 alarms** + dashboard + a $25
 Budget, API-stage X-Ray, and the first latency baseline measured against the
 endpoint rather than a laptop — price check p95 **2.21s** (target 5s), meal plan
@@ -98,7 +115,10 @@ intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%;
 DynamoDB products and idempotency tables with owner-fenced claims proven against
 the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
-**Offline gates:** 811 tests passing, 31 skipped. Five eval suites — intent
+**Offline gates:** 841 tests passing, 31 skipped, plus **24 CDK assertions**
+in `infra/` — run by CI for the first time on 2026-08-31, having found two IAM
+regressions in a stack that was already deployed
+([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3o). Five eval suites — intent
 76.7%, meal plan 100%, prose 100%, repair 100% (12 cases), guardrail 9/9
 must-allow — all gated in CI and the pre-commit hook. **Repair is now gated on
 model choice too**: three reps each, Nova Lite 91.7% and Claude Haiku 83.3%,
@@ -112,7 +132,7 @@ variable:
 - ~~**Guardrail version drift**~~ — **fixed 2026-08-30.** The Lambda applied
   version `1` while all evidence described version `2`, so `how much is truffle
   oil` — a documented `must_allow` case — was refused live while the record said
-  9/9. Now version `2` (alias v9), both must-allow mushroom cases verified.
+  9/9. Now version `2`, both must-allow mushroom cases verified.
   [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3f.
 - ~~**Silent demo mode**~~ — **check implemented 2026-08-30** (Req 12.5).
   Dropping `USE_DYNAMODB` or `USE_BEDROCK` used to fall back to fixtures and the

@@ -1,5 +1,5 @@
 {
-  "_comment": "SCAFFOLD — reviewable skeleton for the Smart Grocery CDK app. NOT wired to deploy anything yet (the stacks are stubs; see lib/*.ts and infra/docs/). Pins are indicative; run `npm install` to resolve the latest compatible 2.x before implementing. Node 20+.",
+  "_comment": "CDK app for the Smart Grocery orchestrator. TWO OF FIVE STACKS ARE DEPLOYED as of 2026-08-31 (Stateful, Service); Obs, Ingestion and Frontend are still stubs and say so in their own headers. `npm test` runs the security-invariant suite and CI runs it in the `infra` job. This comment said 'NOT wired to deploy anything yet (the stacks are stubs)' for a day after the service plane went live. Node 20+.",
   "name": "grocery-infra",
   "version": "0.0.0",
   "private": true,

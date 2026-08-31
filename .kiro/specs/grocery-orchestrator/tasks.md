@@ -884,6 +884,81 @@ proposed, or gated as labelled; it is not implemented.
 > fetches 0 rows — the dataset covers two chains — which is honest but means the
 > product's "three chains" claim is currently true only of the fixtures.
 
+> **Pilot Task 13, anomaly rejection wired 2026-08-31.** `refresh()` now
+> VALIDATES, then diffs, then writes. `ingestion.handler.reject_implausible`
+> applies `src/review/snapshot.py`'s rule to every normalised row and refuses the
+> ones that fail; the count and a sample land in the Step Functions execution,
+> and `config/alarms.json` derives `IngestionRowRejected` from a structured log
+> line at a threshold of one row.
+>
+> **The rule existed for a day with no caller.** It was written on 2026-08-31
+> with the $2,490 broccoli in its docstring, tested, and invoked by nothing — so
+> the one defect class known to have reached the live products table was still
+> undetected in production, while ADR 0002 requested a Runtime to find the
+> anomalies nobody had thought of. The rules that HAD been thought of were not
+> running.
+>
+> **Measured over the real catalogue, and the clean number is the less useful
+> one.** `python scripts/check_ingestion_anomalies.py` reports 0 rejections
+> across 2,759 rows. A clean result from a rule nobody has watched fail is
+> indistinguishable from a rule that cannot fire, so the historical defect was
+> reintroduced — remove the `pack_grams <= 1` sold-each guard from `unit_price()`
+> — and the same run rejects **522 of 2,759**, broccoli included.
+>
+> **522, not six.** Six is the number this repository has quoted since the
+> incident, and it was the size of the *seeded fixture set*, not of the defect
+> class. Against the real catalogue that one-line omission corrupts 19% of every
+> shopper-facing unit price, on a first write, where the diff reports nothing
+> because a defect on a first write is not a change. 0.2% and 19% also settle
+> the threshold question: no percentage gate catches both, so there is none.
+>
+> **What the rules cannot see is recorded too** (`docs/ARCHITECTURE.md` §3p), and
+> it points somewhere: the largest invisible category needs a BASELINE — "this
+> price doubled overnight" — which is the append-only price-history table, not a
+> reviewer. That is ADR 0002 gate 4's acceptance data, and it argues for building
+> the history table first.
+
+- [x] **Pilot Task 12a — Put a gate under the CDK. Done 2026-08-31.**
+  `infra/` had no CI job of any kind — no `tsc`, no `jest`, no `cdk synth` —
+  while `infra/lib/service-stack.ts` is where the security posture is declared,
+  and `infra/test/service-stack.test.ts` was `describe.skip` under a header
+  reading "SKIPPED until ServiceStack is implemented (it is a stub today)". The
+  stack had been 230 lines and deployed for a day.
+
+  **Running the suite found two IAM regressions in a plane that was serving.**
+  `tables.products.grantReadData(role)` had reintroduced `dynamodb:Scan` — the
+  permission Pilot Task 6b removed the day before, with
+  `config/iam-orchestrator-role.json` warning in as many words that "a Scan
+  permission nothing needs is a Scan somebody can reintroduce without noticing".
+  It also widened `index/GSI1`/`GSI2` to `index/*` and added Streams reads.
+  `grantReadWriteData` on idempotency added `DeleteItem`, against a config
+  comment saying expiry is by TTL. A CDK grant helper does not CHECK a policy
+  loaded from `config/`; it appends a second one.
+
+  **And two assertions were theatre.** `it('the only Resource:"*" is X-Ray')`
+  had an empty body. The write test matched a regex spanning unrelated
+  statements and FAILED on a policy with no write on products at all. Rewritten
+  to parse the policy document and compare action sets per resource; 24
+  assertions now, each watched to fail against a mutated stack.
+
+  Also closed in the same pass: the SSM parameter that published
+  `models.json[:4096]` — invalid JSON, since the file is 10,930 bytes and
+  neither SSM tier holds it — now publishes the routing block and THROWS at
+  synth rather than slicing; `APP_STAGE` is set from `cfg.stage`, so Req 12.5's
+  runtime check is no longer inert under CDK; `config/stages.json` gives the
+  Python and TypeScript halves of that check one definition of "production";
+  adopted table names moved off the stage axis, so `stage=prod` no longer
+  references tables that do not exist; and the region guard, which refused
+  `cdk synth` locally and never ran in CI, became a pin plus a test.
+
+- [x] **Pilot Task 12b — A skip that expires. Done 2026-08-31.**
+  `tests/test_skip_markers.py` fails when a skip carries no machine-checkable
+  condition, in Python and TypeScript alike, and refuses `.only` because it
+  disables every other test in a file without the word "skipped" appearing
+  anywhere. The sibling of `tests/test_ci_workflow.py`, and it would have caught
+  all three instances of this pattern the two audits found: the coverage
+  instrument, the forcing test behind it, and the infrastructure suite.
+
 - [ ] **Pilot Task 14 — Add the bounded data-quality reviewer.** After ADR 0002
   mentor approval, deploy it separately in AgentCore Runtime over capped
   sanitised ingestion snapshots with an isolated least-privilege identity,

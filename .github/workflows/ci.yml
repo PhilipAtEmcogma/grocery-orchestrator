@@ -6,8 +6,10 @@
 # job below runs in seconds, costs nothing, and is deterministic.
 #
 # What this DOES gate: structural correctness, the contract, the grounding
-# invariant, security scanning, and regression floors on both eval suites
-# measured against the scripted client.
+# invariant, security scanning, regression floors on both eval suites measured
+# against the scripted client, and -- since 2026-08-31 -- the CDK definitions
+# in `infra/`, which had no gate of any kind while being the place the security
+# posture is declared.
 #
 # What it does NOT gate: real model quality. Scoring Claude or Nova requires
 # credentials and costs money per run, so it is a deliberate manual step
@@ -270,10 +272,74 @@ jobs:
           name: lambda-package
           path: build/lambda.zip
 
+  infra:
+    name: CDK synth and security assertions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # NO AWS CREDENTIALS, like every other job here. `cdk synth` renders a
+      # template from the code and never calls an account; the test file passes
+      # an explicit `env` so nothing has to be looked up.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: infra/package-lock.json
+
+      - name: Install
+        working-directory: infra
+        run: npm ci
+
+      # WHY THIS JOB EXISTS. Until 2026-08-31 nothing in CI touched `infra/` at
+      # all -- no compile, no jest, no synth -- so a broken stack merged green.
+      # That mattered more than it sounds: `infra/lib/service-stack.ts` is where
+      # this project's security posture is DEFINED (scoped IAM, no write on
+      # products, X-Ray-only wildcard, log retention, no request-body logging),
+      # and it was the only code in the repository with no gate under it. When
+      # the suite was finally run it found two IAM regressions in a stack that
+      # was already deployed. See the header of infra/test/service-stack.test.ts.
+      #
+      # The Lambda archive is needed because ServiceStack points
+      # `lambda.Code.fromAsset` at build/lambda.zip -- synth reads it to
+      # fingerprint the asset. Building it here rather than downloading the
+      # `package` job's artifact keeps this job independent: a failure is about
+      # infra, not about job ordering.
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Build the Lambda asset synth points at
+        run: python scripts/build_lambda.py
+
+      # Types first: a compile error is a clearer message than the same mistake
+      # surfacing as a jest failure inside ts-jest.
+      - name: Type check
+        working-directory: infra
+        run: npx tsc --noEmit
+
+      - name: Security assertions
+        working-directory: infra
+        run: npm test
+
+      # Synth is a distinct check from the tests, not a duplicate of them. The
+      # tests instantiate two stacks directly; `cdk synth` walks the app
+      # entrypoint, so it is what catches a stack that is broken only when
+      # `bin/grocery.ts` wires it -- and it is where publishJson's size guard
+      # fires for a config file that has outgrown its SSM tier.
+      # `cdk synth` with no stack id synthesises all five. `--all` is not an
+      # option on this CLI version and is silently IGNORED with a warning, which
+      # would have made this step look like it covered more than it did.
+      - name: Synth every stack
+        working-directory: infra
+        run: npx cdk synth --quiet
+
   summary:
     name: All checks
     runs-on: ubuntu-latest
-    needs: [quality, contract, security, evals, package]
+    needs: [quality, contract, security, evals, package, infra]
     if: always()
     steps:
       # A single job to require in branch protection, so adding a job later

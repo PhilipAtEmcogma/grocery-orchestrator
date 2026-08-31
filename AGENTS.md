@@ -318,10 +318,13 @@ drift detection, or deployed SLO/cost/recovery evidence. No latency or
 throughput figure in this repository has been measured against the endpoint
 under load; they are all laptop measurements.
 
-**The deployed code is current as of 2026-08-30** — alias `live` moved from
-version `5` (2026-08-27, predating Tasks 4–7) to version `7`, built from `main`.
-The `$0`-budget defect is gone. Still: **check which version the alias points at
-before quoting a live behaviour as current**, and cut over the way
+**The deployed code is current as of 2026-08-30** — the alias moved off version
+`5` (2026-08-27, predating Tasks 4–7) and has been republished several times
+since; `docs/ARCHITECTURE.md` §3a holds the history and deliberately does not
+say which version is live. The `$0`-budget defect is gone. Still: **check which
+version the alias points at before quoting a live behaviour as current** —
+`aws lambda get-alias --function-name grocery-orchestrator-dev --name live` —
+and cut over the way
 `docs/ARCHITECTURE.md` §3a describes — publish, wait for SnapStart, invoke the
 new version *directly*, and only then move the alias. `build_lambda.py` cannot
 verify its own archive on Windows, so the first thing to execute a locally built
@@ -365,6 +368,23 @@ Two deliberate deferrals carry their reasoning in `tasks.md`: a bare
 waits for the CDK stacks (7b). **6b closed 2026-08-30** — candidate retrieval
 queries GSI2 (category / zero-padded price) instead of scanning, chosen on the
 load evidence the deferral required.
+
+**2026-08-31: gates went under the last fortnight's work, and two of the three
+capabilities it added turned out to need them.** `infra/` had no CI job of any
+kind — no `tsc`, no `jest`, no `cdk synth` — while `service-stack.ts` was the
+file that DEFINES the security posture, and its test suite was `describe.skip`
+under a header calling the deployed stack a stub. Running it found
+`dynamodb:Scan` reintroduced on the products table by `grantReadData()`, plus
+`DeleteItem` on idempotency, plus two assertions that verified nothing.
+`implausible_unit_price` had been written, tested and called by nothing, so the
+one defect class known to have reached the live table was still undetected;
+wired into ingestion and run over the real catalogue it rejects 0 rows clean and
+**522 of 2,759** with the historical defect reintroduced — not the six the
+incident is usually quoted as, because six was the size of the *fixture* set.
+Details in `docs/ARCHITECTURE.md` §3o–§3p.
+
+**15c is still the differentiating capability and is still not on the shopper
+path.** That is the remaining half of what the second audit asked for.
 
 ---
 
@@ -422,7 +442,7 @@ measurement here, make the instrument name its inputs.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 811 passed, 31 skipped, no AWS
+python -m pytest -q                              # 841 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -451,6 +471,10 @@ python scripts/check_recipe_coverage.py --missing 20   # imported recipes vs the
 python scripts/check_recipe_coverage.py --recipes curated              # 29/29 costable
 python scripts/check_recipe_coverage.py --recipes curated --catalogue fixtures  # 14/29
 python scripts/measure_latency.py                 # latency against the DEPLOYED endpoint
+python scripts/check_ingestion_anomalies.py       # deterministic rules over the REAL catalogue
+python scripts/check_ingestion_anomalies.py --catalogue fixtures
+cd infra && npm ci && npm test                    # 24 CDK security assertions, no AWS
+cd infra && npx tsc --noEmit && npx cdk synth --quiet   # what the `infra` CI job runs
 ```
 
 The pre-commit hook lives in `scripts/hooks/pre-commit` — **version
@@ -492,6 +516,51 @@ pass". Keep that list honest if either side changes.
 CI (`.github/workflows/ci.yml`) runs the same checks plus those two — **no AWS
 credentials needed anywhere**, which is a design outcome of the protocol
 boundaries.
+
+### A CDK grant helper ADDS to a policy; it does not check one
+
+`ServiceStack` builds the orchestrator role from
+`config/iam-orchestrator-role.json` verbatim, and then called
+`tables.products.grantReadData(role)` two constructs later. That helper does not
+compare itself to the JSON — it appends a second statement using the CDK's idea
+of "read", which includes `dynamodb:Scan`, widens explicit index ARNs to
+`index/*`, and adds Streams permissions on a table with no stream.
+`grantReadWriteData` on the idempotency table added `DeleteItem`, against a
+config comment reading "No Delete -- expiry is by TTL".
+
+**Pilot Task 6b removed the Scan on 2026-08-30. The CDK deploy put it back on
+2026-08-31, in a plane that was already serving.** The config file's own comment
+had called it: *"a Scan permission nothing needs is a Scan somebody can
+reintroduce without noticing."*
+
+So: **policy-as-data means the data is the whole policy.** If a stack loads a
+policy from `config/`, it must not also grant. `infra/test/service-stack.test.ts`
+asserts the action set per resource and fails on any statement the JSON does not
+declare — not by grepping `JSON.stringify`, which is how two of that suite's
+original assertions managed to be a false positive and a false negative at once.
+
+### A skip must carry a condition, not a sentence
+
+`@pytest.mark.skipif(not DATASET.exists(), …)` stops skipping the moment the
+dataset is checked out. `describe.skip` under "SKIPPED until ServiceStack is
+implemented" never stops, because nothing evaluates the English — and that one
+sat over seven security assertions for a day after the stack was deployed, by
+which time one of the assertions had inverted.
+
+`tests/test_skip_markers.py` fails on any skip without a machine-checkable
+condition, in Python and TypeScript alike, and refuses `.only` for the same
+reason — it silently disables every other test in the file, so the suite shrinks
+without the word "skipped" appearing anywhere. Use
+`(cond ? describe : describe.skip)(…)` in TypeScript, or delete the suite.
+
+### Do not quote a deployed version number in prose
+
+Four numbers described one Lambda alias across three documents at once — `7`,
+`9` and `11`, with one table header saying "v6 (now)" directly under prose
+saying 7. None was wrong when written. `docs/ARCHITECTURE.md` §3a now holds the
+version HISTORY, which cannot go stale, and deliberately does not say which
+version is live. `aws lambda get-alias --function-name grocery-orchestrator-dev
+--name live` does.
 
 ### Tool version drift is a known failure mode here
 
@@ -677,7 +746,7 @@ idempotency outcomes; Nova Lite/Pro invocation; Guardrail
 `b1xezpqe04kx` version `2` verified 13/13 + 9/9; and, re-confirmed 2026-08-30,
 the deployed service plane — REST API `woqmel35lk` returning HTTP 200 on
 `POST /dev/chat` in ~7s with a real Nova Lite call and grounded citations,
-Lambda alias `live` → version `7` (cut over from `5` on 2026-08-30), and
+Lambda alias `live` cut over from `5` on 2026-08-30 and republished since, and
 schedule `grocery-price-refresh-dev` ENABLED. This is evidence about the
 resources, not about behaviour: it does not prove live red-team quality.
 (Stale-claim ownership IS now proven against the live idempotency table.) (Retrieved-record/value equality is now proven offline on

@@ -230,11 +230,7 @@
       }
     },
     "_measured_not_gated": {
-      "_comment": "Measured, reported, and deliberately NOT used to gate routing, because the suite is too small for any threshold on it to mean anything. Distinct from _unscored_tasks, which is for tasks nothing measures at all. Expand the case set before gating.",
-      "repair_plan": {
-        "_status": "GATED 2026-08-30. This entry is kept for the reasoning, not because it still applies. The suite was six cases and could not support a threshold; it was expanded to twelve, every case verified to discriminate against a model built to fail it, and re-measured over three reps per model. Nova Lite clears the 90% floor and serves repair; Claude Haiku does not and is excluded from this task only. See scorecards.repair_plan and routing.repair_plan.exclude.",
-        "_option_kept_on_record": "SPLIT THE TASK, if repair quality ever becomes the bottleneck. The two models are COMPLEMENTARY rather than ranked: Nova Lite scores 100% on budget repair and Claude Haiku 100% on defect repair. Routing `repair_budget` to one and `repair_defect` to the other would give 100% on both, where choosing either model alone gives up something. The graph already knows which kind of repair it is doing -- evals/run_repair.py separates them and src/prompts/ carries two distinct repair prompts, because a budget repair and a defect repair need different instructions. What it would cost: a second routing task, a scorecard per sub-task, and the qualification gate widening to cover both. Recorded here rather than built, because it is machinery for a problem that is not yet biting: a failed repair exhausts the bounded loop and produces an honest refusal, so the cost of the current arrangement is a refusal the shopper can act on rather than a wrong answer they cannot detect."
-      }
+      "_comment": "Measured, reported, and deliberately NOT used to gate routing, because the suite is too small for any threshold on it to mean anything. Distinct from _unscored_tasks, which is for tasks nothing measures at all. Expand the case set before gating. EMPTY as of 2026-08-31, and that is the point: repair_plan sat here carrying `_status: GATED` for a day -- a gated task filed under a heading meaning ungated. The reasoning it held was worth keeping, so it moved to scorecards.repair_plan._history rather than being deleted."
     },
     "repair_plan": {
       "_source": "evals/run_repair.py, 12 cases (7 budget, 5 defect), guardrail version 2, live",
@@ -254,6 +250,11 @@
         "budget_rate": 0.714,
         "defect_rate": 1.0,
         "reps": 3
+      },
+      "_history": {
+        "_was": "scorecards._measured_not_gated.repair_plan, until 2026-08-31",
+        "_status": "GATED 2026-08-30. This entry is kept for the reasoning, not because it still applies. The suite was six cases and could not support a threshold; it was expanded to twelve, every case verified to discriminate against a model built to fail it, and re-measured over three reps per model. Nova Lite clears the 90% floor and serves repair; Claude Haiku does not and is excluded from this task only. See scorecards.repair_plan and routing.repair_plan.exclude.",
+        "_option_kept_on_record": "SPLIT THE TASK, if repair quality ever becomes the bottleneck. The two models are COMPLEMENTARY rather than ranked: Nova Lite scores 100% on budget repair and Claude Haiku 100% on defect repair. Routing `repair_budget` to one and `repair_defect` to the other would give 100% on both, where choosing either model alone gives up something. The graph already knows which kind of repair it is doing -- evals/run_repair.py separates them and src/prompts/ carries two distinct repair prompts, because a budget repair and a defect repair need different instructions. What it would cost: a second routing task, a scorecard per sub-task, and the qualification gate widening to cover both. Recorded here rather than built, because it is machinery for a problem that is not yet biting: a failed repair exhausts the bounded loop and produces an honest refusal, so the cost of the current arrangement is a refusal the shopper can act on rather than a wrong answer they cannot detect."
       }
     }
   }

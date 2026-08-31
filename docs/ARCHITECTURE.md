@@ -136,14 +136,44 @@ silently forfeits it while still working — nothing breaks, it just gets slower
 ## 3a. Code refreshed to current `main` — 2026-08-30
 
 **Resolved.** Alias `live` served version `5` (published 2026-08-27) until
-2026-08-30, which predated Pilot Tasks 4-7. It now serves **version `7`** -- v6 was `main` at commit `2412ac3`, v7 adds
-the freshness decision in section 3c. The defect that mattered is gone: the endpoint
-no longer invents a `$0` budget from a message that never mentioned money.
+2026-08-30, which predated Pilot Tasks 4-7. The defect that mattered is gone:
+the endpoint no longer invents a `$0` budget from a message that never
+mentioned money.
 
-| Request | v5 (until 2026-08-30) | v6 (now) |
+| Request | v5 (until 2026-08-30) | v7 onwards |
 |---|---|---|
 | `feed my flat of 3 this week` | `BUDGET_INFEASIBLE`: *"I couldn't build a plan within $0"* | `clarification` asking what they want to spend |
 | `cheapest butter` | five citations, presented as current | `STALE_DATA` naming the 2026-07-31 capture date |
+
+### The published versions, and why no document states the current one
+
+| version | what it added | recorded in |
+|---|---|---|
+| 5 | `main` at 2026-08-27, predating Pilot Tasks 4-7 | §3a |
+| 6 | `main` at commit `2412ac3` | §3a |
+| 7 | the freshness decision, 14 -> 45 days | §3c |
+| 9 | `BEDROCK_GUARDRAIL_VERSION` corrected from `1` to `2` | §3f |
+| 11 | the real 2,759-row catalogue, GSI2, Scan revoked | §3i, §3d |
+
+**A VERSION NUMBER IN PROSE IS A CLAIM THAT EXPIRES AND NOTHING RE-CHECKS IT.**
+Until 2026-08-31 four numbers described one alias across three documents at
+once: this section said 7 while its own table header said "v6 (now)", §3f said
+9 forty lines later, and `README.md` said 7 twice and 11 once, forty lines
+apart in the same section. None of them was a lie when it was written; each was
+a snapshot nobody went back to. It is the same shape as
+`infra/test/service-stack.test.ts` saying "SKIPPED until ServiceStack is
+implemented", and it has the same fix -- state the condition, not the answer.
+
+So the table above is a HISTORY, which cannot go stale, and no document states
+which version is live. One command does:
+
+```bash
+aws lambda get-alias --function-name grocery-orchestrator-dev --name live     --query FunctionVersion --output text
+```
+
+`AGENTS.md` already required running it before quoting a live behaviour as
+current. What has changed is that no document now offers a number to quote
+instead.
 
 ### How it was done, and why not the four commands this section used to give
 
@@ -870,6 +900,171 @@ differences is a check that gets switched off.
 identity, the call/token/time/cost/egress caps, teardown evidence, and the
 labelled anomaly evaluation. 20 tests cover what exists.
 
+
+## 3o. The infrastructure suite was run for the first time, and found two live IAM regressions — 2026-08-31
+
+`infra/test/service-stack.test.ts` was `describe.skip(…)` under a header saying
+"SKIPPED until ServiceStack is implemented (it is a stub today)". The stack had
+been 230 lines with zero TODOs and **deployed as `Grocery-Service-dev`** for a
+day. No CI job touched `infra/` at all — no `tsc`, no `jest`, no `cdk synth` —
+so the file that DEFINES this project's security posture was the only code in
+the repository with no gate under it.
+
+Removing `.skip` was three hours of work and it was not the interesting part.
+
+### What the run found
+
+**1. `dynamodb:Scan` was back on the products table, in the deployed plane.**
+
+Pilot Task 6b removed that permission on 2026-08-30 when `candidates_for_budget`
+moved to GSI2, and `config/iam-orchestrator-role.json` carries a paragraph
+saying why, ending: *"a Scan permission nothing needs is a Scan somebody can
+reintroduce without noticing."* Two lines in `service-stack.ts` reintroduced it
+the next day:
+
+```ts
+tables.products.grantReadData(role);        // + Scan, + index/*, + Streams
+tables.idempotency.grantReadWriteData(role);  // + DeleteItem, + BatchWriteItem
+```
+
+The grant helpers do not CHECK the JSON policy the stack loads three
+constructs earlier — they ADD a second statement beside it, using the CDK's
+idea of "read" and "write" rather than this project's. `grantReadData` also
+widened the explicit `index/GSI1` and `index/GSI2` ARNs to `index/*` and granted
+Streams reads on a table with no stream. `grantReadWriteData` granted
+`DeleteItem`, against a config comment reading *"No Delete -- expiry is by TTL,
+which requires no permission."*
+
+Fixed by deleting both calls. The role already carries exactly what the JSON
+declares; anything a grant helper adds is by definition something nobody wrote
+down.
+
+**2. One assertion had inverted, and passed BECAUSE of finding 1.**
+
+`it('orchestrator role CAN Scan products')` asserted the permission was present.
+It is the assertion the second audit predicted would "either fail, or pass and
+thereby prove the Scan came back". It passed.
+
+**3. Two assertions were theatre, and un-skipping them would have shipped a
+green check that verifies nothing.**
+
+- `it('the only Resource:"*" is X-Ray')` had an **empty body** — a comment and
+  no expectation.
+- The write test matched `/dynamodb:PutItem[\s\S]*grocery-products/` over
+  `JSON.stringify(policies)`. That pattern spans unrelated statements, so it
+  FAILED on a policy with no write on products at all: `PutItem` appears in the
+  idempotency statement and `grocery-products` appears later in the blob. A
+  false negative and a false positive in one suite.
+
+The rewritten assertions parse the policy document and compare action sets per
+resource. A security check that cannot say which statement it matched is not a
+security check.
+
+### What else the same pass fixed
+
+| | |
+|---|---|
+| **SSM published invalid JSON** | `readFileSync(models.json).slice(0, 4096)` of a 10,930-byte file. `json.loads` on the result fails at line 132. Nothing broke because nothing reads it, which is the worst reason for a defect to survive. `publishJson` now THROWS at synth, and what is published is the routing block — scorecards are measured evidence, and an operator who can edit them can qualify a route by typing. |
+| **`APP_STAGE` was never set** | So Req 12.5's runtime check returned immediately and stayed inert under the CDK plane too. Now set from `cfg.stage`. |
+| **Two definitions of "production"** | `src/handler.py` had `{prod, production, pilot}`; `infra/lib/config.ts` had `stage === 'prod'`. A `pilot` stage passed synth with wildcard CORS and then failed at startup — the earlier, cheaper guard was the one that did not fire. Both now read `config/stages.json`. |
+| **The prod path adopted nothing** | Adopted table names were derived from the stage, so `stage=prod` referenced `grocery-products-prod`, which does not exist. Adoption points at something already there, so the name is an input (`DATA_SUFFIX`) on its own axis. |
+| **The region guard fired in the wrong places** | `bin/grocery.ts` threw when `CDK_DEFAULT_REGION !== ap-southeast-2`. That variable is set by the CDK CLI from the resolved AWS profile, so the guard refused `cdk synth` — which touches no account — for anyone whose default region differed, and in CI, where there are no credentials, it never ran at all. The pin on every stack's `env` is the real control; `infra/test/app.test.ts` now asserts it, so CI checks what the guard only claimed. |
+
+### The gate
+
+CI job `infra`: `npm ci`, build the Lambda asset synth points at, `tsc
+--noEmit`, `npm test`, `cdk synth`. Wired into `summary.needs`, so
+`tests/test_ci_workflow.py` covers it like every other job. 24 assertions, and
+each was watched to fail against a mutated stack before being kept.
+
+**And a control against the recurrence.** `tests/test_skip_markers.py` fails when
+a skip carries no machine-checkable condition, in Python and TypeScript alike —
+`@pytest.mark.skip`, condition-less `xfail`, `describe.skip`, `it.only`. The
+distinction it enforces is the only one that matters: `skipif(not
+DATASET.exists())` stops skipping the moment the dataset appears, and "SKIPPED
+until X is implemented" never stops, because nothing evaluates the English.
+
+## 3p. The anomaly rule was switched on, and measured — 2026-08-31
+
+`implausible_unit_price()` was written on 2026-08-31 with the $2,490 broccoli in
+its docstring, tested, and **called by nothing**. `ingestion/handler.py` diffed
+before writing and did not validate, so the one defect class known to have
+reached the live products table was still undetected in production — while an
+AgentCore Runtime was being proposed, in ADR 0002, to find the anomalies nobody
+had thought of. The rules that HAD been thought of were not running.
+
+They are now. `ingestion.handler.reject_implausible` refuses the row, the count
+and a sample land in the Step Functions execution, and
+`config/alarms.json` derives `IngestionRowRejected` from a structured log line.
+
+### The run, over the whole catalogue
+
+```
+$ python scripts/check_ingestion_anomalies.py
+catalogue: datasets (datasets/data/dynamodb_products) -- 3000 source rows,
+           2759 after transform (61 non-food dropped, 180 duplicates collapsed)
+rule:      implausible_unit_price, factor 10x
+
+  rows checked  2759
+  accepted      2759
+  REJECTED      0
+```
+
+**Zero findings, and zero is not the interesting number.** A clean result from a
+rule nobody has watched fail is indistinguishable from a rule that cannot fire —
+which is the defect this whole fortnight has been about. So the historical
+defect was reintroduced and the run repeated: remove the `pack_grams <= 1`
+sold-each guard from `ingestion/normalise.py::unit_price`, exactly as the first
+version of that function omitted it, and
+
+```
+  rows checked  2759
+  accepted      2237
+  REJECTED      522
+
+  new_world#albany/broccoli-ea   Broccoli
+      price 1.79  stored unit 1790.00  derived 1.79  pack_grams 1
+```
+
+**522 of 2,759, not six.** The original incident hit six rows, and that number
+has been quoted in this repository ever since as the size of the class. It is
+not: six was the number of sold-each products in the *seeded fixture set* at the
+time. Against the real catalogue the same one-line omission corrupts **19% of
+every shopper-facing unit price**, and it does so on a first write, where the
+diff — the only control that existed — reports nothing, because a defect on a
+first write is not a change.
+
+That also settles the threshold question. 0.2% and 19% cannot both be caught by
+one percentage gate, so there is no percentage gate: the alarm fires at one row.
+
+### What the deterministic rules can and cannot see
+
+Recorded because ADR 0002 gate 4 asks for acceptance data, and because the
+argument FOR a reviewer — "its value is the anomalies nobody thought to write a
+rule for" — only becomes evidence once the rules that were thought of are
+running and observably missing things. Half of that is now true.
+
+**Caught:** a unit price that disagrees with its own pack size by an order of
+magnitude, in either direction, including every misuse of the sold-each
+sentinel.
+
+**Structurally invisible to this rule**, and the honest list:
+
+- a price that is simply wrong but internally consistent — $12.99 for a $1.29
+  item, with a matching unit price, passes every check here;
+- a `pack_grams` that is wrong at SOURCE, since the unit price is then correctly
+  derived from a wrong weight;
+- a mis-categorised product — the vegan-safety class — which
+  `ingestion/lineage_b.py` handles separately and fail-closed;
+- a stale capture date, which `src/retrieval/filters.py` owns;
+- **anything needing a baseline.** "This price doubled overnight" is the largest
+  category here and it is not a rule problem: it needs the append-only
+  price-history table, which does not exist. That is a cheaper and better-defined
+  piece of work than a reviewer, and it is a prerequisite for one.
+
+So the ADR 0002 decision now has a measurement under it rather than a belief,
+and it points somewhere specific: the next thing worth building is the history
+table, not the Runtime.
 
 ## 4. IAM notes worth keeping
 
