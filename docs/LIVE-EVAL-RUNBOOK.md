@@ -47,7 +47,7 @@ Three environment variables. The third is the one people miss:
 export AWS_PROFILE=grocery
 export AWS_REGION=ap-southeast-2
 export BEDROCK_GUARDRAIL_ID=b1xezpqe04kx   # grocery-assistant-guardrail-dev
-export BEDROCK_GUARDRAIL_VERSION=1         # pin the NUMBERED version, not DRAFT
+export BEDROCK_GUARDRAIL_VERSION=2         # pin the NUMBERED version, not DRAFT
 ```
 
 `REQUIRE_GUARDRAIL` defaults to `1`, so a missing `BEDROCK_GUARDRAIL_ID` makes
@@ -55,9 +55,18 @@ every model call fail closed. That is deliberate — silently running generation
 without content safety is the worse outcome — but it means a forgotten variable
 looks like a total model outage.
 
-**Pin `BEDROCK_GUARDRAIL_VERSION=1`, not `DRAFT`.** The acceptance claim is
+**Pin `BEDROCK_GUARDRAIL_VERSION=2`, not `DRAFT`.** The acceptance claim is
 about the numbered version. A result measured against `DRAFT` is evidence about
 whatever the console happened to hold that day and cannot be reproduced.
+
+**This said `=1` until 2026-08-31**, which was correct when written on
+2026-08-29 and stopped being correct the moment version 2 was published. Version
+1 refuses `how much is truffle oil` — a documented `must_allow` case — so a run
+paced and executed exactly as instructed here would have produced a WORSE score
+than the model deserves, and blamed the model for it. Same shape as every other
+drift finding in this repository: a number that was true when it was written and
+that nobody went back to. `docs/ARCHITECTURE.md` §3f is the incident where the
+deployed Lambda had the same value stale for the same reason.
 
 Confirm the guardrail exists and check Anthropic access before spending a run:
 
@@ -169,6 +178,33 @@ metric records on stdout, or capture `last_usage` directly. What is being
 verified is that the figure is **non-zero for a model that declares caching**,
 on a second call with the same system prompt; a flat zero means the markers are
 not reaching the API and the capability flag is decorative.
+
+---
+
+### 4.4 Recipe selection — the one open exemption
+
+`select_recipes` is the ONLY task in `config/models.json` without a live
+scorecard, and `tests/test_multimodel.py` pins the exemption set exactly, so
+this run is what deletes it.
+
+```bash
+python evals/run_recipe_select.py --model nova-lite
+python evals/run_recipe_select.py --model claude-haiku
+```
+
+12 cases, one model call each, paced at 9/min — about 90 seconds per run.
+**Three reps per model**, cooling down between them: a single run cannot
+qualify a model, and back-to-back reps throttle the account in a way that reads
+as poor quality. Discard any rep reporting upstream failures rather than
+averaging it in; the harness returns exit code 2 for exactly that case.
+
+Estimated spend for all six runs: **under two cents** (~3,500 input tokens per
+rep; Nova Lite ~$0.0004/rep, Claude Haiku ~$0.006/rep).
+
+Record the band in `config/models.json` under `scorecards.select_recipes`, then
+**delete `select_recipes` from `scorecards._unscored_tasks` and from
+`EXPECTED_EXEMPTIONS` in `tests/test_multimodel.py`**. The test fails until both
+are done, which is the reminder.
 
 ---
 
