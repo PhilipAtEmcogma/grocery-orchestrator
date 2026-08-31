@@ -115,15 +115,16 @@ intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%;
 DynamoDB products and idempotency tables with owner-fenced claims proven against
 the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
-**Offline gates:** 841 tests passing, 31 skipped, plus **24 CDK assertions**
+**Offline gates:** 845 tests passing, 31 skipped, plus **24 CDK assertions**
 in `infra/` — run by CI for the first time on 2026-08-31, having found two IAM
 regressions in a stack that was already deployed
 ([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3o). Five eval suites — intent
 76.7%, meal plan 100%, prose 100%, repair 100% (12 cases), guardrail 9/9
-must-allow — all gated in CI and the pre-commit hook. **Repair is now gated on
-model choice too**: three reps each, Nova Lite 91.7% and Claude Haiku 83.3%,
-identical every rep. Haiku is excluded from `repair_plan` and keeps serving the
-tasks it qualifies for — `config/models.json` `routing.repair_plan.exclude`.
+must-allow — all gated in CI and the pre-commit hook. **Repair is two routed tasks**
+as of 2026-08-31: `repair_budget` to Nova Lite (7/7) and `repair_defect` to
+Claude Haiku (5/5), each perfect at its half and below the 90% floor on the
+other. The eval gates each half separately, because 83.3% combined is one
+number that hid a 71.4% and a 100%.
 
 **Two defects found and fixed on 2026-08-30**, both backend, both invisible to
 every offline gate because nothing offline can read a deployed environment
@@ -153,11 +154,15 @@ evidence gathered and its options written down; none needed more code first.
    work (Tasks 9–11) because Task 15 is prompt-and-data work with almost no
    AWS surface; both landed on 2026-08-30/31, so the sequencing is history
    rather than a plan. `tasks.md` Pilot Task 15b.
-2. ~~**Gate repair at 90%?**~~ **Decided and applied 2026-08-30.** Three reps
-   each confirmed the structure — Nova Lite 91.7%, Claude Haiku 83.3%, identical
-   every rep, failing in opposite halves. Haiku is excluded from `repair_plan`
-   only; it still serves the tasks it qualifies for. Every task now has a
-   scorecard: `unscored_tasks()` is empty for the first time.
+2. ~~**Gate repair at 90%?**~~ **Decided and applied 2026-08-30, and then split
+   2026-08-31.** Three reps each confirmed the structure — Nova Lite 91.7%,
+   Claude Haiku 83.3%, identical every rep, failing in opposite halves. Gating
+   the combined task left one routable model on the account's binding,
+   unraisable quota, on the path that fires under load; the halves are now
+   separate tasks, `repair_budget` and `repair_defect`, each routed to the model
+   that is perfect at it. That does **not** restore a fallback — each half still
+   has one qualified model — but a Nova Lite quota event now degrades one half
+   instead of all repair. Every task still has a scorecard.
 3. **Who owns the `Chatbot` API and Lambda** in the same account?
    `docs/ARCHITECTURE.md` §3b — untouched pending an owner.
 

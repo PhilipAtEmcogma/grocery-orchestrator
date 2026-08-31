@@ -225,7 +225,7 @@ section("4. The scorecards: measured evidence, stored as data")
 print(f"  score floor: {registry.score_floor:.0%}\n")
 print(f"  {'task':<18} {'model':<16} {'rate':>7}  {'n':>4}  reps  qualifies")
 print(f"  {'-' * 18} {'-' * 16} {'-' * 7}  {'-' * 4}  ----  ---------")
-for task in ("classify_intent", "generate_plan", "repair_plan", "generate_prose"):
+for task in registry.tasks:
     for key in registry.routable_models(task):
         card = registry.scorecard(task, key)
         if card is None:
@@ -257,7 +257,7 @@ note("Reading only the preference list is how claude-sonnet once sat as a live")
 note("fallback for EVERY task while being documented as unfit.")
 
 print("\n  Which is also why a routing rule can now name `exclude`:\n")
-for task in ("classify_intent", "generate_plan", "repair_plan", "generate_prose"):
+for task in registry.tasks:
     print(f"    {task:<18} reachable: {registry.routable_models(task)}")
 note("")
 note("`enabled: false` fixed the Sonnet case only because Sonnet was unfit")

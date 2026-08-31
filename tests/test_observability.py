@@ -33,6 +33,7 @@ import uuid
 
 import pytest
 
+from src.models.base import TASK_REPAIR_BUDGET
 from src.observability.base import (
     METRIC_CACHE_READ_TOKENS,
     METRIC_GUARDRAIL_INTERVENED,
@@ -903,7 +904,7 @@ def test_each_repair_attempt_is_its_own_subsegment(xray_segment, captured, never
     subsegments = _subsegments(xray_segment)
     assert [s.name for s in subsegments].count("model.generate_plan") == 1
 
-    repairs = [sub for sub in subsegments if sub.name == "model.repair_plan"]
+    repairs = [sub for sub in subsegments if sub.name == f"model.{TASK_REPAIR_BUDGET}"]
     assert len(repairs) == MAX_REPAIR_ATTEMPTS
 
     # Numbered within the turn, so a trace shows which attempt cost what.
@@ -986,7 +987,7 @@ def test_model_latency_is_dimensioned_by_model_and_task(captured, never_affordab
 
     assert by_task["classify_intent"] == "scripted-fast"
     assert by_task["generate_plan"] == "scripted-quality"
-    assert by_task["repair_plan"] == "scripted-fast"
+    assert by_task[TASK_REPAIR_BUDGET] == "scripted-fast"
     assert all("service" in dimensions for _, dimensions in emitted)
 
 

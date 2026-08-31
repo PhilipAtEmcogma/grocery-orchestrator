@@ -43,9 +43,18 @@ from src.graph.state import MAX_REPAIR_ATTEMPTS
 from src.models.registry import ModelRegistry, UnroutableTask
 
 # The model calls one turn makes, by task, as the graph executes them.
-# `repair_plan` is bounded by MAX_REPAIR_ATTEMPTS; the best case is zero.
+# Repair is bounded by MAX_REPAIR_ATTEMPTS; the best case is zero.
+#
+# THE WORST CASE USES `repair_budget`, not both repair tasks. Repair split into
+# `repair_budget` and `repair_defect` on 2026-08-31, and a turn takes one or the
+# other per attempt, never both -- `generate_plan`'s branch picks by whether the
+# rejection was about money. Budget is the one that costs the ceiling most,
+# because it routes to Nova Lite, which is the account's BINDING quota; defect
+# repairs go to Claude Haiku and therefore spend a different budget. Counting
+# both would overstate the load on the constraint, and counting the cheaper one
+# would understate it.
 MEAL_PLAN_TASKS_MIN = ["classify_intent", "generate_plan", "generate_prose"]
-MEAL_PLAN_TASKS_MAX = MEAL_PLAN_TASKS_MIN + ["repair_plan"] * MAX_REPAIR_ATTEMPTS
+MEAL_PLAN_TASKS_MAX = MEAL_PLAN_TASKS_MIN + ["repair_budget"] * MAX_REPAIR_ATTEMPTS
 PRICE_CHECK_TASKS = ["classify_intent", "generate_prose"]
 
 # Cross-region, because the configured model ids carry `apac.` / `au.` prefixes

@@ -209,6 +209,19 @@ class ModelRegistry:
             )
         return candidates[0]
 
+    @property
+    def tasks(self) -> list[str]:
+        """
+        Every task with a routing rule, in config order.
+
+        Exposed so a test can say "for every task" instead of listing them.
+        Several did list them, and splitting `repair_plan` into `repair_budget`
+        and `repair_defect` on 2026-08-31 left those tests passing while
+        silently covering one task fewer than their names claim -- the same
+        shape as an alarm bound to a metric nothing publishes.
+        """
+        return list(self._routing)
+
     # -------------------------------------------------------- qualification
 
     @property

@@ -746,3 +746,68 @@ def test_a_blocked_repair_prompt_is_a_failure_not_an_exclusion():
     )
     assert len(card.scored) == 2, "a blocked repair prompt must stay in the denominator"
     assert card.pass_rate == 0.5
+
+
+# ---------------------------------------- the repair suite and the routing table
+
+
+def test_the_repair_harness_covers_every_kind_and_every_routed_repair_task():
+    """
+    `KIND_TO_TASK` is the one place the case vocabulary meets the routing table.
+
+    Both directions matter and they fail differently:
+
+    * a case KIND with no task would be scored and gated against nothing, so a
+      whole class of repair could regress with the build staying green;
+    * a routed TASK with no kind would be a model plane task nothing measures,
+      which is the exact hole `ModelRegistry.unscored_routes()` exists to
+      refuse -- except that gate reads scorecards, and a scorecard for a task
+      the harness never scores is a number somebody typed.
+
+    The docstring on `KIND_TO_TASK` claims this test exists. It now does.
+    """
+    import json
+
+    from evals.run_repair import CASES, KIND_TO_TASK
+    from src.models.registry import ModelRegistry
+
+    payload = json.loads(CASES.read_text(encoding="utf-8"))
+    cases = payload["cases"] if isinstance(payload, dict) else payload
+    kinds = {c["kind"] for c in cases}
+    assert kinds, "the repair suite has no cases; this test lost its input"
+
+    assert kinds == set(KIND_TO_TASK), (
+        f"repair.json has kinds {sorted(kinds)} and KIND_TO_TASK maps "
+        f"{sorted(KIND_TO_TASK)}. A kind with no task is scored against nothing."
+    )
+
+    routed_repairs = {t for t in ModelRegistry().tasks if t.startswith("repair_")}
+    assert set(KIND_TO_TASK.values()) == routed_repairs, (
+        f"config/models.json routes {sorted(routed_repairs)} and the harness "
+        f"scores {sorted(set(KIND_TO_TASK.values()))}. A routed repair task the "
+        f"harness never measures has a scorecard nobody produced."
+    )
+
+
+def test_each_repair_half_is_gated_separately():
+    """
+    The floor applies per task, not to the average.
+
+    Claude Haiku scored 83.3% combined while being 100% on defect repair and
+    71.4% on budget -- one number that reads as "a bit weak" and hides both
+    halves. A combined gate would have passed a model at 95% average that was
+    at 80% on one of two routed tasks.
+    """
+    from evals.run_repair import KIND_TO_TASK, CaseResult, Scorecard, _gate
+
+    card = Scorecard("test")
+    # Perfect on defect, below the floor on budget.
+    for i in range(5):
+        card.results.append(CaseResult(f"d{i}", "defect", True))
+    for i in range(7):
+        card.results.append(CaseResult(f"b{i}", "budget", i < 5))
+
+    assert card.pass_rate > 0.80  # a combined floor of 0.80 would pass this
+    assert _gate(card, 0.90) == 1, "a half below the floor must fail the gate"
+    assert _gate(card, 0.70) == 0, "both halves above the floor must pass"
+    assert set(KIND_TO_TASK) == {"budget", "defect"}

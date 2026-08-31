@@ -71,7 +71,7 @@ print("    aws bedrock list-foundation-models --region ap-southeast-2")
 section("2. Per-task routing")
 print("  Different work deserves different models. Explanatory prose does not")
 print("  need the expensive one; a meal plan does.\n")
-for task in ("classify_intent", "generate_plan", "repair_plan", "generate_prose"):
+for task in registry.tasks:
     try:
         spec = registry.route(task)
         print(f"  {task:<18} -> {spec.display_name} ({spec.key})")

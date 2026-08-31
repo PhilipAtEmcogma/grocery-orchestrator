@@ -13,7 +13,7 @@ from decimal import Decimal
 import pytest
 from pydantic import ValidationError
 
-from src.graph.nodes.plan import assemble_plan
+from src.graph.nodes.plan import PLAN_TASKS, assemble_plan
 from src.graph.state import MAX_REPAIR_ATTEMPTS
 from src.models.base import ModelError, ModelOutputInvalid, ModelTier
 from src.models.scripted import ScriptedModelClient
@@ -519,7 +519,7 @@ class _UnreachableModel(ScriptedModelClient):
         self.plan_calls = 0
 
     def structured(self, **kw):
-        if kw.get("task") in ("generate_plan", "repair_plan"):
+        if kw.get("task") in PLAN_TASKS:
             self.plan_calls += 1
             raise ModelError(self.message)
         return super().structured(**kw)
@@ -610,7 +610,7 @@ class _InvalidOutputModel(ScriptedModelClient):
         self.plan_calls = 0
 
     def structured(self, **kw):
-        if kw.get("task") in ("generate_plan", "repair_plan"):
+        if kw.get("task") in PLAN_TASKS:
             self.plan_calls += 1
             raise ModelOutputInvalid(
                 "PlanDraft failed validation: 1 validation error for PlanDraft\n"

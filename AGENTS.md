@@ -279,6 +279,32 @@ and wrong about the models.
 `routable_models()` alike -- they must agree, or the qualification gate reports
 a pair no turn can reach and a gate that cries wolf gets switched off.
 
+**Repair is TWO tasks as of 2026-08-31: `repair_budget` and `repair_defect`.**
+The prompts already differed because the failures do -- "you came to $X over
+budget" describes none of a bad ref, broken arithmetic or an invented price in a
+meal name. The MODELS now differ because the measurement did: Nova Lite is 7/7
+on budget repair and 4/5 on defect, Claude Haiku the exact inverse at 5/5 and
+5/7. Each half routes to the model that is perfect at it.
+
+**What the split does NOT buy is a fallback, and the audit that recommended it
+said it did.** Each half still has exactly one qualified model, because the
+model that fails each half fails it *below the floor* -- so `exclude` removes it
+and nothing takes its place. What actually improves is blast radius: a Nova Lite
+quota event used to take out all repair, and now degrades budget repair only
+while defect repair keeps working on Haiku. That is worth having, and it is a
+different claim. `config/models.json` `scorecards._split_note` states it.
+
+**`generate_plan` has one routable model too** (`nova-pro`), and always has.
+Two of five tasks have no alternative, not one.
+
+**Task names have ONE definition, in `src/models/base.py`.** They were written in
+five places -- the node, `src/observability/base.py`, two test files and two
+demos -- and the split broke every one at once. The observability copy is the
+one worth remembering: it silently stopped matching, so `RepairAttempts`
+reported **0 on a turn that repaired twice**, and a metric reading zero looks
+exactly like a healthy turn. `tests/test_multimodel.py` now asserts the routing
+table and the constants name the same tasks, in both directions.
+
 It exists because per-task scoring implies per-task exclusion and the config
 could not express it. A model can clear the floor on one task and fall below it
 on another; `available(tier)` would still hand it the second task as a
@@ -442,7 +468,7 @@ measurement here, make the instrument name its inputs.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 841 passed, 31 skipped, no AWS
+python -m pytest -q                              # 845 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \

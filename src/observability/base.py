@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 from pydantic import ValidationError
 
-from src.models.base import ModelError
+from src.models.base import PLAN_TASKS, REPAIR_TASKS, ModelError
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -70,8 +70,6 @@ METRIC_PREFLIGHT = "PreflightRequests"
 # Tasks whose model calls make up the meal-plan generation/repair cycle. The
 # repair loop spans several graph nodes, so it is measured as the calls it
 # makes rather than as one wrapping span — see `instrumented.py`.
-PLAN_TASKS = frozenset({"generate_plan", "repair_plan"})
-REPAIR_TASK = "repair_plan"
 
 
 # ------------------------------------------------------------------- protocol
@@ -240,7 +238,7 @@ class TurnStats:
         # rather than reading the finished plan is what makes this correct on
         # the infeasible path too, where the failing plan is discarded and
         # there is no MealPlan left to read `repair_attempts` off.
-        if task == REPAIR_TASK:
+        if task in REPAIR_TASKS:
             self.repair_attempts += 1
 
 
