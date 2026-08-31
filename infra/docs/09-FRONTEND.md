@@ -1,8 +1,10 @@
 # 09 — Frontend Hosting (S3 + CloudFront)
 
-> **Status: Design documentation. The chat UI does not exist yet.** This doc is a
-> research-backed best-practice guide so a teammate can build and host the static
-> chat interface and decide the framework. It expands the `FrontendStack` sketch
+> **Status: Design documentation for the HOSTING, which does not exist.** The
+> chat UI itself does — a Vite/React client in `frontend/`, merged 2026-08-31,
+> which answers the framework question this doc left open. What is still
+> unbuilt is `FrontendStack`: the bucket, the distribution and the deploy. Read
+> §4 with React/Vite as settled rather than as a choice. It expands the `FrontendStack` sketch
 > in [03-STACK-SPECS](03-STACK-SPECS.md) and resolves
 > [08-OPEN-DECISIONS §7](08-OPEN-DECISIONS.md).
 
