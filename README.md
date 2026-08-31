@@ -178,11 +178,14 @@ evidence gathered and its options written down; none needed more code first.
 
 **Known open questions that want a human**, not more code:
 
-- **Who holds an API key, if the endpoints get one?** Two public,
-  unauthenticated, Bedrock-invoking APIs exist and both are now alarmed, which
-  makes abuse visible without bounding it. Requiring a key changes
-  `CONTRACT-v1.md` and breaks a teammate's working client, so it is designed
-  and not applied:
+- ~~**Who holds an API key, if the endpoints get one?**~~ **Decided
+  2026-08-31: at the frontend cutover, not before.** Two public,
+  unauthenticated, Bedrock-invoking APIs exist and both are now alarmed — abuse
+  is visible but not bounded. Requiring a key changes `CONTRACT-v1.md` and
+  breaks a teammate's working client, so it lands in the SAME change that
+  repoints the frontend, as one coordinated break instead of two. Acceptable
+  only while neither URL is published. **`infra/test/app.test.ts` fails the
+  moment `FrontendStack` creates a resource**, so nothing has to remember.
   [`docs/OPEN-REVIEW-api-key.md`](docs/OPEN-REVIEW-api-key.md).
 - `min_grams_per_person_day` decides which meal-plan requests are refused
   outright and has never been reviewed by anyone who knows about food —

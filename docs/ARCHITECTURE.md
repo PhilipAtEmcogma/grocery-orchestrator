@@ -797,6 +797,38 @@ measurement, not a property, and the service has gained a recipe catalogue
 since), then choose. `infra/docs/08-OPEN-DECISIONS.md` §10 carries the full
 reasoning and the corrected sequence.
 
+**THE API KEY LANDS IN THE SAME CHANGE. Decided by the owner, 2026-08-31.**
+Both `POST /chat` endpoints are public and unauthenticated, and the account
+holds no API keys at all (`aws apigateway get-api-keys` returns nothing; both
+methods report `apiKeyRequired: false`, `authorizationType: NONE`). The usage
+plans exist and throttle, but a plan with no key throttles everyone as one
+anonymous pool and cannot tell a shopper from a script.
+
+Requiring a key is minutes of CDK. What it costs is a required `x-api-key`
+header in `CONTRACT-v1.md`, API Gateway's own 403 body instead of the
+contract-valid `ChatResponse` this service guarantees on every other path, and
+a working client that has been building against the contract since 2026-08-21.
+So the decision was to take it WITH the cutover rather than before it: the URL
+change and the header change are one coordinated break instead of two.
+
+The exposure while waiting was costed rather than asserted. Bounded by the Nova
+Lite quota -- which cannot be raised and is therefore acting as an accidental
+cost ceiling -- an abuser spamming meal plans 24/7 reaches roughly **$2,030 a
+month**, price checks roughly **$140**. The $25 budget alarms, but AWS Budgets
+refresh about three times a day, so expect to hear about it $25-70 in. **The
+money is the smaller problem**: an abuser consuming the 20/min quota makes the
+service unusable for real shoppers while they do it, and no budget bounds that.
+
+Acceptable only because nobody outside the team has either URL. Move
+immediately on any of: a demo outside the team, either URL published anywhere,
+or the budget alarm firing for a reason nobody on the team caused.
+
+**It is a test, not a note.** `infra/test/app.test.ts` fails the moment
+`FrontendStack` creates its first resource, with the review document and the
+two options in the failure message. A note saying "revisit when the frontend
+lands" is the same shape as "SKIPPED until ServiceStack is implemented", and
+this repository has spent two audits finding those.
+
 **A frontend exists, and this section did not know -- 2026-08-31.** The branch
 `frontend-infra-setup` has carried a working Vite/React client since
 2026-08-21: four commits by a teammate, never merged, never mentioned, 120

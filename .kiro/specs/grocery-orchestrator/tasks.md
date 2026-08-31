@@ -979,8 +979,18 @@ proposed, or gated as labelled; it is not implemented.
 
   12 assertions, each watched to fail against a mutated stack.
 
-- [ ] **Pilot Task 12d — Bound the endpoints, not just watch them.** DESIGNED,
-  NOT APPLIED, and waiting on a person: `docs/OPEN-REVIEW-api-key.md`.
+- [ ] **Pilot Task 12d — Bound the endpoints, not just watch them.** DECIDED
+  2026-08-31 by the owner, and DEFERRED TO A TRIGGER rather than to a date:
+  **option C now, option A in the same change that repoints the frontend at the
+  CDK plane.** `docs/OPEN-REVIEW-api-key.md`.
+
+  **The trigger is a test, not a note.** `infra/test/app.test.ts` fails the
+  moment `FrontendStack` creates its first resource — which is when a frontend
+  is being deployed and wired to a URL — and its failure message carries the
+  review document and the two options. Verified by implementing a stub bucket in
+  `FrontendStack` and watching it fire. A note saying "revisit when the frontend
+  lands" is the same shape as "SKIPPED until ServiceStack is implemented", and
+  two audits have now found those.
 
   Alarming both planes makes abuse VISIBLE; it does not BOUND it. An API key
   plus a usage-plan quota turns an unbounded Bedrock bill into a number chosen

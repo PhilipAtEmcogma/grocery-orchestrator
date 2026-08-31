@@ -28,9 +28,11 @@ service into an implementation claim.
   acquisition (Task 7.9). **Read before touching acquisition.** §8 is the
   condition list Task 11.4 is gated on.
 - `docs/OPEN-REVIEW-api-key.md` — two public unauthenticated endpoints, now
-  alarmed but still unbounded. Designed and not applied, because a key changes
-  the published contract and breaks a teammate's client. Needs a person to say
-  who holds it.
+  alarmed but still unbounded. **Decided 2026-08-31: the key lands with the
+  frontend cutover, not before**, so the URL change and the new required header
+  are one coordinated break. Do not apply it early without reading that
+  document — and do not forget it either: `infra/test/app.test.ts` fails the
+  moment `FrontendStack` creates a resource.
 - `docs/OPEN-REVIEW-min-grams-per-person-day.md` — the one judgement in the
   planning path that has NOT had domain review. Self-contained, needs no
   code reading, and says what would change the answer. Read it if you know

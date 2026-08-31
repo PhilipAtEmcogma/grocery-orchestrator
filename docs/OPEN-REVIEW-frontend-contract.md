@@ -1,3 +1,13 @@
+> **One change is already queued for whenever this conversation happens.**
+> Both `POST /chat` endpoints are public and unauthenticated today. The owner
+> decided on 2026-08-31 that an API key lands in the SAME change that repoints
+> the frontend at the CDK plane — so the URL change and a new required
+> `x-api-key` header arrive together rather than breaking the client twice.
+> A request without the header gets API Gateway's own 403, not the
+> contract-valid `ChatResponse` this service guarantees on every other path,
+> which is the part worth raising with whoever owns the client.
+> `docs/OPEN-REVIEW-api-key.md`.
+
 # Open review — the frontend team's contract does not match ours
 
 **Open, and wants the frontend teammate.** Fifteen minutes, no code reading.

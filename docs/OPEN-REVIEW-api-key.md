@@ -1,8 +1,45 @@
 # Open review: should the endpoints require an API key?
 
-**Status:** designed, deliberately NOT applied. Needs a decision from a person.
+**Status:** DECIDED 2026-08-31 by the owner — **option C now, option A at the
+frontend cutover**. Kept open as a review because the decision has a trigger
+rather than a date, and the trigger has not fired.
 **Raised:** 2026-08-31, closing the second audit's Finding 3 halfway.
 **Audience:** anyone who can decide who holds a key. No code reading required.
+
+---
+
+## 0. The decision, and what will remind you
+
+**Now:** stay open. Both planes are alarmed; neither URL is published; nobody
+outside the team has one.
+
+**At the cutover:** take option A — a key on both planes — in the SAME change
+that repoints the frontend at the CDK plane. One coordinated URL-and-header
+break instead of two, and the client that would be broken is the one being
+changed anyway.
+
+**What remembers:** `infra/test/app.test.ts` fails the moment `FrontendStack`
+creates its first resource, which is when a frontend is being deployed and
+wired to a URL. The failure message carries this document and the two options.
+It is a test rather than a note because a note saying "revisit later" is the
+same shape as "SKIPPED until ServiceStack is implemented", and this repository
+has spent two audits finding those.
+
+**Confirmed against the account, 2026-08-31**, rather than read from a document:
+
+```
+aws apigateway get-api-keys                      -> (empty)
+POST /chat on woqmel35lk  apiKeyRequired: false  authorizationType: NONE
+POST /chat on crm1xkrk34  apiKeyRequired: false  authorizationType: NONE
+```
+
+Usage plans exist on both and throttle at 5/sec, but a usage plan with no key
+throttles everyone as one anonymous pool. It bounds a burst; it cannot tell a
+shopper from a script.
+
+**Move before the trigger** if any of these happen first: a demo outside the
+team, either URL published anywhere, or the $25 budget alarm firing for a
+reason nobody on the team caused.
 
 ---
 
@@ -41,6 +78,25 @@ described as auth, and `security.md` should not be read as satisfied by it.
 gated behind the identity work this project has deliberately not started
 (`tasks.md`, and the ADR 0002 withdrawal of AgentCore Gateway). WAF is the third
 layer and is about volume and shape rather than identity.
+
+### What the exposure actually is, costed
+
+The Nova Lite quota is unraisable at 20 requests/minute, so it caps an abuser
+as effectively as it caps a shopper — an accidental cost ceiling:
+
+| what they spam | rate | worst case |
+|---|---|---|
+| price checks | 10/min | ~**$140**/month |
+| meal plans | 6.7/min | ~**$2,030**/month |
+
+Lambda stays inside the free tier at that volume. The $25 budget alarms, but
+AWS Budgets refresh roughly three times a day, so expect to hear about it
+$25–70 in rather than at $25.
+
+**The money is the smaller problem.** An abuser consuming the 20/min quota
+makes the service unusable for real shoppers while they are doing it. No budget
+bounds that, and it is the argument that would move this from C to A on a day's
+notice if either URL ever got out.
 
 ## 3. Why it is designed and not applied
 
