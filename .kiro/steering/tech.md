@@ -141,6 +141,12 @@ GitHub, which reads the file automatically.
 
 - DO NOT use Bedrock Agents Classic, `CreateAgent`, or `InvokeInlineAgent`.
 - DO NOT suggest `ap-southeast-6` (Auckland).
+- The CDK enforces the region STRUCTURALLY: every stack is constructed with
+  `env.region = 'ap-southeast-2'`, and `infra/test/app.test.ts` asserts it over
+  all five in CI. A mismatched `CDK_DEFAULT_REGION` produces a warning, not a
+  refusal — that variable comes from the operator's AWS profile rather than
+  from the command, so refusing on it blocked `cdk synth` locally and never
+  fired in CI. Decided 2026-08-31.
 - DO NOT containerise the orchestrator Lambda; it forfeits SnapStart.
 - DO NOT use Lambda Function URLs for streaming; they bypass API Gateway
   throttling, usage plans, and the Cognito authoriser.

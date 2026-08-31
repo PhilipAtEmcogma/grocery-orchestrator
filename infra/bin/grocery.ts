@@ -53,6 +53,11 @@ const stage = (app.node.tryGetContext('stage') as string) ?? 'dev';
 // structural, and `infra/test/app.test.ts` asserts it over every stack in the
 // app, which means CI now checks it.
 //
+// LOOSENED FROM A HARD STOP TO A WARNING ON 2026-08-31, with the owner's
+// explicit agreement. Removing a refusal should be a decision rather than a
+// side effect of some other change, so it is recorded as one here and in
+// `.kiro/steering/tech.md`.
+//
 // This block used to `throw` when `CDK_DEFAULT_REGION !== REGION`, and that
 // guard fired in exactly the wrong places. `CDK_DEFAULT_REGION` is set by the
 // CDK CLI from the resolved AWS profile, not by the operator -- so it could not

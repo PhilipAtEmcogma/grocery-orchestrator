@@ -105,8 +105,23 @@ the safety cost is not worth the saving.
 ## 4. Environment, account, and region strategy
 
 - **One region, everywhere: `ap-southeast-2`.** Hardcoded via `env` on every
-  stack. `bin/grocery.ts` refuses to synth for any other region. (Guard against
+  stack, and `infra/test/app.test.ts` asserts it over all five. (Guard against
   the `ap-southeast-6` mistake `tech.md` explicitly forbids.)
+
+  **`bin/grocery.ts` used to `throw` when `CDK_DEFAULT_REGION` differed, and
+  that was changed to a warning on 2026-08-31 with the owner's agreement.** The
+  variable is set by the CDK CLI from the resolved AWS profile, not by whoever
+  runs the command, so the guard refused `cdk synth` — an operation that touches
+  no account — for any developer whose default region differed, while in CI,
+  where there are no credentials, the variable is unset and it never ran at all.
+  Blocking where it was harmless; asleep where it was gated.
+
+  THE PIN IS THE CONTROL AND ALWAYS WAS: nothing can deploy outside
+  `ap-southeast-2` because every stack is constructed with
+  `env.region = REGION`. What changed is that CI now CHECKS that, which it
+  never did. The ambient mismatch is still surfaced, as a warning telling the
+  operator to check which ACCOUNT they are about to deploy into — the account is
+  the part that genuinely does come from the profile.
 - **Account comes from the deploy identity, never a literal.** Following
   [`scripts/aws_placeholders.py`](../../scripts/aws_placeholders.py)'s reasoning
   — *"whoever is authenticated IS the account being deployed to"* — the CDK
@@ -123,8 +138,11 @@ the safety cost is not worth the saving.
 const app = new cdk.App();
 const stage = app.node.tryGetContext('stage') ?? 'dev';
 const env = { account: process.env.CDK_DEFAULT_ACCOUNT, region: 'ap-southeast-2' };
-if (process.env.CDK_DEFAULT_REGION && process.env.CDK_DEFAULT_REGION !== 'ap-southeast-2') {
-  throw new Error('This project deploys ONLY to ap-southeast-2 (tech.md). Refusing.');
+// Not a throw: see above. The pin below is the control; this only tells the
+// operator their profile points somewhere else, because the ACCOUNT does come
+// from the profile even though the region does not.
+if (ambient && ambient !== 'ap-southeast-2') {
+  cdk.Annotations.of(app).addWarningV2('grocery:ambient-region', '...');
 }
 const cfg = loadConfig(stage);            // names, flags, model ids
 const stateful = new StatefulStack(app, `Grocery-Stateful-${stage}`, { env, cfg });
