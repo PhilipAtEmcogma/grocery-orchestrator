@@ -208,10 +208,11 @@ evidence gathered and its options written down; none needed more code first.
   worse than `datasets/DATA_SCHEMA.md` suggested: the branch
   `frontend-infra-setup` carries a second contract document assuming flat
   objects, numeric prices, no `turn_id` and `location` as a required string.
-  **That branch was merged into `main` on 2026-08-31**, so the second document
-  is now in the repository: `docs/API-CONTRACT.md`, carrying a banner naming
-  `CONTRACT-v1.md` as authoritative. The banner stops a reader implementing the
-  wrong one; it is not the fix. The fix is one document.
+  **That branch was merged into `main` on 2026-08-31 and the contract question
+  was settled the same day**: `docs/API-CONTRACT.md` is now a pointer at
+  `CONTRACT-v1.md`, so there is one contract document again. The field-by-field
+  comparison and the six questions it raised are preserved in
+  [`docs/OPEN-REVIEW-frontend-contract.md`](docs/OPEN-REVIEW-frontend-contract.md).
   Their shipped client works against ours; their document, implemented, returns
   HTTP 400. Field-by-field diff and their six questions answered in
   [`docs/OPEN-REVIEW-frontend-contract.md`](docs/OPEN-REVIEW-frontend-contract.md).

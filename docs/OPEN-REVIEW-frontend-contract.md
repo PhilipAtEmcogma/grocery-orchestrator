@@ -24,9 +24,16 @@ hostage to a document would have been the worse trade. But it converts this
 review from "something to settle before merging" into "something to settle
 now", and the four items in §0.3 are the settling.
 
-`docs/API-CONTRACT.md` carries a banner naming `CONTRACT-v1.md` as
-authoritative. That is the minimum that stops a reader implementing the wrong
-one; it is not the fix. The fix is one document.
+**RESOLVED the same day.** `docs/API-CONTRACT.md` is now a pointer at
+`CONTRACT-v1.md`, and the five 0-byte placeholder files are deleted. There is
+one contract document again. What that file used to say is preserved twice
+over: the field-by-field comparison is §2 of this document, and the original
+text is in git history at `9a09d87`.
+
+A banner was tried first and rejected as insufficient: it stops a reader who
+notices it, and leaves a reader who does not one wrong click from building
+against a spec the service refuses. Two contract documents is the failure mode
+whether or not one of them carries a warning.
 
 ### 0.1 What was on the branch — inspected before merging
 
@@ -63,13 +70,16 @@ and no file overlaps**, which is why there was nothing to reconcile in code.
 What it did cost:
 
 - **Two contract documents in `main`.** `docs/API-CONTRACT.md` beside
-  `CONTRACT-v1.md`. Banner added; document unchanged otherwise.
-- **Five 0-byte files** now tracked: `REPOSITORY_AUDIT.md`,
-  `docs/DEPLOYMENT-RUNBOOK.md`, `docs/IAM-MATRIX.md`,
-  `docs/LOCAL-DEVELOPMENT.md`, `docs/OBSERVABILITY.md`. Left as-is by decision.
-  Worth naming that `docs/OBSERVABILITY.md` at 0 bytes is worse than absent —
-  somebody looking for observability documentation will find it and find
-  nothing, while `docs/ARCHITECTURE.md` §3q holds the real material.
+  `CONTRACT-v1.md`. **Reduced to a pointer on 2026-08-31**, so there is one
+  again.
+- **Five 0-byte files.** `REPOSITORY_AUDIT.md`, `docs/DEPLOYMENT-RUNBOOK.md`,
+  `docs/IAM-MATRIX.md`, `docs/LOCAL-DEVELOPMENT.md`, `docs/OBSERVABILITY.md`.
+  **Deleted on 2026-08-31**, having been created empty on 2026-08-19 and
+  2026-08-21 and never filled. Every topic each one names is already documented
+  and nothing linked to any of them — the reasoning is in the commit. A 0-byte
+  `docs/OBSERVABILITY.md` is worse than no file: somebody looking for
+  observability documentation finds it and finds nothing, while
+  `docs/ARCHITECTURE.md` §3q holds the real material.
 
 ### 0.3 What to settle now
 
@@ -268,6 +278,7 @@ commits by a teammate dated 2026-08-19 to 2026-08-21, branched from `1e479c9`
 and 120 commits behind `main`. Every behavioural claim above was produced by
 posting the shape through `src/handler.py` and recording what came back.
 
-The branch also carries five zero-byte files — `REPOSITORY_AUDIT.md`,
+The branch also carried five zero-byte files — `REPOSITORY_AUDIT.md`,
 `docs/DEPLOYMENT-RUNBOOK.md`, `docs/IAM-MATRIX.md`, `docs/LOCAL-DEVELOPMENT.md`,
-`docs/OBSERVABILITY.md` — which are placeholders, not content.
+`docs/OBSERVABILITY.md` — placeholders rather than content, deleted on
+2026-08-31 (§0.2).
