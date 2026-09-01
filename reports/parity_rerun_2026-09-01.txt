@@ -1,0 +1,28 @@
+PARITY RE-RUN
+
+  hand-made : https://woqmel35lk.execute-api.ap-southeast-2.amazonaws.com/dev/chat
+  CDK       : https://crm1xkrk34.execute-api.ap-southeast-2.amazonaws.com/dev/chat
+  paced at 9.0/min (6.7s apart)
+
+=== Deterministic requests (must match byte-for-byte) ===
+
+  'cheapest butter'  -> MATCH
+    hand-made: price_check store=paknsave#Mangere price=2.97 refs=('c1', 'c2', 'c3', 'c4', 'c5')
+    CDK      : price_check store=paknsave#Mangere price=2.97 refs=('c1', 'c2', 'c3', 'c4', 'c5')
+
+  'cheapest milk near Albany'  -> MATCH
+    hand-made: price_check store=new_world#Devonport price=4.94 refs=('c1',)
+    CDK      : price_check store=new_world#Devonport price=4.94 refs=('c1',)
+
+  'how much is truffle oil'  -> MATCH
+    hand-made: price_check store= price= refs=()
+    CDK      : price_check store= price= refs=()
+
+=== Meal-plan requests (ranges, not single figures) ===
+
+  'feed 3 people for 5 days on $80'  (3 reps each)
+    hand-made: meals=[5] payable=['43.33', '43.33', '38.59'] citations=[24, 24, 24]
+    CDK      : meals=[5] payable=['31.74', '40.76', '32.86'] citations=[24, 24, 24]
+    -> meal counts overlap: consistent with parity (totals vary by design)
+
+exit=0  (0=parity, 1=a difference to investigate, 2=inconclusive)

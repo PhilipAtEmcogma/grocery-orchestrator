@@ -70,6 +70,78 @@ def test_default_source_is_fixtures_for_every_known_retailer():
         assert isinstance(resolve_source(retailer), FixtureSource)
 
 
+def test_price_source_env_selects_lineage_b():
+    """The explicit override still works and takes precedence over the config default."""
+    import os
+
+    from ingestion.sources import LineageBSource
+
+    os.environ["PRICE_SOURCE"] = "lineage_b"
+    try:
+        assert isinstance(resolve_source("paknsave"), LineageBSource)
+    finally:
+        del os.environ["PRICE_SOURCE"]
+
+
+def test_unknown_price_source_env_raises_rather_than_falling_back():
+    """A typo'd PRICE_SOURCE is an error, not a silent fall-through to fixtures."""
+    import os
+
+    os.environ["PRICE_SOURCE"] = "lineag_b"  # typo
+    try:
+        with pytest.raises(ValueError, match="not a known source"):
+            resolve_source("paknsave")
+    finally:
+        del os.environ["PRICE_SOURCE"]
+
+
+def test_live_acquisition_wins_over_price_source_env():
+    """The tripwire is checked before the config/env source selection."""
+    import os
+
+    os.environ["LIVE_ACQUISITION"] = "1"
+    os.environ["PRICE_SOURCE"] = "lineage_b"
+    try:
+        with pytest.raises(NotImplementedError, match="ACQUISITION-RISK"):
+            resolve_source("paknsave")
+    finally:
+        del os.environ["LIVE_ACQUISITION"]
+        del os.environ["PRICE_SOURCE"]
+
+
+def test_data_sources_config_declares_lineage_b_primary():
+    """
+    The config records the data team's catalogue as the PRIMARY input.
+
+    This is the first-class expression of the 2026-08-29 decision; asserting it
+    here means the priority cannot be quietly inverted without failing a test.
+    """
+    from ingestion.sources import DATA_SOURCES_CONFIG
+
+    raw = json.loads(DATA_SOURCES_CONFIG.read_text(encoding="utf-8"))
+    by_name = {s["name"]: s for s in raw["sources"]}
+    assert by_name["lineage_b"]["role"] == "primary"
+    assert by_name["fixtures"]["role"] == "fallback"
+    # Every declared source must be one resolve_source can actually build.
+    from ingestion.sources import _SOURCE_BY_NAME
+
+    assert all(s["name"] in _SOURCE_BY_NAME for s in raw["sources"])
+    assert raw["default_source"] in _SOURCE_BY_NAME
+
+
+def test_unknown_default_source_in_config_raises():
+    """A default_source the code cannot build is a config bug, surfaced loudly."""
+    import tempfile
+
+    from ingestion.sources import _default_source_name
+
+    with tempfile.TemporaryDirectory() as d:
+        bad = Path(d) / "data-sources.json"
+        bad.write_text(json.dumps({"default_source": "nonesuch"}), encoding="utf-8")
+        with pytest.raises(ValueError, match="not a known source"):
+            _default_source_name(bad)
+
+
 def test_unknown_retailer_is_rejected():
     with pytest.raises(ValueError, match="unknown retailer"):
         FixtureSource("countdown-express")
@@ -519,3 +591,124 @@ def test_the_rejection_line_carries_no_shopper_data():
     )
     forbidden = {"message_text", "session_id", "location", "dietary_exclusions", "near", "user"}
     assert not (fields & forbidden)
+
+
+# --------------------------------------------------- seed loader guard (2026-09-01)
+
+
+class _CountTable:
+    """
+    A fake products table that answers the guard's COUNT-by-store_key query.
+
+    `present` is the set of store_keys that have rows. The guard issues
+    `query(KeyConditionExpression=Key('store_key').eq(k), Select='COUNT', Limit=1)`
+    and reads `Count`; this models exactly that, and records writes so a test
+    can assert whether a load actually happened.
+    """
+
+    def __init__(self, present: set[str]) -> None:
+        self._present = set(present)
+        self.written: list = []
+
+    def batch_writer(self):
+        return _FakeBatch(self.written)
+
+    def query(self, **kw):
+        # The condition is a boto3 ConditionBase; its expression carries the
+        # store_key value. Rather than parse it, model the semantics: the guard
+        # only ever probes one store_key at a time, so pull it from the built
+        # values. boto3 exposes it via get_expression()['values'].
+        cond = kw.get("KeyConditionExpression")
+        values = cond.get_expression()["values"] if cond is not None else []
+        store_key = values[-1] if values else None
+        count = 1 if store_key in self._present else 0
+        return {"Count": count}
+
+
+def _patch_loader_table(monkeypatch, table) -> None:
+    from scripts import load_seed_data as ld
+
+    monkeypatch.setattr(
+        ld.boto3, "resource", lambda *a, **k: type("R", (), {"Table": lambda s, n: table})()
+    )
+
+
+def test_real_only_store_keys_are_disjoint_from_fixtures_and_present_in_lineage_b():
+    """
+    The guard's probe keys must actually distinguish the two catalogues.
+
+    If a probe key ever appeared in the fixtures, the guard would refuse a
+    legitimate first load; if one stopped appearing in Lineage B, the guard
+    would never fire and silently disarm — the exact failure mode this test
+    exists to prevent. Both are asserted against the real data.
+    """
+    from ingestion.lineage_b import transform
+    from ingestion.normalise import store_key as make_store_key
+    from ingestion.sources import LINEAGE_B_DIR
+    from scripts.load_seed_data import _REAL_ONLY_STORE_KEYS
+
+    fixture_keys = {r["store_key"] for r in json.loads(FIXTURES.read_text(encoding="utf-8"))}
+    assert not (set(_REAL_ONLY_STORE_KEYS) & fixture_keys), (
+        "a probe key is also a fixture store_key; the guard would block a first load"
+    )
+
+    records = []
+    for path in sorted(LINEAGE_B_DIR.glob("*.json")):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        for entry in payload["SmartGroceryProducts"]:
+            item = entry.get("PutRequest", {}).get("Item", entry)
+            records.append({k: (v.get("S") if "S" in v else v.get("N")) for k, v in item.items()})
+    offers, _ = transform(records, captured_at="2026-08-28")
+    real_keys = {make_store_key(o.store, o.store_location) for o in offers}
+    for probe in _REAL_ONLY_STORE_KEYS:
+        assert probe in real_keys, f"probe key {probe!r} is not in Lineage B; the guard is disarmed"
+
+
+def test_load_refuses_when_the_real_catalogue_is_present(monkeypatch):
+    """The core fix: a plain load must not silently shadow the real catalogue."""
+    from scripts import load_seed_data as ld
+
+    table = _CountTable(present={"paknsave#albany"})  # real catalogue loaded
+    _patch_loader_table(monkeypatch, table)
+
+    with pytest.raises(SystemExit, match="REFUSING to load fixtures"):
+        ld.load("grocery-products-dev")
+    assert table.written == [], "the guard let fixtures be written over real data"
+
+
+def test_load_proceeds_when_the_table_has_no_real_rows(monkeypatch):
+    """A clean table (fresh or fixture-only) still loads, so first setup is unaffected."""
+    from scripts import load_seed_data as ld
+
+    table = _CountTable(present=set())  # no real-only stores
+    _patch_loader_table(monkeypatch, table)
+
+    written = ld.load("grocery-products-dev")
+    assert written == len(json.loads(FIXTURES.read_text(encoding="utf-8")))
+    assert table.written, "nothing was written into a clean table"
+
+
+def test_force_bypasses_the_guard(monkeypatch):
+    """--force is the deliberate escape hatch, and it must actually load."""
+    from scripts import load_seed_data as ld
+
+    table = _CountTable(present={"new_world#albany"})
+    _patch_loader_table(monkeypatch, table)
+
+    written = ld.load("grocery-products-dev", force=True)
+    assert written == len(json.loads(FIXTURES.read_text(encoding="utf-8")))
+    assert table.written, "--force did not load"
+
+
+def test_real_catalogue_present_returns_the_found_key(monkeypatch):
+    """The probe names which store it found, so the refusal can be specific."""
+    from scripts import load_seed_data as ld
+
+    # Only new_world#albany is present; paknsave#albany is probed first and
+    # misses, so the second probe is the one that should be reported.
+    _patch_loader_table(monkeypatch, _CountTable(present={"new_world#albany"}))
+    assert ld.real_catalogue_present("grocery-products-dev") == "new_world#albany"
+
+    # A clean table reports nothing.
+    _patch_loader_table(monkeypatch, _CountTable(present=set()))
+    assert ld.real_catalogue_present("grocery-products-dev") is None
