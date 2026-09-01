@@ -244,13 +244,30 @@ class _FakeTable:
         return {"Items": list(self._rows)}
 
 
+def _patch_resource(monkeypatch, products: _FakeTable, history: _FakeTable | None = None) -> None:
+    """
+    Route .Table(name) to the products sink or the history sink by NAME.
+
+    `refresh()` now writes to two tables -- products and grocery-price-history-dev
+    -- so a name-blind fake would land both in one sink and hide whether history
+    was written at all. `history` defaults to its own throwaway table when a test
+    does not care about it.
+    """
+    from ingestion import handler as h
+
+    hist = history if history is not None else _FakeTable()
+
+    def _table(_self, name):
+        return hist if name == h.HISTORY_TABLE else products
+
+    monkeypatch.setattr(h.boto3, "resource", lambda *a, **k: type("R", (), {"Table": _table})())
+
+
 def test_refresh_writes_only_the_requested_retailer(monkeypatch):
     from ingestion import handler as h
 
     table = _FakeTable()
-    monkeypatch.setattr(
-        h.boto3, "resource", lambda *a, **k: type("R", (), {"Table": lambda s, n: table})()
-    )
+    _patch_resource(monkeypatch, table)
 
     result = h.refresh("new_world", table_name="grocery-products-dev")
 
@@ -258,6 +275,32 @@ def test_refresh_writes_only_the_requested_retailer(monkeypatch):
     assert result["written"] == result["fetched"] > 0
     assert result["captured_at"]
     assert {i["store"] for i in table.written} == {"new_world"}
+
+
+def test_refresh_appends_price_history_alongside_products(monkeypatch):
+    """A real refresh writes one history row per accepted product, to the history table."""
+    from ingestion import handler as h
+
+    table = _FakeTable()
+    history = _FakeTable()
+    _patch_resource(monkeypatch, table, history)
+
+    result = h.refresh("new_world", table_name="grocery-products-dev")
+
+    # One history row per product written, and they went to the HISTORY table,
+    # not the products one.
+    assert result["history_written"] == len(table.written) > 0
+    assert len(history.written) == len(table.written)
+    # History rows carry the history_pk and the capture date as the sort key,
+    # and money as strings -- the shape src/history defines.
+    row = history.written[0]
+    assert row["history_pk"] == f"{row['store_key']}#{row['product_key']}"
+    assert row["valid_date"]
+    assert isinstance(row["price_nzd"], str)
+    # No shopper/display fields leaked into history: it is a baseline, not a
+    # catalogue row.
+    assert "display_name" not in row
+    assert "lat" not in row and "lon" not in row
 
 
 def test_handler_rejects_an_unknown_retailer():
@@ -388,17 +431,17 @@ def test_dry_run_reports_the_diff_and_writes_nothing(monkeypatch):
     from ingestion import handler as h
 
     table = _FakeTable()
-    monkeypatch.setattr(
-        h.boto3,
-        "resource",
-        lambda *a, **k: type("R", (), {"Table": lambda s, n: table})(),
-    )
+    history = _FakeTable()
+    _patch_resource(monkeypatch, table, history)
 
     result = h.refresh("new_world", table_name="grocery-products-dev", dry_run=True)
 
     assert result["dry_run"] is True
     assert result["written"] == 0
     assert table.written == []
+    # A dry run writes NO history either -- it is a report, not a mutation.
+    assert history.written == []
+    assert result["history_written"] == 0
     # It still did the work of finding out what would happen.
     assert result["fetched"] > 0
     assert result["added"] + result["changed"] + result["unchanged"] == result["fetched"]
@@ -482,9 +525,8 @@ def test_a_refused_row_is_never_written(monkeypatch):
     from ingestion import handler as h
 
     table = _FakeTable()
-    monkeypatch.setattr(
-        h.boto3, "resource", lambda *a, **k: type("R", (), {"Table": lambda s, n: table})()
-    )
+    history = _FakeTable()
+    _patch_resource(monkeypatch, table, history)
     bad = _row(product_key="broccoli-ea", pack_grams=1, price_nzd="2.49", unit_price_nzd="2490.00")
     monkeypatch.setattr(h, "to_item", lambda offer: bad)
 
@@ -493,6 +535,9 @@ def test_a_refused_row_is_never_written(monkeypatch):
     assert result["rejected"] == result["fetched"] > 0
     assert result["written"] == 0
     assert table.written == [], "a row we refused to publish reached the table"
+    # A rejected row reaches neither the products table nor history.
+    assert history.written == [], "a row we refused to publish reached history"
+    assert result["history_written"] == 0
     assert result["sample_rejected"], "the refusal left no trace to act on"
 
 
@@ -508,9 +553,7 @@ def test_a_refused_row_is_not_counted_as_unchanged(monkeypatch):
     from ingestion import handler as h
 
     table = _FakeTable()
-    monkeypatch.setattr(
-        h.boto3, "resource", lambda *a, **k: type("R", (), {"Table": lambda s, n: table})()
-    )
+    _patch_resource(monkeypatch, table)
     bad = _row(product_key="broccoli-ea", pack_grams=1, price_nzd="2.49", unit_price_nzd="2490.00")
     monkeypatch.setattr(h, "to_item", lambda offer: bad)
 
@@ -534,9 +577,7 @@ def test_the_rejection_log_line_matches_the_metric_filter(monkeypatch, capsys):
     from scripts.apply_alarms import CONFIG, load_config
 
     table = _FakeTable()
-    monkeypatch.setattr(
-        h.boto3, "resource", lambda *a, **k: type("R", (), {"Table": lambda s, n: table})()
-    )
+    _patch_resource(monkeypatch, table)
     bad = _row(product_key="broccoli-ea", pack_grams=1, price_nzd="2.49", unit_price_nzd="2490.00")
     monkeypatch.setattr(h, "to_item", lambda offer: bad)
     h.refresh("new_world", table_name="grocery-products-dev", dry_run=True)
