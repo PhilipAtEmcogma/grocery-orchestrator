@@ -45,10 +45,16 @@ from boto3.dynamodb.conditions import Key
 
 from ingestion.normalise import to_item
 from ingestion.sources import KNOWN_RETAILERS, resolve_source
+from src.history import to_history_item
 from src.review import implausible_unit_price_values
 
 REGION = os.environ.get("AWS_REGION", "ap-southeast-2")
 TABLE = os.environ.get("PRODUCTS_TABLE", "grocery-products-dev")
+# Append-only price history, written alongside the products write. A SEPARATE
+# table with a different lifecycle and a different reader (ops/reviewer, never
+# the shopper path) -- see src/history. Env-overridable for the same reason
+# PRODUCTS_TABLE is.
+HISTORY_TABLE = os.environ.get("PRICE_HISTORY_TABLE", "grocery-price-history-dev")
 
 # Fields whose change is worth reporting. Excludes nothing meaningful today;
 # named explicitly so adding a field to to_item() is a decision about whether
@@ -242,16 +248,33 @@ def refresh(retailer: str, table_name: str = TABLE, *, dry_run: bool = False) ->
     table = boto3.resource("dynamodb", region_name=REGION).Table(table_name)  # type: ignore[union-attr]
     delta = diff_items(_existing(table, items), items)
 
+    history_written = 0
     if not dry_run:
         with table.batch_writer() as batch:
             for item in items:
                 batch.put_item(Item=item)
+
+        # Append-only price history, in the SAME not-dry-run guard. One row per
+        # accepted (store, product, capture date): a new date appends, a
+        # same-day re-run overwrites an identical row. Ops/reviewer only -- this
+        # is never read on the shopper path and never becomes a citation. A
+        # dry_run writes nothing here either, for the same reason it writes
+        # nothing to products: it is a report, not a mutation.
+        history_table = boto3.resource("dynamodb", region_name=REGION).Table(HISTORY_TABLE)  # type: ignore[union-attr]
+        with history_table.batch_writer() as batch:
+            for item in items:
+                batch.put_item(Item=to_history_item(item))
+        history_written = len(items)
 
     dates = sorted({item["valid_date"] for item in items})
     return {
         "retailer": retailer,
         "fetched": len(offers),
         "written": 0 if dry_run else len(items),
+        # Appended to the price-history table alongside the products write.
+        # Reported so a refresh's history contribution is visible in the Step
+        # Functions execution rather than only discoverable by querying.
+        "history_written": history_written,
         "dry_run": dry_run,
         # Reported so a stale refresh is visible in the execution history
         # rather than only discoverable by querying the table.
