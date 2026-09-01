@@ -1,16 +1,40 @@
-# React + Vite
+# Smart Grocery Assistant — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + Vite frontend for the Smart Grocery & Meal Budget Assistant.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Chat interface for price checks and meal-plan requests.
+- Event-driven rendering of:
+  - Price comparisons with citations.
+  - Meal plans with shopping lists.
+  - Notices, `no_data`, and error states.
+- Session continuity via `session_id`; idempotent retries via `turn_id`.
 
-## React Compiler
+## Local development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev
+```
 
-## Expanding the Oxlint configuration
+Configure `.env.local`:
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+```env
+VITE_API_URL=https://<api-id>.execute-api.ap-southeast-2.amazonaws.com/<stage>/chat
+```
+
+## Build and deploy
+
+```bash
+npm run build
+aws s3 sync dist/ s3://ga-frontend-097087133897-ap-southeast-2-an --profile grocery-sandbox
+aws cloudfront create-invalidation --distribution-id <CF_DIST_ID> --paths "/*" --profile grocery-sandbox
+```
+
+## Contract
+
+Implements the frontend–orchestrator contract in `CONTRACT-v1.md`:
+- Event-shaped responses.
+- Citations for all monetary values.
+- Structured `price_comparison` and `meal_plan` events.
