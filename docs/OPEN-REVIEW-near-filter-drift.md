@@ -1,28 +1,34 @@
-# Open review — the live table holds fixture rows again, shadowing the real catalogue
+# Resolved — fixture rows were shadowing the real catalogue; removed and guarded
 
-**Status:** DIAGNOSED 2026-09-01, and the durable code fix has LANDED. It is not
-a near-filter bug and not a stale record — it is fixture data present in the
-live serving table, hiding the real Lineage B prices for head-term queries. The
-loader guard (option B) and its regression test (option C) are now in the code;
-the one remaining step is removing the fixture rows from the live table, which
-needs AWS credentials and owner sign-off. See "Status of the fix" below.
+**Status: RESOLVED 2026-09-01.** All four parts are done: the fixture rows were
+removed from the live table (152 deleted, verified against the account and via
+the endpoint), and the loader is guarded so it cannot recur. It was not a
+near-filter bug and not a stale record — it was fixture data present in the live
+serving table, hiding the real Lineage B prices for head-term queries. Kept as a
+record rather than deleted, because the reintroduce/remove cycle and the reason
+it went unnoticed are the useful part. See "Status of the fix".
 **Raised:** 2026-09-01, by the parity re-run (`docs/ARCHITECTURE.md` §3s).
+**Closed:** 2026-09-01, same day.
 
 ---
 
 ## The finding, up front
 
 The two drifts the parity run flagged (`cheapest milk near Albany` → New World
-**Devonport** $4.94; `cheapest butter` → Pak'nSAVE **Mangere** $2.97) are both
+**Devonport** $4.94; `cheapest butter` → Pak'nSAVE **Mangere** $2.97) were both
 **fixture rows**, matched byte-for-byte to `fixtures/products.json`. Devonport
 and Mangere are fixture-only suburbs — they do not exist in the data team's
-Lineage B catalogue at all. The only way the endpoint can serve them is if the
-live `grocery-products-dev` table again contains the 152 fixture rows that
-`ARCHITECTURE.md` §3j says were removed on 2026-08-30, and those rows are
-**shadowing the real, cheaper, correctly-located prices**. (Proving the table
-holds them *right now* with a direct query needs credentials this environment
-lacks — see "The one gap" — but the byte-for-byte match is conclusive that the
-served answers are fixtures.)
+Lineage B catalogue at all. The live `grocery-products-dev` table again
+contained the 152 fixture rows that `ARCHITECTURE.md` §3j records as removed on
+2026-08-30, and those rows were **shadowing the real, cheaper, correctly-located
+prices**.
+
+Confirmed directly against the account on 2026-09-01: a dry-run reported
+**152 of 152** fixture rows present, and after `--remove` the fixture product
+keys `milk-2l` and `butter-500g` dropped to a GSI1 count of 0 while the real
+`standard-milk-2l` stayed at 10. The endpoint now serves the real answers —
+`cheapest milk near Albany` → Pak'nSAVE Albany $4.79, `cheapest butter` →
+Pak'nSAVE Albany $9.49.
 
 For `cheapest milk near Albany` the real answer is Pak'nSAVE / standard milk at
 **Albany for $4.79** (Lineage B), which is both cheaper and actually in Albany.
@@ -89,12 +95,12 @@ resolver never reaches `standard-milk-2l` and the real Albany price. Remove the
 fixtures and the same query resolves to `standard-milk-2l` → Albany $4.79, which
 is what §3j recorded on 2026-08-30.
 
-**4. So the real answer is being hidden, and it is cheaper and better located.**
-`cheapest milk near Albany` should return Albany $4.79; it returns a Devonport
-$4.94 fixture invention. `near Albany` correctly scopes to the North Shore
-region (`{Albany, Devonport}` per `config/regions.json`), the filter ordering is
-correct, the coordinates are fine — none of that is the problem. The problem is a
-fabricated row sitting in the serving table.
+**4. So the real answer was being hidden, and it is cheaper and better located.**
+`cheapest milk near Albany` should return Albany $4.79; it was returning a
+Devonport $4.94 fixture invention. `near Albany` correctly scopes to the North
+Shore region (`{Albany, Devonport}` per `config/regions.json`), the filter
+ordering is correct, the coordinates are fine — none of that was the problem.
+The problem was a fabricated row sitting in the serving table, now removed.
 
 ## The mechanism: the fixtures were re-added
 
@@ -110,23 +116,24 @@ This is the §3j defect reintroduced through the front door, and it is the same
 family the repo keeps recording — a control (fixture removal) that was correct
 once and silently undone, with nothing to notice.
 
-## The one gap
+## The gap that was, and how it closed — plus a casing trap worth keeping
 
-The current *live* table state cannot be confirmed from the repository — the
-byte-for-byte fixture match is conclusive that the answers ARE fixtures, but
-proving the table still holds them today (versus, say, the answers being cached)
-needs a direct query. `aws` CLI is installed but has **no credentials** in this
-environment. Confirming it is one command once credentials exist:
+The live table state was later confirmed directly (SSO profile, account
+`097087133897`): a dry-run reported **152 of 152** fixture rows present, and the
+removal deleted all 152. The endpoint then served the real Albany answers.
 
-```bash
-aws dynamodb query --table-name grocery-products-dev \
-  --key-condition-expression "store_key = :sk" \
-  --expression-attribute-values '{":sk":{"S":"new_world#Devonport"}}' \
-  --region ap-southeast-2 --output json
-```
-
-A non-empty result is the confirmation. (`store_key` is the base-table partition
-key; Devonport rows can only be fixtures.)
+**One wrong turn is worth recording, because it nearly produced a false "already
+fixed".** The first live probe queried the base table by
+`store_key = "new_world#Devonport"` — capital D, spaced — and got **count 0**,
+which briefly looked like the fixtures were already gone. They were not: the
+stored `store_key` is **slugged lowercase**, `new_world#devonport`, so the probe
+was simply looking under the wrong key. The authoritative, casing-independent
+check is a **GSI1 query on `product_key`** (`milk-2l`, `butter-500g`), which does
+not depend on the store-key slug — it showed 6 fixture rows each, and the table
+`ItemCount` was ~2,911 (2,759 real + 152 fixture). Cross-checking the surprising
+result against a second method is what caught it. When probing this table by
+hand, query GSI1 by `product_key`, or use the exact slugged `store_key`, never
+the display-cased location.
 
 ## Status of the fix
 
@@ -150,34 +157,35 @@ the live table are done, and are in the same change as this note.
   present in Lineage B**, so a future catalogue change that invalidated the
   probe fails the build instead of silently disarming the guard.
 
-- **A — Re-remove the fixtures from the live table. ⬜ PENDING (owner action).**
-  This mutates live data and needs AWS credentials, which the fixing
-  environment does not have. Run when ready:
+- **A — Re-remove the fixtures from the live table. ✅ DONE 2026-09-01.**
+  Run against the account with the `grocery` SSO profile:
 
   ```bash
-  python scripts/load_seed_data.py --remove --dry-run   # reports how many of the 152 are present
-  python scripts/load_seed_data.py --remove             # then remove them
+  python scripts/load_seed_data.py --remove --dry-run   # reported: 152 of 152 present
+  python scripts/load_seed_data.py --remove             # deleted: 152
   ```
 
-  Reversible with the loader itself (now guarded). This restores the 2026-08-30
-  state and the real Albany $4.79 answer to `cheapest milk near Albany`.
+  Verified after: GSI1 `product_key` counts `milk-2l` = 0 and `butter-500g` = 0
+  (fixtures gone), `standard-milk-2l` = 10 (real intact); and the endpoint,
+  with fresh session ids, returns `cheapest milk near Albany` → Pak'nSAVE Albany
+  **$4.79** and `cheapest butter` → Pak'nSAVE Albany **$9.49**. Reversible with
+  the loader itself (now guarded, so a re-add is deliberate).
 
-- **D — Reconcile `ARCHITECTURE.md` §3c/§3j with the account. ⬜ PENDING.** Those
-  sections' worked examples (`cheapest milk near Albany` → Albany $4.79) are
-  correct for the *intended* state and will be true again once A is run. §3j has
-  been annotated to note the reintroduction and that the guard now prevents a
-  recurrence; the worked examples should be re-verified against the account
-  after A.
+- **D — Reconcile `ARCHITECTURE.md` §3c/§3j with the account. ✅ DONE 2026-09-01.**
+  Those sections' worked examples (`cheapest milk near Albany` → Albany $4.79)
+  are true again and were re-verified live. §3j records the reintroduce/remove
+  cycle and that the guard now prevents a recurrence.
 
-**So the code is safe against a recurrence now**; the live table still serves the
-fixture answer until an operator runs A. The guard means that once A is run, a
-stray `load_seed_data.py` cannot quietly undo it again.
+**All four parts are done.** The fixtures are out of the live table, the endpoint
+serves the real prices, and the loader guard means a stray `load_seed_data.py`
+run cannot quietly undo it again.
 
-## Why this is a separate note, not part of the plane/data-source work
+## How it relates to the plane/data-source work
 
 The 2026-09-01 architecture work (source-priority config, plane roles, parity
-re-run) neither caused nor fixes this. The parity run merely *surfaced* it — and
-it is worth noting that the new `config/data-sources.json` work makes the correct
-long-term posture explicit: the serving table should be refreshed from Lineage B
-(the primary input), and the fixtures are a fallback for offline use, not
-something that belongs in the deployed table alongside real data.
+re-run) did not cause this; the parity run *surfaced* it. And the new
+`config/data-sources.json` states the posture that keeps it from returning: the
+serving table is refreshed from Lineage B (the primary input), and the fixtures
+are a fallback for offline use, not something that belongs in the deployed table
+alongside real data. The loader guard enforces that boundary at the one place
+the fixtures could get back in.
