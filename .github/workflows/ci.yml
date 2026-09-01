@@ -295,7 +295,7 @@ jobs:
       # NO AWS CREDENTIALS, like every other job here. `cdk synth` renders a
       # template from the code and never calls an account; the test file passes
       # an explicit `env` so nothing has to be looked up.
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
