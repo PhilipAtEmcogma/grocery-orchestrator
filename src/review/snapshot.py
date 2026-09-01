@@ -31,6 +31,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from decimal import Decimal
 
+from src.history import PriceBaseline
 from src.retrieval.base import PriceRecord
 
 #: Rows a single review may see. A cap, not a page size: a reviewer that can ask
@@ -40,6 +41,15 @@ MAX_SNAPSHOT_ROWS = 500
 
 #: Fields a reviewer may see. ALLOWLIST, not a denylist -- see the module
 #: docstring. Adding a field to PriceRecord must not silently widen this.
+#:
+#: THE BASELINE FIELDS ARE A DELIBERATE EXTENSION, not an accident. They come
+#: from `src/history` (the append-only price history), and they are what turns a
+#: single-point snapshot into one a reviewer can reason about: "this price is 10x
+#: its own 90-day average" is a defect a single row cannot reveal and a baseline
+#: can. They are prices, dates and counts -- the same class of non-PII data the
+#: rest of the snapshot already carries (history has no shopper data to leak, by
+#: construction). Deny-by-default still holds: this list is the whole surface, and
+#: a field is here because someone decided it should be.
 SNAPSHOT_FIELDS: tuple[str, ...] = (
     "store_key",
     "product_key",
@@ -54,6 +64,15 @@ SNAPSHOT_FIELDS: tuple[str, ...] = (
     "pack_grams",
     "on_special",
     "valid_date",
+    # Baseline enrichment (from src/history). Empty strings / 0 when a row has
+    # no history yet -- a new product's first capture has no past to compare to,
+    # and "unknown" must not read as "0.00", which would look like a free item.
+    "baseline_avg_nzd",
+    "baseline_min_nzd",
+    "baseline_max_nzd",
+    "baseline_samples",
+    "baseline_window_days",
+    "deviation_ratio",
 )
 
 
@@ -85,6 +104,17 @@ class SnapshotRow:
     pack_grams: int
     on_special: bool
     valid_date: str
+
+    # Baseline enrichment from the price history. Defaulted so a row with no
+    # history is still a valid snapshot row -- a first capture has no past.
+    # Money is strings (the money rule); "unknown" is "" not "0.00", and the
+    # ratio is "" when there is nothing to compare against.
+    baseline_avg_nzd: str = ""
+    baseline_min_nzd: str = ""
+    baseline_max_nzd: str = ""
+    baseline_samples: int = 0
+    baseline_window_days: int = 0
+    deviation_ratio: str = ""
 
     @property
     def reference(self) -> tuple[str, str]:
@@ -125,9 +155,10 @@ def build_snapshot(
     *,
     table_name: str,
     max_rows: int = MAX_SNAPSHOT_ROWS,
+    baselines: dict[tuple[str, str], PriceBaseline] | None = None,
 ) -> ReviewSnapshot:
     """
-    Price records -> a sanitised, capped snapshot.
+    Price records -> a sanitised, capped snapshot, optionally baseline-enriched.
 
     RAISES RATHER THAN TRUNCATING when handed more rows than the cap allows.
     Silently taking the first 500 would make the reviewer's view depend on the
@@ -140,6 +171,13 @@ def build_snapshot(
     would be serialised by whatever transport carries the snapshot, and the
     float round-trip that ruins a cent is exactly what the string convention
     exists to prevent.
+
+    `baselines` maps a row's `(store_key, product_key)` to its `PriceBaseline`
+    from `src/history`. It is OPTIONAL and supplied by the caller -- the same
+    seam as `records` -- so this function stays pure: the boto3 read that
+    produces the baselines lives in `src/history/store.py`, not here. A row with
+    no entry in `baselines` (a new product with no past) gets the empty
+    defaults, so "no baseline" reads as blank rather than as a zero price.
     """
     if len(records) > max_rows:
         raise SnapshotTooLarge(
@@ -149,25 +187,43 @@ def build_snapshot(
             "about whichever rows arrived first."
         )
 
+    baselines = baselines or {}
     rows = tuple(
-        SnapshotRow(
-            store_key=r.store_key,
-            product_key=r.product_key,
-            store=r.store.value,
-            store_location=r.store_location,
-            display_name=r.display_name,
-            canonical_name=r.canonical_name,
-            category=r.category,
-            price_nzd=str(r.price_nzd),
-            unit=r.unit,
-            unit_price_nzd=str(r.unit_price_nzd),
-            pack_grams=r.pack_grams,
-            on_special=r.on_special,
-            valid_date=r.valid_date,
-        )
-        for r in records
+        _row_with_baseline(r, baselines.get((r.store_key, r.product_key))) for r in records
     )
     return ReviewSnapshot(rows=rows, captured_from=table_name)
+
+
+def _row_with_baseline(r: PriceRecord, baseline: PriceBaseline | None) -> SnapshotRow:
+    """One record plus its baseline (if any) as a snapshot row."""
+    base: dict = {
+        "store_key": r.store_key,
+        "product_key": r.product_key,
+        "store": r.store.value,
+        "store_location": r.store_location,
+        "display_name": r.display_name,
+        "canonical_name": r.canonical_name,
+        "category": r.category,
+        "price_nzd": str(r.price_nzd),
+        "unit": r.unit,
+        "unit_price_nzd": str(r.unit_price_nzd),
+        "pack_grams": r.pack_grams,
+        "on_special": r.on_special,
+        "valid_date": r.valid_date,
+    }
+    if baseline is not None and baseline.average_nzd is not None:
+        ratio = baseline.deviation_ratio(r.price_nzd)
+        base.update(
+            baseline_avg_nzd=str(baseline.average_nzd),
+            baseline_min_nzd=str(baseline.min_nzd),
+            baseline_max_nzd=str(baseline.max_nzd),
+            baseline_samples=baseline.sample_count,
+            baseline_window_days=baseline.window_days,
+            # Quantised so a reviewer quoting it can match it exactly, the way
+            # every other quoted value in a finding must.
+            deviation_ratio=("" if ratio is None else str(ratio.quantize(Decimal("0.01")))),
+        )
+    return SnapshotRow(**base)
 
 
 def snapshot_to_dicts(snapshot: ReviewSnapshot) -> list[dict]:

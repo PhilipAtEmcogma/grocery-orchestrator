@@ -1,14 +1,18 @@
 """
 Bounded data-quality review — the deterministic half (Req 13.7-13.8, Task 14).
 
-No AgentCore Runtime is deployed and no model reviews anything: ADR 0002 is
-still *Proposed — mentor approval required*. What is tested here is the boundary
-a reviewer would sit behind and the validation its output must survive, both of
-which are required whoever does the reviewing.
+No AgentCore Runtime is deployed: ADR 0002 is still *Proposed — mentor approval
+required*. The reviewer (`review_snapshot`) runs OFFLINE here through the
+`ModelClient` seam, driven by a scripted client, so there is no AWS and no live
+model. What is tested is the boundary a reviewer sits behind, the enrichment it
+reads, and the validation its output must survive -- all required whoever does
+the reviewing.
 
 The tests that matter are the REFUSALS. A validator that accepts everything is
 worse than no validator, because it launders a fabrication into a reviewed
-finding.
+finding -- and the reviewer's whole trust boundary is that validator, not the
+model, so a model that hallucinates a value must be structurally unable to get
+it past the review.
 """
 
 from __future__ import annotations
@@ -18,6 +22,8 @@ from decimal import Decimal
 
 import pytest
 
+from src.models.base import ModelClient, ModelError
+from src.prompts.review import ReviewFinding, ReviewReport
 from src.retrieval.base import PriceRecord
 from src.retrieval.memory import InMemoryPriceRepository
 from src.review import (
@@ -26,9 +32,12 @@ from src.review import (
     Finding,
     FindingKind,
     Rejection,
+    ReviewSnapshot,
+    SnapshotRow,
     SnapshotTooLarge,
     build_snapshot,
     implausible_unit_price,
+    review_snapshot,
     snapshot_to_dicts,
     validate_findings,
 )
@@ -279,3 +288,272 @@ def test_the_unit_price_defect_is_caught_by_code_not_left_to_a_reviewer() -> Non
 def test_a_healthy_catalogue_row_is_not_flagged(snapshot) -> None:
     """A check that fires on rounding differences gets switched off."""
     assert not [r for r in snapshot.rows if implausible_unit_price(r)]
+
+
+# ---------------------------------------------------------------- baseline enrichment
+
+
+def _baseline(avg: str, samples: int = 30, window: int = 90):
+    from src.history import PriceBaseline
+
+    return PriceBaseline(
+        history_pk="",
+        window_days=window,
+        sample_count=samples,
+        average_nzd=Decimal(avg),
+        min_nzd=Decimal(avg),
+        max_nzd=Decimal(avg),
+        latest_nzd=Decimal(avg),
+        latest_date="2026-07-31",
+    )
+
+
+def test_a_row_with_no_baseline_reads_as_blank_not_zero(snapshot) -> None:
+    """
+    'Unknown' must not look like '0.00'. A new product's first capture has no
+    past to compare to, and a $0 baseline would read as a free item and invite
+    a phantom deviation finding.
+    """
+    row = snapshot.rows[0]
+    assert row.baseline_avg_nzd == ""
+    assert row.deviation_ratio == ""
+    assert row.baseline_samples == 0
+
+
+def test_the_snapshot_carries_the_baseline_when_supplied(records) -> None:
+    """A supplied baseline enriches the matching row, keyed on (store_key, product_key)."""
+    r = records[0]
+    baselines = {(r.store_key, r.product_key): _baseline(str(r.price_nzd))}
+    snap = build_snapshot(records, table_name=TABLE, baselines=baselines)
+    row = snap.row_for(r.store_key, r.product_key)
+    assert row is not None
+    assert row.baseline_avg_nzd == str(r.price_nzd)
+    assert row.baseline_samples == 30
+    assert row.baseline_window_days == 90
+    # Price equals its own average -> ratio 1.00.
+    assert row.deviation_ratio == "1.00"
+
+
+def test_the_deviation_ratio_flags_a_price_far_from_its_own_history(records) -> None:
+    """The reviewer's real target: a price that deviates sharply from its baseline."""
+    r = records[0]
+    # Baseline averages a tenth of the current price -> ratio 10.
+    tenth = (r.price_nzd / Decimal(10)).quantize(Decimal("0.01"))
+    baselines = {(r.store_key, r.product_key): _baseline(str(tenth))}
+    snap = build_snapshot(records, table_name=TABLE, baselines=baselines)
+    row = snap.row_for(r.store_key, r.product_key)
+    assert row is not None
+    assert Decimal(row.deviation_ratio) >= Decimal("9")
+
+
+def test_baseline_fields_are_in_the_allowlist_and_carry_no_pii(records) -> None:
+    """Enrichment is deliberate: the new fields are in SNAPSHOT_FIELDS and are prices/counts."""
+    baseline_fields = {
+        "baseline_avg_nzd",
+        "baseline_min_nzd",
+        "baseline_max_nzd",
+        "baseline_samples",
+        "baseline_window_days",
+        "deviation_ratio",
+    }
+    assert baseline_fields <= set(SNAPSHOT_FIELDS)
+    # And they serialise through the allowlist path like every other field.
+    r = records[0]
+    baselines = {(r.store_key, r.product_key): _baseline(str(r.price_nzd))}
+    snap = build_snapshot(records, table_name=TABLE, baselines=baselines)
+    for dumped in snapshot_to_dicts(snap):
+        assert baseline_fields <= set(dumped)
+
+
+def test_a_deviation_finding_that_quotes_the_baseline_validates(records) -> None:
+    """
+    A PRICE_DEVIATION finding quoting deviation_ratio / baseline_avg_nzd is
+    checkable against the enriched row -- the whole point of the enrichment.
+    """
+    r = records[0]
+    tenth = (r.price_nzd / Decimal(10)).quantize(Decimal("0.01"))
+    baselines = {(r.store_key, r.product_key): _baseline(str(tenth))}
+    snap = build_snapshot(records, table_name=TABLE, baselines=baselines)
+    row = snap.row_for(r.store_key, r.product_key)
+    assert row is not None
+
+    finding = Finding(
+        kind=FindingKind.PRICE_DEVIATION,
+        store_key=row.store_key,
+        product_key=row.product_key,
+        observation="price is far above its own 90-day history",
+        quoted={
+            "price_nzd": row.price_nzd,
+            "baseline_avg_nzd": row.baseline_avg_nzd,
+            "deviation_ratio": row.deviation_ratio,
+        },
+    )
+    result = validate_findings([finding], snap)
+    assert result.accepted_count == 1
+
+    # A deviation finding quoting the WRONG ratio is a fabrication, rejected.
+    wrong = Finding(
+        kind=FindingKind.PRICE_DEVIATION,
+        store_key=row.store_key,
+        product_key=row.product_key,
+        observation="price is far above its own history",
+        quoted={"deviation_ratio": "2.00"},
+    )
+    assert validate_findings([wrong], snap).rejected[0][1] is Rejection.VALUE_MISMATCH
+
+
+# ---------------------------------------------------------------- the reviewer (offline)
+
+
+class _StubReviewer(ModelClient):
+    """
+    A ModelClient that returns a fixed ReviewReport (or fails), for driving
+    `review_snapshot` with no AWS. The same seam the graph tests use.
+    """
+
+    def __init__(self, report: ReviewReport | None = None, *, fail: bool = False) -> None:
+        self._report = report or ReviewReport(findings=[])
+        self._fail = fail
+
+    @property
+    def last_usage(self) -> dict:
+        return {}
+
+    def text(self, **kwargs) -> str:  # pragma: no cover - reviewer never calls text
+        raise ModelError("no text path")
+
+    def structured(self, *, schema, **kwargs):
+        # This stub only ever backs `review_snapshot`, which calls it with
+        # schema=ReviewReport, so returning the fixed report is well-typed
+        # without a cast on a runtime `schema` variable.
+        if self._fail:
+            raise ModelError("scripted upstream failure")
+        return self._report
+
+
+def _one_row_snapshot(**overrides) -> ReviewSnapshot:
+    base = {
+        "store_key": "paknsave#albany",
+        "product_key": "butter-500g",
+        "store": "paknsave",
+        "store_location": "Albany",
+        "display_name": "Pams Butter 500g",
+        "canonical_name": "Butter",
+        "category": "dairy",
+        "price_nzd": "47.90",
+        "unit": "500g",
+        "unit_price_nzd": "95.80",
+        "pack_grams": 500,
+        "on_special": False,
+        "valid_date": "2026-07-31",
+        "baseline_avg_nzd": "4.79",
+        "baseline_min_nzd": "4.59",
+        "baseline_max_nzd": "4.99",
+        "baseline_samples": 30,
+        "baseline_window_days": 90,
+        "deviation_ratio": "10.00",
+    }
+    base.update(overrides)
+    return ReviewSnapshot(rows=(SnapshotRow(**base),), captured_from=TABLE)
+
+
+def test_the_reviewer_validates_a_true_finding_the_model_returns() -> None:
+    """The end-to-end offline path: a model's finding, checked against the snapshot."""
+    snap = _one_row_snapshot()
+    row = snap.rows[0]
+    report = ReviewReport(
+        findings=[
+            ReviewFinding(
+                store_key=row.store_key,
+                product_key=row.product_key,
+                kind="price_deviation",
+                observation="price is far above its own 90-day history",
+                quoted={"deviation_ratio": row.deviation_ratio},
+            )
+        ]
+    )
+    result = review_snapshot(snap, model=_StubReviewer(report))
+    assert result.ran is True
+    assert len(result.accepted) == 1
+    assert result.accepted[0].kind is FindingKind.PRICE_DEVIATION
+
+
+def test_the_reviewer_cannot_launder_a_fabricated_value_past_validation() -> None:
+    """
+    The reviewer's trust boundary is the validator, not the model. A finding
+    quoting a value the row does not have is rejected even though the model
+    returned it confidently.
+    """
+    snap = _one_row_snapshot()
+    row = snap.rows[0]
+    report = ReviewReport(
+        findings=[
+            ReviewFinding(
+                store_key=row.store_key,
+                product_key=row.product_key,
+                kind="price_deviation",
+                observation="price is far above its history",
+                quoted={"deviation_ratio": "2.00"},  # the row says 10.00
+            )
+        ]
+    )
+    result = review_snapshot(snap, model=_StubReviewer(report))
+    assert result.ran is True
+    assert result.accepted == ()
+    assert result.validated.rejected[0][1] is Rejection.VALUE_MISMATCH
+
+
+def test_a_model_failure_is_not_a_clean_review() -> None:
+    """
+    An all-clear the model never produced is not an all-clear. A failed call
+    returns ran=False with no findings, so the caller can tell "reviewed,
+    nothing found" from "could not review".
+    """
+    result = review_snapshot(_one_row_snapshot(), model=_StubReviewer(fail=True))
+    assert result.ran is False
+    assert result.accepted == ()
+    assert "failure" in result.error
+
+
+def test_a_finding_of_an_unknown_kind_is_dropped_not_crashed() -> None:
+    """
+    A model returning a kind outside FindingKind is a finding no human can act
+    on -- dropped, not fatal to the review.
+    """
+    snap = _one_row_snapshot()
+    row = snap.rows[0]
+    report = ReviewReport(
+        findings=[
+            ReviewFinding(
+                store_key=row.store_key,
+                product_key=row.product_key,
+                kind="totally_made_up_kind",
+                observation="something",
+                quoted={"deviation_ratio": row.deviation_ratio},
+            )
+        ]
+    )
+    result = review_snapshot(snap, model=_StubReviewer(report))
+    assert result.ran is True
+    assert result.accepted == ()
+    assert result.validated.rejected == ()  # dropped before validation, not rejected
+
+
+def test_an_empty_report_is_a_valid_clean_review() -> None:
+    """Reporting nothing is correct when the rows are clean, and it 'ran'."""
+    result = review_snapshot(_one_row_snapshot(), model=_StubReviewer(ReviewReport(findings=[])))
+    assert result.ran is True
+    assert result.accepted == ()
+
+
+def test_the_reportable_kinds_are_a_subset_of_findingkind() -> None:
+    """
+    The prompt's vocabulary must be catchable by the validator. A kind the
+    prompt invites but FindingKind cannot represent would be silently dropped
+    by `_to_findings`, so a widening of one must be a deliberate widening of
+    the other.
+    """
+    from src.prompts.review import REPORTABLE_KINDS
+
+    known = {k.value for k in FindingKind}
+    assert set(REPORTABLE_KINDS) <= known

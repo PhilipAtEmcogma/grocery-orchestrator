@@ -1,11 +1,14 @@
 """
 Bounded data-quality review (Req 13.7-13.8, Pilot Task 14).
 
-DETERMINISTIC HALF ONLY. ADR 0002 is still *Proposed - mentor approval
-required*, so no AgentCore Runtime is deployed and no model reviews anything.
-What is here is the boundary a reviewer would sit behind and the validation its
-output must survive - both required whoever does the reviewing, including a
-human with a spreadsheet.
+OFFLINE-FIRST EXPERIMENT. No AgentCore Runtime is deployed. `review_snapshot`
+drives a reviewer through the `ModelClient` seam, so the whole path runs under a
+scripted model with no AWS -- which is what makes the experiment measurable
+before any Runtime cost. The model only ever PROPOSES: every finding it returns
+is validated against the snapshot by `validate_findings` before the reviewer
+returns it, and that validation is required whoever does the reviewing,
+including a human with a spreadsheet. Deploying the model half to a Runtime is a
+later, separately gated step (ADR 0002 Workstream 2, still *Proposed*).
 """
 
 from src.review.findings import (
@@ -15,6 +18,7 @@ from src.review.findings import (
     ValidatedFindings,
     validate_findings,
 )
+from src.review.reviewer import ReviewResult, review_snapshot
 from src.review.snapshot import (
     MAX_SNAPSHOT_ROWS,
     SNAPSHOT_FIELDS,
@@ -33,6 +37,7 @@ __all__ = [
     "Finding",
     "FindingKind",
     "Rejection",
+    "ReviewResult",
     "ReviewSnapshot",
     "SnapshotRow",
     "SnapshotTooLarge",
@@ -40,6 +45,7 @@ __all__ = [
     "build_snapshot",
     "implausible_unit_price",
     "implausible_unit_price_values",
+    "review_snapshot",
     "snapshot_to_dicts",
     "validate_findings",
 ]
