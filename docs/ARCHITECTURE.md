@@ -543,20 +543,22 @@ nothing changed.
 
 ## 3j. One catalogue — fixture rows removed 2026-08-30
 
-> **THE FIXTURES CAME BACK, and the parity re-run of 2026-09-01 caught it —
-> §3s.** This section describes a removal that happened and was then silently
-> undone: on 2026-09-01 the live endpoint again returned the fixture answers
-> below inverted (`cheapest milk near Albany` → New World **Devonport** $4.94,
-> `cheapest butter` → Pak'nSAVE **Mangere** $2.97), which are fixture rows, at
-> fixture-only suburbs, matched byte-for-byte. The mechanism is in
-> `docs/OPEN-REVIEW-near-filter-drift.md`: `scripts/load_seed_data.py` with no
-> flag LOADS, so a plain run re-added all 152 fixture rows, and they shadow the
-> real catalogue through the synonym candidate order. **The loader is now
-> guarded** (it refuses to load over the real catalogue without `--force`, with
-> a regression test), so this cannot recur silently — but the LIVE removal
-> (option A, `--remove`) still has to be run by an operator with credentials
-> before the worked examples in this section are true again. The examples below
-> describe the intended, post-removal state.
+> **THE FIXTURES CAME BACK, the 2026-09-01 parity re-run caught it (§3s), and it
+> is now fixed.** This section describes a removal that happened, was then
+> silently undone, and has now been redone and guarded. On 2026-09-01 the live
+> endpoint again returned the fixture answers below inverted
+> (`cheapest milk near Albany` → New World **Devonport** $4.94, `cheapest butter`
+> → Pak'nSAVE **Mangere** $2.97) — fixture rows at fixture-only suburbs, matched
+> byte-for-byte. Mechanism (full detail in
+> `docs/OPEN-REVIEW-near-filter-drift.md`): `scripts/load_seed_data.py` with no
+> flag LOADS, so a plain run had re-added all 152 fixture rows, which shadow the
+> real catalogue through the synonym candidate order. **Fixed 2026-09-01:** the
+> 152 fixture rows were removed (`--remove`; dry-run reported 152 of 152, all
+> deleted, verified by GSI1 counts and a live endpoint check returning the
+> Albany prices below), and `load_seed_data.py` is now **guarded** — it refuses
+> to load over the real catalogue without `--force`, with a regression test, so
+> this cannot recur silently. The worked examples below are true again and were
+> re-verified live.
 
 The load was additive, so the table briefly held 152 fixture rows AND 2,759 real
 ones, and answered inconsistently: head terms hit the fixtures while meal plans
@@ -1769,19 +1771,19 @@ change in what the service returns, tracked separately in
 | `cheapest butter` | paknsave **Albany** $9.49 Mainland | paknsave **Mangere** $2.97 Pams |
 | `cheapest milk near Albany` | paknsave **Albany** $4.79 | new_world **Devonport** $4.94 |
 
-**Diagnosed 2026-09-01, and it is not a near-filter bug.** Both answers are
-fixture rows — Devonport and Mangere are fixture-only suburbs, matched
-byte-for-byte to `fixtures/products.json`. The fixture rows are back in the
+**Diagnosed and fixed 2026-09-01 — it was not a near-filter bug.** Both answers
+were fixture rows: Devonport and Mangere are fixture-only suburbs, matched
+byte-for-byte to `fixtures/products.json`. The fixture rows had come back in the
 live table (the 2026-08-30 removal in §3j was silently undone by a plain
-`load_seed_data.py` run), and they shadow the real Lineage B prices through the
-synonym candidate order, so `cheapest milk near Albany` serves a fabricated
+`load_seed_data.py` run) and shadowed the real Lineage B prices through the
+synonym candidate order, so `cheapest milk near Albany` served a fabricated
 Devonport $4.94 instead of the real Albany $4.79. The near filter, region
-mapping and coordinates are all correct. Full diagnosis and the fix status in
-[`docs/OPEN-REVIEW-near-filter-drift.md`](OPEN-REVIEW-near-filter-drift.md); the
-loader is now **guarded** against a recurrence, the live removal is the one
-outstanding operator step. A number changing while both planes agree is exactly
-the "nothing alarmed because everything matched" failure this file keeps
-recording.
+mapping and coordinates were all correct. **Resolved the same day:** the 152
+fixture rows were removed and the loader guarded against recurrence; the
+endpoint now returns Pak'nSAVE Albany $4.79 for milk and $9.49 for butter. Full
+record in [`docs/OPEN-REVIEW-near-filter-drift.md`](OPEN-REVIEW-near-filter-drift.md).
+A number changing while both planes agree is exactly the "nothing alarmed
+because everything matched" failure this file keeps recording.
 
 ### Plane roles recorded as a decision (Philip, 2026-09-01)
 
@@ -1834,3 +1836,39 @@ declaration that Lineage B is primary and fixtures are the fallback, read by
 
 Verified offline: full suite 868 passed / 31 skipped, ruff + format clean,
 pyright clean, config placeholder guard clean.
+
+## 3t. The fixture rows were removed from the live table — 2026-09-01
+
+The §3s parity re-run found the live endpoint serving fixture prices again
+(`cheapest milk near Albany` → New World Devonport $4.94), which meant the
+2026-08-30 fixture removal (§3j) had been silently undone — a plain
+`scripts/load_seed_data.py` run (its default action LOADS) re-added all 152
+fixture rows, and they shadow the real catalogue through the synonym candidate
+order. Full diagnosis in `docs/OPEN-REVIEW-near-filter-drift.md`.
+
+**Removed and verified against the account** (SSO profile, `097087133897`):
+
+```
+load_seed_data.py --remove --dry-run   ->  152 of 152 present
+load_seed_data.py --remove             ->  152 deleted
+```
+
+Confirmed after, three ways:
+
+- **GSI1 `product_key` counts:** `milk-2l` = 0, `butter-500g` = 0 (fixtures
+  gone); `standard-milk-2l` = 10 (real data intact).
+- **Endpoint, fresh session ids:** `cheapest milk near Albany` → Pak'nSAVE
+  Albany $4.79; `cheapest butter` → Pak'nSAVE Albany $9.49 — the real answers,
+  and butter now matches the original 2026-08-30 record exactly.
+- **The recurrence is now guarded** (PR #64): `load_seed_data.py` refuses to
+  load fixtures over the real catalogue without `--force`, with a regression
+  test, so a stray plain run cannot re-add them silently.
+
+**A casing trap worth carrying.** The first live probe queried
+`store_key = "new_world#Devonport"` (display casing) and got count 0, which
+briefly read as "already clean". The stored key is slugged lowercase
+(`new_world#devonport`); the authoritative, casing-independent check is a GSI1
+query on `product_key`. Cross-checking the surprising zero against GSI1 is what
+caught the mistake before it became a false "already fixed". When probing this
+table by hand, use GSI1 `product_key` or the exact slugged `store_key`, never
+the display-cased suburb.
