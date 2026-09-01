@@ -178,6 +178,133 @@
       "id": "amb-003",
       "message": "something for dinner under 15 bucks",
       "expect": { "intent": "meal_plan", "budget_nzd": "15" }
+    },
+
+    {
+      "id": "pc-009",
+      "message": "how much is rice",
+      "expect": { "intent": "price_check", "resolves_to": "rice-longgrain-1kg" }
+    },
+    {
+      "id": "pc-010",
+      "message": "price of pasta",
+      "expect": { "intent": "price_check", "resolves_to": "pasta-spirals-500g" }
+    },
+    {
+      "id": "pc-011",
+      "message": "cheapest bananas",
+      "expect": { "intent": "price_check", "resolves_to": "bananas-1kg" }
+    },
+    {
+      "id": "pc-012",
+      "message": "how much are carrots",
+      "expect": { "intent": "price_check", "resolves_to": "carrots-1kg" }
+    },
+    {
+      "id": "pc-013",
+      "message": "cheapest chicken",
+      "expect": { "intent": "price_check", "resolves_to": "chicken-thigh-1kg" }
+    },
+    {
+      "id": "pc-014",
+      "message": "price of yoghurt",
+      "expect": { "intent": "price_check", "resolves_to": "yoghurt-plain-1kg" }
+    },
+    {
+      "id": "pc-015",
+      "message": "how much is bread",
+      "expect": { "intent": "price_check", "resolves_to": "bread-white-700g" }
+    },
+    {
+      "id": "pc-016",
+      "message": "price of onions",
+      "expect": { "intent": "price_check", "resolves_to": "onions-brown-1-5kg" }
+    },
+
+    {
+      "id": "mp-007",
+      "message": "dinner for 4 this week on $90",
+      "expect": {
+        "intent": "meal_plan",
+        "household_size": 4,
+        "days": 7,
+        "budget_nzd": "90"
+      }
+    },
+    {
+      "id": "mp-008",
+      "message": "plan 5 dinners for 2 people, $60",
+      "expect": {
+        "intent": "meal_plan",
+        "household_size": 2,
+        "days": 5,
+        "budget_nzd": "60"
+      }
+    },
+    {
+      "id": "mp-009",
+      "message": "vegan dinners for 3 for the week on $75",
+      "expect": {
+        "intent": "meal_plan",
+        "household_size": 3,
+        "days": 7,
+        "budget_nzd": "75",
+        "exclusions": ["vegan"]
+      }
+    },
+    {
+      "id": "mp-010",
+      "message": "cook something for 6 nights, no seafood, 100 dollars",
+      "expect": {
+        "intent": "meal_plan",
+        "days": 6,
+        "budget_nzd": "100",
+        "exclusions": ["seafood"]
+      }
+    },
+    {
+      "id": "mp-011",
+      "message": "recipe plan for a family of 4, dairy free",
+      "expect": {
+        "intent": "meal_plan",
+        "household_size": 4,
+        "exclusions": ["dairy-free"]
+      }
+    },
+
+    {
+      "id": "gc-003",
+      "message": "hi there, how are you",
+      "expect": { "intent": "general_chat" }
+    },
+    {
+      "id": "gc-004",
+      "message": "thanks for your help",
+      "expect": { "intent": "general_chat" }
+    },
+
+    {
+      "id": "neg-003",
+      "message": "how much is cheese",
+      "expect": {
+        "intent": "price_check",
+        "resolves_to": "cheese-tasty-1kg",
+        "household_size": null,
+        "days": null,
+        "budget_nzd": null
+      },
+      "note": "A price check must not invent household, duration or budget."
+    },
+    {
+      "id": "neg-004",
+      "message": "plan dinners for 2 this week",
+      "expect": {
+        "intent": "meal_plan",
+        "household_size": 2,
+        "days": 7,
+        "budget_nzd": null
+      },
+      "note": "Duration and household are stated; budget is not, and must not be invented."
     }
   ]
 }

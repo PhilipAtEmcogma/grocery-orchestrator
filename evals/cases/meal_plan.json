@@ -189,6 +189,157 @@
         "expect_error_code": "UNSUPPORTED_EXCLUSION"
       },
       "note": "Gluten-free needs per-product allergen tagging the fixture does not carry. Honest refusal is safer than a best-effort plan."
+    },
+    {
+      "id": "plan-012",
+      "message": "dinners for 4 for 5 days on $70",
+      "hints": {
+        "household_size": 4,
+        "budget_nzd": 70,
+        "days": 5
+      },
+      "expect": {
+        "must_produce_plan": true,
+        "min_budget_used": 0.25,
+        "min_distinct_meals": 3
+      },
+      "note": "Unconstrained mid-range plan. Tightens the count around the common case."
+    },
+    {
+      "id": "plan-013",
+      "message": "vegetarian dinners for 2 for 4 nights on $45",
+      "hints": {
+        "household_size": 2,
+        "budget_nzd": 45,
+        "days": 4,
+        "dietary_exclusions": [
+          "vegetarian"
+        ]
+      },
+      "expect": {
+        "must_produce_plan": true,
+        "exclude_categories": [
+          "meat",
+          "seafood"
+        ],
+        "min_budget_used": 0.25,
+        "min_distinct_meals": 3
+      }
+    },
+    {
+      "id": "plan-014",
+      "message": "no seafood dinners for 3 for 5 days, $65",
+      "hints": {
+        "household_size": 3,
+        "budget_nzd": 65,
+        "days": 5,
+        "dietary_exclusions": [
+          "seafood"
+        ]
+      },
+      "expect": {
+        "must_produce_plan": true,
+        "exclude_categories": [
+          "seafood"
+        ],
+        "min_budget_used": 0.25,
+        "serves_matches_household": true
+      }
+    },
+    {
+      "id": "plan-015",
+      "message": "feed 6 people for 7 days on $10",
+      "hints": {
+        "household_size": 6,
+        "budget_nzd": 10,
+        "days": 7
+      },
+      "expect": {
+        "must_produce_plan": false,
+        "expect_error_code": "BUDGET_INFEASIBLE"
+      },
+      "note": "Second infeasible case, even tighter than plan-006 ($0.24 per person per day). Guards the refusal path with a second, independent point."
+    },
+    {
+      "id": "plan-016",
+      "message": "plan some dinners for 4 people",
+      "hints": {
+        "household_size": 4
+      },
+      "expect": {
+        "must_produce_plan": false
+      },
+      "note": "No budget stated. Second no-budget case (with plan-007) so the 'do not invent a budget' path is not a single point."
+    },
+    {
+      "id": "plan-017",
+      "message": "dairy free dinners for 3 for 5 days, $80",
+      "hints": {
+        "household_size": 3,
+        "budget_nzd": 80,
+        "days": 5,
+        "dietary_exclusions": [
+          "dairy-free"
+        ]
+      },
+      "expect": {
+        "must_produce_plan": true,
+        "exclude_categories": [
+          "dairy"
+        ],
+        "min_budget_used": 0.2,
+        "min_distinct_meals": 3
+      }
+    },
+    {
+      "id": "plan-018",
+      "message": "big budget dinners for 2 for 3 nights, $150",
+      "hints": {
+        "household_size": 2,
+        "budget_nzd": 150,
+        "days": 3
+      },
+      "expect": {
+        "must_produce_plan": true,
+        "min_distinct_meals": 2
+      },
+      "note": "Second generous-budget case (with plan-009): must not pad the basket to spend it."
+    },
+    {
+      "id": "plan-019",
+      "message": "dinners for 1 for 4 days on $30",
+      "hints": {
+        "household_size": 1,
+        "budget_nzd": 30,
+        "days": 4
+      },
+      "expect": {
+        "must_produce_plan": true,
+        "min_budget_used": 0.2,
+        "serves_matches_household": true
+      },
+      "note": "Single-person household: serve counts must match 1, not default to 2."
+    },
+    {
+      "id": "plan-020",
+      "message": "vegan dinners for 4 for 5 days on $85",
+      "hints": {
+        "household_size": 4,
+        "budget_nzd": 85,
+        "days": 5,
+        "dietary_exclusions": [
+          "vegan"
+        ]
+      },
+      "expect": {
+        "must_produce_plan": true,
+        "exclude_categories": [
+          "vegan"
+        ],
+        "min_budget_used": 0.2,
+        "min_distinct_meals": 3
+      },
+      "note": "Second vegan case (with plan-010) at a larger household, so the {meat, seafood, dairy, chilled} exclusion is exercised at more than one point."
     }
   ]
 }
