@@ -181,11 +181,14 @@ not reaching the API and the capability flag is decorative.
 
 ---
 
-### 4.4 Recipe selection — the one open exemption
+### 4.4 Recipe selection — closed 2026-08-31, kept as the re-run procedure
 
-`select_recipes` is the ONLY task in `config/models.json` without a live
-scorecard, and `tests/test_multimodel.py` pins the exemption set exactly, so
-this run is what deletes it.
+**This was the last open exemption and it is closed.** `select_recipes` was
+scored live on 2026-08-31 — Nova Lite 100%, Claude Haiku 100%, three identical
+reps each, zero fallbacks — and `EXPECTED_EXEMPTIONS` in
+`tests/test_multimodel.py` is now the empty set: every routable task carries a
+live scorecard. The procedure below is kept because a scorecard is a
+measurement with a date on it, and re-measuring is what keeps it one.
 
 ```bash
 python evals/run_recipe_select.py --model nova-lite
@@ -201,10 +204,17 @@ averaging it in; the harness returns exit code 2 for exactly that case.
 Estimated spend for all six runs: **under two cents** (~3,500 input tokens per
 rep; Nova Lite ~$0.0004/rep, Claude Haiku ~$0.006/rep).
 
-Record the band in `config/models.json` under `scorecards.select_recipes`, then
-**delete `select_recipes` from `scorecards._unscored_tasks` and from
-`EXPECTED_EXEMPTIONS` in `tests/test_multimodel.py`**. The test fails until both
-are done, which is the reminder.
+Record the band in `config/models.json` under `scorecards.select_recipes`,
+replacing the previous entry rather than appending to it. Both
+`scorecards._unscored_tasks` and `EXPECTED_EXEMPTIONS` are already empty and
+should stay that way; `tests/test_multimodel.py` fails if a task loses its
+scorecard, which is the reminder in the other direction.
+
+**Note the ceiling before reading a result.** Both models score 100%, so this
+suite confirms that a model selects *validly* and says nothing about which
+selects *better* — every check is a rule-violation check. The honest way to
+rank them later is harder cases, not promoting the reported `distinct mains`
+metric to a gate.
 
 ---
 

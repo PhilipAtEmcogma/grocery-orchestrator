@@ -123,18 +123,31 @@ routed a missing budget through the infeasible-plan path — `feed my flat of 3
 this week` invented a `$0` budget and answered `BUDGET_INFEASIBLE`. It now emits
 a `clarification` event naming what it needs.*
 
-2.9 **[GAP]** **WHEN** producing a meal plan **THE SYSTEM SHALL** select meals
+2.9 **WHEN** producing a meal plan **THE SYSTEM SHALL** select meals
 from a curated recipe catalogue rather than composing them freely.
-*Not yet built, and BLOCKED ON DATA as of 2026-08-30 — measured, not assumed.
-The approved direction is catalogue-constrained selection: the model selects
-recipe ids and product citations while deterministic code owns scaling, dietary
-verification, arithmetic, and payable totals (Pilot Task 15). The catalogue,
-dietary classification and coverage measurement exist (`src/recipes/`); the
-graph wiring does not, because ZERO of the 175 recipes have every ingredient
-priceable against the current product catalogue (best 75%, median ~12%). A plan
-composed from one would state a payable total derived from a fraction of the
-shopping list, which contradicts 2.1 and 2.2. A forcing test fails when the data
-becomes sufficient. See tasks.md Pilot Task 15b.*
+*Closed 2026-08-31 by Pilot Task 15c. `retrieve_prices` gained a recipe mode:
+it resolves the catalogue's 27 distinct ingredient terms, cites them, and
+shortlists the recipes that are costable (every ingredient resolved, all or
+nothing), dietary-viable judged from the RESOLVED products rather than from the
+recipe's name, and affordable AS A SET. The model's whole contribution is a list
+of recipe ids; deterministic code owns scaling, dietary verification,
+arithmetic, and payable totals. A turn that cannot be served from the catalogue
+falls back to free composition and says so in a notice. Gated by
+`evals/run_recipe_select.py`, 12 cases, in CI at 0.90.*
+
+*The blocker was resolved by curating against this catalogue rather than by the
+data changing, and that distinction is still load-bearing.* ZERO of the 175
+imported recipes have every ingredient priceable — re-measured 2026-08-31
+against BOTH catalogues, best 75%, median 17% against the real 528-product one
+and 12% against the fixtures. A plan composed from one would state a payable
+total derived from a fraction of the shopping list, which contradicts 2.1 and
+2.2. The 29 recipes that shipped were written against the ~418 known product
+terms instead, so 29/29 are costable by construction (Pilot Task 15b).
+`test_the_imported_catalogue_still_cannot_be_planned_from` fails if the imported
+set ever becomes usable, and
+`test_the_two_catalogues_agree_that_the_imported_recipes_are_unusable` stops
+that measurement quietly re-pointing at a catalogue which cannot grow. See
+tasks.md Pilot Task 15b and 15c.
 
 ---
 
@@ -573,9 +586,14 @@ interventions, throttling, stale data, idempotency failures, and silent turns.
 
 ## 13. MCP and bounded agentic workflows
 
-13.1 **[GAP]** **THE SYSTEM SHALL** provide a local read-only MCP façade first,
+13.1 **THE SYSTEM SHALL** provide a local read-only MCP façade first,
 for an approved client initially Kiro, whose coarse tools invoke the complete
 deterministic application service.
+*Closed 2026-08-30 by Pilot Task 8. `src/mcp/` speaks MCP over stdio JSON-RPC
+with no new dependency, exposing two coarse tools — `grocery_ask` and
+`grocery_dietary_terms`. Both route through the same `lambda_handler` that API
+Gateway invokes, so 13.4's parity is asserted on the bytes rather than argued.
+Default-OFF behind `MCP_ENABLED=1`, rate and session capped. 22 tests.*
 
 13.2 **THE MCP FAÇADE SHALL NOT** expose raw DynamoDB operations, AWS SDK calls,
 filesystem access, arbitrary network access, retailer acquisition, production

@@ -1,0 +1,5 @@
+Would remove products.json rows from grocery-products-dev (ap-southeast-2)...
+  152 of 152 present
+  0 deleted.
+  Reverse with: python scripts/load_seed_data.py
+Done.

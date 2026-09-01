@@ -1232,12 +1232,17 @@ proposed, or gated as labelled; it is not implemented.
     covered by `tests/test_sample_fixtures.py` — it had been stale and unguarded,
     which is how the published contract came to describe "Scripted Dinner 1".
 
-    **`select_recipes` is `config/models.json`'s one exemption from the scoring
-    gate**, and it is exempt from the LIVE measurement rather than from having a
-    suite. Close it with `python evals/run_recipe_select.py --model nova-lite`,
-    three reps, paced. `tests/test_multimodel.py` pins the exemption set exactly,
-    so adding a second fails the build and removing this one without a scorecard
-    does too.
+    **`select_recipes` was `config/models.json`'s one exemption from the
+    scoring gate, and it was CLOSED live on 2026-08-31** (commit `bc81fa0`) —
+    it had been exempt from the LIVE measurement rather than from having a
+    suite. Nova Lite 100% and Claude Haiku 100%, three identical reps each,
+    zero fallbacks, so the suite cannot rank them; `distinct mains` (Haiku 3.8,
+    Nova Lite 3.4) is the one measured difference and is reported rather than
+    scored. Nova Lite is preferred on cost, Haiku is the qualified fallback.
+    **`EXPECTED_EXEMPTIONS` in `tests/test_multimodel.py` is now the empty set**
+    — every routable task carries a live scorecard — and it is pinned exactly,
+    so adding an exemption fails the build and so does removing one without a
+    scorecard. `AGENTS.md` §"Scored live 2026-08-31" carries the numbers.
 
     **What the fallback costs, stated rather than hidden.** Against the
     26-product offline fixtures many curated recipes do not fully resolve, so a

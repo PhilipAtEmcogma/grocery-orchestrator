@@ -1,9 +1,20 @@
 /**
  * SCAFFOLD — FrontendStack (later): host the static chat UI.
  *
- * STATUS: stub. The UI does not exist yet. Implement against
- * infra/docs/09-FRONTEND.md (researched best practice) and
+ * STATUS: this stack is a stub. THE UI ITSELF NOW EXISTS — a Vite/React client
+ * in `frontend/`, merged into main on 2026-08-31 — so the thing this stack
+ * would host is no longer hypothetical; only the hosting is. It renders the
+ * response as raw JSON rather than per event type, so read
+ * FRONTEND-INTEGRATION.md before assuming it is finished.
+ *
+ * Implement against infra/docs/09-FRONTEND.md (researched best practice) and
  * infra/docs/03-STACK-SPECS.md → FrontendStack.
+ *
+ * BEFORE YOU IMPLEMENT THIS: creating the first resource here trips the Pilot
+ * Task 12d tripwire in infra/test/app.test.ts, deliberately. That failure is
+ * the API-key decision (docs/OPEN-REVIEW-api-key.md) coming due, and
+ * ARCHITECTURE.md §3q is the ordered checklist — deploy Grocery-Obs-dev BEFORE
+ * pointing a consumer at the CDK plane, not after.
  *
  * Contains, once implemented:
  *   - private S3 bucket (BLOCK_ALL public access; not a website endpoint)
@@ -42,7 +53,7 @@ export class FrontendStack extends cdk.Stack {
     // TODO: expose this.distributionDomainName as a CfnOutput.
 
     cdk.Annotations.of(this).addInfo(
-      'FrontendStack is a SCAFFOLD stub — no UI exists yet. See infra/docs/09-FRONTEND.md.',
+      'FrontendStack is a SCAFFOLD stub — it creates no hosting. The UI exists in frontend/ (2026-08-31). See infra/docs/09-FRONTEND.md.',
     );
   }
 }

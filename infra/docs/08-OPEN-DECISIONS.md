@@ -345,8 +345,68 @@ that reads as four steps and one URL change is really two URL changes and a gap.
 That is a further reason to do it once, with a real consumer to coordinate with,
 rather than now to tidy the stack.
 
+**UPDATE 2026-09-01 — plane roles recorded, parity re-run, and what stays
+deferred.** Frontend work has started (the `frontend-infra-setup` client merged
+2026-08-31) but has NOT told us which URL it will use, so the §3q pause is NOT
+lifted and the cutover stays deferred. What changed is that three things the
+"revisit" list above asked for have now been done, and the rest is explicitly
+held:
 
-**Decision needed from:** Philip, once the demo work settles.
+- **The hand-made plane is the PRIMARY, recorded as a decision rather than an
+  emergent fact (Philip, 2026-09-01).** `grocery-orchestrator-dev` /
+  `woqmel35lk` is production: it is the plane the alarms watch, the one
+  `CONTRACT-v1.md` names, and the one a consumer reaches today. The CDK plane
+  (`grocery-orchestrator-dev-cdk` / `crm1xkrk34`) stays the parallel,
+  exercised-but-not-serving plane. This does not reverse the §3m/§10 finding
+  that the CDK plane is the better *eventual* cutover target (finite log
+  retention, tracing on from the start); it records which plane is primary
+  *now*, so "primary" is not left to be inferred.
+
+- **If a duplicate must be collapsed, collapse the HAND-MADE one — and this
+  means the BUDGET, not the plane (Philip, 2026-09-01).** Two `$25` monthly
+  budgets would exist once `ObservabilityStack` deploys its own beside the
+  hand-made `grocery-orchestrator-monthly-dev` (§3l). Two budgets are free, so
+  this is tidiness, not cost. The rule for when it is tidied: keep the budget
+  the SURVIVING plane owns and delete the other. While the hand-made plane is
+  primary, that means the hand-made budget stays; when/if the CDK plane becomes
+  primary, the hand-made budget is the one to collapse. **"Collapse the
+  hand-made one" is about the budget; the hand-made PLANE stays primary and is
+  not retired.** These two are easy to conflate and must not be — retiring the
+  serving plane is the opposite of keeping it primary.
+
+- **The parity table was RE-RUN 2026-09-01** — the "revisit" step 2 above —
+  against both live endpoints, and it PASSES. Result and the reusable harness
+  are in [`docs/ARCHITECTURE.md` §3s](../../docs/ARCHITECTURE.md); the harness
+  is `scripts/check_parity.py`. Deterministic requests match byte-for-byte
+  across planes; the meal-plan request produces overlapping meal counts and
+  run-to-run-varying totals on both, exactly as §3m predicts. **Two served
+  answers have DRIFTED from the 2026-08-30 record (both planes agree, so it is
+  not a parity failure) and are tracked separately** — see
+  [`docs/OPEN-REVIEW-near-filter-drift.md`](../../docs/OPEN-REVIEW-near-filter-drift.md).
+
+- **`Grocery-Obs-dev` deploy stays PAUSED (revisit item, not an action).** Per
+  §3q it is written, tested, merged and deliberately not deployed until the
+  frontend work lands and the plane/URL/API-key decision is made as one unit.
+  Nothing here deploys it. When the frontend teammate reports their URL, run the
+  §3q checklist in order — read their work, `cdk deploy Grocery-Obs-dev`
+  (collapsing the duplicate budget per the rule above), re-run parity, choose
+  the URL, take the API key in the same change, retire the other plane.
+
+- **The URL choice (§3q step 4) is DEFERRED.** It cannot be made until the
+  frontend teammate says where and how they host and which URL they wire to.
+  Recorded so it is not mistaken for outstanding work we are simply not doing:
+  it is blocked on an input we do not have, not on effort.
+
+- **Source priority is now first-class config**, which is the "data teammate's
+  work is primary" half made durable: `config/data-sources.json` declares
+  Lineage B (their collected catalogue) the PRIMARY ingestion input and the
+  fixtures the fallback. This does not change what any plane serves — both serve
+  Lineage A (`grocery-products-dev`) — it records which recorded catalogue
+  refreshes that table. See [`docs/ARCHITECTURE.md` §3s](../../docs/ARCHITECTURE.md).
+
+**Decision needed from:** Philip, once the demo work settles. The 2026-09-01
+update above records the plane-role and budget-collapse decisions he has made;
+the cutover and URL choice remain his call once the frontend reports its URL.
 
 ## 11. Two unidentified resources in the account — whose are they?
 
@@ -386,5 +446,7 @@ repository references either, and the runtime is not this project's pinned
 | 7 | Frontend framework | | | | teammates' scope |
 | 8 | CI/CD approach | | | | not yet needed |
 | 9 | Cognito/WAF timing | | | | after the anonymous pilot |
-| 10 | Adopt vs replace the service plane | **Neither yet — deploy in parallel, verify, then decide** | 2026-08-30 | Claude/Philip | See §10 below; parity verified, cutover outstanding |
+| 10 | Adopt vs replace the service plane | **Neither yet — deploy in parallel, verify, then decide** | 2026-08-30 | Claude/Philip | See §10; parity re-run 2026-09-01 passes; cutover + URL still deferred on the frontend's URL |
+| 10a | Which plane is PRIMARY | **Hand-made (`woqmel35lk`) — alarmed, contract-named, serving** | 2026-09-01 | Philip | §10 UPDATE 2026-09-01; CDK plane stays parallel |
+| 10b | If a duplicate budget must collapse, which | **The one the NON-surviving plane owns; hand-made plane stays primary so its budget stays** | 2026-09-01 | Philip | §10 UPDATE 2026-09-01; budget not plane |
 | 11 | Ownership of `Chatbot` API + Lambda | | | | still unowned |

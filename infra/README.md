@@ -88,15 +88,23 @@ The decision record that governs this whole effort is
 
 ## Layout of the CDK app
 
-A **reviewable scaffold skeleton now exists** (added 2026-08-29). The build
-config (`package.json`, `cdk.json`, `tsconfig.json`, `jest.config.js`), the app
-wiring (`bin/grocery.ts`) and the config loader (`lib/config.ts`) are real and
-useful; the five stacks are **stubs** — they compile and wire together but create
-**no real AWS resources yet** (each carries a `SCAFFOLD stub` annotation and
-`TODO`s pointing at the spec in [`docs/03-STACK-SPECS.md`](docs/03-STACK-SPECS.md)).
-So `cdk synth` will produce near-empty templates until the stacks are
-implemented. `StatefulStack` is the exception: it uses the safe Strategy A
-(reference existing tables, unmanaged), which creates nothing.
+**Three of the five stacks are real; two are still stubs.** This paragraph
+described a skeleton until 2026-08-31 and had been wrong since 2026-08-30, which
+is the drift the audits keep finding — a header calling a deployed stack a stub.
+
+| Stack | State |
+|---|---|
+| `StatefulStack` | **Real, deployed 2026-08-30.** Strategy A: it references the existing tables and contains no `AWS::DynamoDB::Table` resource at all, so CloudFormation cannot create, replace or delete them. The adoption evidence is the absence. |
+| `ServiceStack` | **Real, deployed 2026-08-30** under a `-cdk` name suffix, beside the hand-made plane rather than colliding with it. |
+| `ObservabilityStack` | **Real, written 2026-08-31, NOT DEPLOYED** — paused by decision. Deploy it before pointing any consumer at the CDK plane. See [`docs/ARCHITECTURE.md`](../docs/ARCHITECTURE.md) §3q. |
+| `IngestionStack` | **Stub** (Pilot Task 13). Synths near-empty. |
+| `FrontendStack` | **Stub.** The UI itself exists in `frontend/`; the hosting does not. Implementing it trips the Pilot Task 12d tripwire in `test/app.test.ts` on purpose. |
+
+The build config (`package.json`, `cdk.json`, `tsconfig.json`,
+`jest.config.js`), the app wiring (`bin/grocery.ts`) and the config loader
+(`lib/config.ts`) are real. The two remaining stubs carry a `SCAFFOLD stub`
+annotation and `TODO`s pointing at the spec in
+[`docs/03-STACK-SPECS.md`](docs/03-STACK-SPECS.md).
 
 > **Nothing here deploys anything.** The skeleton exists so reviewers can see and
 > agree the structure before the resource code is written. Do **not** `cdk deploy`
