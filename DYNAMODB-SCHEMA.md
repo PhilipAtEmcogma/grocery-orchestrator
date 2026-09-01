@@ -437,6 +437,101 @@ the same failure forever, from a mechanism built to help it recover.
 
 ---
 
+## Table 4 — `grocery-price-history-dev`
+
+Append-only price history. Written by ingestion alongside the products write,
+read by ops and the data-quality reviewer. **Never read on the shopper path and
+never a source of a citation** — see the invariant note below.
+
+### Why it exists
+
+The deterministic ingestion rules catch a row that is internally inconsistent
+(`implausible_unit_price`: a unit price that disagrees with its own pack size).
+They cannot catch a row that is internally consistent and simply wrong — $12.99
+for a $1.29 item, with a matching unit price, passes every check. `docs/ARCHITECTURE.md`
+§3p records that the largest class of anomaly the rules miss needs a **baseline**
+— "this price doubled overnight" — and a baseline needs history. This table is
+that history, and it is the input the ADR 0002 reviewer's enriched snapshot
+draws on.
+
+### Keys
+
+| | Partition key | Sort key |
+|---|---|---|
+| Base table | `history_pk` — `paknsave#sylvia-park#butter-500g` | `valid_date` — `2026-07-31` |
+
+`history_pk` collapses the products base key `(store_key, product_key)` into one
+partition, so "this product's price over time at this store" is a single query.
+The **capture date is the sort key**, which is what makes a refresh APPEND: a new
+capture date is a new row; a same-day re-run overwrites an identical row, so a
+repeated refresh cannot invent a second data point for a day that had one. A
+finer (per-second) key would duplicate history on every same-day re-run — the
+opposite of what a baseline wants.
+
+A date range on the sort key is the window query:
+
+```python
+table.query(
+    KeyConditionExpression=(
+        Key("history_pk").eq("paknsave#sylvia-park#butter-500g")
+        & Key("valid_date").between("2026-05-02", "2026-07-31")
+    ),
+)
+```
+
+### Append-only, and the average is computed at READ time
+
+There is no update path and no delete path (a baseline you can rewrite is not a
+baseline), and **no stored average**. `src/history.summarise` computes the mean,
+min, max and latest over exactly the rows the window query returned, at read
+time. Two reasons: it keeps the table genuinely append-only (a running average
+would be a mutable field on an immutable row), and the average always reflects
+the window the caller chose rather than one frozen at write time. The reviewer
+gets a `deviation_ratio` (price ÷ windowed average) computed in code, so a model
+can say "this is 10× its own history" without being handed the arithmetic to get
+wrong.
+
+### Attributes
+
+| Attribute | Type | Notes |
+|---|---|---|
+| `history_pk` | S | PK — `{store_key}#{product_key}` |
+| `valid_date` | S | SK, ISO date — the capture date |
+| `store_key` | S | Carried so a row is self-describing without splitting the PK |
+| `product_key` | S | |
+| `price_nzd` | S | **String, not Number** — the money rule, as everywhere |
+| `unit_price_nzd` | S | |
+| `on_special` | BOOL | Whether that capture was a special — context for a deviation |
+
+No `lat`/`lon`, no `display_name`, no `category`: a baseline needs who, what, how
+much and when, and nothing more. Fewer fields is less to leak and less to keep in
+step.
+
+### The invariant note — never shopper-facing
+
+An average over a window is **not a price anyone can pay at any actual store on
+any actual day**. Surfacing it to a shopper would breach the grounding invariant
+(a shopper-visible price must be a single retrieved fact at a named store with a
+capture date). So `src/history` is imported by ingestion (write) and, later, the
+reviewer (read) — and **never by `src/graph/` or `src/retrieval/`**. A test
+asserts the shopper path does not import it. History informs ops and the
+reviewer; it never informs an answer.
+
+### Console settings that are NOT on by default
+
+- **Point-in-time recovery** — ON. Unlike the idempotency cache, history IS a
+  source of truth (for trend detection), so it is recoverable.
+- **On-demand capacity** — one small write per product per refresh.
+- **TTL** — a long retention rather than the idempotency table's 24 hours: a
+  baseline is only as good as its window, and a 90-day deviation check needs 90
+  days of history. A retention around 180–365 days, or none for the pilot's
+  scale, with the value revisited when the row count justifies it. No shopper
+  data means the Privacy-Act minimisation pressure that drives the idempotency
+  and saved-plan TTLs does not apply here.
+- Encryption at rest verified explicitly, as for every table.
+
+---
+
 ## Legal note on the recipe catalogue
 
 Worth raising before anyone starts populating the recipe catalogue.
