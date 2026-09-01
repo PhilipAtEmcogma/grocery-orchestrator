@@ -1,0 +1,35 @@
+{
+  "_comment": "Ingestion source priority as first-class, reviewable data. This file declares WHICH recorded catalogue refreshes the serving table (Lineage A, grocery-products-dev) and in what order sources are preferred. It is config-as-data for the same reason freshness.json and feasibility.json are: 'the data team's collected catalogue is the primary input, the seed fixtures are the fallback' is a project decision that should be readable and version-controlled, not buried in an operator's PRICE_SOURCE environment variable.",
+  "version": "1.0",
+
+  "_the_decision_this_encodes": "Philip, 2026-08-29 (ADR 0003; infra/docs/08-OPEN-DECISIONS.md §1): the orchestrator SERVES from Lineage A (grocery-products-dev). Lineage B — the data sub-team's collected catalogue (smart-grocery-products-dev, ~3,000 offers across 10 Auckland stores, plus smart-grocery-recipes-dev) — is a raw upstream INPUT, transformed B→A by ingestion/lineage_b.py, never adopted as a serving table. This file makes the 'B is the primary input' half of that decision first-class: the data team's work is the primary source of real prices, and that is now recorded here rather than implied by an env var.",
+
+  "sources": [
+    {
+      "name": "lineage_b",
+      "role": "primary",
+      "kind": "recorded",
+      "description": "The data sub-team's collected catalogue under datasets/data/dynamodb_products, transformed B→A by ingestion/lineage_b.py. This is the real Auckland price data (Foodstuffs online catalogue, captured 2026-08-28 per datasets/DATA_SCHEMA.md). It is RECORDED data on disk: reading it makes no network request and does not touch the ACQUISITION-RISK.md §8 gate.",
+      "selects": "LineageBSource"
+    },
+    {
+      "name": "fixtures",
+      "role": "fallback",
+      "kind": "recorded",
+      "description": "The curated seed fixtures (fixtures/products.json, ~150 items) the offline tests and the seed loader use. The safe default: small, hand-verified, one product per key. Used when the config's default_source names it, or when Lineage B is unavailable.",
+      "selects": "FixtureSource"
+    }
+  ],
+
+  "default_source": "fixtures",
+
+  "_why_default_is_still_fixtures_not_lineage_b": "PRIORITY (which source is PRIMARY) and RUNTIME DEFAULT (which source resolve_source() picks when nothing selects one) are two different questions, and only the first is settled here. Lineage B is the primary INPUT — that is the recorded decision and the reason the real 2,759-row catalogue is what the serving table holds today. But promoting Lineage B to the automatic runtime default changes what the deployed ingestion Lambda does when invoked with no PRICE_SOURCE set, and that is a deployment behaviour change, not a documentation one. It is left as an explicit follow-up (see _promoting_lineage_b_to_default) so the change is deliberate and reviewed rather than a silent flip. Until then: the env var / explicit selection chooses Lineage B, exactly as the 2026-08-30 load did.",
+
+  "_promoting_lineage_b_to_default": "To make Lineage B the runtime default, set default_source to 'lineage_b' HERE and confirm: (1) the deployed ingestion Lambda's datasets/ are present in the archive or mounted, (2) a dry-run refresh (event {\"retailer\": ..., \"dry_run\": true}) reports the expected added/changed/unchanged against the live table, and (3) reject_implausible finds nothing new. This is a config change, and config ships inside the Lambda archive (AGENTS.md), so it is a deploy. Do it as its own reviewed change with the dry-run evidence in the PR.",
+
+  "_override": "PRICE_SOURCE in the environment still overrides default_source, for parity with the existing mechanism and so a one-off load can select a source without editing config. Precedence: LIVE_ACQUISITION=1 (refuses, always — the acquisition tripwire wins over everything) > PRICE_SOURCE env > default_source here.",
+
+  "_the_acquisition_tripwire_is_unchanged": "This file adds NO live-acquisition capability. Both sources are recorded data on disk. resolve_source() still raises NotImplementedError if LIVE_ACQUISITION=1, and that check runs BEFORE this config is consulted. A live retailer source remains Task 11.4, gated on all thirteen ACQUISITION-RISK.md §8 conditions, and nothing here relaxes that.",
+
+  "_not_a_serving_table_switch": "This chooses which recorded catalogue INGESTION reads to refresh the serving table. It does NOT change which table the orchestrator serves from — that is always Lineage A (grocery-products-dev), selected by USE_DYNAMODB in src/handler.py, and unaffected by anything here."
+}

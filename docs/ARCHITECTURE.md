@@ -543,6 +543,21 @@ nothing changed.
 
 ## 3j. One catalogue — fixture rows removed 2026-08-30
 
+> **THE FIXTURES CAME BACK, and the parity re-run of 2026-09-01 caught it —
+> §3s.** This section describes a removal that happened and was then silently
+> undone: on 2026-09-01 the live endpoint again returned the fixture answers
+> below inverted (`cheapest milk near Albany` → New World **Devonport** $4.94,
+> `cheapest butter` → Pak'nSAVE **Mangere** $2.97), which are fixture rows, at
+> fixture-only suburbs, matched byte-for-byte. The mechanism is in
+> `docs/OPEN-REVIEW-near-filter-drift.md`: `scripts/load_seed_data.py` with no
+> flag LOADS, so a plain run re-added all 152 fixture rows, and they shadow the
+> real catalogue through the synonym candidate order. **The loader is now
+> guarded** (it refuses to load over the real catalogue without `--force`, with
+> a regression test), so this cannot recur silently — but the LIVE removal
+> (option A, `--remove`) still has to be run by an operator with credentials
+> before the worked examples in this section are true again. The examples below
+> describe the intended, post-removal state.
+
 The load was additive, so the table briefly held 152 fixture rows AND 2,759 real
 ones, and answered inconsistently: head terms hit the fixtures while meal plans
 drew on the real data. `cheapest milk near Albany` returned a *Devonport*
@@ -1704,3 +1719,118 @@ Negligible at this scale. X-Ray's free tier covers 100,000 traces recorded per
 month; this deployment is capped by a Bedrock quota at roughly 300-600 turns an
 hour and is not serving traffic. Revisit under Pilot Task 12's Budgets work if
 that changes.
+
+## 3s. Parity re-run, plane roles recorded, and source priority made first-class — 2026-09-01
+
+Three things settled on 2026-09-01, none of which deploys anything or lifts the
+§3q pause. Frontend work has started (the `frontend-infra-setup` client merged
+2026-08-31) but has not reported which URL it will use, so the cutover, the
+`Grocery-Obs-dev` deploy and the API key all stay deferred exactly as §3q and
+`infra/docs/08-OPEN-DECISIONS.md` §10 describe.
+
+### The parity table was re-run, and it passes
+
+The 2026-08-30 parity table (§3m) predated Pilot Task 15c (`select_recipes` and
+the curated recipe catalogue), so `infra/docs/08-OPEN-DECISIONS.md` §10 required
+re-running it before it could inform a cutover. Done, against both live
+endpoints, paced at 9/min, with a fresh session/turn per request so the
+idempotency cache is not measured:
+
+| Request | hand-made (`woqmel35lk`) | CDK (`crm1xkrk34`) | verdict |
+|---|---|---|---|
+| `cheapest butter` | paknsave Mangere $2.97 Pams Butter 500g, refs c1–c5 | *identical* | MATCH |
+| `cheapest milk near Albany` | new_world Devonport $4.94, 1 citation | *identical* | MATCH |
+| `how much is truffle oil` | no_data (honest refusal) | *identical* | MATCH |
+| `feed 3 people for 5 days on $80` (3 reps each) | 5 meals; payable $43.33 / $43.33 / $38.59; 24 citations | 5 meals; payable $31.74 / $40.76 / $32.86; 24 citations | parity |
+
+**The meal-plan totals differ between the columns and that is not a divergence.**
+Both planes return five meals and 24 citations every rep; the payable total
+varies run to run on EACH plane (hand-made spans $38.59–$43.33 across its own
+three reps), and the two ranges sit alongside each other. This is exactly the
+run-to-run composition variance §3m documents — a cross-plane number is only
+evidence of a real difference if the same plane does not produce it on its own,
+and here it plainly does. Exit code 0 (parity).
+
+The harness is `scripts/check_parity.py`, kept because parity is a measurement
+that must be re-taken, not a property that stays true — it compares
+deterministic requests byte-for-byte on the fields that matter (intent, error
+code, cheapest store, price, citation refs) and compares meal-plan requests as
+RANGES over repeated runs. Full output in
+`reports/parity_rerun_2026-09-01.txt`. No AWS credentials are needed; both
+endpoints are public today.
+
+**Two served answers have DRIFTED from the 2026-08-30 record, and both planes
+agree on the new answers** — so it is not a parity failure, but it is a real
+change in what the service returns, tracked separately in
+[`docs/OPEN-REVIEW-near-filter-drift.md`](OPEN-REVIEW-near-filter-drift.md):
+
+| Request | 2026-08-30 record | 2026-09-01 |
+|---|---|---|
+| `cheapest butter` | paknsave **Albany** $9.49 Mainland | paknsave **Mangere** $2.97 Pams |
+| `cheapest milk near Albany` | paknsave **Albany** $4.79 | new_world **Devonport** $4.94 |
+
+**Diagnosed 2026-09-01, and it is not a near-filter bug.** Both answers are
+fixture rows — Devonport and Mangere are fixture-only suburbs, matched
+byte-for-byte to `fixtures/products.json`. The fixture rows are back in the
+live table (the 2026-08-30 removal in §3j was silently undone by a plain
+`load_seed_data.py` run), and they shadow the real Lineage B prices through the
+synonym candidate order, so `cheapest milk near Albany` serves a fabricated
+Devonport $4.94 instead of the real Albany $4.79. The near filter, region
+mapping and coordinates are all correct. Full diagnosis and the fix status in
+[`docs/OPEN-REVIEW-near-filter-drift.md`](OPEN-REVIEW-near-filter-drift.md); the
+loader is now **guarded** against a recurrence, the live removal is the one
+outstanding operator step. A number changing while both planes agree is exactly
+the "nothing alarmed because everything matched" failure this file keeps
+recording.
+
+### Plane roles recorded as a decision (Philip, 2026-09-01)
+
+Until now "the hand-made plane is production" was an emergent fact — true
+because it is alarmed and contract-named — rather than a recorded decision. It
+is now recorded:
+
+- **PRIMARY: the hand-made plane** (`grocery-orchestrator-dev` / `woqmel35lk`).
+  It serves, it is alarmed (§3l), and `CONTRACT-v1.md` names it. It stays
+  primary and is NOT retired.
+- **Parallel: the CDK plane** (`grocery-orchestrator-dev-cdk` / `crm1xkrk34`).
+  Exercised, at parity, not serving.
+
+This does not contradict §3m's finding that the CDK plane is the better
+*eventual* cutover target (finite log retention, tracing on from the start). It
+records which plane is primary *now*.
+
+**Budget-collapse rule (Philip, 2026-09-01):** once `ObservabilityStack`
+deploys its own `$25` monthly budget beside the hand-made
+`grocery-orchestrator-monthly-dev` (§3l), two will exist. Two budgets are free,
+so collapsing one is tidiness, not cost. **Keep the budget the SURVIVING plane
+owns; delete the other.** While the hand-made plane is primary, its budget
+stays. "Collapse the hand-made one" refers to the BUDGET at cutover, not the
+plane — the plane stays primary. Conflating the two would retire the serving
+plane, the opposite of keeping it primary.
+
+### Source priority is now first-class config
+
+The 2026-08-29 decision (ADR 0003; `infra/docs/08-OPEN-DECISIONS.md` §1) that
+the data team's collected catalogue (Lineage B) is the PRIMARY ingestion input
+and the fixtures are the fallback lived only in an env var (`PRICE_SOURCE`) and
+a decision doc. It is now `config/data-sources.json`: an ordered, reviewable
+declaration that Lineage B is primary and fixtures are the fallback, read by
+`ingestion/sources.py::resolve_source`.
+
+- **Nothing about what the planes SERVE changes.** Both serve Lineage A
+  (`grocery-products-dev`), selected by `USE_DYNAMODB`. This config chooses
+  which recorded catalogue INGESTION refreshes that table from.
+- **The acquisition tripwire is unchanged.** Both sources are recorded data on
+  disk; `resolve_source` still raises `NotImplementedError` if
+  `LIVE_ACQUISITION=1`, checked before the config is consulted. Precedence:
+  `LIVE_ACQUISITION` (refuse) > `PRICE_SOURCE` env > `default_source` in config.
+- **`default_source` is still `fixtures`, deliberately.** Priority (Lineage B is
+  primary) and runtime default (what `resolve_source` picks with no env set) are
+  separate questions. Promoting Lineage B to the automatic default changes what
+  the deployed ingestion Lambda does by default and is left as an explicit,
+  dry-run-evidenced follow-up in the config file — the same reason the real
+  catalogue load on 2026-08-30 was an explicit operation, not a silent default
+  flip.
+
+Verified offline: full suite 868 passed / 31 skipped, ruff + format clean,
+pyright clean, config placeholder guard clean.
