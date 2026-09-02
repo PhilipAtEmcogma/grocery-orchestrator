@@ -18,7 +18,12 @@ from src.review.findings import (
     ValidatedFindings,
     validate_findings,
 )
-from src.review.reviewer import ReviewResult, review_snapshot
+from src.review.reviewer import (
+    ReviewResult,
+    propose_findings,
+    review_snapshot,
+    validate_report,
+)
 from src.review.snapshot import (
     MAX_SNAPSHOT_ROWS,
     SNAPSHOT_FIELDS,
@@ -45,7 +50,9 @@ __all__ = [
     "build_snapshot",
     "implausible_unit_price",
     "implausible_unit_price_values",
+    "propose_findings",
     "review_snapshot",
     "snapshot_to_dicts",
     "validate_findings",
+    "validate_report",
 ]
