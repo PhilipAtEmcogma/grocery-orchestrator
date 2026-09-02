@@ -125,8 +125,8 @@ intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%;
 DynamoDB products and idempotency tables with owner-fenced claims proven against
 the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
-**Offline gates:** 861 tests passing, 31 skipped, plus **24 CDK assertions**
-in `infra/` — run by CI for the first time on 2026-08-31, having found two IAM
+**Offline gates:** 907 tests passing, 31 skipped, plus **47 CDK assertions**
+in `infra/` — first run by CI on 2026-08-31, having found two IAM
 regressions in a stack that was already deployed
 ([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3o). Five eval suites — intent
 76.7%, meal plan 100%, prose 100%, repair 100% (12 cases), guardrail 9/9
@@ -334,9 +334,16 @@ src/
                            a PlanDraft, and catalogue.py — a product catalogue
                            that names its own source and size, because a
                            coverage number without one measures nothing
-  review/                  Task 14a: the sanitised snapshot a data-quality
-                           reviewer would sit behind, and the validation its
-                           findings must survive. No reviewer is deployed
+  history/                 Append-only price history (Table 4): read-time
+                           average/min/max baseline per product, feeding the
+                           reviewer's deviation_ratio. Code built + tested;
+                           the grocery-price-history-dev table is NOT deployed
+  review/                  Task 14: the sanitised snapshot a data-quality
+                           reviewer sits behind, the validation its findings
+                           must survive, and the model-half/validate-half split.
+                           Prototyped live on an AgentCore Runtime and torn
+                           down (docs/AGENTCORE-RUNTIME-REVIEWER.md); CDK stack
+                           in infra/lib/reviewer-stack.ts
   mcp/                     Local read-only MCP façade: two coarse tools over
                            stdio, default-off, rate and session capped
   store/                   Idempotency: in-memory and DynamoDB
@@ -542,7 +549,7 @@ claimed. Read it before changing any of this, and not before.
 
 ### Tests, evals and CI
 
-- ✅ **811 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **907 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -697,12 +704,14 @@ python Philip_demo/run_all.py   # nineteen demos, offline, about a minute
 And to check it:
 
 ```bash
-pytest                     # 811 passing, 31 skipped
+pytest                     # 907 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
-python evals/run_intent.py       # 76.7% scripted baseline
-python evals/run_meal_plan.py    # 100% scripted invariant baseline
-python evals/run_guardrail.py    # 7/7 scripted must-allow structure only
+python evals/run_intent.py         # 76.7% scripted baseline
+python evals/run_meal_plan.py      # 100% scripted invariant baseline
+python evals/run_guardrail.py      # 7/7 scripted must-allow structure only
+python evals/run_recipe_select.py  # 100% scripted; select_recipes (Task 15c)
+python evals/run_review.py         # data-quality reviewer (experiment, 25 cases)
 ```
 
 `AGENTS.md` has the full command reference, including the AWS appliers and the

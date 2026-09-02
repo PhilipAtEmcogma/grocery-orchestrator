@@ -2,7 +2,7 @@
 /**
  * CDK app entrypoint for the Smart Grocery & Meal Budget Assistant.
  *
- * STATUS, 2026-08-31 — TWO OF FIVE STACKS ARE REAL AND DEPLOYED.
+ * STATUS, 2026-09-02 — SIX STACKS DEFINED, TWO DEPLOYED.
  *
  *   Grocery-Stateful-dev   DEPLOYED. Adopts the seeded tables by reference.
  *                          Its template contains no table resource, which IS
@@ -18,13 +18,21 @@
  *                          Deploy it before the cutover, not after.
  *   Grocery-Ingestion-dev  STUB.
  *   Grocery-Frontend-dev   STUB.
+ *   Grocery-Reviewer-dev   REAL (ADR 0002 WS2), not deployed. The data-quality
+ *                          reviewer AgentCore Runtime + its least-privilege
+ *                          role, from config/iam-reviewer-runtime-role.json.
+ *                          `cdk synth` is correct; `cdk deploy` waits for the
+ *                          AWS::BedrockAgentCore::Runtime CFN type to reach
+ *                          ap-southeast-2 (reviewer-stack.ts header). Off the
+ *                          shopper path by design.
  *
- * This header said "the stacks themselves are STUBS ... `cdk synth` will
- * produce near-empty templates" for a day after the service plane went live.
- * Same shape as every other drift finding in this repository: a description
- * that was true when written and that nobody went back to when the thing
- * arrived. `infra/test/service-stack.test.ts` is the control that now makes the
- * difference between stub and real observable rather than narrated.
+ * This header said "TWO OF FIVE STACKS" while the file instantiated six, for a
+ * few days after the reviewer stack landed — and before that "the stacks
+ * themselves are STUBS" for a day after the service plane went live. Same shape
+ * as every other drift finding in this repository: a description that was true
+ * when written and that nobody went back to when the thing arrived.
+ * `infra/test/*.test.ts` (five suites, 47 assertions) is the control that makes
+ * the difference between stub and real observable rather than narrated.
  *
  * Design references:
  *   - infra/docs/02-CDK-SCAFFOLD.md  (app structure, stack decomposition, context)

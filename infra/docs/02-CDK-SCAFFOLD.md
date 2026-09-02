@@ -83,6 +83,12 @@ day.*
 | **IngestionStack** | EventBridge rule, Step Functions, ingestion Lambda | Redeployed with ingestion changes | `DESTROY` safe |
 | **ObservabilityStack** | Alarms, dashboard, SNS topic, Budgets, artefact S3 bucket | Redeployed with ops changes | Mostly `DESTROY`; the **artefact bucket is `RETAIN`** |
 | **FrontendStack** | Frontend S3 bucket, CloudFront, bucket deployment | Redeployed on UI change | Bucket `RETAIN` or `DESTROY+autoDelete` per [08](08-OPEN-DECISIONS.md) |
+| **ReviewerStack** *(added later, ADR 0002 WS2)* | AgentCore Runtime data-quality reviewer + its least-privilege role | Off the shopper path; independent of the other five | `DESTROY` safe — the runtime holds no state |
+
+*The five-stack decomposition above is the original scaffold. `ReviewerStack`
+(`infra/lib/reviewer-stack.ts`) was added under ADR 0002 Workstream 2; it synths
+but does not deploy until the `AWS::BedrockAgentCore::Runtime` CFN type reaches
+ap-southeast-2. See `infra/bin/grocery.ts` and `docs/AGENTCORE-RUNTIME-REVIEWER.md`.*
 
 Why this particular split matters:
 

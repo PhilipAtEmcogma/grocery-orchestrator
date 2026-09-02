@@ -111,7 +111,7 @@ All of it exists.
 | Products table | `grocery-products-dev` | **2,759 items**, the real catalogue only, GSI1 + GSI2, PAY_PER_REQUEST |
 | Idempotency table | `grocery-idempotency-dev` | TTL ACTIVE |
 | Guardrail | `b1xezpqe04kx` version `2` | v2 published 2026-08-29; DRAFT deliberately not granted in IAM |
-| CDK stacks | `Grocery-Stateful-dev`, `Grocery-Service-dev` | bootstrapped 2026-08-30; service plane deployed in parallel under `-cdk`, see §3m |
+| CDK stacks (deployed) | `Grocery-Stateful-dev`, `Grocery-Service-dev` | bootstrapped 2026-08-30; service plane deployed in parallel under `-cdk`, see §3m. `Grocery-Obs`, `-Ingestion`, `-Frontend`, `-Reviewer` are DEFINED in `infra/` but NOT deployed (the Reviewer stack, ADR 0002 gate 5, also waits on the `AWS::BedrockAgentCore::Runtime` CFN type reaching ap-southeast-2 — `infra/lib/reviewer-stack.ts`). |
 | SNS topic | `grocery-orchestrator-alarms-dev` | **8 alarms**; 2 confirmed email subscribers; Budgets granted publish |
 | Dashboard | `grocery-orchestrator-dev` | 9 widgets over the EMF metrics and the gateway |
 | Budget | `grocery-orchestrator-monthly-dev` | $25/month, alerts at 50/80/100% actual + 100% forecast |
@@ -1025,8 +1025,11 @@ security check.
 
 CI job `infra`: `npm ci`, build the Lambda asset synth points at, `tsc
 --noEmit`, `npm test`, `cdk synth`. Wired into `summary.needs`, so
-`tests/test_ci_workflow.py` covers it like every other job. 24 assertions, and
-each was watched to fail against a mutated stack before being kept.
+`tests/test_ci_workflow.py` covers it like every other job. 47 assertions
+across five suites (`app`, `config`, `service-stack`, `observability-stack`,
+`reviewer-stack`; 24 when this was written, before the observability and
+reviewer suites landed), and each was watched to fail against a mutated stack
+before being kept.
 
 **And a control against the recurrence.** `tests/test_skip_markers.py` fails when
 a skip carries no machine-checkable condition, in Python and TypeScript alike —
@@ -1110,12 +1113,28 @@ sentinel.
 - a stale capture date, which `src/retrieval/filters.py` owns;
 - **anything needing a baseline.** "This price doubled overnight" is the largest
   category here and it is not a rule problem: it needs the append-only
-  price-history table, which does not exist. That is a cheaper and better-defined
-  piece of work than a reviewer, and it is a prerequisite for one.
+  price-history table, which did not exist when this was written. That is a
+  cheaper and better-defined piece of work than a reviewer, and it is a
+  prerequisite for one.
 
 So the ADR 0002 decision now has a measurement under it rather than a belief,
 and it points somewhere specific: the next thing worth building is the history
 table, not the Runtime.
+
+> **Update (2026-09-02): the history table recommendation was acted on.** The
+> append-only price-history module was subsequently built —
+> `src/history/` (`to_history_item`, `summarise`, `PriceBaseline`,
+> `DynamoPriceHistory`), wired into `ingestion/handler.refresh()`, documented as
+> Table 4 in `DYNAMODB-SCHEMA.md`, and used to enrich the reviewer's snapshot
+> with a `deviation_ratio`. **The table `grocery-price-history-dev` is defined in
+> code but is NOT deployed** — `aws dynamodb list-tables` (2026-09-02) shows only
+> `grocery-products-dev` and `grocery-idempotency-dev` (plus the data team's
+> `smart-grocery-*`). So "this price doubled overnight" is now *catchable in code*
+> and was the enrichment the reviewer prototype (§ below / `docs/AGENTCORE-RUNTIME-REVIEWER.md`)
+> actually ran against, but it is not yet *live*, because the ingestion write
+> path that would populate the table has not been deployed. The recommendation
+> ("history before Runtime") held: the history module landed first and the
+> reviewer used it.
 
 ## 3q. ObservabilityStack, and how much of the second plane was actually unwatched — 2026-08-31
 

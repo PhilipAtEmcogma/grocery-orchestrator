@@ -205,7 +205,7 @@ known to work.
 | `review_snapshot` core | `src/review/reviewer.py` | model call + map + validate (offline single-process) | exists |
 | snapshot allowlist + caps | `src/review/snapshot.py` | the sanitised boundary | exists |
 | `validate_findings` | `src/review/findings.py` | the 3-way deterministic check | exists |
-| labelled dataset | `evals/cases/review_anomalies.json` | ground truth, 11 cases | exists |
+| labelled dataset | `evals/cases/review_anomalies.json` | ground truth, 25 cases (was 11 at prototype time; expanded 2026-09-02) | exists |
 | offline eval | `evals/run_review.py` | reviewer-only recall + false positives | exists |
 | **Runtime entrypoint** | `agentcore/reviewer/` (new) | the code the microVM runs: `/ping`, `/invocations`, model-half-only | **new** |
 | **invoke-side client** | `scripts/review_runtime.py` (new) | build snapshot, invoke, validate on our side, artefact | **new** |
@@ -520,6 +520,28 @@ score — not promote this single run. And note the classification gap
 stricter than the product needs, since a human triaging findings cares that the
 row was flagged more than which label it got. That is a scoring-design question
 to settle before any qualification claim.
+
+> **Update (2026-09-02): the "honest next step" was taken, and the CDK stack
+> landed.** Both follow-ups this verdict named are now done, in the eval harness
+> rather than in a new live run:
+> - The labelled set was **expanded from 11 to 25 cases** (all six finding
+>   kinds; `evals/cases/review_anomalies.json`), and `evals/run_review.py` gained
+>   `--reps N` **banded** scoring (min/median/max, gating on the worst rep) so a
+>   non-deterministic model is measured as a band, not a point.
+> - The scoring gap is resolved by reporting **both** a *flagged* recall (row
+>   surfaced at all — what a triager acts on) and a *strict* recall (flagged AND
+>   classified), plus a classification-accuracy number. The `suspect_category`
+>   vs `name_mismatch` case is now a mis-classification, not a miss.
+>
+> These changed the eval SHAPE, so the 60% / "3 of 5" figures above are a
+> point-in-time record of the *prototype run against 11 cases*, kept as history.
+> A fresh live qualification against the 25-case set with `--reps` has not been
+> run (it needs live spend and is not required while the reviewer stays a parked
+> experiment). Separately, **CDK codification (gate 5) landed**:
+> `infra/lib/reviewer-stack.ts` + `infra/test/reviewer-stack.test.ts`, wired into
+> `infra/bin/grocery.ts` as `Grocery-Reviewer-dev` (§15.1). The stack *synths*;
+> it does not *deploy* until the `AWS::BedrockAgentCore::Runtime` CFN type
+> reaches ap-southeast-2.
 
 ---
 
