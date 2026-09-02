@@ -51,6 +51,12 @@ class FindingKind(StrEnum):
     DUPLICATE_PRODUCT = "duplicate_product"
     NAME_MISMATCH = "name_mismatch"
     STALE_CAPTURE = "stale_capture"
+    # A price far from the product's OWN history -- "this doubled overnight".
+    # The class the deterministic rules structurally cannot see (a single row is
+    # internally consistent), and the reason the snapshot carries baseline
+    # enrichment. A finding of this kind is expected to quote deviation_ratio
+    # and/or baseline_avg_nzd so validate_findings can check it against the row.
+    PRICE_DEVIATION = "price_deviation"
 
 
 class Rejection(StrEnum):

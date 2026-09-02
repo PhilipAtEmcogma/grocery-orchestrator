@@ -75,6 +75,12 @@ TASK_REPAIR_DEFECT = "repair_defect"
 #: A turn takes ONE of these per repair attempt, never both.
 REPAIR_TASKS = frozenset({TASK_REPAIR_BUDGET, TASK_REPAIR_DEFECT})
 
+#: The data-quality reviewer (ADR 0002 Workstream 2, Pilot Task 14). NOT on the
+#: shopper path -- it reviews a capped ingestion snapshot, off-turn, for a human.
+#: FAST tier: the judgement is per-row anomaly spotting, and its output is
+#: validated deterministically regardless of which model produced it.
+TASK_REVIEW_SNAPSHOT = "review_snapshot"
+
 #: Every task on the meal-plan path, for latency attribution and call counting.
 PLAN_TASKS = frozenset({TASK_GENERATE_PLAN}) | REPAIR_TASKS
 
