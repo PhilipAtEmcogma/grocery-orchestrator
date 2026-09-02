@@ -60,6 +60,10 @@ export interface GroceryConfig {
     readonly restApi: string;
     readonly alarmTopic: string;
     readonly orchestratorLogGroup: string;
+    // AgentCore Runtime reviewer (ADR 0002 WS2). CREATED by this app.
+    readonly reviewerRuntime: string;
+    readonly reviewerRole: string;
+    readonly reviewerCodeBucket: string;
   };
 
   // Repo config-as-data files the stacks read at synth (infra/docs/02 §6).
@@ -69,6 +73,7 @@ export interface GroceryConfig {
     readonly alarms: string;
     readonly iamOrchestrator: string;
     readonly iamIngestion: string;
+    readonly iamReviewer: string;
     readonly stateMachine: string;
     readonly feasibility: string;
     readonly stages: string;
@@ -141,6 +146,20 @@ export function loadConfig(stage: string): GroceryConfig {
       restApi: `grocery-orchestrator-api-${suffix}`,
       alarmTopic: `grocery-orchestrator-alarms-${suffix}`,
       orchestratorLogGroup: `/aws/lambda/grocery-orchestrator-${suffix}`,
+      // AgentCore Runtime name must match [a-zA-Z][a-zA-Z0-9_]{0,47} -- NO
+      // hyphens, so the created runtime uses underscores and drops the `-cdk`
+      // NAME_SUFFIX (which contains a hyphen). The role and bucket keep the
+      // hand-made prototype names (config/iam-reviewer-runtime-role.json), so
+      // CDK ADOPTS the role identity the prototype created rather than making a
+      // second one -- the same "coexist, then cut over" posture as the service
+      // plane, but here the two planes would share one role by name.
+      reviewerRuntime: `grocery_reviewer_${suffix.replace(/-/g, '_')}`,
+      reviewerRole: `grocery-reviewer-runtime-${suffix}-role`,
+      // Just the region suffix; the stack prepends `bedrock-agentcore-code-` and
+      // the account id from the deploy identity (never a literal -- the same
+      // rule aws_placeholders.py follows). This is the standard AgentCore code
+      // bucket the prototype used.
+      reviewerCodeBucket: 'bedrock-agentcore-code',
     },
     configFiles: {
       models: path.join(REPO_ROOT, 'config', 'models.json'),
@@ -148,6 +167,7 @@ export function loadConfig(stage: string): GroceryConfig {
       alarms: path.join(REPO_ROOT, 'config', 'alarms.json'),
       iamOrchestrator: path.join(REPO_ROOT, 'config', 'iam-orchestrator-role.json'),
       iamIngestion: path.join(REPO_ROOT, 'config', 'iam-ingestion-role.json'),
+      iamReviewer: path.join(REPO_ROOT, 'config', 'iam-reviewer-runtime-role.json'),
       stateMachine: path.join(REPO_ROOT, 'config', 'ingestion-state-machine.json'),
       feasibility: path.join(REPO_ROOT, 'config', 'feasibility.json'),
       stages: STAGES_FILE,
