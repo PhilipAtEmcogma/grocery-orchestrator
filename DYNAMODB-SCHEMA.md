@@ -2,17 +2,25 @@
 
 **Smart Grocery & Meal Budget Assistant**
 Author: Philip (Backend/Orchestration, AI/Prompt Lead)
-Status: **Products/idempotency implemented; pilot hardening and recipes planned**
+Status: **Products/idempotency implemented and deployed; recipes shipped (Task 15);
+price-history (Table 4) built in code but NOT deployed**
 Region: `ap-southeast-2` (Sydney)
 
 The current account contains `grocery-products-dev` and
 `grocery-idempotency-dev`; the products table is seeded and both adapters have
 been live-verified. Claim-owner idempotency hardening landed 2026-08-29 and was
-verified against the live table. `grocery-meals-dev`, the production
-candidate-query access pattern is RESOLVED (GSI2, 2026-08-30) and the CDK
-definitions are planned; the pattern was deferred until there was load evidence to
+verified against the live table. The candidate-query access pattern is RESOLVED
+(GSI2, 2026-08-30); the pattern was deferred until there was load evidence to
 choose from, and `tests/test_price_repository_contract.py` fails once the
 dataset outgrows a defensible Scan.
+
+**Table 4, the append-only price history (`grocery-price-history-dev`), is
+BUILT IN CODE (`src/history/`, wired into ingestion) but NOT DEPLOYED** —
+`aws dynamodb list-tables` (2026-09-02) shows only products and idempotency
+(plus the data team's `smart-grocery-*`). Its section below is a specification
+the ingestion write path already targets; the table itself awaits a deploy.
+`grocery-meals-dev` remains a planned CDK definition (the curated recipes ship
+today from `config`/`src/recipes`, not from a meals table).
 
 Further resources must be defined in TypeScript CDK. Existing stateful tables
 are adopted/imported rather than recreated. Manual console creation is no

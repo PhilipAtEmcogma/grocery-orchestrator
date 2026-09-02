@@ -321,7 +321,7 @@ Repository gates, run after this suite was written, both green:
 
 ```
 ruff check .                   All checks passed
-python -m pytest -q            806 passed, 31 skipped
+python -m pytest -q            907 passed, 31 skipped
 ```
 
 *(765 when this suite was first written; the rise is Tasks 14a, 15b and the

@@ -536,13 +536,15 @@ measurement here, make the instrument name its inputs.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 861 passed, 31 skipped, no AWS
+python -m pytest -q                              # 907 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
     tests/test_sample_fixtures.py                # rewrite samples/ from the server
 python evals/run_intent.py                       # 76.7% scripted baseline
 python evals/run_recipe_select.py                 # 100% scripted; select_recipes (15c)
+python evals/run_review.py                        # data-quality reviewer, 25 cases (experiment, ADR 0002 WS2)
+python evals/run_review.py --model nova-lite --reps 3   # banded live qualification (flagged vs strict recall)
 python evals/run_intent.py --model nova-lite     # 92.9% live, guardrail v2
 python evals/run_intent.py --model nova-pro      # 100% live (Nova Pro)
 python evals/run_meal_plan.py                    # 100% invariants baseline
@@ -568,7 +570,11 @@ python scripts/check_recipe_coverage.py --recipes curated --catalogue fixtures  
 python scripts/measure_latency.py                 # latency against the DEPLOYED endpoint
 python scripts/check_ingestion_anomalies.py       # deterministic rules over the REAL catalogue
 python scripts/check_ingestion_anomalies.py --catalogue fixtures
-cd infra && npm ci && npm test                    # 24 CDK security assertions, no AWS
+python scripts/reviewer_runtime_preflight.py      # cost-free reviewer-Runtime preflight (build/IAM/model)
+python scripts/build_reviewer_runtime.py          # arm64 CodeZip for the reviewer Runtime (build/reviewer-runtime.zip)
+python scripts/review_runtime.py --sim            # boot the reviewer entrypoint over local HTTP, no AWS
+python scripts/review_runtime.py --arn <arn>      # invoke a DEPLOYED reviewer Runtime (see design doc §15)
+cd infra && npm ci && npm test                    # 47 CDK security assertions across 5 suites, no AWS
 cd infra && npx tsc --noEmit && npx cdk synth --quiet   # what the `infra` CI job runs
 ```
 

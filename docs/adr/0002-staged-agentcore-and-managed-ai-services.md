@@ -4,9 +4,12 @@
   PROTOTYPED 2026-09-02 — deployed to AgentCore Runtime in `ap-southeast-2`,
   measured against the labelled anomaly set, and torn down. It is an
   EXPERIMENT, not a retained service: the prototype ended in teardown by
-  design, and CDK codification (gate 5) is the next step before anything is
-  "retained". Findings and the full reasoning record are in
-  [`docs/AGENTCORE-RUNTIME-REVIEWER.md`](../AGENTCORE-RUNTIME-REVIEWER.md) §13.
+  design. CDK codification (gate 5) has since LANDED IN CODE —
+  `infra/lib/reviewer-stack.ts` (`Grocery-Reviewer-dev`) with security tests —
+  but the stack does not *deploy* until the `AWS::BedrockAgentCore::Runtime` CFN
+  type reaches ap-southeast-2, and "retained" remains a separate decision.
+  Findings and the full reasoning record are in
+  [`docs/AGENTCORE-RUNTIME-REVIEWER.md`](../AGENTCORE-RUNTIME-REVIEWER.md) §13–§15.
   Gateway and the managed evaluations remain **withdrawn from the request**,
   not declined. The mentor gave full autonomy over ADR 0002; this records the
   decision taken under it.
@@ -259,11 +262,15 @@ rather than later. The decision brief is
   the Option-A trust boundary: the Runtime returns raw findings and
   `validate_findings` runs on the CALLER's side, never inside the Runtime. The
   live prototype scored 60% reviewer-only recall / 0% false positives / 33%
-  fabrication (the validator rejecting a misquote — the boundary working), on 11
-  cases with a non-deterministic model, so it is promising but unproven at
-  scale. Deployed via CLI/boto3, isolated least-privilege role, torn down after
-  measuring. NOT retained: CDK codification (gate 5) precedes retention. Full
-  record in `docs/AGENTCORE-RUNTIME-REVIEWER.md` §13.
+  fabrication (the validator rejecting a misquote — the boundary working), on the
+  then-11-case set with a non-deterministic model, so it is promising but
+  unproven at scale. Deployed via CLI/boto3, isolated least-privilege role, torn
+  down after measuring. The labelled set has since grown to 25 cases and the
+  eval gained banded/flagged-vs-strict scoring; a fresh live qualification has
+  not been run. CDK codification (gate 5) has landed in code
+  (`infra/lib/reviewer-stack.ts`) but deploy waits on the CFN type in Sydney, and
+  "retained" is still a separate decision. Full record in
+  `docs/AGENTCORE-RUNTIME-REVIEWER.md` §13–§15.
 - Bedrock Model Evaluation and AgentCore Evaluations: **proposed companions,
   not implemented**. Local scorecards, golden sets and negative controls are
   implemented and remain the release gates either way.
