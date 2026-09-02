@@ -38,6 +38,7 @@ import { ServiceStack } from '../lib/service-stack';
 import { ObservabilityStack } from '../lib/observability-stack';
 import { IngestionStack } from '../lib/ingestion-stack';
 import { FrontendStack } from '../lib/frontend-stack';
+import { ReviewerStack } from '../lib/reviewer-stack';
 
 const app = new cdk.App();
 
@@ -114,5 +115,11 @@ new IngestionStack(app, `Grocery-Ingestion-${stage}`, { env, cfg, tables: statef
 
 // 5. Frontend — S3 + CloudFront static UI; its domain becomes the API CORS_ORIGIN.
 new FrontendStack(app, `Grocery-Frontend-${stage}`, { env, cfg });
+
+// 6. Reviewer — ADR 0002 WS2 AgentCore Runtime. Independent of the shopper
+// stacks (off the shopper path by design). synth is correct in any region;
+// deploy waits for the CFN type to reach ap-southeast-2 (reviewer-stack.ts
+// header). Its role name matches the prototype's, so it adopts that identity.
+new ReviewerStack(app, `Grocery-Reviewer-${stage}`, { env, cfg });
 
 app.synth();
