@@ -556,8 +556,8 @@ leaves the cheap, inspectable definitions in place.
 | AgentCore Runtime | `grocery_reviewer_dev-4HWlXa4VWd` (version 1, DEFAULT endpoint) | **DELETED** — `get_agent_runtime` returns `ResourceNotFoundException`, `list_agent_runtimes` returns `[]` | The only billable, running resource. Deleting the runtime removes its DEFAULT endpoint and the auto-created workload identity with it. |
 | Runtime session(s) | e.g. `reviewerfull000…` | **GONE** — microVMs auto-terminate on idle timeout (300s here) and are destroyed with the runtime | Session compute is the per-second charge; nothing persists a session. |
 | S3 code object | `s3://bedrock-agentcore-code-097087133897-ap-southeast-2/reviewer/reviewer-runtime.zip` | **DELETED** | The deployment artefact. Rebuildable from source in one command (§15.3), so it is not worth keeping. |
-| S3 bucket | `bedrock-agentcore-code-097087133897-ap-southeast-2` | **KEPT, empty** (block-public, versioned, AES256) | The standard AgentCore code-bucket name for the account/region. Empty costs ~nothing; reusable for the next deploy. Delete it only for a fully clean account. |
-| Execution role | `grocery-reviewer-runtime-dev-role` (+ inline policy `grocery-reviewer-runtime-dev-policy`) | **KEPT** | IAM roles are free and inspectable. Keeping it means the next deploy skips the role step, and the least-privilege policy stays reviewable as the record of what the reviewer was allowed to do. |
+| S3 bucket | `bedrock-agentcore-code-097087133897-ap-southeast-2` | **KEPT, empty** (block-public, versioned, AES256) | The standard AgentCore code-bucket name for the account/region. Empty costs ~nothing; reusable for the next deploy. **Now REFERENCED by `ReviewerStack`** (`infra/lib/reviewer-stack.ts`) as the CodeZip location — no longer an orphan. |
+| Execution role | `grocery-reviewer-runtime-dev-role` (+ inline policy `grocery-reviewer-runtime-dev-policy`) | **KEPT** | IAM roles are free and inspectable. **Now DEFINED by `ReviewerStack`** from the same `config/iam-reviewer-runtime-role.json` — the live role and the CDK definition are one identity, so keeping it means the account already matches what the stack synthesises. |
 | CloudWatch log group | `/aws/bedrock-agentcore/grocery-reviewer-runtime-dev*` | **KEPT if created** (may not exist — no invoke logged enough to create it) | Logs are tiny and carry no PII by design (the reviewer logs THAT a review ran, never what it reviewed). Delete for a clean account. |
 | Source, IAM config, build/preflight scripts | `agentcore/reviewer/`, `config/iam-reviewer-runtime-role.json`, `scripts/build_reviewer_runtime.py`, `scripts/reviewer_runtime_preflight.py`, `scripts/review_runtime.py` | **IN THE REPO** | The whole point of the record: the runtime is reconstructable from these, so the deployed copy is disposable. |
 
@@ -573,6 +573,18 @@ aws logs delete-log-group --log-group-name /aws/bedrock-agentcore/grocery-review
 # Bucket (must be empty first; --force empties it)
 aws s3 rb s3://bedrock-agentcore-code-097087133897-ap-southeast-2 --force
 ```
+
+**Decision, 2026-09-02 — KEEP BOTH the role and the bucket.** When the prototype
+was torn down these were orphans, and "clean them up" was the natural call. The
+CDK codification (`Grocery-Reviewer-dev`, ADR gate 5) changed that: the stack now
+**defines** the role from the same `config/iam-reviewer-runtime-role.json` and
+**references** the bucket as the CodeZip location. So they are no longer leftover
+prototype artefacts — they are the CDK stack's own resources that happen to
+already exist. Both cost effectively nothing (an IAM role is free; an empty,
+block-public bucket is ~free), keeping them means the account already matches
+what the stack synthesises, and deleting them would only force a recreate before
+any future deploy. The clean-up commands above remain here for a genuinely fresh
+account, but they are deliberately NOT run.
 
 ### 15.2 Prerequisites to redeploy
 
