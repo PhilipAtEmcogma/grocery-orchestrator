@@ -536,3 +536,188 @@ to settle before any qualification claim.
   AgentCore Evaluations): only as companion evidence, never replacing the local
   eval, and only once there are labelled findings worth evaluating — which is
   exactly why the ADR withdrew it from the current ask.
+
+---
+
+## 15. Teardown inventory and the redeploy runbook
+
+*Written for whoever picks this up later — including a future maintainer taking
+it to market. The prototype was deleted on 2026-09-02; this section is the exact
+record of what went away, what stayed, and how to reconstruct it.*
+
+### 15.1 What the teardown removed, and what persists
+
+The teardown was `delete_agent_runtime` plus deleting the S3 code object. That
+is deliberately narrow — it removes everything that costs money or runs, and
+leaves the cheap, inspectable definitions in place.
+
+| Resource | Identifier | State after teardown | Why |
+|---|---|---|---|
+| AgentCore Runtime | `grocery_reviewer_dev-4HWlXa4VWd` (version 1, DEFAULT endpoint) | **DELETED** — `get_agent_runtime` returns `ResourceNotFoundException`, `list_agent_runtimes` returns `[]` | The only billable, running resource. Deleting the runtime removes its DEFAULT endpoint and the auto-created workload identity with it. |
+| Runtime session(s) | e.g. `reviewerfull000…` | **GONE** — microVMs auto-terminate on idle timeout (300s here) and are destroyed with the runtime | Session compute is the per-second charge; nothing persists a session. |
+| S3 code object | `s3://bedrock-agentcore-code-097087133897-ap-southeast-2/reviewer/reviewer-runtime.zip` | **DELETED** | The deployment artefact. Rebuildable from source in one command (§15.3), so it is not worth keeping. |
+| S3 bucket | `bedrock-agentcore-code-097087133897-ap-southeast-2` | **KEPT, empty** (block-public, versioned, AES256) | The standard AgentCore code-bucket name for the account/region. Empty costs ~nothing; reusable for the next deploy. Delete it only for a fully clean account. |
+| Execution role | `grocery-reviewer-runtime-dev-role` (+ inline policy `grocery-reviewer-runtime-dev-policy`) | **KEPT** | IAM roles are free and inspectable. Keeping it means the next deploy skips the role step, and the least-privilege policy stays reviewable as the record of what the reviewer was allowed to do. |
+| CloudWatch log group | `/aws/bedrock-agentcore/grocery-reviewer-runtime-dev*` | **KEPT if created** (may not exist — no invoke logged enough to create it) | Logs are tiny and carry no PII by design (the reviewer logs THAT a review ran, never what it reviewed). Delete for a clean account. |
+| Source, IAM config, build/preflight scripts | `agentcore/reviewer/`, `config/iam-reviewer-runtime-role.json`, `scripts/build_reviewer_runtime.py`, `scripts/reviewer_runtime_preflight.py`, `scripts/review_runtime.py` | **IN THE REPO** | The whole point of the record: the runtime is reconstructable from these, so the deployed copy is disposable. |
+
+**To fully clean the account** (optional, if no redeploy is planned):
+
+```powershell
+# Role + inline policy
+aws iam delete-role-policy --role-name grocery-reviewer-runtime-dev-role `
+  --policy-name grocery-reviewer-runtime-dev-policy
+aws iam delete-role --role-name grocery-reviewer-runtime-dev-role
+# Log group, if it exists
+aws logs delete-log-group --log-group-name /aws/bedrock-agentcore/grocery-reviewer-runtime-dev
+# Bucket (must be empty first; --force empties it)
+aws s3 rb s3://bedrock-agentcore-code-097087133897-ap-southeast-2 --force
+```
+
+### 15.2 Prerequisites to redeploy
+
+- AWS credentials for the target account, region `ap-southeast-2`. For SSO:
+  `aws sso login --profile <profile>` then `$env:AWS_PROFILE = "<profile>"` and
+  `$env:AWS_REGION = "ap-southeast-2"` in the shell. Verify with
+  `aws sts get-caller-identity`.
+- `uv` on PATH (for the arm64 wheel fetch) and the project `.venv`.
+- Bedrock model access to Amazon Nova Lite enabled in the account.
+- The numbered Guardrail exists (`b1xezpqe04kx` version `2` in the dev account;
+  substitute the real one for a new account).
+
+### 15.3 The redeploy runbook (exact steps and parameters)
+
+Every value below is a real parameter used in the 2026-09-02 deploy. Substitute
+the account id / bucket / guardrail for a new account.
+
+**Step 0 — preflight (free, catches most problems before spending):**
+```powershell
+.\.venv\Scripts\python.exe scripts/reviewer_runtime_preflight.py
+# Exit 0 = build, entrypoint, IAM, and model reachability all OK.
+```
+
+**Step 1 — execution role** (skip if `grocery-reviewer-runtime-dev-role` still
+exists):
+```powershell
+.\.venv\Scripts\python.exe scripts/apply_iam.py --config config/iam-reviewer-runtime-role.json
+# Placeholders ${AWS_REGION}/${AWS_ACCOUNT_ID} resolve from STS at apply time.
+```
+Role ARN pattern: `arn:aws:iam::<account>:role/grocery-reviewer-runtime-dev-role`.
+
+**Step 2 — build the deployable arm64 CodeZip:**
+```powershell
+.\.venv\Scripts\python.exe scripts/build_reviewer_runtime.py
+# Out: build/reviewer-runtime.zip  (~19 MB zipped)
+```
+
+**Step 3 — S3 bucket (skip if it exists) and upload:**
+```powershell
+$b = "bedrock-agentcore-code-<account>-ap-southeast-2"
+aws s3api create-bucket --bucket $b --region ap-southeast-2 `
+  --create-bucket-configuration LocationConstraint=ap-southeast-2
+aws s3api put-public-access-block --bucket $b --public-access-block-configuration `
+  BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+aws s3api put-bucket-versioning --bucket $b --versioning-configuration Status=Enabled
+aws s3api put-bucket-encryption --bucket $b --server-side-encryption-configuration `
+  '{\"Rules\":[{\"ApplyServerSideEncryptionByDefault\":{\"SSEAlgorithm\":\"AES256\"}}]}'
+aws s3api put-object --bucket $b --key "reviewer/reviewer-runtime.zip" `
+  --body build/reviewer-runtime.zip --expected-bucket-owner <account>
+```
+
+**Step 4 — create the runtime.** The full `create-agent-runtime` input, which
+is the authoritative parameter set:
+```jsonc
+{
+  "agentRuntimeName": "grocery_reviewer_dev",
+  "agentRuntimeArtifact": {
+    "codeConfiguration": {
+      "code": { "s3": { "bucket": "bedrock-agentcore-code-<account>-ap-southeast-2",
+                        "prefix": "reviewer/reviewer-runtime.zip" } },
+      "runtime": "PYTHON_3_13",
+      "entryPoint": ["main.py"]
+    }
+  },
+  "roleArn": "arn:aws:iam::<account>:role/grocery-reviewer-runtime-dev-role",
+  "networkConfiguration": { "networkMode": "PUBLIC" },
+  "protocolConfiguration": { "serverProtocol": "HTTP" },
+  "lifecycleConfiguration": { "idleRuntimeSessionTimeout": 300, "maxLifetime": 1800 },
+  "environmentVariables": {
+    "AWS_REGION": "ap-southeast-2",
+    "USE_BEDROCK": "1",
+    "REVIEWER_MODEL_KEY": "nova-lite",
+    "BEDROCK_GUARDRAIL_ID": "b1xezpqe04kx",
+    "BEDROCK_GUARDRAIL_VERSION": "2",
+    "REQUIRE_GUARDRAIL": "1"
+  },
+  "description": "ADR 0002 WS2 data-quality reviewer."
+}
+```
+```powershell
+aws bedrock-agentcore-control create-agent-runtime --cli-input-json file://<that-file>.json
+# Poll until READY:
+aws bedrock-agentcore-control get-agent-runtime --agent-runtime-id <id> `
+  --query "{status:status,reason:statusReason}"
+```
+
+**Parameter notes that cost real time to learn (do not re-derive them):**
+- `runtime` must be `PYTHON_3_13` (matches the wheels the build fetches).
+- `entryPoint` is `["main.py"]` — a **filename at the zip root**, not a module
+  path. `main.py` is the shim that calls `agentcore.reviewer.app.main`.
+- `serverProtocol` must be `HTTP` (the entrypoint speaks `/invocations` + `/ping`),
+  **not** the skeleton's default `MCP`.
+- The execution role's `bedrock:InvokeModel` resource **must region-wildcard the
+  foundation-model ARN** (`arn:aws:bedrock:*::foundation-model/amazon.nova-lite-v1:0`)
+  because the `apac.` inference profile routes across APAC regions. A
+  region-pinned ARN fails with `AccessDeniedException` the moment it routes to
+  Tokyo. This is already correct in `config/iam-reviewer-runtime-role.json`.
+
+**Step 5 — invoke and measure:**
+```powershell
+.\.venv\Scripts\python.exe scripts/review_runtime.py --arn <runtime-arn> `
+  --session-id ("reviewer" + "0" * 28)   # session id must be >= 33 chars
+```
+
+**Step 6 — teardown (always, unless retaining):**
+```powershell
+aws bedrock-agentcore-control delete-agent-runtime --agent-runtime-id <id>
+aws s3 rm s3://bedrock-agentcore-code-<account>-ap-southeast-2/reviewer/reviewer-runtime.zip
+# Confirm gone:
+aws bedrock-agentcore-control list-agent-runtimes --query "agentRuntimes[].agentRuntimeId"
+```
+
+### 15.4 Bringing it to market (what changes from prototype to product)
+
+The prototype is a manual invoke. A production reviewer is the §5.2 event-driven
+shape, and the honest gaps between here and there:
+
+1. **CDK codification (ADR gate 5) is mandatory before "retained".** The manual
+   CLI steps above become a `ReviewerStack` in `infra/`: the role from the same
+   `config/iam-reviewer-runtime-role.json`, the runtime as an
+   `aws_bedrockagentcore` (or an escape-hatch `CfnResource` until L2 constructs
+   exist), region structural at `ap-southeast-2`, `NAME_SUFFIX` convention. The
+   CLI parameter set in §15.3 is the CDK prop set.
+2. **Qualify the model properly.** The prototype produced ONE non-deterministic
+   run (60% recall, 5–6 findings across reps). Before it gates anything: expand
+   `evals/cases/review_anomalies.json`, run repeated reps per model, record a
+   BANDED score with the eval-discipline provenance (model/region/date/dataset/
+   pass-rate/latency/tokens/cost), and settle the exact-kind scoring question
+   (`suspect_category` vs `name_mismatch` — a human triaging cares the row was
+   flagged, maybe not which label).
+3. **Wire the trigger and sink** (each its own increment with its own evidence):
+   DynamoDB Streams on the products table → SQS (+DLQ, least-privilege, bounded
+   retries) → snapshot builder → invoke → validate → **S3 artefact** (encrypted,
+   versioned, lifecycle) → **SNS** operator notification → human approval. The
+   invoke and validate steps are unchanged from the prototype; only the trigger
+   and the artefact sink are new.
+4. **Observability.** CloudWatch metrics/alarms for the reviewer (invocation
+   errors, fabrication-rate trend, cost), a Budget line, X-Ray traces — the same
+   `src/observability/base.py` privacy-safe posture (log `session`/counts, never
+   row contents or findings text).
+5. **Move the model off the shared dev Guardrail** if the reviewer's imperative
+   prompt ever trips `PROMPT_ATTACK` at scale (it did not in the prototype, but
+   the repair task's history says watch for it). A reviewer-specific Guardrail
+   version is the clean fix, not loosening the shared one.
+6. **Cost model.** The reviewer's cost is bounded by how often it runs, not by
+   shopper traffic. In the event-driven shape that is "per ingestion batch",
+   which is predictable — put a Budget alarm on it and the removal criterion (ADR
+   matrix) stays enforceable.
