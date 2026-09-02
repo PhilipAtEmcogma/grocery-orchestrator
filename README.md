@@ -891,6 +891,14 @@ specific question arises.
   *document*, if implemented, returns HTTP 400. Fifteen minutes, no code
   reading — and it unblocks the CDK cutover, which has been waiting for a
   frontend to coordinate the URL change with.
+- [`docs/OPEN-REVIEW-chain-coverage.md`](docs/OPEN-REVIEW-chain-coverage.md) —
+  **open, and wants the data teammates plus a product call.** Every document
+  here opens by promising a comparison across Pak'nSave, Woolworths and New
+  World. The served catalogue has **zero Woolworths rows** — 1,500 New World and
+  1,500 Pak'nSave, both Foodstuffs banners. The fixtures carried all three and
+  were masking it until they were removed from the live table on 2026-09-01,
+  which turned a recorded caveat into a false headline claim. Fifteen minutes,
+  no code reading. Options and a recommendation are in the brief.
 - [`docs/OPEN-REVIEW-head-terms.md`](docs/OPEN-REVIEW-head-terms.md) — **open,
   and wants somebody who shops these stores.** Which product a one-word query
   like "cheapest butter" should return, when the catalogue holds fourteen

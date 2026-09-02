@@ -901,6 +901,10 @@ proposed, or gated as labelled; it is not implemented.
 > to **the comparison we publish**. This is a conversation with the data
 > teammates, in the same category as the provenance of the 2,759 rows, and it
 > belongs before any demo outside the team rather than inside Task 16.
+> **Written up 2026-09-02 as `docs/OPEN-REVIEW-chain-coverage.md`** — the
+> numbers, the four options and a recommendation (say what we cover now; put the
+> searched scope in the response with the frontend work; get Woolworths data if
+> the teammates can, gated on ACQUISITION-RISK §8 like everything else).
 
 > **Pilot Task 13, anomaly rejection wired 2026-08-31.** `refresh()` now
 > VALIDATES, then diffs, then writes. `ingestion.handler.reject_implausible`

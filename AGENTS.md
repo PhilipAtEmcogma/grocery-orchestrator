@@ -37,6 +37,10 @@ service into an implementation claim.
   are one coordinated break. Do not apply it early without reading that
   document — and do not forget it either: `infra/test/app.test.ts` fails the
   moment `FrontendStack` creates a resource.
+- `docs/OPEN-REVIEW-chain-coverage.md` — **we say we compare three chains and we
+  compare two.** The served catalogue holds no Woolworths rows at all; the
+  fixtures were masking that until they were removed on 2026-09-01. Read before
+  quoting the three-chain claim, and before any demo outside the team.
 - `docs/OPEN-REVIEW-min-grams-per-person-day.md` — the one judgement in the
   planning path that has NOT had domain review. Self-contained, needs no
   code reading, and says what would change the answer. Read it if you know
