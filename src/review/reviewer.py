@@ -103,6 +103,54 @@ def _to_findings(report: ReviewReport) -> list[Finding]:
     return findings
 
 
+def propose_findings(
+    rows: list[dict],
+    *,
+    table_name: str,
+    model: ModelClient,
+    max_tokens: int = 2048,
+) -> ReviewReport:
+    """
+    The MODEL HALF ONLY: allowlisted rows -> the model's raw `ReviewReport`.
+
+    NO VALIDATION HERE, DELIBERATELY. This is the half that runs inside the
+    AgentCore Runtime microVM, where `validate_findings` must NOT run -- the
+    trust boundary is that a compromised Runtime returns only claims, checked on
+    the caller's side against the snapshot that was actually sent (Option A,
+    `docs/AGENTCORE-RUNTIME-REVIEWER.md` §3). Keeping the model call and the
+    validation in separate functions is what lets the import graph show the
+    boundary: the entrypoint imports this, and never imports the validator.
+
+    `rows` are already the allowlist-serialised dicts (`snapshot_to_dicts`), so
+    this function needs no snapshot object and no database -- it takes the exact
+    wire form the Runtime receives. Raises `ModelError` on a failed call; the
+    caller decides how to degrade.
+    """
+    user = build_review_prompt(rows, table_name=table_name)
+    return model.structured(
+        system=SYSTEM_PROMPT,
+        user=user,
+        schema=ReviewReport,
+        tier=ModelTier.FAST,
+        max_tokens=max_tokens,
+        task=TASK_REVIEW_SNAPSHOT,
+    )
+
+
+def validate_report(report: ReviewReport, snapshot: ReviewSnapshot) -> ReviewResult:
+    """
+    The VALIDATION HALF: a raw `ReviewReport` -> a `ReviewResult`, checked.
+
+    Runs on the CALLER's side (outside the Runtime). Maps the model's findings
+    onto `Finding`s, drops any of an unknown kind, and hands the rest to
+    `validate_findings` against the snapshot the caller holds -- so a finding
+    citing a row that was not sent, or quoting a value the row does not have, is
+    rejected here regardless of what the Runtime returned.
+    """
+    validated = validate_findings(_to_findings(report), snapshot)
+    return ReviewResult(validated=validated, ran=True)
+
+
 def review_snapshot(
     snapshot: ReviewSnapshot,
     *,
@@ -112,26 +160,24 @@ def review_snapshot(
     """
     Review a snapshot with a model, and validate every finding it returns.
 
-    Pure orchestration: build the delimited prompt from the allowlist-serialised
-    rows, ask the model for a `ReviewReport`, map it to `Finding`s, and hand the
-    lot to `validate_findings`. No boto3, no database -- the model is injected,
-    so this runs under a scripted client with no AWS.
+    The OFFLINE, single-process path: both halves in one call. Build the
+    delimited prompt, ask the model, map to `Finding`s, and validate against the
+    snapshot. No boto3, no database -- the model is injected, so this runs under
+    a scripted client with no AWS.
+
+    The RUNTIME path splits this into `propose_findings` (inside the microVM)
+    and `validate_report` (on the caller's side). This function is what the eval
+    runner and any single-process caller use; it is `propose_findings` followed
+    by `validate_report`, with the model failure handled.
 
     On a model failure returns `ran=False` with an empty validated result. The
-    caller (operator tooling, an eval runner, later a Runtime handler) decides
-    what to do with a review that could not run; this function never invents one.
+    caller decides what to do with a review that could not run; this function
+    never invents one.
     """
     rows = snapshot_to_dicts(snapshot)
-    user = build_review_prompt(rows, table_name=snapshot.captured_from)
-
     try:
-        report = model.structured(
-            system=SYSTEM_PROMPT,
-            user=user,
-            schema=ReviewReport,
-            tier=ModelTier.FAST,
-            max_tokens=max_tokens,
-            task=TASK_REVIEW_SNAPSHOT,
+        report = propose_findings(
+            rows, table_name=snapshot.captured_from, model=model, max_tokens=max_tokens
         )
     except ModelError as exc:
         return ReviewResult(
@@ -140,5 +186,4 @@ def review_snapshot(
             error=str(exc),
         )
 
-    validated = validate_findings(_to_findings(report), snapshot)
-    return ReviewResult(validated=validated, ran=True)
+    return validate_report(report, snapshot)
