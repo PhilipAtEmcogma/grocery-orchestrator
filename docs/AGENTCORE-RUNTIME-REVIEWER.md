@@ -352,6 +352,35 @@ as a CDK step that was skipped.
 
 ---
 
+## 11a. Cost-free simulation and preflight (before a single live cent)
+
+Two pieces exist so the "several iterations to get a clean deploy" problem is
+paid for in local CPU rather than in AWS charges:
+
+- **`scripts/review_runtime.py --sim`** boots the ACTUAL entrypoint
+  (`agentcore/reviewer/app.py`) as an HTTP server on localhost and calls it over
+  a real socket — `GET /ping`, then `POST /invocations` — with a scripted model
+  injected. It exercises the true HTTP contract the deployed microVM serves
+  (payload shape, JSON in/out, raw-findings response, invoke-side parsing), so a
+  serialization or contract bug shows up here against a socket rather than in a
+  billed deploy iteration. The only things it cannot exercise are AWS itself:
+  the microVM, the IAM role, and the real Bedrock call. Two tests
+  (`tests/test_review_runtime.py`) pin this contract in CI.
+
+- **`scripts/reviewer_runtime_preflight.py`** is the non-billable gate: it builds
+  the CodeZip and checks it is under the AgentCore limits, confirms the
+  entrypoint parses and declares its handlers, loads
+  `config/iam-reviewer-runtime-role.json` and asserts it grants ONLY the
+  reviewer's actions (no DynamoDB/S3/write — the Req 13.8 isolation invariant,
+  machine-checked), and — only with credentials — does a read-only model
+  reachability check. Exit 0 means `create_agent_runtime` is very likely to
+  succeed first try. It creates no billable resource and can be run as many times
+  as the iteration needs.
+
+The reviewer CodeZip measured **0.24 MB zipped / 0.62 MB unzipped** — pure
+Python, with boto3 provided by the runtime — comfortably under the 250 MB / 750
+MB CodeZip limits.
+
 ## 12. Build order (the implementation plan)
 
 1. **`propose_findings` helper** in `src/review/reviewer.py` — model-half-only,

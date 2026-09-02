@@ -1,0 +1,70 @@
+{
+  "_comment": "Execution role for the AgentCore Runtime data-quality reviewer (ADR 0002 WS2, Pilot Task 14). Policy-as-data like every other role in this repo (design.md 10.1, config/iam-ingestion-role.json). Apply with: python scripts/apply_iam.py --config config/iam-reviewer-runtime-role.json. This role is the IAM expression of Req 13.8 -- the reviewer's isolation is not a promise in a prompt, it is the set of actions this role does NOT grant.",
+  "version": "1.0",
+  "region": "ap-southeast-2",
+  "environment": "dev",
+
+  "_naming": "The -dev suffix follows config/iam-ingestion-role.json: generated resources coexist with manually created ones during the migration to IaC.",
+
+  "role_name": "grocery-reviewer-runtime-dev-role",
+  "description": "Execution role for the isolated AgentCore Runtime data-quality reviewer.",
+
+  "_isolation_note": "SEPARATE from the orchestrator and ingestion roles ON PURPOSE (Req 11.9, 13.8). The reviewer reads a snapshot pushed into a single invocation and calls one model. It CANNOT read DynamoDB (not the products table, not history, not idempotency), CANNOT touch S3, CANNOT write anything, and has no shopper-path permission. A defect in the reviewer cannot express itself as a data read or a write, because the actions are not on this role. That absence is the whole security argument.",
+
+  "trust_policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "_comment": "The AgentCore Runtime service assumes this role to run the microVM. Trusts the AgentCore service principal, NOT lambda.amazonaws.com -- this is not a Lambda.",
+        "Effect": "Allow",
+        "Principal": { "Service": "bedrock-agentcore.amazonaws.com" },
+        "Action": "sts:AssumeRole"
+      }
+    ]
+  },
+
+  "inline_policy_name": "grocery-reviewer-runtime-dev-policy",
+
+  "inline_policy": {
+    "Version": "2012-10-17",
+    "Statement": [
+      {
+        "_comment": "The ONE thing the reviewer does: call the model, through the numbered Guardrail. Scoped to the specific Nova Lite inference profile / model it routes to for TASK_REVIEW_SNAPSHOT -- never bedrock:* and never Resource *. If routing changes the model, this ARN changes with it, and that coupling is deliberate: a model the role cannot invoke is a model the reviewer cannot silently start using. The guardrail ApplyGuardrail action is included because generation goes through a numbered Guardrail (security.md).",
+        "Sid": "InvokeReviewerModelThroughGuardrail",
+        "Effect": "Allow",
+        "Action": [
+          "bedrock:InvokeModel",
+          "bedrock:ApplyGuardrail"
+        ],
+        "Resource": [
+          "arn:aws:bedrock:${AWS_REGION}::foundation-model/amazon.nova-lite-v1:0",
+          "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:inference-profile/apac.amazon.nova-lite-v1:0",
+          "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:guardrail/*"
+        ]
+      },
+      {
+        "_comment": "CloudWatch Logs for the Runtime's own log group. The reviewer's logging rule (security.md) is that it records THAT a review ran, never WHAT it reviewed -- no row contents, no findings text. Scoped to the reviewer log group only.",
+        "Sid": "ReviewerLogs",
+        "Effect": "Allow",
+        "Action": [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        "Resource": [
+          "arn:aws:logs:${AWS_REGION}:${AWS_ACCOUNT_ID}:log-group:/aws/bedrock-agentcore/grocery-reviewer-runtime-dev*"
+        ]
+      },
+      {
+        "_comment": "Powertools/X-Ray tracing. Segment writes take no resource, so * is the only expressible form -- identical to the ingestion and orchestrator roles.",
+        "Sid": "XRayTracing",
+        "Effect": "Allow",
+        "Action": [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords"
+        ],
+        "Resource": "*"
+      }
+    ]
+  }
+}
