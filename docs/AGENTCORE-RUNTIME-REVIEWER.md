@@ -445,8 +445,81 @@ that governs shopper tasks does not gate it — but the eval discipline (record
 model/region/date/dataset/pass-rate, separate infra failure from quality) still
 applies, and the result is recorded here.
 
-*(Live prototype results — recall, cost, latency, identifiers, teardown
-confirmation — will be appended here after Task 7 step 7.)*
+**2026-09-02 — live prototype run, and what it cost to learn.**
+
+Deployed via the AWS CLI / boto3 (not the AgentCore MCP tools — those could not
+see the SSO credentials from a separate process). Identifiers, since torn down:
+
+- Runtime: `grocery_reviewer_dev-4HWlXa4VWd`, version 1, HTTP protocol,
+  `PYTHON_3_13`, CodeZip from S3, role `grocery-reviewer-runtime-dev-role`.
+- Reached `READY` on the FIRST create — the cost-free preflight and the HTTP
+  simulation did their job. Nothing about the deploy itself needed iterating.
+
+**Two real learnings, both the point of doing it live:**
+
+1. *The CodeZip runtime provides no dependencies.* Confirmed against the AWS
+   docs and then in practice: the zip must bundle arm64 Linux wheels of
+   everything imported (pydantic + pydantic-core + boto3 + botocore here — the
+   entrypoint has no langchain dependency, bedrock.py calls Converse directly).
+   `scripts/build_reviewer_runtime.py` fetches them with
+   `uv pip install --python-platform aarch64-manylinux2014 --python-version 3.13`.
+   Result: 19 MB zipped / 30 MB unzipped, far under the 250/750 limits.
+
+2. *The `apac.` inference profile fans out across APAC regions, and IAM must
+   allow the model in each.* The first live invoke returned
+   `AccessDeniedException` on `bedrock:InvokeModel` for
+   `arn:aws:bedrock:ap-northeast-1::foundation-model/amazon.nova-lite-v1:0` — the
+   cross-region profile had routed the call to TOKYO, and the role only granted
+   the Sydney foundation-model ARN. Fix: wildcard the REGION on the
+   foundation-model ARN (`arn:aws:bedrock:*::foundation-model/amazon.nova-lite-v1:0`)
+   while keeping the model id pinned. This is a genuine, documented AgentCore +
+   cross-region-inference interaction, and it is exactly the kind of thing the
+   live prototype exists to surface — the offline simulation cannot, because it
+   has no IAM.
+
+**The measurement (the hypothesis result), first `TASK_REVIEW_SNAPSHOT`
+scorecard:**
+
+- Model: Amazon Nova Lite (`apac.amazon.nova-lite-v1:0`), region ap-southeast-2
+  (routed to ap-northeast-1 for the model), 2026-09-02, one full-dataset run.
+- **Reviewer-only recall 60% (3/5)** — caught rev-001/002/005 (all
+  `price_deviation`, quotes correct, validated clean). Missed rev-003 (beef
+  under produce, not reported) and scored rev-004 as a miss on an EXACT-KIND
+  basis: the model flagged the milk/orange-juice row but called it
+  `suspect_category` where the label is `name_mismatch` — it saw the anomaly,
+  classified it differently.
+- **False positives 0/4** — no clean row flagged. It did not cry wolf.
+- **Fabrication rate 33%** — the model misquoted `price_nzd` as "2490.00" on the
+  code-caught broccoli row (the row's price is 2.49), and `validate_findings`
+  REJECTED it on the caller's side. This is the Option-A trust boundary working
+  live: a fabricated quote never reached a human, because the validator does not
+  live inside the Runtime.
+- **Non-determinism observed:** back-to-back runs returned 5 and 6 findings.
+  Recorded, not averaged — a single run neither qualifies nor ranks a model
+  (the eval-discipline rule), and this is why.
+
+**Cost:** a handful of `invoke_agent_runtime` calls (Nova Lite over 1–11 rows,
+~4–7s microVM active each) plus one create/delete cycle. Cents. The removal
+criterion was met by design: the prototype ended in teardown.
+
+**Teardown drill (ADR gate 7):** `delete_agent_runtime` → `list_agent_runtimes`
+returned `[]`; `get_agent_runtime` returns `ResourceNotFoundException`; the S3
+zip deleted. No shopper behaviour could change — the reviewer was never
+connected to the shopper path. The execution role was left in place (roles are
+free and inspectable); remove `grocery-reviewer-runtime-dev-role` if a clean
+account is wanted.
+
+**Verdict on the hypothesis:** promising but unproven at this scale. The model
+caught anomalies the deterministic rules structurally cannot (3 price
+deviations), with zero false positives — real signal. But it missed one,
+mis-classified another, and fabricated a quote on a third, and 11 cases with a
+non-deterministic model is too small to qualify anything. The honest next step
+if pursued: expand the labelled set, run repeated reps, and record a banded
+score — not promote this single run. And note the classification gap
+(`suspect_category` vs `name_mismatch`): the scorer's exact-kind match may be
+stricter than the product needs, since a human triaging findings cares that the
+row was flagged more than which label it got. That is a scoring-design question
+to settle before any qualification claim.
 
 ---
 

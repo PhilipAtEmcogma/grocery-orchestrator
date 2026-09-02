@@ -1,6 +1,15 @@
 # ADR 0002: Stage AgentCore and managed AI services around the deterministic core
 
-- **Status:** Proposed — mentor approval required
+- **Status:** Reviewer Runtime approved under autonomous delegation and
+  PROTOTYPED 2026-09-02 — deployed to AgentCore Runtime in `ap-southeast-2`,
+  measured against the labelled anomaly set, and torn down. It is an
+  EXPERIMENT, not a retained service: the prototype ended in teardown by
+  design, and CDK codification (gate 5) is the next step before anything is
+  "retained". Findings and the full reasoning record are in
+  [`docs/AGENTCORE-RUNTIME-REVIEWER.md`](../AGENTCORE-RUNTIME-REVIEWER.md) §13.
+  Gateway and the managed evaluations remain **withdrawn from the request**,
+  not declined. The mentor gave full autonomy over ADR 0002; this records the
+  decision taken under it.
 - **Requested scope, narrowed 2026-08-31:** the **AgentCore Runtime reviewer
   only**. Gateway and the managed evaluations are described in full below and
   are **withdrawn from the request**, not declined — Gateway because a managed
@@ -242,13 +251,19 @@ rather than later. The decision brief is
   **This satisfies approval gate 2.**
 - AgentCore Gateway/Identity/Policy hybrid: **proposed; mentor approval
   required**. Unchanged.
-- AgentCore Runtime data-quality reviewer: **proposed; mentor approval
-  required** for the Runtime. Its deterministic half — the allowlisted snapshot
-  boundary of Req 13.8 and the finding post-validation — is **implemented and
-  tested** in `src/review/` (Pilot Task 14a, `docs/ARCHITECTURE.md` §3n),
-  because it is required whoever reviews and it is what a human reviewer would
-  use if this ADR is declined. Nothing is deployed and no model reviews
-  anything.
+- AgentCore Runtime data-quality reviewer: **prototyped and torn down
+  2026-09-02** under autonomous delegation. The deterministic half — the
+  allowlisted snapshot boundary of Req 13.8 and the finding post-validation — is
+  implemented and tested in `src/review/` (Pilot Task 14a). The model half runs
+  in an isolated AgentCore Runtime microVM (`agentcore/reviewer/app.py`), behind
+  the Option-A trust boundary: the Runtime returns raw findings and
+  `validate_findings` runs on the CALLER's side, never inside the Runtime. The
+  live prototype scored 60% reviewer-only recall / 0% false positives / 33%
+  fabrication (the validator rejecting a misquote — the boundary working), on 11
+  cases with a non-deterministic model, so it is promising but unproven at
+  scale. Deployed via CLI/boto3, isolated least-privilege role, torn down after
+  measuring. NOT retained: CDK codification (gate 5) precedes retention. Full
+  record in `docs/AGENTCORE-RUNTIME-REVIEWER.md` §13.
 - Bedrock Model Evaluation and AgentCore Evaluations: **proposed companions,
   not implemented**. Local scorecards, golden sets and negative controls are
   implemented and remain the release gates either way.

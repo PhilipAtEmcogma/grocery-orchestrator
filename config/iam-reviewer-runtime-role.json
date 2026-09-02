@@ -29,7 +29,7 @@
     "Version": "2012-10-17",
     "Statement": [
       {
-        "_comment": "The ONE thing the reviewer does: call the model, through the numbered Guardrail. Scoped to the specific Nova Lite inference profile / model it routes to for TASK_REVIEW_SNAPSHOT -- never bedrock:* and never Resource *. If routing changes the model, this ARN changes with it, and that coupling is deliberate: a model the role cannot invoke is a model the reviewer cannot silently start using. The guardrail ApplyGuardrail action is included because generation goes through a numbered Guardrail (security.md).",
+        "_comment": "The ONE thing the reviewer does: call the model, through the numbered Guardrail. Scoped to the Nova Lite MODEL and its inference profile -- never bedrock:* and never Resource *. THE REGION IS WILDCARDED ON THE FOUNDATION-MODEL ARN ON PURPOSE: the routed id is the `apac.` CROSS-REGION inference profile, which fans a single call out to the underlying foundation model in whichever APAC region has capacity (observed: ap-northeast-1, not just ap-southeast-2). A region-pinned foundation-model ARN denies the call the moment the profile routes elsewhere -- which is exactly what happened on the first live invoke (AccessDenied on ap-northeast-1). The model id stays pinned (amazon.nova-lite-v1:0); only the region floats, and only for the model this reviewer is qualified to use. The guardrail ApplyGuardrail action is included because generation goes through a numbered Guardrail (security.md).",
         "Sid": "InvokeReviewerModelThroughGuardrail",
         "Effect": "Allow",
         "Action": [
@@ -37,7 +37,7 @@
           "bedrock:ApplyGuardrail"
         ],
         "Resource": [
-          "arn:aws:bedrock:${AWS_REGION}::foundation-model/amazon.nova-lite-v1:0",
+          "arn:aws:bedrock:*::foundation-model/amazon.nova-lite-v1:0",
           "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:inference-profile/apac.amazon.nova-lite-v1:0",
           "arn:aws:bedrock:${AWS_REGION}:${AWS_ACCOUNT_ID}:guardrail/*"
         ]
