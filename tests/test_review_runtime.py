@@ -235,3 +235,87 @@ def test_the_entrypoint_does_not_import_the_validator() -> None:
     # absent); what must not exist is a binding to it in the module namespace.
     assert not hasattr(app, "validate_findings")
     assert not hasattr(app, "validate_report")
+
+
+# ---------------------------------------------------------------- the HTTP contract
+
+
+def test_the_entrypoint_serves_the_real_http_contract() -> None:
+    """
+    Boot the ACTUAL entrypoint as an HTTP server and call it over a socket, the
+    way the deployed microVM is called. This is the cost-free de-risking: a
+    serialization or contract bug that would cost a live deploy iteration shows
+    up here against a real socket, not in the account.
+
+    Proves GET /ping -> Healthy and POST /invocations -> raw findings JSON, with
+    a scripted model injected so no AWS is touched.
+    """
+    import http.client
+    import json
+    import threading
+    from http.server import ThreadingHTTPServer
+
+    import agentcore.reviewer.app as app
+
+    row = _row()
+    report = ReviewReport(
+        findings=[
+            ReviewFinding(
+                store_key=row["store_key"],
+                product_key=row["product_key"],
+                kind="price_deviation",
+                observation="price is far above its own 90-day history",
+                quoted={"deviation_ratio": "10.00"},
+            )
+        ]
+    )
+    app._model = _FixedModel(report)
+    server = ThreadingHTTPServer(("127.0.0.1", 0), app._Handler)
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+
+        conn.request("GET", "/ping")
+        assert json.loads(conn.getresponse().read()) == {"status": "Healthy"}
+
+        body = json.dumps({"table_name": "grocery-products-dev", "rows": [row]})
+        headers = {"Content-Type": "application/json"}
+        conn.request("POST", "/invocations", body=body, headers=headers)
+        data = json.loads(conn.getresponse().read())
+        assert data["ran"] is True
+        assert len(data["findings"]) == 1
+        assert data["findings"][0]["kind"] == "price_deviation"
+
+        # An unknown path is a 404, not a crash.
+        conn.request("GET", "/nope")
+        assert conn.getresponse().status == 404
+    finally:
+        server.shutdown()
+        app._model = None
+
+
+def test_the_entrypoint_rejects_invalid_json_over_http() -> None:
+    """Malformed body -> 400 with a contract-valid error, never a stack trace to the caller."""
+    import http.client
+    import threading
+    from http.server import ThreadingHTTPServer
+
+    import agentcore.reviewer.app as app
+
+    app._model = _FixedModel()
+    server = ThreadingHTTPServer(("127.0.0.1", 0), app._Handler)
+    port = server.server_address[1]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    try:
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
+        conn.request(
+            "POST", "/invocations", body="{not json", headers={"Content-Type": "application/json"}
+        )
+        resp = conn.getresponse()
+        assert resp.status == 400
+    finally:
+        server.shutdown()
+        app._model = None
