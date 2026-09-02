@@ -287,6 +287,14 @@ answer to whether 11.4 should happen at all.
 Every one of these must hold before Task 11.4 is considered started. They are
 written as acceptance criteria so the rebuild inherits them.
 
+> **Engineering design that implements these conditions:**
+> [`docs/LIVE-ACQUISITION-DESIGN.md`](docs/LIVE-ACQUISITION-DESIGN.md). It is
+> **design-only and parked** — it maps each condition below to a named control
+> in the sitemap-traversal adapter that would sit behind the existing
+> `ingestion/sources.py` seam, and it recommends sending the §7 permission email
+> *before* any engineering. It does not unblock this gate; it is the plan for
+> when the gate clears.
+
 **Access**
 
 1. The three unretrieved sources in §2 have been read by a human and the table
