@@ -43,6 +43,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import time
 from dataclasses import dataclass, field
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -78,7 +79,16 @@ class CaseResult:
     label: str
     expected_kind: str | None
     reported: bool
+    #: STRICT: an accepted finding on this row whose KIND matches the label.
     accepted: bool
+    #: LENIENT: an accepted finding on this row of ANY kind. The difference
+    #: between this and `accepted` is a classification disagreement, not a miss
+    #: -- the row WAS flagged, the model just named the anomaly differently.
+    #: rev-004 is the canonical example (model said suspect_category, label
+    #: name_mismatch). A human triaging findings acts on "this row is wrong";
+    #: the kind is secondary. Both are reported so the scorecard shows recall
+    #: and classification accuracy as the two separate things they are.
+    flagged: bool = False
     fabricated: bool = False
     ran: bool = True
 
@@ -105,10 +115,36 @@ class Scorecard:
 
     @property
     def reviewer_only_recall(self) -> float:
+        """STRICT: reviewer_only rows caught AND classified with the labelled kind."""
         subset = self.reviewer_only
         if not subset:
             return 0.0
         return sum(1 for r in subset if r.accepted) / len(subset)
+
+    @property
+    def reviewer_only_flagged_recall(self) -> float:
+        """
+        LENIENT: reviewer_only rows FLAGGED at all, regardless of the kind named.
+
+        This is the metric closest to the product value -- a human triaging a
+        list of findings cares that the row surfaced for review, and can
+        re-label it in a moment. The gap between this and the strict recall is
+        pure classification disagreement, and it is worth seeing on its own
+        because a reviewer that flags the right rows and mislabels them is a
+        very different (and more useful) thing than one that misses them.
+        """
+        subset = self.reviewer_only
+        if not subset:
+            return 0.0
+        return sum(1 for r in subset if r.flagged) / len(subset)
+
+    @property
+    def classification_accuracy(self) -> float:
+        """Of the reviewer_only rows it FLAGGED, the fraction it also classified right."""
+        flagged = [r for r in self.reviewer_only if r.flagged]
+        if not flagged:
+            return 0.0
+        return sum(1 for r in flagged if r.accepted) / len(flagged)
 
     @property
     def false_positive_rate(self) -> float:
@@ -262,7 +298,12 @@ def run(model: ModelClient, label: str) -> Scorecard:
         expected_kind = case["anomaly_kind"]
 
         reported = bool(result.validated.accepted or result.validated.rejected)
+        # STRICT: an accepted finding whose kind matches the label.
         matched = any(f.kind.value == expected_kind for f in accepted) if expected_kind else False
+        # LENIENT: any accepted finding on this row's reference, regardless of
+        # kind. For a single-row snapshot every accepted finding is about this
+        # row, so "flagged" is simply "produced an accepted finding".
+        flagged = bool(accepted) if expected_kind else False
 
         card.results.append(
             CaseResult(
@@ -272,6 +313,7 @@ def run(model: ModelClient, label: str) -> Scorecard:
                 expected_kind=expected_kind,
                 reported=reported,
                 accepted=matched,
+                flagged=flagged,
                 fabricated=bool(result.validated.rejected),
                 ran=result.ran,
             )
@@ -281,26 +323,43 @@ def run(model: ModelClient, label: str) -> Scorecard:
 
 def report(card: Scorecard) -> None:
     print(f"\n=== {card.model_label} ===")
+    n_only = len(card.reviewer_only)
     print(
-        f"  reviewer-only recall  {card.reviewer_only_recall:.1%}  "
-        f"({sum(1 for r in card.reviewer_only if r.accepted)}/{len(card.reviewer_only)})"
-        "   <- the hypothesis"
+        f"  reviewer-only recall (flagged)  {card.reviewer_only_flagged_recall:.1%}  "
+        f"({sum(1 for r in card.reviewer_only if r.flagged)}/{n_only})"
+        "   <- the hypothesis: row surfaced for review"
     )
     print(
-        f"  false positives       {card.false_positive_rate:.1%}  "
+        f"  reviewer-only recall (strict)   {card.reviewer_only_recall:.1%}  "
+        f"({sum(1 for r in card.reviewer_only if r.accepted)}/{n_only})"
+        "   <- flagged AND classified"
+    )
+    print(
+        f"  classification accuracy         {card.classification_accuracy:.1%}"
+        "   (of the flagged, how many named the right kind)"
+    )
+    print(
+        f"  false positives                 {card.false_positive_rate:.1%}  "
         f"({sum(1 for r in card.clean if r.reported)}/{len(card.clean)} clean rows flagged)"
     )
     code = card.code_caught
     print(
-        f"  code-caught (context) {sum(1 for r in code if r.accepted)}/{len(code)}"
+        f"  code-caught (context)           {sum(1 for r in code if r.accepted)}/{len(code)}"
         "   (no credit -- the rules already catch these)"
     )
 
-    misses = [r for r in card.reviewer_only if not r.accepted]
+    # A miss is a row NOT flagged at all. A row flagged but mis-classified is
+    # reported separately, because it is a different and less serious failure.
+    misses = [r for r in card.reviewer_only if not r.flagged]
     if misses:
-        print(f"\n  reviewer-only misses ({len(misses)}):")
+        print(f"\n  reviewer-only MISSES ({len(misses)}) -- row not flagged:")
         for r in misses:
-            print(f"    {r.case_id}: expected {r.expected_kind}, not reported/validated")
+            print(f"    {r.case_id}: expected {r.expected_kind}")
+    misclassified = [r for r in card.reviewer_only if r.flagged and not r.accepted]
+    if misclassified:
+        print(f"\n  mis-classified ({len(misclassified)}) -- flagged, wrong kind:")
+        for r in misclassified:
+            print(f"    {r.case_id}: labelled {r.expected_kind}, model named it differently")
     fps = [r for r in card.clean if r.reported]
     if fps:
         print(f"\n  false positives ({len(fps)}):")
@@ -330,13 +389,98 @@ def _gate(card: Scorecard, floor: float | None) -> int:
     return 0
 
 
+def _band(values: list[float]) -> tuple[float, float, float]:
+    """min, median, max of a list -- the shape a non-deterministic score needs."""
+    s = sorted(values)
+    mid = len(s) // 2
+    median = s[mid] if len(s) % 2 else (s[mid - 1] + s[mid]) / 2
+    return s[0], median, s[-1]
+
+
+def run_banded(make_model, label: str, reps: int, cooldown: float) -> list[Scorecard]:
+    """
+    Run the full suite `reps` times and return every rep's scorecard.
+
+    A SINGLE RUN NEITHER QUALIFIES NOR RANKS A MODEL -- the eval-discipline rule
+    the meal-plan suite records (a ±18-point spread across reps of one model).
+    `make_model` is a factory (not a model), so each rep gets a fresh client and
+    the reps are independent. A cooldown between reps avoids the back-to-back
+    throttling that reads as poor quality rather than what it is.
+    """
+    cards: list[Scorecard] = []
+    for i in range(reps):
+        if i and cooldown:
+            time.sleep(cooldown)
+        cards.append(run(make_model(), f"{label} rep {i + 1}/{reps}"))
+    return cards
+
+
+def report_band(cards: list[Scorecard], label: str) -> None:
+    print(f"\n=== {label} -- {len(cards)} reps, banded ===")
+    if any(c.any_upstream for c in cards):
+        n = sum(1 for c in cards if c.any_upstream)
+        print(f"  WARNING: {n}/{len(cards)} reps had an upstream failure and are void.")
+    valid = [c for c in cards if not c.any_upstream]
+    if not valid:
+        print("  no valid reps -- nothing to band.")
+        return
+
+    def band_str(fn) -> str:
+        lo, mid, hi = _band([fn(c) for c in valid])
+        return f"{lo:.1%} .. {mid:.1%} .. {hi:.1%}  (min .. median .. max)"
+
+    print(f"  reviewer-only recall (flagged)  {band_str(lambda c: c.reviewer_only_flagged_recall)}")
+    print(f"  reviewer-only recall (strict)   {band_str(lambda c: c.reviewer_only_recall)}")
+    print(f"  false positives                 {band_str(lambda c: c.false_positive_rate)}")
+    print(
+        "\n  Report the BAND, not a point. A model qualifies only if its WORST "
+        "rep clears the floor; ranking two models needs non-overlapping bands."
+    )
+
+
+def _gate_band(cards: list[Scorecard], floor: float | None) -> int:
+    valid = [c for c in cards if not c.any_upstream]
+    if len(valid) < len(cards):
+        print(
+            f"\nINCONCLUSIVE: {len(cards) - len(valid)}/{len(cards)} reps failed upstream.",
+            file=sys.stderr,
+        )
+        return 2
+    if floor is None:
+        return 0
+    # Gate on the WORST rep's strict recall: a model that only clears the floor
+    # on a lucky run has not cleared it.
+    worst = min(c.reviewer_only_recall for c in valid)
+    if worst < floor:
+        print(f"\nFAIL: worst-rep strict recall {worst:.1%} is below the floor of {floor:.1%}")
+        return 1
+    print(f"\nOK: worst-rep strict recall {worst:.1%} meets the floor of {floor:.1%}")
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Data-quality reviewer eval (experiment)")
     parser.add_argument("--model", help="Model key to pin, e.g. nova-lite")
     parser.add_argument("--min-pass-rate", type=float)
+    parser.add_argument(
+        "--reps",
+        type=int,
+        default=1,
+        help="Repeat the suite N times and band the scores. A live model needs >1 "
+        "to qualify: a single non-deterministic run cannot.",
+    )
+    parser.add_argument(
+        "--cooldown",
+        type=float,
+        default=5.0,
+        help="Seconds between reps, to avoid throttling that reads as poor quality.",
+    )
     args = parser.parse_args()
 
     if not args.model:
+        # The scripted baseline is deterministic, so reps would be identical --
+        # one run is the whole story. It measures the dataset and wiring, not a
+        # model, so banding it would be theatre.
         card = run(_ScriptedReviewer(), "scripted reviewer (no model call)")
         report(card)
         print(
@@ -359,9 +503,24 @@ def main() -> int:
     spec: ModelSpec = ModelRegistry().route(
         TASK_REVIEW_SNAPSHOT, policy=RoutingPolicy.PINNED, pinned_key=args.model
     )
-    card = run(BedrockModelClient(pinned_spec=spec), spec.display_name)
-    report(card)
-    return _gate(card, args.min_pass_rate)
+
+    def make_model() -> BedrockModelClient:
+        return BedrockModelClient(pinned_spec=spec)
+
+    if args.reps <= 1:
+        card = run(make_model(), spec.display_name)
+        report(card)
+        print(
+            "\nONE REP. This is a spot check, not a qualification: a non-deterministic "
+            "model needs --reps > 1 and a banded score before it qualifies anything."
+        )
+        return _gate(card, args.min_pass_rate)
+
+    cards = run_banded(make_model, spec.display_name, args.reps, args.cooldown)
+    for card in cards:
+        report(card)
+    report_band(cards, spec.display_name)
+    return _gate_band(cards, args.min_pass_rate)
 
 
 if __name__ == "__main__":

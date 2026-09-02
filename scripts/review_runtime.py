@@ -178,17 +178,27 @@ def _score(payload: dict, invocation: Invocation) -> dict:
     reviewer_only = [c for c in payload["cases"] if c["detectability"] == "reviewer_only"]
     clean = [c for c in payload["cases"] if c["detectability"] == "clean"]
 
-    def caught(case: dict) -> bool:
+    def caught_strict(case: dict) -> bool:
+        # Flagged AND classified with the labelled kind.
         ref = (case["row"]["store_key"], case["row"]["product_key"])
         f = accepted_by_ref.get(ref)
         return f is not None and f.kind.value == case["anomaly_kind"]
 
-    recall_hits = sum(1 for c in reviewer_only if caught(c))
+    def flagged(case: dict) -> bool:
+        # Flagged at all, any kind -- what a human triager acts on.
+        ref = (case["row"]["store_key"], case["row"]["product_key"])
+        return ref in accepted_by_ref
+
+    n = len(reviewer_only)
+    strict_hits = sum(1 for c in reviewer_only if caught_strict(c))
+    flagged_hits = sum(1 for c in reviewer_only if flagged(c))
     fps = [c for c in clean if (c["row"]["store_key"], c["row"]["product_key"]) in accepted_by_ref]
 
     return {
-        "reviewer_only_recall": recall_hits / len(reviewer_only) if reviewer_only else 0.0,
-        "reviewer_only": f"{recall_hits}/{len(reviewer_only)}",
+        "reviewer_only_recall": strict_hits / n if n else 0.0,
+        "reviewer_only_flagged_recall": flagged_hits / n if n else 0.0,
+        "reviewer_only_strict": f"{strict_hits}/{n}",
+        "reviewer_only_flagged": f"{flagged_hits}/{n}",
         "false_positives": f"{len(fps)}/{len(clean)}",
         "accepted": result.validated.accepted_count,
         "rejected": len(result.validated.rejected),
@@ -199,8 +209,14 @@ def _score(payload: dict, invocation: Invocation) -> dict:
 
 def _report(score: dict) -> None:
     print("\n=== AgentCore Runtime reviewer ===")
-    recall = score["reviewer_only_recall"]
-    print(f"  reviewer-only recall  {recall:.1%}  ({score['reviewer_only']})")
+    print(
+        f"  reviewer-only recall (flagged)  {score['reviewer_only_flagged_recall']:.1%}  "
+        f"({score['reviewer_only_flagged']})   <- row surfaced for review"
+    )
+    print(
+        f"  reviewer-only recall (strict)   {score['reviewer_only_recall']:.1%}  "
+        f"({score['reviewer_only_strict']})   <- flagged AND classified"
+    )
     print(f"  false positives       {score['false_positives']} clean rows flagged")
     print(f"  accepted / rejected   {score['accepted']} / {score['rejected']}")
     print(f"  fabrication rate      {score['fabrication_rate']:.1%}")
