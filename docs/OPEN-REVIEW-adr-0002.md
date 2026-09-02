@@ -1,6 +1,34 @@
 # Open review — should ADR 0002 be approved, and how much of it?
 
-**Status:** open, and wants a mentor.
+> **ANSWERED 2026-09-02. THIS BRIEF IS CLOSED AND IS KEPT FOR ITS REASONING.**
+> The mentor gave full autonomy over ADR 0002, and the decision taken under it
+> was the recommendation below: **the AgentCore Runtime reviewer only.** It was
+> then built, deployed to `ap-southeast-2`, measured against the labelled
+> anomaly set, and **torn down** — a prototype, not a retained service. Gateway
+> and the managed evaluations stay **withdrawn, not declined**.
+>
+> The answer is recorded where §"Where to record the answer" says it should be:
+> the Status line of
+> [`adr/0002-staged-agentcore-and-managed-ai-services.md`](adr/0002-staged-agentcore-and-managed-ai-services.md).
+> The full reasoning record, the live findings, the teardown drill and the CDK
+> codification (gate 5) are in
+> [`AGENTCORE-RUNTIME-REVIEWER.md`](AGENTCORE-RUNTIME-REVIEWER.md) §13-§15.
+>
+> **This header said "open, and wants a mentor" for a day after the decision was
+> taken and the prototype had already been built and deleted** — a brief still
+> asking for a decision that had been made, sitting beside an ADR that recorded
+> it. Same shape as every other drift finding here: the document that describes
+> intent was not returned to when the thing arrived. Nothing below this line has
+> been edited; read it as the case as it stood on 2026-08-31.
+>
+> **Still open, and NOT covered by this decision:** whether the reviewer is
+> *retained*. The prototype ended in teardown by design, `Grocery-Reviewer-dev`
+> synths but cannot deploy until `AWS::BedrockAgentCore::Runtime` reaches
+> ap-southeast-2, and the hypothesis is recorded as "promising but unproven at
+> this scale". Retention is a separate decision with its own evidence.
+
+**Status:** ANSWERED 2026-09-02 — reviewer Runtime only, prototyped and torn
+down. Superseded by the ADR's own Status line.
 **Raised:** 2026-08-31 · **Effort:** about twenty minutes · **You need no code.**
 
 Companion to [`OPEN-REVIEW-head-terms.md`](OPEN-REVIEW-head-terms.md) and

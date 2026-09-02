@@ -541,7 +541,7 @@ ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
     tests/test_sample_fixtures.py                # rewrite samples/ from the server
-python evals/run_intent.py                       # 76.7% scripted baseline
+python evals/run_intent.py                       # 85.1% scripted baseline (40/47)
 python evals/run_recipe_select.py                 # 100% scripted; select_recipes (15c)
 python evals/run_review.py                        # data-quality reviewer, 25 cases (experiment, ADR 0002 WS2)
 python evals/run_review.py --model nova-lite --reps 3   # banded live qualification (flagged vs strict recall)
@@ -946,11 +946,30 @@ An LLM-judge on plan quality was considered and rejected: it puts a
 non-deterministic scorer inside a suite whose value is being deterministic, and
 this session was four separate cases of a scorer being confidently wrong.
 
-Local scripted baselines are 76.7% intent and 100% meal-plan (was 91%; the
-same harness fixes lifted it), plus 7/7 Guardrail must-allow structure.
-Live intent figures were re-measured on 2026-08-29 against guardrail v2 with
-GuardrailBlocked excluded: Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite
-92.9%. The earlier 83.3%/100% pair counted Guardrail refusals as wrong answers.
+Local scripted baselines are **85.1% intent (40/47)** and **100% meal-plan
+(20/20)**, plus 7/7 Guardrail must-allow structure.
+
+**DO NOT COMPARE THOSE TO THE 76.7%/100% PAIR THIS PARAGRAPH CARRIED UNTIL
+2026-09-02.** The case files grew from 30 to 47 intent cases and from 11 to 20
+meal-plan cases (`f8cd86d`), so intent moved 8.4 points because the INSTRUMENT
+changed, not because anything in the system did. That is the same class of
+mistake as reading the Nova Pro 64% -> 100% gain as a model improvement when
+every moving part was the harness — and the rule is the one already in this
+file: a measurement is quotable only alongside what it measured against. Both
+numbers now carry their case count for that reason.
+
+The CI floors were deliberately NOT raised. "Raise a floor when the baseline
+genuinely improves" is the rule, and this baseline did not improve; a floor
+raised on a suite change would be a number picked to fit the answer.
+`docs/CI-GATE-HEALTH.md` §1 carries the headroom re-measurement.
+
+**The LIVE intent scorecards in `config/models.json` predate the growth** —
+Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%, measured 2026-08-29
+against guardrail v2 with GuardrailBlocked excluded, on the 30-case suite the
+`_source` field names. They are honest about what they measured and they are
+evidence about a suite that no longer exists, so a re-measurement is owed
+before Task 16 quotes them as qualifying. (The earlier 83.3%/100% pair counted
+Guardrail refusals as wrong answers.)
 
 **Open for human review:** `min_grams_per_person_day` in
 `config/feasibility.json` decides when a meal-plan request is refused as

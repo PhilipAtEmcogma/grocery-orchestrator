@@ -7,10 +7,13 @@ go red for a reason unrelated to the change that trips it.
 Nothing here blocks a merge. They are ordered by how much warning you get
 before they bite.
 
-**Status as of 2026-08-29.** §2 to §6 are resolved and kept for their
-reasoning rather than deleted. **§1 remains open** — the eval case counts are
-too small, which is now also why the meal-plan suite cannot rank two models
-that both score 100%.
+**Status as of 2026-09-02.** §2 to §6 are resolved and kept for their
+reasoning rather than deleted. **§1 is largely closed** — the case counts grew
+on 2026-09-02 (intent 30 -> 47, meal-plan 11 -> 20), which is the fix it had
+been asking for, and intent now carries four spare cases where it had none.
+What survives of §1 is narrower and still real: the meal-plan suite still
+cannot rank two models that both score 100%, because every check in it is a
+rule-violation check and neither model breaks rules.
 
 Two of them stopped being hypothetical in the meantime, in the same afternoon:
 adopting `ruff format` moved line numbers across the tree, which invalidated
@@ -21,20 +24,49 @@ paths §2 was written about. A latent gap is one that has not bitten *yet*.
 
 ## 1. Both eval floors are one failing case from red
 
-Measured on the merged tree:
+> **LARGELY CLOSED 2026-09-02 — the case counts grew, which is the fix this
+> section spent three revisions asking for.** `f8cd86d` took intent from 30
+> cases to 47 and meal-plan from 11 to 20. Intent now has **four** spare cases
+> where it had none. The heading is kept because the *reasoning* below is the
+> part worth carrying, and because §1 stayed the one open entry in this file
+> for a fortnight on the strength of it.
 
-Re-measured 2026-08-29:
+Re-measured 2026-09-02, against the grown suites:
 
 | Eval | Result | Floor | Next failure |
 |---|---|---|---|
-| `evals/run_intent.py` | 23/30 = 76.7% | 75.0% | 22/30 = 73.3% — **red** |
-| `evals/run_meal_plan.py` | 11/11 = 100% | 90.0% | 10/11 = 90.9% green; 9/11 = 81.8% **red** |
+| `evals/run_intent.py` | 40/47 = 85.1% | 75.0% | 36/47 = 76.6% green; 35/47 = 74.5% — **red** |
+| `evals/run_meal_plan.py` | 20/20 = 100% | 90.0% | 18/20 = 90.0% green; 17/20 = 85.0% — **red** |
 
-Intent still has no spare case. Meal-plan gained one: the whole-pack pricing
-work took the scripted baseline from 90.9% to 100%, so it now survives one
-failure and dies on the second. `plan-003`, named below as the boundary case,
-now passes — it was under-spending at exactly the 30% floor, and pre-filtering
-candidates to the budget lifted utilisation clear of it.
+The floor is inclusive (`actual < floor` fails), so 18/20 = exactly 90.0%
+passes. Intent survives four failures and dies on the fifth; meal-plan survives
+two and dies on the third.
+
+**THE FLOORS WERE NOT RAISED, AND THAT IS THE DECISION RATHER THAN AN
+OVERSIGHT.** `scripts/hooks/pre-commit` says "Floors, not targets. Never lower
+one to make a commit pass," and the companion rule in `AGENTS.md` is "raise one
+when the baseline genuinely improves." **This baseline did not improve.**
+Intent moved 76.7% -> 85.1% because the suite went from 30 cases to 47, so the
+instrument changed and the system did not; the two numbers are not comparable
+and neither is evidence about the other. A floor raised on that movement would
+be a number chosen to fit an answer, which is the thing this file exists to
+catch. Raise the floors from a re-measurement taken *after* the suite settles,
+or not at all.
+
+**One consequence to carry into Task 16.** The live intent scorecards in
+`config/models.json` — Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%
+— were measured on 2026-08-29 against the **30-case** suite, which their
+`_source` field says plainly. They are honest about their own provenance and
+they are evidence about a suite that no longer exists. Req 14.2 requires every
+active route to score at least 90% on "its applicable golden set", and the
+applicable golden set has changed underneath all three, so the release gate
+wants a re-measurement rather than a citation of these.
+
+Kept for its reasoning, from the 2026-08-29 revision: meal-plan gained its
+first spare case when the whole-pack pricing work took the scripted baseline
+from 90.9% to 100%. `plan-003`, named below as the boundary case, now passes —
+it was under-spending at exactly the 30% floor, and pre-filtering candidates to
+the budget lifted utilisation clear of it.
 
 **2026-08-29: this stopped being an argument about percentages.** The
 guardrail suite's seven `must_allow` cases scored 7/7 while the deployed policy
@@ -50,14 +82,15 @@ queries (`must_allow` is 9 cases), and a bare `price of mushrooms` is still
 refused and is deliberately NOT a case — a permanently red gate is one people
 stop reading. Reproduction in `docs/LIVE-EVAL-RUNBOOK.md` §8.5.
 
-The underlying problem is unchanged and is about case count, not threshold: one
-meal-plan case is worth 9 percentage points, so the drop overshoots whenever it
-comes.
+The underlying problem was about case count, not threshold, and growing the
+suites is what addressed it: a meal-plan case was worth 9 percentage points at
+11 cases and is worth 5 at 20; an intent case was worth 3.3 at 30 and is worth
+2.1 at 47. The overshoot is smaller, not gone.
 
 This is not an argument for lowering the floors — `scripts/hooks/pre-commit`
 says "Floors, not targets. Never lower one to make a commit pass," and that is
-correct. The problem is the *case count*, not the threshold. Thirty intent
-cases make each case worth 3.3 points; a hundred would make it 1.
+correct. The problem is the *case count*, not the threshold. Forty-seven intent
+cases make each case worth 2.1 points; a hundred would make it 1.
 
 Recommended: grow the case files before the next behavioural change, so the
 floors measure the system rather than the sampling. `evals/cases/intent.json`

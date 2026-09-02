@@ -163,8 +163,17 @@ The harness now detects this and returns exit `2` with an `INCONCLUSIVE`
 message naming how many cases degraded. **If you see that, the number is
 partly the keyword heuristic's score. Discard it and re-run.**
 
-Compare against the recorded baselines: scripted 76.7%, and live against
-guardrail v2 Nova Lite 92.9%, Claude Haiku 4.5 96.4%, Nova Pro 100.0%. A route needs **≥90% on its applicable golden set**.
+Compare against the recorded baselines: scripted **85.1% (40/47)**, and live
+against guardrail v2 Nova Lite 92.9%, Claude Haiku 4.5 96.4%, Nova Pro 100.0%.
+A route needs **≥90% on its applicable golden set**.
+
+**THE THREE LIVE FIGURES WERE MEASURED ON THE 30-CASE SUITE (2026-08-29) AND
+THE SUITE IS NOW 47 CASES.** They are not wrong — `config/models.json` records
+`30 cases` in their `_source` — but they describe a golden set that no longer
+exists, so they cannot discharge Req 14.2 for the current one. The scripted
+figure moved 76.7% -> 85.1% for the same reason and is likewise not a
+comparison. **Re-measure all three before quoting them as qualifying
+evidence**, and record the new case count with them.
 
 ### 4.3 Cache utilisation
 
