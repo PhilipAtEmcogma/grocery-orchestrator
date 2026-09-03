@@ -377,3 +377,69 @@ def test_the_internal_error_alarm_is_dimensioned_on_the_code(config) -> None:
     """
     alarm = next(a for a in config["alarms"] if a["name"].endswith("internal-error-dev"))
     assert alarm["dimensions"].get("code") == "INTERNAL_ERROR"
+
+
+def test_the_history_failure_filter_matches_the_line_ingestion_emits(config, capsys, monkeypatch):
+    """
+    The `IngestionHistoryWriteFailed` filter must match what `_append_history`
+    actually prints — not what this config says it prints.
+
+    Same pairing as the HandlerEscaped test above, and it exists for the same
+    reason: a metric filter and the log line it binds to live in two files, and
+    a rename in either one produces an alarm that can never fire. An alarm that
+    cannot fire is indistinguishable from a healthy service, which is the
+    failure this whole file is about.
+
+    Driven through the REAL function with a boto3 that raises, rather than by
+    asserting on the constant. Asserting `HISTORY_FAILED_LOG_MESSAGE ==
+    "ingestion_history_write_failed"` would pass even if `_append_history`
+    stopped printing the line, stopped catching the exception, or printed a
+    different key — all three of which are the actual failure.
+    """
+    from ingestion import handler as h
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("AccessDeniedException: no permission on the history table")
+
+    monkeypatch.setattr(h.boto3, "resource", _boom)
+
+    written = h._append_history("paknsave", [{"store_key": "s#a", "product_key": "p"}])
+
+    assert written == 0, "a failed history append must report zero rows written"
+
+    printed = [
+        line for line in capsys.readouterr().out.splitlines() if line.strip().startswith("{")
+    ]
+    records = [json.loads(line) for line in printed]
+
+    field, expected = _json_selector(_filter_for(config, "IngestionHistoryWriteFailed")["pattern"])
+    matched = [r for r in records if r.get(field) == expected]
+
+    assert matched, (
+        f"the metric filter looks for {field}={expected!r}, which no log line "
+        f"from _append_history carries. Lines seen: {records}"
+    )
+    # The alarm is only actionable if the line says which table and which error.
+    assert matched[0]["table"] == h.HISTORY_TABLE
+    assert matched[0]["error"] == "RuntimeError"
+
+
+def test_a_history_failure_does_not_fail_the_refresh(config):
+    """
+    Every ingestion alarm must be reachable, and this one is only reachable
+    because the failure DEGRADES.
+
+    If `_append_history` re-raised, a history failure would surface as
+    `ExecutionsFailed` and `IngestionHistoryWriteFailed` would never publish a
+    datapoint — an alarm on a metric nothing emits, which `_coverage_note`
+    already refuses to add. The two ingestion alarms describe two different
+    facts, and this is the code property that keeps them different.
+    """
+    names = {a["name"] for a in config["alarms"]}
+    assert "grocery-ingestion-failed-dev" in names
+    assert "grocery-ingestion-history-write-failed-dev" in names
+
+    from ingestion.handler import _append_history
+
+    # Does not raise. That IS the assertion; the metric depends on it.
+    assert _append_history("paknsave", []) == 0

@@ -79,6 +79,9 @@ SAMPLE_LIMIT = 5
 #: an exception message that happened to quote it.
 REJECT_LOG_MESSAGE = "ingestion_row_rejected"
 
+#: The same mechanism for a failed price-history append. See `_append_history`.
+HISTORY_FAILED_LOG_MESSAGE = "ingestion_history_write_failed"
+
 
 def reject_implausible(items: list[dict]) -> tuple[list[dict], list[dict]]:
     """
@@ -190,6 +193,72 @@ def diff_items(existing: dict[tuple[str, str], dict], items: list[dict]) -> dict
     }
 
 
+def _append_history(retailer: str, items: list[dict]) -> int:
+    """
+    Append one price-history row per accepted product. Returns rows written.
+
+    A HISTORY FAILURE MUST NOT FAIL THE REFRESH, AND THE ORDERING IS WHY.
+    The products write has already succeeded by the time this runs. An
+    exception here therefore fails a Step Functions branch whose actual job --
+    refreshing the prices a shopper reads -- was done, and reports a working
+    refresh as a broken one. That is the same trade `src/handler.py` makes for
+    the idempotency store: "an idempotency store failure must not fail the
+    turn... throwing away the response because the bookkeeping write failed
+    would turn a degraded cache into a failed request."
+
+    History is bookkeeping in exactly that sense. It is ops-and-reviewer data
+    (`src/history`), it is never read on the shopper path, it never becomes a
+    Citation, and every row in it is reproducible by re-running ingestion over
+    the same source. Losing a day of it costs the reviewer's baseline one
+    sample; failing the refresh costs every shopper a day of stale prices.
+
+    BUT IT IS NOT SWALLOWED. A degradation nobody can see is the failure this
+    repository keeps finding -- a rule with no caller, a skip with no
+    condition, an alarm on a metric nothing publishes. So the failure prints
+    the structured line `config/alarms.json` derives
+    `IngestionHistoryWriteFailed` from, and the returned `history_written` of 0
+    beside a non-zero `written` is visible in the execution history.
+
+    THIS GUARD IS NOT WHY THE 2026-09-02 DEFECT WAS SILENT, and it does not fix
+    it. The table and the IAM grant do (`infra/lib/stateful-stack.ts`,
+    `config/iam-ingestion-role.json`); the missing alarm is why nobody knew.
+    What this adds is that the NEXT history failure -- a throttle, a transient
+    error, a table someone renames -- degrades instead of failing a refresh
+    that worked.
+    """
+    try:
+        history_table = boto3.resource("dynamodb", region_name=REGION).Table(HISTORY_TABLE)  # type: ignore[union-attr]
+        with history_table.batch_writer() as batch:
+            for item in items:
+                batch.put_item(Item=to_history_item(item))
+        return len(items)
+    except Exception as exc:
+        # Broad by intention. Every failure mode here -- AccessDenied, a missing
+        # table, a throttle, a serialization error -- has the same correct
+        # response, which is to record it and let the refresh stand. Narrowing
+        # it to the ones imagined today would let an unimagined one fail a
+        # refresh whose products write already succeeded.
+        #
+        # The exception TYPE and message go to the log, not the shopper: there
+        # is no shopper here at all (Req 11.5 is satisfied by construction --
+        # an ingestion Lambda holds no message, location, session or dietary
+        # data), but naming the table and the error class is what makes the
+        # alarm actionable.
+        print(
+            json.dumps(
+                {
+                    "message": HISTORY_FAILED_LOG_MESSAGE,
+                    "retailer": retailer,
+                    "table": HISTORY_TABLE,
+                    "error": type(exc).__name__,
+                    "detail": str(exc)[:300],
+                    "rows_not_written": len(items),
+                }
+            )
+        )
+        return 0
+
+
 def _log_rejection(retailer: str, item: dict) -> None:
     """
     One structured line per refused row, which is what the metric is derived from.
@@ -260,11 +329,7 @@ def refresh(retailer: str, table_name: str = TABLE, *, dry_run: bool = False) ->
         # is never read on the shopper path and never becomes a citation. A
         # dry_run writes nothing here either, for the same reason it writes
         # nothing to products: it is a report, not a mutation.
-        history_table = boto3.resource("dynamodb", region_name=REGION).Table(HISTORY_TABLE)  # type: ignore[union-attr]
-        with history_table.batch_writer() as batch:
-            for item in items:
-                batch.put_item(Item=to_history_item(item))
-        history_written = len(items)
+        history_written = _append_history(retailer, items)
 
     dates = sorted({item["valid_date"] for item in items})
     return {

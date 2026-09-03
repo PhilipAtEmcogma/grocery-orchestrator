@@ -318,10 +318,39 @@ describe('ServiceStack security invariants', () => {
 
   // ------------------------------------------------------------- adoption
 
-  it('the stateful stack creates no table, so CloudFormation cannot delete one', () => {
+  it('the stateful stack creates no table CloudFormation could delete data from', () => {
     // The adoption evidence is an ABSENCE, which is exactly the kind of claim
     // that needs a test: nothing about a passing deploy would tell you the
     // difference between "adopted by reference" and "about to be replaced".
-    expect(Template.fromStack(stateful).findResources('AWS::DynamoDB::Table')).toEqual({});
+    //
+    // THIS ASSERTION WAS `toEqual({})` UNTIL 2026-09-03, and it correctly
+    // failed when `grocery-price-history-dev` was added to StatefulStack. It is
+    // rewritten rather than relaxed, and the distinction matters: the property
+    // being protected was never "this stack creates nothing", it was
+    // "CloudFormation cannot destroy data". A created table with RETAIN cannot,
+    // and a table that never existed has no data to lose.
+    //
+    // So the check is now the property itself, stated two ways, and it is
+    // STRICTER than the version it replaces — the old one would have passed a
+    // stack that adopted nothing at all, and it said nothing about deletion
+    // policy on anything it did create.
+    const tables = Template.fromStack(stateful).findResources('AWS::DynamoDB::Table');
+    const names = Object.values(tables).map((r) => (r as any).Properties?.TableName);
+
+    // 1. The tables holding data are NOT resources of this stack. Replacing one
+    //    is performed by creating the new table and deleting the old, and
+    //    grocery-products-dev holds 2,759 real price records.
+    expect(names).not.toContain(cfg.names.productsTable);
+    expect(names).not.toContain(cfg.names.idempotencyTable);
+
+    // 2. Anything this stack DOES create survives a destroy. Without this, the
+    //    rewrite above would be a hole: a future table added with the default
+    //    RemovalPolicy would satisfy check 1 and still be droppable.
+    for (const [id, resource] of Object.entries(tables)) {
+      expect((resource as any).DeletionPolicy).toBe(`Retain`);
+      expect((resource as any).UpdateReplacePolicy).toBe(`Retain`);
+      // Named so a failure says which table, not just that one exists.
+      expect(id).toBeTruthy();
+    }
   });
 });

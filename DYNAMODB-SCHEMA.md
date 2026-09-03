@@ -3,7 +3,7 @@
 **Smart Grocery & Meal Budget Assistant**
 Author: Philip (Backend/Orchestration, AI/Prompt Lead)
 Status: **Products/idempotency implemented and deployed; recipes shipped (Task 15);
-price-history (Table 4) built in code but NOT deployed**
+price-history (Table 4) DEFINED IN CDK 2026-09-03, not yet deployed**
 Region: `ap-southeast-2` (Sydney)
 
 The current account contains `grocery-products-dev` and
@@ -15,10 +15,29 @@ choose from, and `tests/test_price_repository_contract.py` fails once the
 dataset outgrows a defensible Scan.
 
 **Table 4, the append-only price history (`grocery-price-history-dev`), is
-BUILT IN CODE (`src/history/`, wired into ingestion) but NOT DEPLOYED** —
-`aws dynamodb list-tables` (2026-09-02) shows only products and idempotency
-(plus the data team's `smart-grocery-*`). Its section below is a specification
-the ingestion write path already targets; the table itself awaits a deploy.
+BUILT IN CODE (`src/history/`, wired into ingestion), DEFINED IN CDK as of
+2026-09-03, and NOT YET DEPLOYED** — `aws dynamodb list-tables` (2026-09-02)
+showed only products and idempotency (plus the data team's `smart-grocery-*`).
+Deploy it with `cdk deploy Grocery-Stateful-dev`.
+
+**IT SHIPPED WITHOUT ITS TABLE, ITS IAM GRANT, OR AN ALARM, AND THAT COMBINATION
+WAS SILENT.** `acc53fb` (2026-09-02) wired the history write into
+`ingestion/handler.py` unconditionally, AFTER the products write, on an ENABLED
+daily schedule — so a scheduled refresh would write prices and then fail on
+AccessDenied. Nothing alarmed: the only ingestion alarm counted REJECTED ROWS,
+and a branch that throws never reaches a row counter. No offline gate could see
+it either, because `tests/test_ingestion.py` fakes `boto3.resource` and routes
+by table name — it proves the code writes history and structurally cannot know
+the table is absent. Same blind spot as `docs/ARCHITECTURE.md` §3f and §3g.
+
+Closed 2026-09-03 in four parts: the table (`infra/lib/stateful-stack.ts`, the
+only resource that stack creates, `RETAIN`), the grant
+(`config/iam-ingestion-role.json`, `DynamoAppendPriceHistory`, write-only), an
+`AWS/States` `ExecutionsFailed` alarm so a failed refresh is never silent again,
+and a guard in `_append_history` so a history failure DEGRADES rather than
+failing a refresh whose products write already succeeded — metered by its own
+`IngestionHistoryWriteFailed` alarm, because a degradation nobody can see is the
+failure this repository keeps finding.
 `grocery-meals-dev` remains a planned CDK definition (the curated recipes ship
 today from `config`/`src/recipes`, not from a meals table).
 
@@ -467,6 +486,15 @@ draws on.
 | | Partition key | Sort key |
 |---|---|---|
 | Base table | `history_pk` — `paknsave#sylvia-park#butter-500g` | `valid_date` — `2026-07-31` |
+
+Defined in `infra/lib/stateful-stack.ts`, `PAY_PER_REQUEST`, **no GSI** (nothing
+queries history by anything but the product/store pair), **no PITR** (every row
+is reproducible by re-running ingestion over the same source — PITR on products
+protects data that cannot be recreated; here it would pay to protect a
+derivative), and `RemovalPolicy.RETAIN` so a `cdk destroy` orphans the baseline
+rather than dropping it. It is the ONLY table that stack creates: products and
+idempotency stay adopted, and `infra/test/stateful-stack.test.ts` asserts the
+count is exactly one so that cannot quietly change.
 
 `history_pk` collapses the products base key `(store_key, product_key)` into one
 partition, so "this product's price over time at this store" is a single query.

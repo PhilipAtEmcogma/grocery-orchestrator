@@ -753,3 +753,67 @@ def test_real_catalogue_present_returns_the_found_key(monkeypatch):
     # A clean table reports nothing.
     _patch_loader_table(monkeypatch, _CountTable(present=set()))
     assert ld.real_catalogue_present("grocery-products-dev") is None
+
+
+# --------------------------------------------------------- price history
+
+
+def test_history_failure_does_not_lose_the_products_write(monkeypatch, capsys):
+    """
+    A refresh whose history append fails still WROTE PRICES, and must say so.
+
+    THE ORDERING IS THE WHOLE POINT. `refresh()` writes products first, then
+    appends history. Before this guard the history write was unconditional, so
+    an exception there failed a Step Functions branch whose actual job -- the
+    prices a shopper reads -- had already been done, and reported a working
+    refresh as a broken one.
+
+    Same trade `src/handler.py` makes for the idempotency store: bookkeeping
+    that fails must not discard work that succeeded. History is bookkeeping in
+    exactly that sense -- ops/reviewer only, never a Citation, and reproducible
+    by re-running ingestion over the same source.
+    """
+    from ingestion import handler as h
+
+    products = _FakeTable()
+
+    def _table(_self, name):
+        if name == h.HISTORY_TABLE:
+            raise RuntimeError("ResourceNotFoundException: table does not exist")
+        return products
+
+    monkeypatch.setattr(h.boto3, "resource", lambda *a, **k: type("R", (), {"Table": _table})())
+
+    result = h.refresh("new_world", table_name="grocery-products-dev")
+
+    assert result["written"] > 0, "the products write must still have happened"
+    assert result["history_written"] == 0, "and the history contribution reports zero"
+
+    # Visible, not swallowed. The metric filter binds to this line, and
+    # tests/test_alarms.py asserts the pattern matches it.
+    lines = [ln for ln in capsys.readouterr().out.splitlines() if ln.strip().startswith("{")]
+    assert any(json.loads(ln).get("message") == h.HISTORY_FAILED_LOG_MESSAGE for ln in lines), (
+        "a degraded history write must emit the structured line the alarm is derived from"
+    )
+
+
+def test_history_is_not_written_on_a_dry_run(monkeypatch):
+    """
+    A dry run is a report, not a mutation -- on BOTH tables.
+
+    Worth its own test because the history append moved into a helper: a guard
+    that protects the products write and not the history one would make
+    `--dry-run` write half a refresh, which is the shape of mistake that is
+    only ever found in production.
+    """
+    from ingestion import handler as h
+
+    table = _FakeTable()
+    history = _FakeTable()
+    _patch_resource(monkeypatch, table, history)
+
+    result = h.refresh("new_world", table_name="grocery-products-dev", dry_run=True)
+
+    assert result["written"] == 0
+    assert result["history_written"] == 0
+    assert history.written == []
