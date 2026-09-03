@@ -877,12 +877,34 @@ proposed, or gated as labelled; it is not implemented.
 > cheapest per (store, product) — the answer the product already gives — with a
 > deterministic tiebreak so a re-run cannot report a false `changed`.
 >
-> **Still open:** the table now holds BOTH catalogues (`docs/ARCHITECTURE.md`
-> §3j) and answers head-term queries from the fixtures while answering meal
-> plans from the real data. Holding one catalogue is the fix and it is a
-> deliberate deletion, not done here. The Woolworths branch of the state machine
-> fetches 0 rows — the dataset covers two chains — which is honest but means the
-> product's "three chains" claim is currently true only of the fixtures.
+> **CLOSED 2026-09-01 — one catalogue.** This entry read "Still open: the table
+> now holds BOTH catalogues" until 2026-09-02, by which time the deletion had
+> happened twice. `docs/ARCHITECTURE.md` §3j removed the 152 fixture rows on
+> 2026-08-30; a plain `scripts/load_seed_data.py` run silently re-added them
+> (its default action LOADS), the 2026-09-01 parity re-run caught the endpoint
+> serving fixture answers again, and §3t removed them a second time and
+> **guarded the loader** — it now refuses to load over the real catalogue
+> without `--force`, with a regression test. The live table holds Lineage B
+> only.
+>
+> **What did NOT close, and is now worse rather than better:** the Woolworths
+> branch of the state machine fetches 0 rows, because the dataset covers two
+> chains — 5 New World and 5 Pak'nSave store files, both Foodstuffs banners,
+> zero Woolworths. That was recorded here on 2026-08-30 as "honest but means
+> the product's 'three chains' claim is currently true only of the fixtures",
+> and then the fixtures were deleted. **Deleting them converted a caveat into a
+> false headline claim**: `README.md` and `AGENTS.md` still open by promising a
+> comparison across Pak'nSave, Woolworths and New World, and `KNOWN_RETAILERS`
+> still lists a retailer with no rows behind it. A cross-chain comparison
+> spanning two banners of one company is a materially weaker product than the
+> one described, and `ACQUISITION-RISK.md` §4.5 attaches Fair Trading exposure
+> to **the comparison we publish**. This is a conversation with the data
+> teammates, in the same category as the provenance of the 2,759 rows, and it
+> belongs before any demo outside the team rather than inside Task 16.
+> **Written up 2026-09-02 as `docs/OPEN-REVIEW-chain-coverage.md`** — the
+> numbers, the four options and a recommendation (say what we cover now; put the
+> searched scope in the response with the frontend work; get Woolworths data if
+> the teammates can, gated on ACQUISITION-RISK §8 like everything else).
 
 > **Pilot Task 13, anomaly rejection wired 2026-08-31.** `refresh()` now
 > VALIDATES, then diffs, then writes. `ingestion.handler.reject_implausible`
@@ -1094,7 +1116,8 @@ proposed, or gated as labelled; it is not implemented.
     **Still open (needs ADR 0002):** the Runtime itself, the isolated identity,
     the call/token/time/cost/egress caps, teardown evidence, and the labelled
     anomaly evaluation.
-  - [ ] **14b — Put ADR 0002 in front of the mentor.** Written 2026-08-31.
+  - [x] **14b — Put ADR 0002 in front of the mentor. CLOSED 2026-09-02.**
+    Written 2026-08-31.
     **Narrowed the same day to the reviewer Runtime only.** Gateway is withdrawn
     — a managed auth layer over two coarse operations that already work gets a
     shopper nothing, and it is the easy thing to approve precisely because its
@@ -1119,6 +1142,28 @@ proposed, or gated as labelled; it is not implemented.
     **Approval is not something this repo can grant itself**, so this task
     closes when a person edits the Status line of the ADR — not when the brief
     is written.
+
+    **That happened on 2026-09-02, and the criterion above is what closes this
+    task.** The mentor gave full autonomy over ADR 0002; the decision taken
+    under it was the brief's own recommendation — the reviewer Runtime only,
+    with Gateway and the managed evaluations withdrawn rather than declined.
+    The ADR's Status line records it, `docs/OPEN-REVIEW-adr-0002.md` is marked
+    ANSWERED and kept for its reasoning, and the reviewer was then built,
+    deployed, measured and torn down (`docs/AGENTCORE-RUNTIME-REVIEWER.md`
+    §13-§15).
+
+    **This box stayed unticked, and the brief stayed "open, and wants a
+    mentor", for a day after the decision was taken and the prototype had been
+    built and deleted.** Both were corrected on 2026-09-02. Worth recording
+    because a ledger entry that under-reports is the same defect as one that
+    over-reports: this one had the roadmap showing an unanswered question in
+    front of a mentor who had already answered it.
+
+    **What 14b does NOT close is Task 14 itself.** Approval was to run the
+    experiment, and the experiment ended in teardown by design. Retention is a
+    separate decision: the hypothesis is recorded as "promising but unproven at
+    this scale", and `Grocery-Reviewer-dev` synths but cannot deploy until
+    `AWS::BedrockAgentCore::Runtime` reaches ap-southeast-2.
 - [ ] **Pilot Task 15 — Introduce the curated recipe catalogue.** Models select
   recipe ids and product citations; code owns scaling, safety, and totals.
   A Knowledge Base may be evaluated only for cited recipe/catalogue retrieval

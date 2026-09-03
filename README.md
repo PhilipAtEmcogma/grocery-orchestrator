@@ -91,8 +91,8 @@ operational evidence** — not first deployment.
 | 7 · Scorecards, route qualification, prose/repair evals | ✅ done · one deferral (7b) |
 | 8 · Local read-only MCP | ✅ done — 2 coarse tools, default-off, capped, parity-tested |
 | 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done**. ObservabilityStack written 2026-08-31 and **NOT DEPLOYED** — it alarms both planes when it is, and the account has never seen it — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). Cutover deferred by decision, not pending |
-| 13 · Controlled ingestion | 🟡 **anomaly rejection wired 2026-08-31** — `implausible_unit_price` refuses a row before it is written, with a metric and an alarm. Measured over the real catalogue: 0 rejections clean, **522 of 2,759** with the historical defect reintroduced (§3p). The rest of Task 13 is unstarted |
-| 14 · AgentCore reviewer | 🟡 **14a done** — the sanitised snapshot boundary and finding validation, which are needed whoever reviews. The Runtime needs ADR 0002; the request was narrowed to it alone on 2026-08-31 |
+| 13 · Controlled ingestion | 🟡 **anomaly rejection wired 2026-08-31** — `implausible_unit_price` refuses a row before it is written, with a metric and an alarm. Measured over the real catalogue: 0 rejections clean, **522 of 2,759** with the historical defect reintroduced (§3p). One catalogue since 2026-09-01, and the loader is guarded against re-shadowing it (§3t). Remaining: the decoupled review trigger (Streams -> SQS/DLQ). **And the served data covers two chains, not three** — no Woolworths rows exist |
+| 14 · AgentCore reviewer | 🟡 **14a and 14b done** — the sanitised snapshot boundary and finding validation (needed whoever reviews), and ADR 0002 answered 2026-09-02 under autonomous delegation: reviewer Runtime only. **Prototyped live and torn down** — 60% reviewer-only recall, 0 false positives, and one fabricated quote caught by the caller-side validator, which is the trust boundary working. CDK stack written; it cannot deploy until `AWS::BedrockAgentCore::Runtime` reaches Sydney. **Retention is a separate, open decision** |
 | 15 · Recipe catalogue | ✅ **done 2026-08-31** — 29 curated recipes, and **15c wired**: a meal-plan turn is built from named recipes, with the model choosing ids from a shortlist retrieval has already proven costable, dietary-viable and affordable as a set. Falls back to free composition with a notice when nothing fits. The imported 175 stay unusable: 0/175 against *both* catalogues |
 | 16 · Release gates | ⬜ not started |
 
@@ -129,8 +129,8 @@ the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVA
 in `infra/` — first run by CI on 2026-08-31, having found two IAM
 regressions in a stack that was already deployed
 ([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3o). Five eval suites — intent
-76.7%, meal plan 100%, prose 100%, repair 100% (12 cases), guardrail 9/9
-must-allow — all gated in CI and the pre-commit hook. **Repair is two routed tasks**
+85.1% (47 cases), meal plan 100% (20), prose 100% (11), repair 100% (12),
+guardrail 9/9 must-allow — all gated in CI and the pre-commit hook. **Repair is two routed tasks**
 as of 2026-08-31: `repair_budget` to Nova Lite (7/7) and `repair_defect` to
 Claude Haiku (5/5), each perfect at its half and below the 90% floor on the
 other. The eval gates each half separately, because 83.3% combined is one
@@ -558,8 +558,12 @@ claimed. Read it before changing any of this, and not before.
   and `--min-pass-rate` returns *inconclusive* rather than pass or fail. They
   pace requests to the account's quota by default, because an unpaced run
   measures the quota rather than the model.
-- ✅ **Scripted baselines** — 76.7% intent, 100% meal-plan invariants, 7/7
-  Guardrail must-allow structure.
+- ✅ **Scripted baselines** — 85.1% intent (40/47), 100% meal-plan invariants
+  (20/20), 7/7 Guardrail must-allow structure. **These are not comparable to
+  the 76.7%/100% pair quoted before 2026-09-02**: the case files grew from 30
+  to 47 and from 11 to 20 (`f8cd86d`), so the instrument changed and the system
+  did not. The CI floors were deliberately left where they are — see
+  `docs/CI-GATE-HEALTH.md` §1.
 - ✅ **Nineteen runnable demos** (`Philip_demo/`) across three modes — local
   (offline), integration (the deployed endpoint), aws (deployed resources,
   read-only). `run_all.py` exits non-zero if any has drifted from the code it
@@ -707,8 +711,8 @@ And to check it:
 pytest                     # 907 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
-python evals/run_intent.py         # 76.7% scripted baseline
-python evals/run_meal_plan.py      # 100% scripted invariant baseline
+python evals/run_intent.py         # 85.1% scripted baseline (40/47)
+python evals/run_meal_plan.py      # 100% scripted invariant baseline (20/20)
 python evals/run_guardrail.py      # 7/7 scripted must-allow structure only
 python evals/run_recipe_select.py  # 100% scripted; select_recipes (Task 15c)
 python evals/run_review.py         # data-quality reviewer (experiment, 25 cases)
@@ -869,15 +873,17 @@ specific question arises.
   what actually blocks it. Also the honest answer to "where did the 2,759 rows
   come from", which is a conversation rather than a code change.
 
-- [`docs/OPEN-REVIEW-adr-0002.md`](docs/OPEN-REVIEW-adr-0002.md) — **open, and
-  wants the mentor.** Whether to approve ADR 0002. Twenty minutes, no code
-  reading. **The request was narrowed on 2026-08-31 to the reviewer Runtime
-  only**: Gateway and the managed evaluations are withdrawn rather than left on
-  the table, the first because a managed auth layer over two working coarse
-  operations gets a shopper nothing, the second because its own gate blocks it
-  on us. The brief argues the case against as well as for — **a decline costs
-  very little**, which is why the reviewer's boundary was built before the
-  reviewer.
+- [`docs/OPEN-REVIEW-adr-0002.md`](docs/OPEN-REVIEW-adr-0002.md) — **ANSWERED
+  2026-09-02, kept for its reasoning.** Whether to approve ADR 0002. The mentor
+  gave full autonomy over it, and the decision taken under that was the brief's
+  own recommendation: **the reviewer Runtime only**, with Gateway and the
+  managed evaluations withdrawn rather than declined. It was then built,
+  deployed to `ap-southeast-2`, measured, and **torn down** — a prototype, not a
+  retained service. Reasoning record, live findings and the teardown drill:
+  [`docs/AGENTCORE-RUNTIME-REVIEWER.md`](docs/AGENTCORE-RUNTIME-REVIEWER.md)
+  §13-§15. **Whether to RETAIN it is a separate, open decision**: the hypothesis
+  is "promising but unproven at this scale", and the CDK stack cannot deploy
+  until `AWS::BedrockAgentCore::Runtime` reaches Sydney.
 - [`docs/OPEN-REVIEW-frontend-contract.md`](docs/OPEN-REVIEW-frontend-contract.md)
   — **open, and wants the frontend teammate.** A frontend exists, on the branch
   `frontend-infra-setup`, and it carries its own contract document that
@@ -885,6 +891,14 @@ specific question arises.
   *document*, if implemented, returns HTTP 400. Fifteen minutes, no code
   reading — and it unblocks the CDK cutover, which has been waiting for a
   frontend to coordinate the URL change with.
+- [`docs/OPEN-REVIEW-chain-coverage.md`](docs/OPEN-REVIEW-chain-coverage.md) —
+  **open, and wants the data teammates plus a product call.** Every document
+  here opens by promising a comparison across Pak'nSave, Woolworths and New
+  World. The served catalogue has **zero Woolworths rows** — 1,500 New World and
+  1,500 Pak'nSave, both Foodstuffs banners. The fixtures carried all three and
+  were masking it until they were removed from the live table on 2026-09-01,
+  which turned a recorded caveat into a false headline claim. Fifteen minutes,
+  no code reading. Options and a recommendation are in the brief.
 - [`docs/OPEN-REVIEW-head-terms.md`](docs/OPEN-REVIEW-head-terms.md) — **open,
   and wants somebody who shops these stores.** Which product a one-word query
   like "cheapest butter" should return, when the catalogue holds fourteen
