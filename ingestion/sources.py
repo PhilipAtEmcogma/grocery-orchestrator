@@ -27,6 +27,8 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Protocol
 
+from ingestion.guard import FixtureGuardError, deployment_signal
+
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "products.json"
 
 # The data team's collected catalogue. See LineageBSource.
@@ -165,6 +167,28 @@ class LineageBSource:
     def fetch(self) -> list[RawOffer]:
         from ingestion.lineage_b import transform
 
+        # A MISSING CATALOGUE IS AN ERROR, NOT AN EMPTY ONE.
+        #
+        # `Path.glob` on a directory that does not exist yields nothing and
+        # raises nothing, so without this a caller selecting lineage_b where the
+        # catalogue is absent gets `fetched 0, written 0, added 0, changed 0` --
+        # a refresh that reports success and did nothing. That is not
+        # hypothetical: `scripts/build_lambda.py` ships `src`, `config`,
+        # `fixtures` and `ingestion`, and NOT `datasets`, so
+        # `PRICE_SOURCE=lineage_b` on the deployed function is exactly this case
+        # today. An empty catalogue that EXISTS is a different fact and still
+        # returns [] -- Woolworths has no rows in Lineage B at all, which is a
+        # data-coverage question (docs/OPEN-REVIEW-chain-coverage.md), not a
+        # deployment fault.
+        if not self._path.is_dir():
+            raise FileNotFoundError(
+                f"the Lineage B catalogue is not at {self._path}. Nothing can be "
+                f"refreshed from it, and an absent directory would otherwise read "
+                f"as a catalogue with no products -- a silent no-op refresh. If "
+                f"this is a deployed function, scripts/build_lambda.py does not "
+                f"ship datasets/ in the archive."
+            )
+
         records = []
         for path in sorted(self._path.glob("*.json")):
             payload = json.loads(path.read_text(encoding="utf-8"))
@@ -221,12 +245,36 @@ def resolve_source(retailer: str) -> PriceSource:
       2. PRICE_SOURCE env    -> explicit one-off override, for a load that wants
          a specific source without editing config.
       3. default_source in config/data-sources.json -> the reviewed default.
+      4. ...UNLESS that default is the fixtures and this is a DEPLOYMENT, in
+         which case it REFUSES. See below; this is the layer-1 guard.
 
     Both non-live sources are RECORDED data on disk, so neither touches the
     acquisition gate; the choice is which catalogue the serving table is
     refreshed FROM, a data decision rather than a permission one. The data
     team's catalogue (lineage_b) is the recorded PRIMARY input; see the config
     file for why it is not yet the automatic runtime default.
+
+    A DEPLOYMENT MAY NOT ARRIVE AT THE FIXTURES BY DEFAULT (2026-09-03).
+
+    `default_source: fixtures` is the right answer to "what should this run
+    read when nobody said?" asked on a laptop, and the wrong answer to the same
+    question asked by a Lambda on a schedule against the live products table.
+    Those are two questions, and until now one value answered both: the
+    deployed ingestion function resolved a `FixtureSource` from this config and
+    wrote 152 invented rows over the real catalogue every night at 03:18, which
+    is how three separate fixture removals were each undone the following day
+    (`ingestion/guard.py` carries the full history).
+
+    So the environment decides, not the config file. A default is a statement
+    about what is safe when nothing was chosen, and nothing is safe to assume
+    in a deployment -- the refusal is loud, one line to fix with an explicit
+    `PRICE_SOURCE`, and it cannot silently write fiction into a real table.
+
+    EXPLICIT SELECTION IS UNAFFECTED. `PRICE_SOURCE=fixtures` still works
+    everywhere, because an operator naming the fixture catalogue has chosen it,
+    and the second guard (`refresh()` refusing to write fixtures over the real
+    catalogue) is what stands behind that choice. This layer only refuses to
+    make the choice on their behalf.
     """
     if os.environ.get("LIVE_ACQUISITION") == "1":
         raise NotImplementedError(
@@ -238,12 +286,33 @@ def resolve_source(retailer: str) -> PriceSource:
     # Env override, then the config default. Names validated against the same
     # allowlist either way, so an unknown PRICE_SOURCE is a clear error rather
     # than a silent fall-through to fixtures.
-    name = os.environ.get("PRICE_SOURCE") or _default_source_name()
+    explicit = os.environ.get("PRICE_SOURCE")
+    name = explicit or _default_source_name()
     if name not in _SOURCE_BY_NAME:
         raise ValueError(
             f"PRICE_SOURCE={name!r} is not a known source; expected one of "
             f"{sorted(_SOURCE_BY_NAME)}"
         )
+
+    # Only an IMPLICIT fixture selection is refused, and only in a deployment.
+    # `explicit` is checked rather than re-reading the environment so that the
+    # thing being judged is the value this call actually resolved.
+    if name == "fixtures" and not explicit:
+        deployment = deployment_signal()
+        if deployment is not None:
+            raise FixtureGuardError(
+                f"refusing to default to the FIXTURE catalogue in a deployment "
+                f"({deployment}). config/data-sources.json says "
+                f"default_source='fixtures', which is the correct default for a "
+                f"laptop and the wrong one here: fixtures/products.json is 152 "
+                f"hand-written rows with invented prices, and writing them into a "
+                f"real products table shadows the collected catalogue (this ran "
+                f"nightly until 2026-09-03 -- see ingestion/guard.py). "
+                f"Set PRICE_SOURCE explicitly on the function to choose a source, "
+                f"or set default_source to 'lineage_b' in config/data-sources.json "
+                f"and deploy it (that file's _promoting_lineage_b_to_default note "
+                f"lists what to confirm first)."
+            )
 
     if name == "lineage_b":
         return LineageBSource(retailer)

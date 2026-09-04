@@ -13,11 +13,18 @@ re-running overwrites with the same data (put_item replaces on key match).
 
 GUARDED SINCE 2026-09-01. The default action loads fixtures, and a plain run
 used to silently re-add them on top of the real catalogue — where they SHADOW
-the real prices (see `_REAL_ONLY_STORE_KEYS` and
+the real prices (see `ingestion/guard.py` and
 docs/OPEN-REVIEW-near-filter-drift.md). `load()` now refuses when the real
 catalogue is already present, unless `--force` is passed. This does not touch
 the live table by itself; it stops the loader being the thing that quietly
 undoes a fixture removal.
+
+AND IT WAS NOT THE THING THAT WAS UNDOING THEM. The 2026-09-03 account check
+found the scheduled ingestion Lambda rewriting the fixtures into the live table
+every night, which no guard here could ever have reached. The probe this script
+uses now lives in `ingestion/guard.py` and is shared with `refresh()`, so the
+loader and the Lambda refuse on one definition of "the real catalogue is
+already there" rather than two that can drift.
 
 `--remove` is the inverse, and exists because the fixtures stopped being the
 only catalogue. Once the data team's real rows were loaded alongside them
@@ -45,65 +52,32 @@ from pathlib import Path
 
 import boto3
 
+# `scripts/` is not a package and is not shipped in the Lambda archive, so the
+# repo root goes on the path before importing from it -- the same insert
+# `apply_guardrail.py` and `dev_server.py` make. The guard has to be imported
+# rather than copied: the loader and `ingestion.handler.refresh` must agree
+# about what "the real catalogue is present" means, and two copies of a probe
+# are two things to keep in step.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from ingestion.guard import real_catalogue_present
+
 REGION = "ap-southeast-2"
 DEFAULT_TABLE = "grocery-products-dev"
 FIXTURES = Path(__file__).resolve().parent.parent / "fixtures" / "products.json"
 
-#: Store keys that exist ONLY in the data team's real Lineage B catalogue and
-#: never in the fixtures. Their presence in the table is a reliable, cheap
-#: signal that the real catalogue is loaded — a signal that needs one GetItem
-#: rather than a full Scan (which the orchestrator role deliberately cannot do).
-#:
-#: WHY A GUARD IS NEEDED. `load()` batch-writes the fixtures unconditionally, and
-#: its default (no flag) is to LOAD. So a plain `python scripts/load_seed_data.py`
-#: run during demo prep, a redeploy, or a smoke test silently re-adds all 152
-#: fixture rows on top of the real catalogue. The fixtures then SHADOW the real
-#: data: "milk" resolves to the fixture-only `milk-2l` before reaching the real
-#: `standard-milk-2l`, so `cheapest milk near Albany` serves a fabricated
-#: Devonport price instead of the real Albany one. This happened — it is the
-#: 2026-09-01 finding in docs/OPEN-REVIEW-near-filter-drift.md, and it undid the
-#: 2026-08-30 fixture removal (ARCHITECTURE.md §3j) with no signal at all.
-#:
-#: These keys are asserted disjoint-from-fixtures and present-in-Lineage-B by
-#: tests/test_ingestion.py, so a future catalogue change that invalidated them
-#: fails the build rather than silently disarming the guard.
-_REAL_ONLY_STORE_KEYS = ("paknsave#albany", "new_world#albany")
-
-
-def real_catalogue_present(table_name: str) -> str | None:
-    """
-    A real-only store key that is present in the table, or None.
-
-    Cheap by design: one GetItem per probe key against the base table, stopping
-    at the first hit. No Scan, so it runs under the orchestrator's least-privilege
-    role. Returns the key it found so the caller can name it in the refusal.
-
-    A probe needs BOTH keys of the base table (partition `store_key`, sort
-    `product_key`). We do not know a real product_key without reading the
-    catalogue, so this queries by partition key alone via the base table's
-    Query and takes Count — one row is enough to know the store is stocked.
-    """
-    from boto3.dynamodb.conditions import Key
-
-    dynamodb = boto3.resource("dynamodb", region_name=REGION)
-    table = dynamodb.Table(table_name)  # type: ignore[union-attr]
-    for store_key in _REAL_ONLY_STORE_KEYS:
-        resp = table.query(
-            KeyConditionExpression=Key("store_key").eq(store_key),
-            Select="COUNT",
-            Limit=1,
-        )
-        if resp.get("Count", 0) > 0:
-            return store_key
-    return None
-
 
 def load(table_name: str, *, force: bool = False) -> int:
+    dynamodb = boto3.resource("dynamodb", region_name=REGION)
+    table = dynamodb.Table(table_name)  # type: ignore[union-attr]
+
     # GUARD: refuse to add fixtures on top of the real catalogue unless forced.
-    # The fixtures shadow the real data (see _REAL_ONLY_STORE_KEYS), so a silent
-    # re-add is a correctness regression, not a harmless duplicate.
+    # The fixtures shadow the real data (see ingestion/guard.py), so a silent
+    # re-add is a correctness regression, not a harmless duplicate. Probed
+    # against the same table object the load would write to, which is the point
+    # of taking a table rather than a name.
     if not force:
-        found = real_catalogue_present(table_name)
+        found = real_catalogue_present(table)
         if found is not None:
             raise SystemExit(
                 f"REFUSING to load fixtures into {table_name}: it already holds the real "
@@ -117,8 +91,6 @@ def load(table_name: str, *, force: bool = False) -> int:
             )
 
     data = json.loads(FIXTURES.read_text(encoding="utf-8"))
-    dynamodb = boto3.resource("dynamodb", region_name=REGION)
-    table = dynamodb.Table(table_name)  # type: ignore[union-attr]
 
     with table.batch_writer() as batch:
         for record in data:

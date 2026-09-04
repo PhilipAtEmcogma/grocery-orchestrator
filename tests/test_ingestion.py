@@ -109,6 +109,109 @@ def test_live_acquisition_wins_over_price_source_env():
         del os.environ["PRICE_SOURCE"]
 
 
+def test_a_deployment_does_not_default_to_the_fixture_catalogue(monkeypatch):
+    """
+    The 2026-09-03 defect, as a test. It ran nightly for days.
+
+    `default_source: fixtures` is the right default for a laptop and the wrong
+    one for a Lambda on a schedule: the deployed function resolved a
+    `FixtureSource` from the config and wrote 152 invented rows over the real
+    catalogue every night, undoing three separate removals. The refusal is what
+    makes an unmade choice loud instead of quiet.
+
+    Parametrised over EVERY declared signal rather than the one that matters
+    today, so adding a signal to `DEPLOYMENT_ENV_VARS` without arming it fails
+    here rather than looking armed in review.
+    """
+    from ingestion.guard import DEPLOYMENT_ENV_VARS, FixtureGuardError
+
+    monkeypatch.delenv("PRICE_SOURCE", raising=False)
+    for signal in DEPLOYMENT_ENV_VARS:
+        for other in DEPLOYMENT_ENV_VARS:
+            monkeypatch.delenv(other, raising=False)
+        monkeypatch.setenv(signal, "grocery-ingestion-dev")
+        with pytest.raises(FixtureGuardError, match="refusing to default"):
+            resolve_source("paknsave")
+
+
+def test_an_explicit_fixture_selection_is_still_allowed_in_a_deployment(monkeypatch):
+    """
+    Only the IMPLICIT default is refused.
+
+    An operator who sets `PRICE_SOURCE=fixtures` on a deployed function has
+    chosen the fixture catalogue, and there are honest reasons to (a fresh
+    empty table, a smoke test). What stands behind that choice is the second
+    guard: `refresh()` still refuses to WRITE those rows over a real catalogue.
+    Refusing here as well would only mean the operator sets a different variable.
+    """
+    monkeypatch.setenv("AWS_LAMBDA_FUNCTION_NAME", "grocery-ingestion-dev")
+    monkeypatch.setenv("PRICE_SOURCE", "fixtures")
+
+    assert isinstance(resolve_source("paknsave"), FixtureSource)
+
+
+def test_a_deployment_selecting_the_real_catalogue_is_not_refused(monkeypatch):
+    """The refusal is about the fixtures, not about being deployed."""
+    from ingestion.sources import LineageBSource
+
+    monkeypatch.setenv("AWS_LAMBDA_FUNCTION_NAME", "grocery-ingestion-dev")
+    monkeypatch.setenv("PRICE_SOURCE", "lineage_b")
+
+    assert isinstance(resolve_source("paknsave"), LineageBSource)
+
+
+def test_live_acquisition_wins_over_the_deployment_refusal(monkeypatch):
+    """
+    The acquisition tripwire is first in the precedence and stays first.
+
+    Both are refusals, so the ORDER only shows up in which one you are told
+    about -- and being told "you tried to turn on live acquisition" matters more
+    than being told about a source default, because only one of them is about a
+    request leaving the account.
+    """
+    monkeypatch.setenv("AWS_LAMBDA_FUNCTION_NAME", "grocery-ingestion-dev")
+    monkeypatch.setenv("LIVE_ACQUISITION", "1")
+    monkeypatch.delenv("PRICE_SOURCE", raising=False)
+
+    with pytest.raises(NotImplementedError, match="ACQUISITION-RISK"):
+        resolve_source("paknsave")
+
+
+def test_the_lambda_runtime_variable_is_a_signal_on_its_own():
+    """
+    `APP_STAGE` cannot be the only signal, and this is why.
+
+    It is UNSET on the deployed function today (setting it is the last step of
+    the production cutover), so a check keyed on it alone would read as armed in
+    review and do nothing in the account -- the exact shape of control this
+    repository keeps finding. `AWS_LAMBDA_FUNCTION_NAME` is set by the runtime
+    and cannot be forgotten.
+    """
+    from ingestion.guard import DEPLOYMENT_ENV_VARS, deployment_signal
+
+    assert "AWS_LAMBDA_FUNCTION_NAME" in DEPLOYMENT_ENV_VARS
+    assert (
+        deployment_signal({"AWS_LAMBDA_FUNCTION_NAME": "grocery-ingestion-dev"})
+        == "AWS_LAMBDA_FUNCTION_NAME=grocery-ingestion-dev"  # pragma: allowlist secret
+    )
+    # The signal is returned rather than a bool so the refusal can name its
+    # evidence; a reader at 3am needs to know WHICH variable said so.
+    assert deployment_signal({"APP_STAGE": "pilot"}) == "APP_STAGE=pilot"
+
+
+def test_an_empty_deployment_variable_is_not_a_deployment():
+    """
+    `APP_STAGE=""` is what an unset variable looks like to a deploy tool that
+    always passes the flag. Treating it as a deployment would refuse laptop runs
+    over a variable nobody set.
+    """
+    from ingestion.guard import deployment_signal
+
+    assert deployment_signal({}) is None
+    assert deployment_signal({"APP_STAGE": ""}) is None
+    assert deployment_signal({"AWS_LAMBDA_FUNCTION_NAME": "   "}) is None
+
+
 def test_data_sources_config_declares_lineage_b_primary():
     """
     The config records the data team's catalogue as the PRIMARY input.
@@ -140,6 +243,38 @@ def test_unknown_default_source_in_config_raises():
         bad.write_text(json.dumps({"default_source": "nonesuch"}), encoding="utf-8")
         with pytest.raises(ValueError, match="not a known source"):
             _default_source_name(bad)
+
+
+def test_a_missing_lineage_b_catalogue_is_an_error_not_an_empty_refresh(tmp_path):
+    """
+    The trap the deployment refusal walks people towards, closed.
+
+    Told "set PRICE_SOURCE explicitly", the obvious next move is
+    `PRICE_SOURCE=lineage_b` on the deployed function -- where `datasets/` is not
+    in the archive (`scripts/build_lambda.py` ships src, config, fixtures and
+    ingestion). `Path.glob` on a missing directory yields nothing and raises
+    nothing, so that would report `fetched 0, written 0, added 0, changed 0`: a
+    refresh that succeeded and did nothing, which is the failure shape this whole
+    area keeps producing.
+    """
+    from ingestion.sources import LineageBSource
+
+    source = LineageBSource("paknsave", path=tmp_path / "not-shipped")
+
+    with pytest.raises(FileNotFoundError, match="does not ship datasets"):
+        source.fetch()
+
+
+def test_an_empty_but_present_catalogue_is_not_an_error(tmp_path):
+    """
+    The distinction the check turns on. A directory that exists and holds no
+    rows for this retailer is a DATA fact -- Woolworths has none in Lineage B at
+    all (docs/OPEN-REVIEW-chain-coverage.md) -- and the nightly refresh for that
+    retailer must stay a quiet zero rather than a nightly page.
+    """
+    from ingestion.sources import LineageBSource
+
+    assert LineageBSource("woolworths", path=tmp_path).fetch() == []
 
 
 def test_unknown_retailer_is_rejected():
@@ -233,14 +368,34 @@ class _FakeBatch:
 
 
 class _FakeTable:
-    def __init__(self, rows: list | None = None) -> None:
+    """
+    A products table that answers BOTH query shapes this code issues.
+
+    `_existing()` queries by store_key and reads `Items`; the fixture guard
+    probes with `Select="COUNT"` and reads `Count`. A fake that modelled only
+    the first would answer the guard's probe with no `Count` key at all, the
+    guard would read that as zero, and every test in this file would exercise
+    the not-guarded path while looking like it had a guard. `real_only` is the
+    set of store keys this table pretends the real catalogue occupies.
+    """
+
+    def __init__(self, rows: list | None = None, real_only: set[str] | None = None) -> None:
         self.written: list = []
         self._rows = rows or []
+        self._real_only = set(real_only or ())
 
     def batch_writer(self):
         return _FakeBatch(self.written)
 
     def query(self, **kw):
+        if kw.get("Select") == "COUNT":
+            # The condition is a boto3 ConditionBase; rather than parse its
+            # expression, take the value it was built with -- the probe only
+            # ever asks about one store_key at a time.
+            cond = kw.get("KeyConditionExpression")
+            values = cond.get_expression()["values"] if cond is not None else []
+            store_key = values[-1] if values else None
+            return {"Count": 1 if store_key in self._real_only else 0}
         return {"Items": list(self._rows)}
 
 
@@ -637,35 +792,6 @@ def test_the_rejection_line_carries_no_shopper_data():
 # --------------------------------------------------- seed loader guard (2026-09-01)
 
 
-class _CountTable:
-    """
-    A fake products table that answers the guard's COUNT-by-store_key query.
-
-    `present` is the set of store_keys that have rows. The guard issues
-    `query(KeyConditionExpression=Key('store_key').eq(k), Select='COUNT', Limit=1)`
-    and reads `Count`; this models exactly that, and records writes so a test
-    can assert whether a load actually happened.
-    """
-
-    def __init__(self, present: set[str]) -> None:
-        self._present = set(present)
-        self.written: list = []
-
-    def batch_writer(self):
-        return _FakeBatch(self.written)
-
-    def query(self, **kw):
-        # The condition is a boto3 ConditionBase; its expression carries the
-        # store_key value. Rather than parse it, model the semantics: the guard
-        # only ever probes one store_key at a time, so pull it from the built
-        # values. boto3 exposes it via get_expression()['values'].
-        cond = kw.get("KeyConditionExpression")
-        values = cond.get_expression()["values"] if cond is not None else []
-        store_key = values[-1] if values else None
-        count = 1 if store_key in self._present else 0
-        return {"Count": count}
-
-
 def _patch_loader_table(monkeypatch, table) -> None:
     from scripts import load_seed_data as ld
 
@@ -683,13 +809,13 @@ def test_real_only_store_keys_are_disjoint_from_fixtures_and_present_in_lineage_
     would never fire and silently disarm — the exact failure mode this test
     exists to prevent. Both are asserted against the real data.
     """
+    from ingestion.guard import REAL_ONLY_STORE_KEYS
     from ingestion.lineage_b import transform
     from ingestion.normalise import store_key as make_store_key
     from ingestion.sources import LINEAGE_B_DIR
-    from scripts.load_seed_data import _REAL_ONLY_STORE_KEYS
 
     fixture_keys = {r["store_key"] for r in json.loads(FIXTURES.read_text(encoding="utf-8"))}
-    assert not (set(_REAL_ONLY_STORE_KEYS) & fixture_keys), (
+    assert not (set(REAL_ONLY_STORE_KEYS) & fixture_keys), (
         "a probe key is also a fixture store_key; the guard would block a first load"
     )
 
@@ -701,7 +827,7 @@ def test_real_only_store_keys_are_disjoint_from_fixtures_and_present_in_lineage_
             records.append({k: (v.get("S") if "S" in v else v.get("N")) for k, v in item.items()})
     offers, _ = transform(records, captured_at="2026-08-28")
     real_keys = {make_store_key(o.store, o.store_location) for o in offers}
-    for probe in _REAL_ONLY_STORE_KEYS:
+    for probe in REAL_ONLY_STORE_KEYS:
         assert probe in real_keys, f"probe key {probe!r} is not in Lineage B; the guard is disarmed"
 
 
@@ -709,7 +835,7 @@ def test_load_refuses_when_the_real_catalogue_is_present(monkeypatch):
     """The core fix: a plain load must not silently shadow the real catalogue."""
     from scripts import load_seed_data as ld
 
-    table = _CountTable(present={"paknsave#albany"})  # real catalogue loaded
+    table = _FakeTable(real_only={"paknsave#albany"})  # real catalogue loaded
     _patch_loader_table(monkeypatch, table)
 
     with pytest.raises(SystemExit, match="REFUSING to load fixtures"):
@@ -721,7 +847,7 @@ def test_load_proceeds_when_the_table_has_no_real_rows(monkeypatch):
     """A clean table (fresh or fixture-only) still loads, so first setup is unaffected."""
     from scripts import load_seed_data as ld
 
-    table = _CountTable(present=set())  # no real-only stores
+    table = _FakeTable()  # no real-only stores
     _patch_loader_table(monkeypatch, table)
 
     written = ld.load("grocery-products-dev")
@@ -733,7 +859,7 @@ def test_force_bypasses_the_guard(monkeypatch):
     """--force is the deliberate escape hatch, and it must actually load."""
     from scripts import load_seed_data as ld
 
-    table = _CountTable(present={"new_world#albany"})
+    table = _FakeTable(real_only={"new_world#albany"})
     _patch_loader_table(monkeypatch, table)
 
     written = ld.load("grocery-products-dev", force=True)
@@ -741,18 +867,207 @@ def test_force_bypasses_the_guard(monkeypatch):
     assert table.written, "--force did not load"
 
 
-def test_real_catalogue_present_returns_the_found_key(monkeypatch):
-    """The probe names which store it found, so the refusal can be specific."""
-    from scripts import load_seed_data as ld
+def test_real_catalogue_present_returns_the_found_key():
+    """
+    The probe names which store it found, so both refusals can be specific.
+
+    Takes a table rather than a table NAME, which is what lets the loader and
+    `refresh()` share it: each hands over the table object it is about to write
+    to, so the probe is always asking about the write it is guarding rather than
+    about a table of the same name it opened itself.
+    """
+    from ingestion.guard import real_catalogue_present
 
     # Only new_world#albany is present; paknsave#albany is probed first and
     # misses, so the second probe is the one that should be reported.
-    _patch_loader_table(monkeypatch, _CountTable(present={"new_world#albany"}))
-    assert ld.real_catalogue_present("grocery-products-dev") == "new_world#albany"
+    assert real_catalogue_present(_FakeTable(real_only={"new_world#albany"})) == "new_world#albany"
 
     # A clean table reports nothing.
-    _patch_loader_table(monkeypatch, _CountTable(present=set()))
-    assert ld.real_catalogue_present("grocery-products-dev") is None
+    assert real_catalogue_present(_FakeTable()) is None
+
+
+def test_the_loader_and_the_lambda_share_one_probe():
+    """
+    Two copies of "is the real catalogue there?" are two things to keep in step,
+    and the one that drifts is the one nobody is looking at. The seed loader
+    imports the guard rather than carrying its own copy.
+    """
+    from ingestion import guard
+    from scripts import load_seed_data as ld
+
+    assert ld.real_catalogue_present is guard.real_catalogue_present
+
+
+# ----------------------------------------- the ingestion write guard (2026-09-03)
+
+
+def test_refresh_refuses_to_write_fixtures_over_the_real_catalogue(monkeypatch):
+    """
+    The vector PR #64 did not close, closed.
+
+    That PR guarded `scripts/load_seed_data.py` -- the path a human could take.
+    The account check on 2026-09-03 found the SCHEDULED LAMBDA taking a path no
+    human took, every night at 03:18, writing the same 152 fixture rows back
+    over the real catalogue. A guard on the loader could never have reached it,
+    which is why this one lives where the write is.
+    """
+    from ingestion import handler as h
+    from ingestion.guard import FixtureGuardError
+
+    table = _FakeTable(real_only={"paknsave#albany"})
+    _patch_resource(monkeypatch, table)
+
+    with pytest.raises(FixtureGuardError, match="refusing to refresh"):
+        h.refresh("paknsave", table_name="grocery-products-dev")
+
+    assert table.written == [], "the guard let the fixture catalogue over the real one"
+
+
+def test_the_refusal_names_the_store_key_it_found(monkeypatch):
+    """
+    A refusal that cannot be checked is one an operator has to take on trust.
+
+    Naming the probe key means the next question -- "is the real catalogue
+    actually in there?" -- is answerable with one query rather than an argument.
+    """
+    from ingestion import handler as h
+    from ingestion.guard import FixtureGuardError
+
+    _patch_resource(monkeypatch, _FakeTable(real_only={"new_world#albany"}))
+
+    with pytest.raises(FixtureGuardError, match="new_world#albany"):
+        h.refresh("new_world", table_name="grocery-products-dev")
+
+
+def test_the_refusal_applies_to_a_dry_run_too(monkeypatch):
+    """
+    The part that looks wrong until you say it out loud.
+
+    A dry run reports what a real run WOULD do. The real run refuses, so a dry
+    run that answered with a cheerful diff would be describing a table state
+    that will never exist -- the same reason `reject_implausible` runs before
+    the diff rather than after it.
+    """
+    from ingestion import handler as h
+    from ingestion.guard import FixtureGuardError
+
+    table = _FakeTable(real_only={"paknsave#albany"})
+    _patch_resource(monkeypatch, table)
+
+    with pytest.raises(FixtureGuardError, match="refusing to refresh"):
+        h.refresh("paknsave", table_name="grocery-products-dev", dry_run=True)
+
+
+def test_a_first_load_into_a_table_with_no_real_catalogue_still_works(monkeypatch):
+    """
+    The guard fires on the real catalogue being PRESENT, not on the fixtures
+    being selected. An empty table has nothing to shadow, so seeding one is
+    unaffected -- which is what makes it safe to have no `force` here at all.
+    """
+    from ingestion import handler as h
+
+    table = _FakeTable()
+    _patch_resource(monkeypatch, table)
+
+    result = h.refresh("new_world", table_name="grocery-products-dev")
+
+    assert result["written"] == result["fetched"] > 0
+
+
+def test_a_real_source_is_not_refused_by_the_fixture_guard(monkeypatch):
+    """
+    The guard keys on the SOURCE, not on the table having rows.
+
+    Refusing to write to a table that holds the real catalogue would refuse the
+    nightly refresh -- the job whose entire purpose is to write to that table.
+    What is refused is the fixture catalogue reaching it.
+    """
+    from ingestion import handler as h
+
+    class _CollectedSource:
+        retailer = "paknsave"
+
+        def fetch(self):
+            return [_offer(product_key="standard-milk-2l", store_location="Albany")]
+
+    monkeypatch.setattr(h, "resolve_source", lambda retailer: _CollectedSource())
+    table = _FakeTable(real_only={"paknsave#albany"})
+    _patch_resource(monkeypatch, table)
+
+    result = h.refresh("paknsave", table_name="grocery-products-dev")
+
+    assert result["written"] == 1
+    assert table.written, "a refresh from the collected catalogue was blocked"
+
+
+def test_a_failed_refresh_writes_the_line_the_alarm_reads(monkeypatch, capsys):
+    """
+    A thrown branch is invisible to every alarm unless the Lambda says so first.
+
+    `config/ingestion-state-machine.json` catches `States.ALL` INSIDE the item
+    processor and routes it to a Pass state, so one retailer throwing leaves the
+    other two intact and the EXECUTION SUCCEEDS. That is the right state machine
+    -- and it means `AWS/States ExecutionsFailed` reports nothing for the very
+    failure it reads as covering. This line is the only place the fact survives.
+    """
+    from ingestion import handler as h
+    from ingestion.guard import FixtureGuardError
+
+    _patch_resource(monkeypatch, _FakeTable(real_only={"paknsave#albany"}))
+
+    with pytest.raises(FixtureGuardError):
+        h.lambda_handler({"retailer": "paknsave"})
+
+    records = [
+        json.loads(line)
+        for line in capsys.readouterr().out.splitlines()
+        if line.strip().startswith("{")
+    ]
+    failures = [r for r in records if r.get("message") == h.REFRESH_FAILED_LOG_MESSAGE]
+
+    assert failures, f"no {h.REFRESH_FAILED_LOG_MESSAGE} line; lines seen: {records}"
+    assert failures[0]["retailer"] == "paknsave"
+    # The error class and message are what make the alarm actionable: they are
+    # the difference between "ingestion is broken" and "the fixture guard fired".
+    assert failures[0]["error"] == "FixtureGuardError"
+    assert "refusing to refresh" in failures[0]["detail"]
+
+
+def test_the_failure_line_covers_a_bad_event_too(capsys):
+    """
+    Not only the guard. An unknown retailer is a state-machine definition bug,
+    and the Catch hides it exactly as thoroughly.
+    """
+    from ingestion import handler as h
+
+    with pytest.raises(ValueError, match="retailer must be one of"):
+        h.lambda_handler({"retailer": "countdown"})
+
+    records = [
+        json.loads(line)
+        for line in capsys.readouterr().out.splitlines()
+        if line.strip().startswith("{")
+    ]
+    failures = [r for r in records if r.get("message") == h.REFRESH_FAILED_LOG_MESSAGE]
+
+    assert failures, f"no {h.REFRESH_FAILED_LOG_MESSAGE} line; lines seen: {records}"
+    assert failures[0]["error"] == "ValueError"
+    assert failures[0]["retailer"] == "countdown"
+
+
+def test_a_successful_refresh_writes_no_failure_line(monkeypatch, capsys):
+    """
+    The other half of an alarm that means something: it must be quiet when
+    nothing is wrong. A metric filter that also matched a healthy run would page
+    somebody every night.
+    """
+    from ingestion import handler as h
+
+    _patch_resource(monkeypatch, _FakeTable())
+
+    h.lambda_handler({"retailer": "new_world"})
+
+    assert h.REFRESH_FAILED_LOG_MESSAGE not in capsys.readouterr().out
 
 
 # --------------------------------------------------------- price history
