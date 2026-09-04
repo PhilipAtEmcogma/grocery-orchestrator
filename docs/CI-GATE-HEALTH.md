@@ -53,7 +53,15 @@ be a number chosen to fit an answer, which is the thing this file exists to
 catch. Raise the floors from a re-measurement taken *after* the suite settles,
 or not at all.
 
-**One consequence to carry into Task 16.** The live intent scorecards in
+**One consequence to carry into Task 16. — CARRIED AND CLOSED 2026-09-04.**
+All three were re-measured live against the 47-case suite as gate G5 and written
+back into `config/models.json`: **Nova Pro 97.8%, Claude Haiku 4.5 97.8%, Nova
+Lite 95.6%** (45 scored, 2 guardrail-excluded). Nova Pro's 100% did not survive
+the larger suite, which is the outcome this section predicted; Nova Lite, the
+active route, improved. The reasoning below is kept because it is why the
+re-measurement was demanded rather than the old figures cited.
+
+The live intent scorecards in
 `config/models.json` — Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%
 — were measured on 2026-08-29 against the **30-case** suite, which their
 `_source` field says plainly. They are honest about their own provenance and

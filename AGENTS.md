@@ -549,7 +549,7 @@ measurement here, make the instrument name its inputs.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 931 passed, 31 skipped, no AWS
+python -m pytest -q                              # 945 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -558,7 +558,7 @@ python evals/run_intent.py                       # 85.1% scripted baseline (40/4
 python evals/run_recipe_select.py                 # 100% scripted; select_recipes (15c)
 python evals/run_review.py                        # data-quality reviewer, 25 cases (experiment, ADR 0002 WS2)
 python evals/run_review.py --model nova-lite --reps 3   # banded live qualification (flagged vs strict recall)
-python evals/run_intent.py --model nova-lite     # 92.9% live, guardrail v2
+python evals/run_intent.py --model nova-lite     # 95.6% live, guardrail v2, 47 cases
 python evals/run_intent.py --model nova-pro      # 100% live (Nova Pro)
 python evals/run_meal_plan.py                    # 100% invariants baseline
 python evals/run_guardrail.py                    # must_allow structural (scripted)
@@ -982,6 +982,12 @@ genuinely improves" is the rule, and this baseline did not improve; a floor
 raised on a suite change would be a number picked to fit the answer.
 `docs/CI-GATE-HEALTH.md` §1 carries the headroom re-measurement.
 
+**RESOLVED 2026-09-04: the live scorecards were re-measured** on the 47-case
+suite as Task 16 gate G5 — Nova Pro 97.8%, Claude Haiku 4.5 97.8%, Nova Lite 95.6% (45 scored, 2 guardrail-excluded) — and written back to `config/models.json`
+with a `_source` naming the new count. The paragraph below is kept because it is
+why the re-measurement was required, and it re-arms the next time the suite
+grows.
+
 **The LIVE intent scorecards in `config/models.json` predate the growth** —
 Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%, measured 2026-08-29
 against guardrail v2 with GuardrailBlocked excluded, on the 30-case suite the
@@ -1005,10 +1011,13 @@ detail in `docs/LIVE-EVAL-RUNBOOK.md` §8.
 * **Guardrail: 13/13 must-block, 9/9 must-allow, exit 0** against
   `b1xezpqe04kx` **version 2**, Nova Lite, paced 9/min. The qualifying live
   policy evidence Req 5.5 needed.
-* **Intent scorecards, guardrail v2:** Nova Pro 100.0% (28/28), Claude Haiku
-  4.5 96.4% (27/28), Nova Lite 92.9% (26/28). All clear the 90% floor. These
-  supersede the older 83.3%/100% figures, which counted Guardrail refusals as
-  wrong answers.
+* **Intent scorecards, guardrail v2 — RE-MEASURED 2026-09-04 on the 47-case
+  suite:** Nova Pro 97.8%, Claude Haiku 4.5 97.8%, Nova Lite 95.6% (45 scored, 2 guardrail-excluded). All clear the 90% floor. Nova Pro's earlier 100% did not
+  survive the larger suite, which is why Task 16 gate G5 re-ran all three rather
+  than citing them. The 2026-08-29 figures (Nova Pro 100.0% 28/28, Claude Haiku
+  4.5 96.4% 27/28, Nova Lite 92.9% 26/28) measured a 30-case suite that no
+  longer exists; they in turn superseded older 83.3%/100% figures that had
+  counted Guardrail refusals as wrong answers.
 * **Prompt cache: zero on every path, and that is correct.** `cachePoint`
   attaches to the ~500-token system prompt against Claude's 4096 minimum; the
   large repeated content is in the user prompt. Implemented, honestly gated,
