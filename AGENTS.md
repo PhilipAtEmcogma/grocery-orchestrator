@@ -395,8 +395,9 @@ rule about publishing a price without its capture date, wearing a different hat.
 **`config/` ships inside the Lambda archive**, so retuning a threshold is a
 deploy. That is the argument for Task 7b's SSM work.
 
-Blockers are now **Tasks 13, 15c and 16**, plus Task 14's Runtime behind ADR
-0002. Closed 2026-08-30: Task 8 (local MCP, `src/mcp/`), Task 12 substantially
+Blockers are now **Tasks 13 and 16**, plus Task 14's Runtime behind ADR
+0002. (15c cleared 2026-09-04 when the orchestrator was finally deployed —
+ARCHITECTURE.md §3v.) Closed 2026-08-30: Task 8 (local MCP, `src/mcp/`), Task 12 substantially
 (8 alarms, dashboard, Budget, first deployed latency and cost baselines), Task
 13's first half (the real 2,759-row catalogue is loaded), and deferral 6b
 (GSI2). Closed 2026-08-30/31: **Tasks 9–11** (two CDK stacks deployed, tables
@@ -467,8 +468,16 @@ wired into ingestion and run over the real catalogue it rejects 0 rows clean and
 incident is usually quoted as, because six was the size of the *fixture* set.
 Details in `docs/ARCHITECTURE.md` §3o–§3p.
 
-**15c is still the differentiating capability and is still not on the shopper
-path.** That is the remaining half of what the second audit asked for.
+**15c reached the shopper path on 2026-09-04** (ARCHITECTURE.md §3v). It had
+been done in code since 2026-08-31 and absent from the account for five days,
+because the orchestrator alias was still serving a 2026-08-30 build. Measured
+through the live endpoint on the same turn before and after: `0 of 3` meals
+matched a curated recipe name, then `3 of 3`. The price path was byte-identical
+across the deploy.
+
+The general lesson is the one this file keeps repeating: **"done" in the
+repository and "running" in the account are different claims**, and only the
+second one reaches a shopper. `CodeSha256` on both functions is the cheap check.
 
 ---
 

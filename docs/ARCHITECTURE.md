@@ -100,7 +100,7 @@ All of it exists.
 | Resource | Identifier | Notes |
 |---|---|---|
 | Orchestrator Lambda | `grocery-orchestrator-dev` | python3.13, x86_64, 1024 MB, 30 s, X-Ray Active |
-| Published version / alias | `8` / `:live` | SnapStart `OptimizationStatus: On`; v6 (current code), v7 (freshness 45), v8 (GSI2 candidates) all 2026-08-30 |
+| Published version / alias | **`12`** / `:live` | SnapStart `OptimizationStatus: On`. v6–v11 were all 2026-08-30; **v12 published 2026-09-04** from `6270c0a` and is the first orchestrator deploy since — it carries Task 15c, `src/history/` and the reviewer modules (§3v). Rollback: point the alias back to `11` |
 | Orchestrator role | `grocery-orchestrator-dev-role` | `config/iam-orchestrator-role.json` |
 | REST API | `grocery-orchestrator-api-dev` (`woqmel35lk`) | regional, stage `dev`, throttle 5 rps / burst 10, X-Ray tracing ON (enabled 2026-08-30) |
 | Endpoint | `POST /dev/chat` | unauthenticated; see §7 |
@@ -118,11 +118,20 @@ All of it exists.
 | Budget | `grocery-orchestrator-monthly-dev` | $25/month, alerts at 50/80/100% actual + 100% forecast |
 | Usage plan | `grocery-orchestrator-dev-plan` (`v4yd7d`) | 5 rps / burst 10 on stage `dev`; created 2026-08-30 |
 
-**One artefact, two functions.** `scripts/build_lambda.py` now includes
-`ingestion` in `INCLUDE_DIRS` — and, since 2026-09-04,
-`datasets/data/dynamodb_products`, because the deployed refresh runs
-`PRICE_SOURCE=lineage_b` and has to have something to read. The same
-`build/lambda.zip` is deployed to both functions with different handlers. Two zips would mean two builds to keep
+**One artefact, two functions — a property of the BUILD, and checkable in the
+account.** `scripts/build_lambda.py` includes `ingestion` in `INCLUDE_DIRS` —
+and, since 2026-09-04, `datasets/data/dynamodb_products`, because the deployed
+refresh runs `PRICE_SOURCE=lineage_b` and has to have something to read. The same
+`build/lambda.zip` is deployed to both functions with different handlers.
+
+That it is *deployed* to both is not something the build can guarantee, and it
+was FALSE in the account from 2026-08-30 to 2026-09-04 (§3v). Verify it, do not
+assume it — the two functions' `CodeSha256` must be equal:
+
+```bash
+aws lambda get-function-configuration --function-name grocery-orchestrator-dev   --query CodeSha256 --output text
+aws lambda get-function-configuration --function-name grocery-ingestion-dev   --query CodeSha256 --output text
+``` Two zips would mean two builds to keep
 in step and two artefacts for the CI `package` job to verify, for about 10 KB
 of Python. The functions stay separate — separate roles, separate invocation
 paths — and only the artefact is shared.
@@ -1986,3 +1995,91 @@ Still open, and named rather than quietly carried:
 - **The freshness cliff is 2026-10-12** at `max_price_age_days: 45`. No source
   available to this project can move it; see `config/freshness.json`
   `_revert_condition_re_read_2026_09_04`.
+
+## 3v. The orchestrator was five days stale, and Task 15c had never run — 2026-09-04
+
+§3u deployed the ingestion plane and, in doing so, made the same question
+askable of the function that actually serves shoppers. Nobody had asked it. The
+answer, taken from the bytes of what alias `live` was serving rather than from a
+timestamp:
+
+| | Serving artefact (v11) | `main` (`6270c0a`) |
+|---|---|---|
+| `src/*.py` files | 37 | 57 |
+| identical to `main` | 34 of 49 shipped | — |
+| different | **15**, incl. `handler.py`, `graph/build.py`, `graph/state.py` | — |
+| absent entirely | **20**, incl. `graph/recipe_plan.py`, `history/`, `prompts/recipe_select.py` | — |
+
+Everything merged between 2026-08-31 and 2026-09-04 was in the repository and
+not in production. The alias had been on a 2026-08-30 build for five days while
+four pull requests merged past it.
+
+**Task 15c was the expensive part of that.** `README.md` recorded it as done on
+2026-08-31 — "a meal-plan turn is built from named recipes, with the model
+choosing ids from a shortlist retrieval has already proven costable" — and
+`AGENTS.md` was the only document that had it right: *"15c is still the
+differentiating capability and is still not on the shopper path."* It was true
+in the code and absent from the account, which is the same shape as the
+guardrail-version drift (§3f), the demo-mode gap (§3g) and the anomaly rule that
+was wired and never deployed (§3u).
+
+### Measured on the live endpoint, before and after
+
+The same two turns, through API Gateway, against the alias:
+
+```
+PRICE CHECK   before  paknsave Albany $4.79 · new_world Albany $4.82
+              after   paknsave Albany $4.79 · new_world Albany $4.82   (identical)
+
+MEAL PLAN     before  3 meals, 0 of 3 curated   total $20.94  payable $24.00
+                      Spinach and Prawn Stir-fry / Salmon and Vegetable Salad /
+                      Beef and Mushroom Soup            <- free composition
+              after   3 meals, 3 of 3 curated   total $8.26   payable $32.72
+                      Banana and Oat Porridge (dairy-free) /
+                      Rice, Broccoli and Carrot Bowl / Chicken and Rice Bake
+```
+
+The price path is unchanged, which is what a deploy of this size should look
+like on a path it did not touch. The meal-plan path changed completely, and the
+membership test is the evidence: the "before" names appear nowhere in
+`config/recipes.json`, and all three "after" names do.
+
+`payable_total_nzd` rose from $24.00 to $32.72 while `total_nzd` fell from
+$20.94 to $8.26. Both plans are inside the $80 budget and neither number is
+wrong: consumption falls because named recipes portion deliberately, and payable
+rises because three recipes draw on more distinct products and every pack is
+bought whole. Payable is the number the shopper spends, and it is the one the
+budget is enforced against.
+
+### How it was deployed, and how it rolls back
+
+Code to `$LATEST`, publish version 12, wait for SnapStart to report
+`OptimizationStatus: On`, **test version 12 by direct qualified invoke**, and
+only then move the alias. Testing before exposing is the whole point of having
+an alias: the meal-plan turn that proved 15c ran against `:12` while `:live`
+still pointed at 11.
+
+Rollback is `update-alias` back to version 11 — instant, and it needs no build.
+That is a materially better position than §3u's, where reverting the ingestion
+function would have meant rebuilding from an earlier commit.
+
+### "One artefact, two functions" was false in the account for five days
+
+The claim in §2 is a property of the BUILD: `build_lambda.py` produces one
+archive and both functions run it. It says nothing about what is deployed, and
+between 2026-08-30 and 2026-09-04 the two functions ran different builds —
+ingestion got the current archive at §3u, the orchestrator was still on
+2026-08-30. A property asserted about a build and read as a fact about an
+account is exactly the class of claim this document keeps having to correct.
+
+It is now checkable rather than intended, and `CodeSha256` is the check:
+
+```
+orchestrator $LATEST   Nr7qEdE9rVDNlmXYqmZyEaK1
+orchestrator :12       Nr7qEdE9rVDNlmXYqmZyEaK1
+ingestion    $LATEST   Nr7qEdE9rVDNlmXYqmZyEaK1
+```
+
+Three values, one hash. Anyone can run that comparison in one call, and it is
+the honest form of the claim: not "we build one artefact" but "these two
+functions are running the same bytes, today".

@@ -93,7 +93,7 @@ operational evidence** — not first deployment.
 | 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done**. ObservabilityStack written 2026-08-31 and **NOT DEPLOYED** — it alarms both planes when it is, and the account has never seen it — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms then, **12 since 2026-09-04**; dashboard, Budget, first deployed latency + cost baselines). The ingestion plane was deployed 2026-09-04 — price-history table, its IAM grant and four ingestion alarms, with the fixture-default refusal watched to fire in the account (§3u). Cutover deferred by decision, not pending |
 | 13 · Controlled ingestion | 🟡 **anomaly rejection wired 2026-08-31** — `implausible_unit_price` refuses a row before it is written, with a metric and an alarm. Measured over the real catalogue: 0 rejections clean, **522 of 2,759** with the historical defect reintroduced (§3p). One catalogue since 2026-09-01, and the loader is guarded against re-shadowing it (§3t). Remaining: the decoupled review trigger (Streams -> SQS/DLQ). **And the served data covers two chains, not three** — no Woolworths rows exist |
 | 14 · AgentCore reviewer | 🟡 **14a and 14b done** — the sanitised snapshot boundary and finding validation (needed whoever reviews), and ADR 0002 answered 2026-09-02 under autonomous delegation: reviewer Runtime only. **Prototyped live and torn down** — 60% reviewer-only recall, 0 false positives, and one fabricated quote caught by the caller-side validator, which is the trust boundary working. CDK stack written; it cannot deploy until `AWS::BedrockAgentCore::Runtime` reaches Sydney. **Retention is a separate, open decision** |
-| 15 · Recipe catalogue | ✅ **done 2026-08-31** — 29 curated recipes, and **15c wired**: a meal-plan turn is built from named recipes, with the model choosing ids from a shortlist retrieval has already proven costable, dietary-viable and affordable as a set. Falls back to free composition with a notice when nothing fits. The imported 175 stay unusable: 0/175 against *both* catalogues |
+| 15 · Recipe catalogue | ✅ **done 2026-08-31, live 2026-09-04** — 29 curated recipes, and **15c wired and now on the shopper path** (it sat undeployed for five days; §3v): a meal-plan turn is built from named recipes, with the model choosing ids from a shortlist retrieval has already proven costable, dietary-viable and affordable as a set. Falls back to free composition with a notice when nothing fits. The imported 175 stay unusable: 0/175 against *both* catalogues |
 | 16 · Release gates | ⬜ not started |
 
 **Two deliberate deferrals remain** (6b closed 2026-08-30), each with the
@@ -128,6 +128,15 @@ executed in production for the first time here. The fixture-default refusal was
 watched to fire in the account and reach its alarm, and the weekly refresh
 schedule remains DISABLED by decision — the catalogue is a fixed 2026-08-28
 snapshot and cannot be made fresher. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3u.
+
+**Orchestrator deployed** (2026-09-04): alias `live` moved from version 11 to
+**12**, the first orchestrator deploy since 2026-08-30. The serving artefact had
+been missing 20 of 57 `src/*.py` files, so **Task 15c had never run in
+production** despite being recorded as done on 2026-08-31. Measured on the same
+live turn before and after: `0 of 3` meals matched a curated recipe name, then
+`3 of 3`; the price path was byte-identical. Version 12 was tested by qualified
+invoke *before* the alias moved, and rollback is one `update-alias` call.
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3v.
 
 **Verified live in `ap-southeast-2`** (account `097087133897`, 2026-08-29):
 Guardrail `b1xezpqe04kx` **version 2** at 13/13 must-block and 9/9 must-allow;
