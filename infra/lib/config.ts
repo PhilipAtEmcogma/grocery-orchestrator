@@ -53,6 +53,13 @@ export interface GroceryConfig {
     readonly productsTable: string;
     readonly idempotencyTable: string;
     readonly mealsTable: string; // planned (Pilot Task 15)
+    // CREATED by this app, but named from `dataSuffix` rather than the stage.
+    // It is the one table that is both, and the reason is that `src/history`
+    // hardcodes `grocery-price-history-dev` and the ingestion Lambda defaults
+    // `PRICE_HISTORY_TABLE` to it. A `-cdk`-suffixed table would be a table the
+    // running code cannot find, which is worse than no table: the write would
+    // still fail and the name would suggest it should not.
+    readonly priceHistoryTable: string;
     readonly orchestratorFn: string;
     readonly ingestionFn: string;
     readonly orchestratorRole: string;
@@ -138,6 +145,10 @@ export function loadConfig(stage: string): GroceryConfig {
       productsTable: `grocery-products-${dataSuffix}`,
       idempotencyTable: `grocery-idempotency-${dataSuffix}`,
       mealsTable: `grocery-meals-${dataSuffix}`,
+      // dataSuffix, NOT suffix -- see the interface. Created here, but it is a
+      // DATA table shared by both service planes, exactly as products and
+      // idempotency are, so it must carry the data name.
+      priceHistoryTable: `grocery-price-history-${dataSuffix}`,
       // ---- CREATED (stage) ----
       orchestratorFn: `grocery-orchestrator-${suffix}`,
       ingestionFn: `grocery-ingestion-${suffix}`,

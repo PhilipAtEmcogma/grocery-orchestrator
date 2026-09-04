@@ -1,14 +1,20 @@
 # Resolved — fixture rows were shadowing the real catalogue; removed and guarded
 
-**Status: RESOLVED 2026-09-01.** All four parts are done: the fixture rows were
-removed from the live table (152 deleted, verified against the account and via
-the endpoint), and the loader is guarded so it cannot recur. It was not a
+**Status: RESOLVED 2026-09-03, having been closed once too early.** It was not a
 near-filter bug and not a stale record — it was fixture data present in the live
 serving table, hiding the real Lineage B prices for head-term queries. Kept as a
 record rather than deleted, because the reintroduce/remove cycle and the reason
-it went unnoticed are the useful part. See "Status of the fix".
+it went unnoticed are the useful part.
 **Raised:** 2026-09-01, by the parity re-run (`docs/ARCHITECTURE.md` §3s).
-**Closed:** 2026-09-01, same day.
+**Closed:** 2026-09-01 — **and reopened by the account on 2026-09-03**, which
+found the rows back in the table and the actual vector untouched. See
+"What closing this too early cost" and "Status of the fix".
+
+> **The 2026-09-01 close was wrong, and this is the interesting part.** It said
+> "the loader is guarded so it cannot recur" — one vector, guarded, described as
+> the vector. The thing re-adding the rows was the **scheduled ingestion
+> Lambda**, running nightly, which no guard on a hand-run script could reach. The
+> record read as resolved for two days while the defect recurred every night.
 
 ---
 
@@ -176,9 +182,68 @@ the live table are done, and are in the same change as this note.
   are true again and were re-verified live. §3j records the reintroduce/remove
   cycle and that the guard now prevents a recurrence.
 
-**All four parts are done.** The fixtures are out of the live table, the endpoint
-serves the real prices, and the loader guard means a stray `load_seed_data.py`
-run cannot quietly undo it again.
+**All four parts were done, and it recurred anyway.** See below.
+
+## What closing this too early cost — 2026-09-03
+
+An account check on 2026-09-03, two days after this was marked resolved, found
+the 152 fixture rows **back in `grocery-products-dev`** and `cheapest milk near
+Albany` answering with the Devonport fixture price again.
+
+**The vector was the scheduled ingestion Lambda, not the loader.** Every night at
+03:18 the price-refresh state machine invoked `ingestion.handler.refresh` with no
+`PRICE_SOURCE` set; `resolve_source` read `default_source: fixtures` from
+`config/data-sources.json` — the correct default for a laptop — and wrote the
+fixture catalogue over the real one. Option B above guarded the path a human
+takes. This one was taken by a schedule.
+
+**It was silent because it had reached steady state.** The execution output read
+`fetched 51, written 51, added 0, changed 0, unchanged 51` for each retailer —
+which is exactly what the diff *should* say when yesterday's re-injection is
+still sitting in the table. The one control that could have seen this correctly
+reported nothing to see. The freshness stopgap hid the other half: at
+`max_price_age_days: 45` the 2026-07-31 fixture rows stay "fresh" until
+2026-09-14, where the original 14 would have turned every fixture answer into
+`STALE_DATA` on 2026-08-14 and made the shadowing loud.
+
+**Remediated live, in this order:**
+
+```bash
+aws scheduler update-schedule --name grocery-price-refresh-dev --state DISABLED
+python scripts/load_seed_data.py --remove       # 152 of 152 present, 152 deleted
+```
+
+Verified after: GSI1 `milk-2l` and `butter-500g` (fixture keys) at **0** each,
+`standard-milk-2l` (real) at 10, `cheapest milk near Albany` → Pak'nSAVE Albany
+**$4.79** and `cheapest butter` → Pak'nSAVE Albany **$9.49**. The schedule is
+byte-identical to what was live apart from `State: DISABLED`.
+
+**Then guarded properly, in code, at two layers** (`ingestion/guard.py`):
+
+- **A deployment may not DEFAULT to the fixtures.** `resolve_source` refuses when
+  it detects a deployment (`AWS_LAMBDA_FUNCTION_NAME`, or `APP_STAGE` once the
+  cutover sets it) and nothing selected a source. `PRICE_SOURCE=fixtures` is
+  explicit and still allowed. This is the layer that stops the nightly re-injection.
+- **Nothing WRITES the fixtures over a table that holds the real catalogue.**
+  `refresh()` runs the same `real_catalogue_present` probe the loader uses — one
+  shared definition, not two — and refuses, dry run included. This layer does not
+  care how the fixtures were selected.
+
+**And the refusal is visible.** A thrown branch does not fail the Step Functions
+execution: `config/ingestion-state-machine.json` catches `States.ALL` inside the
+item processor so one broken retailer does not discard the other two, which means
+`ExecutionsFailed` reports nothing for a branch that died. The Lambda now prints
+`ingestion_refresh_failed` before re-raising, and `grocery-ingestion-refresh-failed-dev`
+alarms on it — otherwise this fix would have replaced a silent wrong write with a
+silent failed write.
+
+**Still open, and deliberately not fixed here:** the schedule is DISABLED, so
+nothing refreshes prices at all. Re-enabling it needs a source decision first —
+either `PRICE_SOURCE=lineage_b` on the deployed function, or promoting
+`default_source` to `lineage_b` in `config/data-sources.json` (which needs the
+`datasets/` directory in the Lambda archive; `scripts/build_lambda.py` does not
+ship it today). Until then the guards make the wrong answer loud rather than
+choosing the right one on the project's behalf.
 
 ## How it relates to the plane/data-source work
 
@@ -187,5 +252,6 @@ re-run) did not cause this; the parity run *surfaced* it. And the new
 `config/data-sources.json` states the posture that keeps it from returning: the
 serving table is refreshed from Lineage B (the primary input), and the fixtures
 are a fallback for offline use, not something that belongs in the deployed table
-alongside real data. The loader guard enforces that boundary at the one place
-the fixtures could get back in.
+alongside real data. The two guards in `ingestion/guard.py` enforce that
+boundary at both places the fixtures could get back in — and the count is two
+because the first attempt assumed it was one.

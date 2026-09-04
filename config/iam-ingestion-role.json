@@ -43,6 +43,17 @@
         "Resource": "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/grocery-products-dev"
       },
       {
+        "_comment": "Append-only price history (src/history). WRITE ONLY, and the omission of Query is the point: ingestion appends a row per accepted product per capture date and never reads history back. The reader is ops and the data-quality reviewer, off the shopper path, under a different identity. No Delete and no UpdateItem either -- a history row is immutable by definition, so a role that could rewrite one could rewrite the baseline a deviation is measured against.",
+        "_why_this_was_missing": "src/history and the history write in ingestion/handler.py merged on 2026-09-02 (acc53fb) with neither this statement nor the table. The write is unconditional and runs AFTER the products write on an ENABLED daily schedule, so a scheduled refresh writes products and then fails on AccessDenied -- with no alarm, because the only ingestion alarm counts REJECTED ROWS and a branch that throws emits no datapoint. tests/test_ingestion.py fakes boto3.resource and routes by table name, so it proves the code writes history and structurally cannot see that the grant is absent. Same blind spot as docs/ARCHITECTURE.md 3f and 3g.",
+        "Sid": "DynamoAppendPriceHistory",
+        "Effect": "Allow",
+        "Action": [
+          "dynamodb:PutItem",
+          "dynamodb:BatchWriteItem"
+        ],
+        "Resource": "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/grocery-price-history-dev"
+      },
+      {
         "_comment": "Powertools Tracer. X-Ray segment writes are not resource-scopable -- the API takes no resource -- so * is the only expressible form.",
         "Sid": "XRayTracing",
         "Effect": "Allow",

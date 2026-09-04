@@ -32,6 +32,30 @@
       "namespace": "GroceryOrchestrator",
       "metric_value": "1",
       "default_value": 0
+    },
+    {
+      "name": "grocery-ingestion-history-write-failed-dev",
+      "log_group": "/aws/lambda/grocery-ingestion-dev",
+      "_why": "The price-history append failed while the products write succeeded. ingestion/handler.py::_append_history DEGRADES rather than failing the refresh -- history is ops/reviewer bookkeeping, never on the shopper path, and failing a branch whose actual job was done would report a working refresh as a broken one. A degradation nobody can see is the failure this repository keeps finding, so the degradation is metered here.",
+      "_not_the_same_as_the_execution_alarm": "grocery-ingestion-refresh-failed-dev catches a refresh that THREW. This one catches a refresh that SUCCEEDED with its history missing. Two different facts, two alarms.",
+      "_pattern_note": "A JSON selector on the structured field _append_history writes, for the same reason the rejection and handler-escaped filters use one: a substring pattern would also match this text quoted in an exception or a future log line about the alarm itself.",
+      "pattern": "{ $.message = \"ingestion_history_write_failed\" }",
+      "metric_name": "IngestionHistoryWriteFailed",
+      "namespace": "GroceryOrchestrator",
+      "metric_value": "1",
+      "default_value": 0
+    },
+    {
+      "name": "grocery-ingestion-refresh-failed-dev",
+      "log_group": "/aws/lambda/grocery-ingestion-dev",
+      "_why": "One retailer's refresh threw. Products may not have been written at all, so this is the ingestion failure with a shopper-visible consequence: prices for that chain age one more day toward STALE_DATA with nothing saying why. The line names the exception class and its first 300 characters, so the common causes -- AccessDenied on a table or a grant that was never applied, a source that refused, the fixture guard refusing to shadow the real catalogue -- are distinguishable without opening an execution.",
+      "_why_the_state_machine_alarm_cannot_see_this": "grocery-ingestion-failed-dev watches AWS/States ExecutionsFailed, and a thrown branch does not fail the execution. config/ingestion-state-machine.json catches States.ALL INSIDE the item processor and routes it to a Pass state, precisely so a broken Pak'nSave does not discard a good New World refresh -- so the execution SUCCEEDS with one branch marked failed, and the state-machine failure metric correctly reports nothing. That is the right state machine and the wrong place to watch from. A per-branch failure exists as an observable fact only in the Lambda's own log, which is where this filter reads it.",
+      "_pattern_note": "A JSON selector on the structured field ingestion/handler.py::_log_refresh_failure writes, for the same reason every other filter here uses one: a substring pattern would also match this text quoted in an exception or a future log line about the alarm itself.",
+      "pattern": "{ $.message = \"ingestion_refresh_failed\" }",
+      "metric_name": "IngestionRefreshFailed",
+      "namespace": "GroceryOrchestrator",
+      "metric_value": "1",
+      "default_value": 0
     }
   ],
   "alarms": [
@@ -168,6 +192,27 @@
       "treat_missing_data": "notBreaching"
     },
     {
+      "name": "grocery-ingestion-failed-dev",
+      "description": "THE NIGHTLY REFRESH FAILED AS A WHOLE. The Step Functions execution metric, not one we publish, so it fires even when the failure is upstream of our code, before our logging runs, or IS our logging -- the same reasoning as the API 5xx alarm. What reaches it is a failure of the EXECUTION: a malformed input (no $.retailers), a state-machine definition bug, a Map that could not run, a Catch that could not apply. Check the execution history: aws stepfunctions list-executions --status-filter FAILED.",
+      "_what_it_does_not_cover_and_why": "A single retailer's branch throwing does NOT fail the execution, so it does not reach this alarm. config/ingestion-state-machine.json catches States.ALL inside the item processor and routes it to a Pass state -- deliberately, so one broken retailer does not discard the two that succeeded -- and the execution then reports SUCCEEDED with that branch marked failed. This was recorded wrongly when the alarm was added on 2026-09-03: it was described as catching 'a refresh that THREW', which is the one thing the Catch guarantees it cannot see. grocery-ingestion-refresh-failed-dev covers the branch case, from the Lambda's own log, because that is the only place a caught failure still exists.",
+      "_why_row_rejected_was_not_enough": "grocery-ingestion-row-rejected-dev counts REJECTED ROWS. A branch that THROWS never reaches the rejection counter, so it emits no datapoint at all -- and treat_missing_data notBreaching correctly reads no datapoints as healthy. An alarm on the work product cannot see the work not happening. That gap made a real defect silent: on 2026-09-02 the price-history write shipped without its table or its IAM grant (acc53fb), so a scheduled refresh would write products and then fail on AccessDenied, every night, visible only to somebody who opened the execution history. The alarm that actually closes that gap is grocery-ingestion-refresh-failed-dev, not this one.",
+      "namespace": "AWS/States",
+      "metric_name": "ExecutionsFailed",
+      "_dimensions_note": "StateMachineArn must match the deployed state machine exactly. Placeholders are resolved from STS at apply time like every other ARN here; a dimension that matches nothing yields a metric with no datapoints, which looks identical to a healthy service.",
+      "dimensions": {
+        "StateMachineArn": "arn:aws:states:${AWS_REGION}:${AWS_ACCOUNT_ID}:stateMachine:grocery-ingestion-dev"
+      },
+      "statistic": "Sum",
+      "_period_note": "An hour, matching the row-rejected alarm and for the same reason: the refresh is a DAILY schedule, so a five-minute window is mostly empty by construction and the signal would depend on which window the run landed in.",
+      "period": 3600,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "_threshold_note": "One. There is no volume at which a failed daily refresh is normal.",
+      "threshold": 1,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching"
+    },
+    {
       "name": "grocery-ingestion-row-rejected-dev",
       "description": "Ingestion refused at least one row as implausible. NOT an outage: the row was dropped, the previous good row survives and will age into STALE_DATA, and the shopper sees an honest gap rather than a wrong price. It means the normaliser, the source data, or a pack size changed -- run `python scripts/check_ingestion_anomalies.py` and read the rejected sample in the Step Functions execution.",
       "_threshold_note": "One row, not a percentage. The original defect hit six rows out of 2,759 (0.2%), so any percentage gate loose enough to tolerate a real special would have slept straight through it. Verified 2026-08-31 by reintroducing the defect: 522 of 2,759 rows would have been refused against the REAL catalogue, because 19% of it is sold-each. The six was an artefact of the seeded fixture set, not the size of the class.",
@@ -179,6 +224,39 @@
       "period": 3600,
       "evaluation_periods": 1,
       "datapoints_to_alarm": 1,
+      "threshold": 1,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching"
+    },
+    {
+      "name": "grocery-ingestion-history-write-failed-dev",
+      "description": "The nightly refresh wrote prices but could not append price history. NOT an outage and not shopper-visible: the products table is current, and history is the data-quality reviewer's baseline (src/history). What it costs is a sample -- and a baseline with gaps answers 'this price doubled overnight' less well every time this fires. Check the table exists and the ingestion role still grants PutItem/BatchWriteItem on it; the log line names the error class.",
+      "namespace": "GroceryOrchestrator",
+      "metric_name": "IngestionHistoryWriteFailed",
+      "dimensions": {},
+      "statistic": "Sum",
+      "_period_note": "An hour, matching the other ingestion alarms: the refresh is daily.",
+      "period": 3600,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "_threshold_note": "One. The refresh runs once a day over three retailers, so a single failure is a third of a day's history missing, not noise.",
+      "threshold": 1,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching"
+    },
+    {
+      "name": "grocery-ingestion-refresh-failed-dev",
+      "description": "ONE RETAILER'S REFRESH THREW, and the execution reported success anyway. That is by design -- the Map catches per-branch failures so the retailers that worked are not discarded -- which is exactly why this alarm is needed: without it the failure exists only as a status field in an execution nobody reads on a good day. The prices for that chain were not refreshed. Read the log line: it names the exception class and the first 300 characters of the message.",
+      "_why_it_reads_the_log_and_not_the_state_machine": "AWS/States ExecutionsFailed cannot see a caught branch (grocery-ingestion-failed-dev says so at length). A Lambda that raises still writes this line first, so the fact survives the Catch that is about to hide it.",
+      "namespace": "GroceryOrchestrator",
+      "metric_name": "IngestionRefreshFailed",
+      "dimensions": {},
+      "statistic": "Sum",
+      "_period_note": "An hour, matching the other ingestion alarms: the refresh is daily, so a five-minute window is empty by construction.",
+      "period": 3600,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "_threshold_note": "One. Three retailers refresh once a day; one of them failing is a third of the catalogue not refreshed, and there is no volume at which that is routine.",
       "threshold": 1,
       "comparison_operator": "GreaterThanOrEqualToThreshold",
       "treat_missing_data": "notBreaching"

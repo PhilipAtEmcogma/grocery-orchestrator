@@ -43,8 +43,9 @@ from typing import Any
 import boto3
 from boto3.dynamodb.conditions import Key
 
+from ingestion.guard import FixtureGuardError, real_catalogue_present
 from ingestion.normalise import to_item
-from ingestion.sources import KNOWN_RETAILERS, resolve_source
+from ingestion.sources import KNOWN_RETAILERS, FixtureSource, resolve_source
 from src.history import to_history_item
 from src.review import implausible_unit_price_values
 
@@ -78,6 +79,20 @@ SAMPLE_LIMIT = 5
 #: "implausible_unit_price" anywhere in a log line would page somebody at 3am for
 #: an exception message that happened to quote it.
 REJECT_LOG_MESSAGE = "ingestion_row_rejected"
+
+#: The same mechanism for a failed price-history append. See `_append_history`.
+HISTORY_FAILED_LOG_MESSAGE = "ingestion_history_write_failed"
+
+#: The same mechanism for a refresh that THREW. See `lambda_handler`.
+#:
+#: THIS IS NOT REDUNDANT WITH THE ExecutionsFailed ALARM, because that alarm
+#: cannot see this. `config/ingestion-state-machine.json` catches `States.ALL`
+#: INSIDE the item processor and routes it to a Pass state, so one retailer
+#: throwing leaves the other two intact and the EXECUTION SUCCEEDS -- which is
+#: the right behaviour and the reason a state-machine-level failure metric
+#: reports nothing when a branch dies. A per-branch failure is a Lambda fact,
+#: so it is metered from the Lambda's own log.
+REFRESH_FAILED_LOG_MESSAGE = "ingestion_refresh_failed"
 
 
 def reject_implausible(items: list[dict]) -> tuple[list[dict], list[dict]]:
@@ -190,6 +205,72 @@ def diff_items(existing: dict[tuple[str, str], dict], items: list[dict]) -> dict
     }
 
 
+def _append_history(retailer: str, items: list[dict]) -> int:
+    """
+    Append one price-history row per accepted product. Returns rows written.
+
+    A HISTORY FAILURE MUST NOT FAIL THE REFRESH, AND THE ORDERING IS WHY.
+    The products write has already succeeded by the time this runs. An
+    exception here therefore fails a Step Functions branch whose actual job --
+    refreshing the prices a shopper reads -- was done, and reports a working
+    refresh as a broken one. That is the same trade `src/handler.py` makes for
+    the idempotency store: "an idempotency store failure must not fail the
+    turn... throwing away the response because the bookkeeping write failed
+    would turn a degraded cache into a failed request."
+
+    History is bookkeeping in exactly that sense. It is ops-and-reviewer data
+    (`src/history`), it is never read on the shopper path, it never becomes a
+    Citation, and every row in it is reproducible by re-running ingestion over
+    the same source. Losing a day of it costs the reviewer's baseline one
+    sample; failing the refresh costs every shopper a day of stale prices.
+
+    BUT IT IS NOT SWALLOWED. A degradation nobody can see is the failure this
+    repository keeps finding -- a rule with no caller, a skip with no
+    condition, an alarm on a metric nothing publishes. So the failure prints
+    the structured line `config/alarms.json` derives
+    `IngestionHistoryWriteFailed` from, and the returned `history_written` of 0
+    beside a non-zero `written` is visible in the execution history.
+
+    THIS GUARD IS NOT WHY THE 2026-09-02 DEFECT WAS SILENT, and it does not fix
+    it. The table and the IAM grant do (`infra/lib/stateful-stack.ts`,
+    `config/iam-ingestion-role.json`); the missing alarm is why nobody knew.
+    What this adds is that the NEXT history failure -- a throttle, a transient
+    error, a table someone renames -- degrades instead of failing a refresh
+    that worked.
+    """
+    try:
+        history_table = boto3.resource("dynamodb", region_name=REGION).Table(HISTORY_TABLE)  # type: ignore[union-attr]
+        with history_table.batch_writer() as batch:
+            for item in items:
+                batch.put_item(Item=to_history_item(item))
+        return len(items)
+    except Exception as exc:
+        # Broad by intention. Every failure mode here -- AccessDenied, a missing
+        # table, a throttle, a serialization error -- has the same correct
+        # response, which is to record it and let the refresh stand. Narrowing
+        # it to the ones imagined today would let an unimagined one fail a
+        # refresh whose products write already succeeded.
+        #
+        # The exception TYPE and message go to the log, not the shopper: there
+        # is no shopper here at all (Req 11.5 is satisfied by construction --
+        # an ingestion Lambda holds no message, location, session or dietary
+        # data), but naming the table and the error class is what makes the
+        # alarm actionable.
+        print(
+            json.dumps(
+                {
+                    "message": HISTORY_FAILED_LOG_MESSAGE,
+                    "retailer": retailer,
+                    "table": HISTORY_TABLE,
+                    "error": type(exc).__name__,
+                    "detail": str(exc)[:300],
+                    "rows_not_written": len(items),
+                }
+            )
+        )
+        return 0
+
+
 def _log_rejection(retailer: str, item: dict) -> None:
     """
     One structured line per refused row, which is what the metric is derived from.
@@ -232,8 +313,50 @@ def refresh(retailer: str, table_name: str = TABLE, *, dry_run: bool = False) ->
     fixture produces the same items, and the diff proves it rather than
     asserting it -- `unchanged` equal to `fetched` is what idempotent looks
     like from the outside.
+
+    IT REFUSES TO WRITE THE FIXTURE CATALOGUE OVER THE REAL ONE. See
+    `ingestion/guard.py` for why, at length; the short version is that the
+    fixture keys SHADOW the real ones, so this is not a duplicate-row problem
+    but a fabricated-price one, and it reached the live table on three separate
+    occasions before anyone found the vector.
+
+    THE REFUSAL APPLIES TO A DRY RUN TOO, which is the one part of this that
+    looks wrong at first. A dry run reports what a real run would do. A real
+    run refuses, so a dry run that instead reported a cheerful diff would be
+    describing a table state that will never exist -- the same reason
+    `reject_implausible` runs BEFORE the diff rather than after it. The refusal
+    names the store key it found, which is the answer a dry run was being asked
+    for anyway.
+
+    THERE IS NO `force` HERE, and its absence is deliberate. The seed loader has
+    one because a human at a terminal can have a reason and can be made to type
+    it. This function is invoked by a schedule, and an escape hatch on a
+    scheduled path is a way for the defect to come back with an audit trail
+    saying it was intended. A first load into an empty table is unaffected: the
+    guard fires on the real catalogue being PRESENT, and an empty table has no
+    catalogue to shadow.
     """
     source = resolve_source(retailer)
+
+    # Built before the fetch, because the probe and the write must be asking
+    # the same table. Reading a fixture file we have already decided not to
+    # write would be work done to reach the same refusal more slowly.
+    table = boto3.resource("dynamodb", region_name=REGION).Table(table_name)  # type: ignore[union-attr]
+
+    if isinstance(source, FixtureSource):
+        found = real_catalogue_present(table)
+        if found is not None:
+            raise FixtureGuardError(
+                f"refusing to refresh {table_name} from the FIXTURE catalogue: it "
+                f"already holds the real one (found rows at {found!r}, a store key "
+                f"that exists only in Lineage B). fixtures/products.json is 152 "
+                f"hand-written rows whose product keys SHADOW the real ones, so "
+                f"this write would serve invented prices -- 'cheapest milk near "
+                f"Albany' would answer with a fixture Devonport price instead of "
+                f"the real Albany one. See docs/OPEN-REVIEW-near-filter-drift.md. "
+                f"To refresh from the collected catalogue, set PRICE_SOURCE=lineage_b."
+            )
+
     offers = source.fetch()
     fetched = [to_item(offer) for offer in offers]
 
@@ -245,7 +368,6 @@ def refresh(retailer: str, table_name: str = TABLE, *, dry_run: bool = False) ->
     for item in rejected:
         _log_rejection(retailer, item)
 
-    table = boto3.resource("dynamodb", region_name=REGION).Table(table_name)  # type: ignore[union-attr]
     delta = diff_items(_existing(table, items), items)
 
     history_written = 0
@@ -260,11 +382,7 @@ def refresh(retailer: str, table_name: str = TABLE, *, dry_run: bool = False) ->
         # is never read on the shopper path and never becomes a citation. A
         # dry_run writes nothing here either, for the same reason it writes
         # nothing to products: it is a report, not a mutation.
-        history_table = boto3.resource("dynamodb", region_name=REGION).Table(HISTORY_TABLE)  # type: ignore[union-attr]
-        with history_table.batch_writer() as batch:
-            for item in items:
-                batch.put_item(Item=to_history_item(item))
-        history_written = len(items)
+        history_written = _append_history(retailer, items)
 
     dates = sorted({item["valid_date"] for item in items})
     return {
@@ -293,12 +411,56 @@ def refresh(retailer: str, table_name: str = TABLE, *, dry_run: bool = False) ->
     }
 
 
+def _log_refresh_failure(retailer: Any, exc: BaseException) -> None:
+    """
+    One structured line per refresh that threw, which is what the metric reads.
+
+    WITHOUT THIS, A FAILED BRANCH IS INVISIBLE TO EVERY ALARM.
+    `config/ingestion-state-machine.json` catches `States.ALL` inside the item
+    processor and routes it to a Pass state, so one retailer throwing does not
+    abort the Map and the execution SUCCEEDS with that branch marked failed.
+    That design is right -- it is why a broken Pak'nSave does not discard a good
+    New World refresh -- but it means `AWS/States ExecutionsFailed` reports zero
+    for exactly the failure it reads as covering. The only place a per-branch
+    failure exists as an observable fact is this Lambda's own log.
+
+    Printed as JSON, not through Powertools, for the same reason `_log_rejection`
+    is: AGENTS.md forbids that import outside `src/handler.py` and
+    `src/observability/powertools.py`, and this module is exercised by
+    `tests/test_ingestion.py` with no account.
+
+    NOTHING HERE IS SHOPPER DATA (Req 11.5). An ingestion Lambda holds no
+    message, location, session or dietary information. `detail` is truncated
+    because a boto3 error can carry a long request context and a log line is not
+    a place to store one, not because anything in it is sensitive.
+    """
+    print(
+        json.dumps(
+            {
+                "message": REFRESH_FAILED_LOG_MESSAGE,
+                "retailer": str(retailer)[:64],
+                "error": type(exc).__name__,
+                "detail": str(exc)[:300],
+            },
+            separators=(",", ":"),
+        )
+    )
+
+
 def lambda_handler(event: dict[str, Any], context: Any = None) -> dict[str, Any]:
     event = event or {}
     retailer = event.get("retailer")
-    if retailer not in KNOWN_RETAILERS:
-        # Raise rather than return an error shape: an unknown retailer is a
-        # state-machine definition bug, and Step Functions should surface it as
-        # a failed execution rather than a successful one with a sad payload.
-        raise ValueError(f"retailer must be one of {KNOWN_RETAILERS}, got {retailer!r}")
-    return refresh(retailer, dry_run=bool(event.get("dry_run")))
+    try:
+        if retailer not in KNOWN_RETAILERS:
+            # Raise rather than return an error shape: an unknown retailer is a
+            # state-machine definition bug, and Step Functions should surface it
+            # as a failed branch rather than a successful one with a sad payload.
+            raise ValueError(f"retailer must be one of {KNOWN_RETAILERS}, got {retailer!r}")
+        return refresh(retailer, dry_run=bool(event.get("dry_run")))
+    except Exception as exc:
+        # Broad, and it RE-RAISES. This is not error handling -- the failure is
+        # still a failure, the branch still fails, and nothing is recovered. It
+        # is the one point where a failure that Step Functions is about to
+        # convert into a successful execution can still be written down.
+        _log_refresh_failure(retailer, exc)
+        raise

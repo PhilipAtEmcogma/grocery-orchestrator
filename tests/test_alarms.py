@@ -377,3 +377,140 @@ def test_the_internal_error_alarm_is_dimensioned_on_the_code(config) -> None:
     """
     alarm = next(a for a in config["alarms"] if a["name"].endswith("internal-error-dev"))
     assert alarm["dimensions"].get("code") == "INTERNAL_ERROR"
+
+
+def test_the_history_failure_filter_matches_the_line_ingestion_emits(config, capsys, monkeypatch):
+    """
+    The `IngestionHistoryWriteFailed` filter must match what `_append_history`
+    actually prints — not what this config says it prints.
+
+    Same pairing as the HandlerEscaped test above, and it exists for the same
+    reason: a metric filter and the log line it binds to live in two files, and
+    a rename in either one produces an alarm that can never fire. An alarm that
+    cannot fire is indistinguishable from a healthy service, which is the
+    failure this whole file is about.
+
+    Driven through the REAL function with a boto3 that raises, rather than by
+    asserting on the constant. Asserting `HISTORY_FAILED_LOG_MESSAGE ==
+    "ingestion_history_write_failed"` would pass even if `_append_history`
+    stopped printing the line, stopped catching the exception, or printed a
+    different key — all three of which are the actual failure.
+    """
+    from ingestion import handler as h
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("AccessDeniedException: no permission on the history table")
+
+    monkeypatch.setattr(h.boto3, "resource", _boom)
+
+    written = h._append_history("paknsave", [{"store_key": "s#a", "product_key": "p"}])
+
+    assert written == 0, "a failed history append must report zero rows written"
+
+    printed = [
+        line for line in capsys.readouterr().out.splitlines() if line.strip().startswith("{")
+    ]
+    records = [json.loads(line) for line in printed]
+
+    field, expected = _json_selector(_filter_for(config, "IngestionHistoryWriteFailed")["pattern"])
+    matched = [r for r in records if r.get(field) == expected]
+
+    assert matched, (
+        f"the metric filter looks for {field}={expected!r}, which no log line "
+        f"from _append_history carries. Lines seen: {records}"
+    )
+    # The alarm is only actionable if the line says which table and which error.
+    assert matched[0]["table"] == h.HISTORY_TABLE
+    assert matched[0]["error"] == "RuntimeError"
+
+
+def test_a_history_failure_does_not_fail_the_refresh(config):
+    """
+    Every ingestion alarm must be reachable, and this one is only reachable
+    because the failure DEGRADES.
+
+    If `_append_history` re-raised, a history failure would surface as a failed
+    refresh and `IngestionHistoryWriteFailed` would never publish a datapoint —
+    an alarm on a metric nothing emits, which `_coverage_note` already refuses
+    to add. The two describe different facts, and this is the code property that
+    keeps them different.
+
+    Note what it would NOT have surfaced as: `ExecutionsFailed`. The state
+    machine catches `States.ALL` per branch, so a thrown refresh still reports a
+    successful execution — see `test_the_refresh_failure_filter_matches_the_line_ingestion_emits`.
+    """
+    names = {a["name"] for a in config["alarms"]}
+    assert "grocery-ingestion-refresh-failed-dev" in names
+    assert "grocery-ingestion-history-write-failed-dev" in names
+
+    from ingestion.handler import _append_history
+
+    # Does not raise. That IS the assertion; the metric depends on it.
+    assert _append_history("paknsave", []) == 0
+
+
+def test_the_refresh_failure_filter_matches_the_line_ingestion_emits(config, capsys, monkeypatch):
+    """
+    `IngestionRefreshFailed` must match what `lambda_handler` actually prints.
+
+    THE ALARM EXISTS BECAUSE THE STATE MACHINE HIDES ITS INPUT.
+    `config/ingestion-state-machine.json` catches `States.ALL` inside the item
+    processor and routes it to a Pass state, deliberately, so one broken
+    retailer does not discard the two that worked. The consequence is that a
+    thrown refresh produces a SUCCEEDED execution with a branch marked failed,
+    and `AWS/States ExecutionsFailed` — the alarm added on 2026-09-03 and
+    described at the time as catching "a refresh that THREW" — reports nothing.
+    A per-branch failure exists as an observable fact only in this log line.
+
+    Driven through the real entry point with a real failure, for the same reason
+    the history test is: asserting on the constant would pass even if
+    `lambda_handler` stopped printing, stopped re-raising, or renamed the field.
+    """
+    from ingestion import handler as h
+
+    def _boom(*args, **kwargs):
+        raise RuntimeError("AccessDeniedException: no PutItem on grocery-products-dev")
+
+    monkeypatch.setattr(h.boto3, "resource", _boom)
+
+    with pytest.raises(RuntimeError):
+        h.lambda_handler({"retailer": "paknsave"})
+
+    printed = [
+        line for line in capsys.readouterr().out.splitlines() if line.strip().startswith("{")
+    ]
+    records = [json.loads(line) for line in printed]
+
+    field, expected = _json_selector(_filter_for(config, "IngestionRefreshFailed")["pattern"])
+    matched = [r for r in records if r.get(field) == expected]
+
+    assert matched, (
+        f"the metric filter looks for {field}={expected!r}, which no log line "
+        f"from a failed lambda_handler carries. Lines seen: {records}"
+    )
+    # Actionable means: which retailer, and what kind of failure.
+    assert matched[0]["retailer"] == "paknsave"
+    assert matched[0]["error"] == "RuntimeError"
+
+
+def test_the_execution_alarm_does_not_claim_to_cover_a_thrown_branch(config):
+    """
+    The claim, not just the alarm.
+
+    `grocery-ingestion-failed-dev` was added describing itself as catching a
+    refresh that threw. The Catch in the state machine guarantees it cannot, and
+    a wrong note about an alarm is worse than no note: it is the reason nobody
+    goes looking for the coverage that is actually missing. So the config must
+    say where the branch case is covered instead.
+    """
+    # Read the FILE, not the loaded config: load_config() strips the underscore
+    # keys before anything is applied to AWS, and the reasoning is exactly what
+    # this test is about.
+    raw = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+    alarm = next(a for a in raw["alarms"] if a["name"] == "grocery-ingestion-failed-dev")
+    notes = " ".join(v for k, v in alarm.items() if k.startswith("_") and isinstance(v, str))
+
+    assert "grocery-ingestion-refresh-failed-dev" in notes, (
+        "the execution alarm must point at the alarm that covers a caught branch"
+    )
+    assert "grocery-ingestion-refresh-failed-dev" in {a["name"] for a in config["alarms"]}
