@@ -474,6 +474,28 @@ meal-plan classification to `emit_upstream_failure` rather than
 `emit_clarification`. Eight tests in `tests/test_degraded_intent_routing.py`,
 two of which fail without the fix.
 
+**And proven live.** v13 was published from `0467747`, tested by qualified
+invoke, and the alias moved to it for a re-run of the identical breach against
+the identical message:
+
+| | v12 (before) | v13 (after) |
+|---|---|---|
+| `clarification` on a complete request | **14 of 24** | **0** |
+| degraded turns (confidence 0.45) | asked to rephrase | **retryable error** |
+| errors marked retryable | 5/5 | **14/14** |
+| contract-valid bodies | 40/40 | **24/24** |
+
+**The alias was then rolled back to 12**, deliberately: the frontend work is
+unfinished and its cutover is where everything lands together. So v13 is built,
+SnapStart-optimised, measured and NOT serving. Both functions' `$LATEST` carry
+`0467747` and their `CodeSha256` still match, so the "one artefact, two
+functions" check in G3 keeps passing — the divergence is between the alias and
+`$LATEST`, which is what an alias is for.
+
+Promote v13 with the frontend cutover. Until then the live service still tells a
+throttled shopper to rephrase a complete request, and that is a known, recorded
+state rather than an oversight.
+
 ### G9 — cost per successful task
 
 213 turns, 412 model calls, 394,705 input and 15,134 output tokens over the load
