@@ -204,22 +204,33 @@
     "_comment": "Measured evidence, per model per task. A model is eligible for a task only with an entry here that meets the floor; see tests/test_multimodel.py, which fails the build if a routable model has no scorecard for a task it could serve. Recording the guardrail version matters: an intent score is a measurement of the classifier AND the policy in front of it, and version 2 unblocked cases version 1 refused.",
     "_floor": 0.9,
     "classify_intent": {
-      "_source": "evals/run_intent.py, 30 cases, guardrail version 2, paced 9/min",
-      "_measured": "2026-08-29",
+      "_source": "evals/run_intent.py --compare nova-lite nova-pro claude-haiku, 47 cases, guardrail version 2, paced 9/min, live in ap-southeast-2",
+      "_measured": "2026-09-04",
+      "_re_measured_because_the_suite_changed": "The previous entries were measured on 2026-08-29 against a THIRTY-case suite. f8cd86d grew it to 47, adding cases specifically because the smaller suite had passed over a live over-blocking defect (docs/CI-GATE-HEALTH.md section 1). Req 14.2 asks every active route to score at least 90% on 'its applicable golden set', and the applicable set changed underneath all three models -- so the old numbers were honest about their own provenance and were evidence about a suite that no longer exists. Re-measured as Pilot Task 16 gate G5. The scores are NOT comparable to the old ones: the instrument changed, not the system.",
+      "_what_moved": "Nova Pro fell from a recorded 100.0% to 97.8%. That is the expected shape rather than a regression -- a perfect score over 30 cases was always the fragile kind, and citing it as qualification is exactly what CI-GATE-HEALTH said the release gate should refuse. Nova Lite, the ACTIVE route, went the other way: 92.9% to 95.6%.",
+      "_blocked_cases_are_excluded_not_failed": "inj-001 and inj-002 are refused by the Guardrail before classification, identically for all three models. They appear in the red-team suite as must_block cases, where refusing them is what a passing score MEANS, so scoring them as misses would penalise every model for the safety control working. 45 scored, 2 excluded.",
       "nova-pro": {
-        "rate": 1.0,
-        "scored": 28,
-        "blocked": 2
+        "rate": 0.978,
+        "scored": 45,
+        "blocked": 2,
+        "p50_latency_ms": 6678,
+        "cost_usd_per_suite": 0.064927
       },
       "claude-haiku": {
-        "rate": 0.964,
-        "scored": 28,
-        "blocked": 2
+        "rate": 0.978,
+        "scored": 45,
+        "blocked": 2,
+        "p50_latency_ms": 6652,
+        "cost_usd_per_suite": 0.086817
       },
       "nova-lite": {
-        "rate": 0.929,
-        "scored": 28,
-        "blocked": 2
+        "rate": 0.956,
+        "scored": 45,
+        "blocked": 2,
+        "p50_latency_ms": 6672,
+        "cost_usd_per_suite": 0.004880,
+        "_why_this_one_serves": "Equal-lowest accuracy by 2.2 points, and 13x cheaper than Nova Pro and 18x cheaper than Claude Haiku over the same 47 cases. classify_intent runs on EVERY turn, so that ratio is the routing decision. Measured on the current suite rather than argued from the old one.",
+        "_latency_note": "All three sit within 26ms of each other at p50 (6652-6678ms), which is not a model property -- it is the Guardrail hop plus the harness network path dominating. Do not read these as model latency evidence; scripts/measure_latency.py measures the deployed service instead."
       }
     },
     "select_recipes": {

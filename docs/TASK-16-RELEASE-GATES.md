@@ -1,6 +1,6 @@
 # Pilot Task 16 — the release gate battery
 
-**Status: PLAN, cross-checked, not yet run. Drafted and reviewed 2026-09-04.**
+**Status: RUN 2026-09-04. Ten gates executed; results in section 10.**
 **Scope:** the nine mandatory gates `tasks.md` Pilot Task 16 names, plus the MCP
 demonstration gate, measured against the deployed dev plane.
 
@@ -396,3 +396,106 @@ bodies cannot be searched after the fact, so that surface is verified by reading
 Confirmed unchanged by the cross-check: the $25 budget exists with 50/80/100%
 ACTUAL and 100% FORECASTED notifications, which satisfies T7's alerting half
 before the battery starts.
+
+---
+
+## 10. Results — run 2026-09-04
+
+Release commit `c0a7c83`, clean tree, against the serving plane (`woqmel35lk`).
+
+| Gate | Result | Headline evidence |
+|---|---|---|
+| G1 Offline | **PASS** | 937 tests / 31 skipped, 52 infra assertions, pyright 0 over 125 files |
+| G2 Live-adapter | **PASS** | 5/5 adapters live; T6 discharged |
+| G3 Infrastructure | **PASS** | 11/11 reconciliation, zero drift |
+| G4 Security | **PASS** | least privilege intact; one recorded exception |
+| G5 Evaluation | **PASS** | all three enabled models re-scored on the 47-case suite |
+| G6 Load | **PASS + finding** | p95 1.94s / 3.51s, 100/100; degradation defect found |
+| G7 Privacy | **PASS** | zero canaries, with a positive control |
+| G8 Recovery | **PASS** | PITR enabled; restore verified in 222s and torn down |
+| G9 Cost | **PASS** | $0.000128 per turn |
+| G10 MCP | **PASS** | 22 tests; default-off refuses; selftest exit 0 |
+
+### G5 — the scorecards moved, as predicted
+
+| Model | 47 cases | Recorded (30) | Cost/suite | p50 |
+|---|---|---|---|---|
+| Amazon Nova Pro | 97.8% (44/45) | 100.0% | $0.0649 | 6678 ms |
+| Claude Haiku 4.5 | 97.8% (44/45) | 96.4% | $0.0868 | 6652 ms |
+| **Amazon Nova Lite** (active) | **95.6%** (43/45) | 92.9% | **$0.0049** | 6672 ms |
+
+Nova Pro's 100% did not survive the larger suite. Nova Lite, the route that
+actually runs, improved — and is 13x cheaper than Nova Pro on a call made every
+turn. All three clear the 90% floor. Written into `config/models.json` with an
+honest `_source`; **T2 discharged.**
+
+The three p50s sit within 26ms of each other, which is the Guardrail hop and
+the harness network path, not a model property. Not latency evidence.
+
+### G6 Phase A — the real latency baseline
+
+| | n | p50 | p95 | p99 | Target |
+|---|---|---|---|---|---|
+| price check | 50 | 1.73s | **1.94s** | 2.36s | p95 < 5s |
+| meal plan | 50 | 3.10s | **3.51s** | **6.30s** | p95 < 20s, p99 < 25s |
+
+**100/100 turns succeeded**; zero unhandled 5xx. **T3 and T4 discharged** on a
+sample that means something, replacing the n=8/n=3 baseline `ARCHITECTURE.md`
+section 3l said not to quote.
+
+Meal-plan p95 fell from **11.7-12.2s to 3.51s** — Task 15c replaced the Nova Pro
+`generate_plan` call with deterministic assembly, so it made meal plans about
+3.5x faster and 5x cheaper on the same day it reached production.
+
+### G6 Phase B — the finding
+
+At a deliberate 21x breach (480 model calls/min against a 20/min quota), the
+stated criteria all held: **40/40 contract-valid bodies, zero malformed, zero
+bodyless 5xx, 5/5 errors retryable, zero invented plans.**
+
+But the gate's PURPOSE was to watch the service degrade honestly, and it did not.
+24 turns carrying one unambiguous message — "feed 3 people for 5 days on $80":
+
+| Terminal | Intent confidence | Count | Honest? |
+|---|---|---|---|
+| `clarification` | 0.45 (keyword fallback) | 14 | **no** |
+| `error`, retryable | 0.9 | 8 | yes |
+| `meal_plan` | 0.9 | 2 | — |
+
+Throttle the FIRST call and `classify_intent` degrades to keyword heuristics
+that extract no constraints at all, so `missing_plan_constraints` reads every
+constraint as absent and the shopper is asked to rephrase a complete request.
+The remedy offered cannot work: rephrasing does not fix a throttle. Throttle a
+LATER call and the honest retryable error appears correctly — which is why this
+went unnoticed, since the behaviour was right whenever anything had succeeded.
+
+**Fixed in the same change.** `route_after_intent` now routes a degraded
+meal-plan classification to `emit_upstream_failure` rather than
+`emit_clarification`. Eight tests in `tests/test_degraded_intent_routing.py`,
+two of which fail without the fix.
+
+### G9 — cost per successful task
+
+213 turns, 412 model calls, 394,705 input and 15,134 output tokens over the load
+window: **$0.0273 total, $0.000128 per turn.** The $25 budget buys ~195,000
+turns; a 20% unit-cost regression is anything above $0.000154. The Budget's
+50/80/100% ACTUAL and 100% FORECASTED notifications were confirmed present, so
+**T7 is discharged**.
+
+The denominator is turns PROCESSED, and Phase B's deliberately throttled turns
+are in it. Phase A alone would be the cleaner unit cost.
+
+### Exceptions and limits, recorded rather than absorbed
+
+1. **`CORS_ORIGIN=*`** on the dev plane (section 3h). Cannot close until there
+   is an origin to name. A recorded exception, not a pass.
+2. **STALE_DATA was never exercised live.** The catalogue is dated 2026-08-28
+   against a 45-day threshold, so nothing is stale until 2026-10-12. Covered
+   offline; not demonstrated in the account.
+3. **The ingestion log group contributed no privacy evidence** — zero events in
+   the window, because nothing invoked it. Its zero is vacuous; the
+   orchestrator's 63 events and 465,534 chars of X-Ray are the real evidence.
+4. **Price-history has no PITR**, by the decision in PR #80 that every row is
+   reproducible by re-running ingestion. An explicit Req 11.7 exception.
+5. **Cost applies Nova Lite rates to all tokens** in the window, which the load
+   mix justifies but which would understate a free-composition-heavy period.

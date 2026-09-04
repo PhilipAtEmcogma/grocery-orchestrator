@@ -414,6 +414,40 @@ def route_after_intent(state: GroceryState) -> str:
     # safety matter and stays the reported reason even when the request is also
     # under-specified. Asking for a budget first would bury it.
     if intent == Intent.MEAL_PLAN and missing_plan_constraints(state):
+        # A DEGRADED CLASSIFICATION CANNOT SUPPORT "YOU DID NOT TELL ME".
+        #
+        # `missing_plan_constraints` reads ABSENCE, and absence is only evidence
+        # about the user when something actually read their message. When the
+        # model call failed, `classify_intent` falls back to keyword heuristics
+        # that do not extract household size, days or budget at all -- so every
+        # constraint reads as missing whatever the shopper wrote, and the
+        # clarification says "I just need to know your budget" to someone who
+        # said "feed 3 people for 5 days on $80".
+        #
+        # That is the same false statement `emit_upstream_failure` was written
+        # to prevent one node further on: reporting an outage as a fact about
+        # the request. It is worse here, because the offered remedy is
+        # impossible -- rephrasing cannot fix a throttle, and the shopper has
+        # been told the fault is theirs. Retrying is the move that works, and
+        # only the upstream failure says so.
+        #
+        # MEASURED, NOT SUPPOSED (Pilot Task 16, gate G6 Phase B, 2026-09-04):
+        # under a deliberate 21x quota breach, 14 of 24 turns sending ONE
+        # unambiguous message came back as clarifications at intent confidence
+        # 0.45 -- the keyword fallback -- while the 8 turns whose throttle
+        # landed on a LATER call correctly returned a retryable error.
+        # `upstream_error` is deliberately NOT set here, though every other
+        # node that reaches this terminal does set it. It is read by
+        # `route_after_validation` and `route_after_recipe_selection`, both of
+        # which are downstream of this point -- so a degraded classification
+        # that DID extract its constraints would carry the field into a
+        # perfectly successful recipe selection and be forced onto the
+        # upstream-failed path anyway. The cost of leaving it unset is that
+        # `emit_upstream_failure` reports INTERNAL_ERROR rather than
+        # distinguishing UPSTREAM_TIMEOUT; the message is identical and both
+        # are retryable, which is what the shopper acts on.
+        if state.get("intent_degraded"):
+            return "upstream_failure"
         return "clarify"
     if intent in (Intent.PRICE_CHECK, Intent.MEAL_PLAN):
         return "retrieve"

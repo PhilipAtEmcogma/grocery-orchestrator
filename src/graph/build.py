@@ -98,6 +98,10 @@ def build_graph(repo: PriceRepository, model: ModelClient):
             "retrieve": "retrieve_prices",
             "dietary_unsupported": "emit_dietary_unsupported",
             "clarify": "emit_clarification",
+            # A meal plan whose constraints are missing only because the
+            # classification degraded. See route_after_intent: absence is not
+            # evidence about the shopper when nothing read their message.
+            "upstream_failure": "emit_upstream_failure",
             "finalise": "finalise",
         },
     )
