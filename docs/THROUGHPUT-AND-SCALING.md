@@ -42,11 +42,20 @@ what the `apac.*` and `au.*` model ids use):
 **Nova Lite binds first.** Derived by `scripts/check_quotas.py` against the
 live account rather than by hand:
 
-| Turn | Turns/min | Bound by |
-|---|---|---|
-| meal plan, no repair | **10.0** | Amazon Nova Lite |
-| meal plan, 2 repairs | **5.0** | Amazon Nova Lite |
-| price check | 10.0 | Amazon Nova Lite |
+| Turn | Turns/min | Calls | Bound by |
+|---|---|---|---|
+| meal plan, from a recipe | **6.7** | Nova Lite x3 | Amazon Nova Lite |
+| meal plan, free composition | **6.7** | Nova Lite x3 + Nova Pro x1 | Amazon Nova Lite |
+| meal plan, 2 repairs | **4.0** | Nova Lite x5 + Nova Pro x1 | Amazon Nova Lite |
+| price check | 10.0 | Nova Lite x2 | Amazon Nova Lite |
+
+**Re-measured 2026-09-04.** This table read 10.0/min for a meal plan until then,
+which was correct while a meal-plan turn made TWO Nova Lite calls. Pilot Task
+15c added `select_recipes` to every one, so it makes three and the ceiling fell
+to 6.7. The stale figure cost something real: `scripts/measure_latency.py`
+defaulted to 9 turns/min on the strength of it, which is 27 calls/min against a
+cap of 20, and the first serious load run would have measured throttling and
+reported it as latency. That script now paces by call budget instead.
 
 So 4.0-6.7 meal-plan turns per minute service-wide, depending on how often repair
 fires — roughly 300-600 an hour. Nova Pro is not the constraint at one call

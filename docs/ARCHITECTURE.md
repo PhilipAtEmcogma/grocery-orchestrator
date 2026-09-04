@@ -749,6 +749,15 @@ escalation trigger.
 p99 over three samples is just the maximum. Re-run before the pilot with enough
 turns to mean something, and once the recipe/plan path changes.
 
+> **SUPERSEDED 2026-09-04 — both conditions were met at once.** The recipe/plan
+> path changed when Task 15c reached production (§3v), and Pilot Task 16 gate G6
+> re-ran this at n=50 per turn type: price check p50 1.73s / **p95 1.94s** / p99
+> 2.36s, meal plan p50 3.10s / **p95 3.51s** / p99 6.30s, 100 of 100 turns
+> successful. The meal-plan figures moved because 15c dropped the Nova Pro
+> `generate_plan` call for deterministic assembly — about 3.5x faster and 5x
+> cheaper — so the 11.7-12.2s above describes a path that no longer serves
+> anyone. Full method and caveats in `docs/TASK-16-RELEASE-GATES.md`.
+
 ## 3m. CDK is deployed — Pilot Tasks 9 and 10, 2026-08-30
 
 Two CloudFormation stacks now exist, and the environment is bootstrapped.

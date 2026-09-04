@@ -1382,7 +1382,21 @@ proposed, or gated as labelled; it is not implemented.
     tail is 451 distinct ingredients, so it would take most of a supermarket;
     (c) narrowing Req 2.9 to partial pricing — it weakens the budget promise and
     contradicts invariants 1 and 2, which is too high a price for a feature.
-- [ ] **Pilot Task 16 — Wire and release the complete pilot increment.** Run
+- [ ] **Pilot Task 16 — Wire and release the complete pilot increment.**
+  **BATTERY RUN 2026-09-04 — all ten gates executed; the task stays open on the
+  frontend cutover, not on the gates.** Plan, method and results in
+  `docs/TASK-16-RELEASE-GATES.md`. Discharged on real samples: T2 (all three
+  enabled models re-scored on the current 47-case suite), T3 (p95 price 1.94s,
+  p95 meal plan 3.51s, p99 6.30s at n=50 each), T4 (100/100 turns, no unhandled
+  5xx), T6 (every citation carries source key, store location and capture date),
+  T7 ($0.000128 per turn from measured tokens; Budget alerts confirmed). G6
+  Phase B found and this repo fixed a real defect: a throttled FIRST model call
+  asked the shopper to rephrase a complete request. Still open — the frontend
+  cutover (which also closes CORS `*` and arms Req 12.5), a full 200-turn run
+  (100 were run), STALE_DATA unexercised live before 2026-10-12, and Task 3's
+  qualifying live Guardrail RESULT.
+
+  Run
   mandatory offline, live-adapter, infrastructure, security, evaluation, load,
   privacy, recovery, and cost gates. Local MCP has its own planned demonstration
   gate. For each optional managed service actually approved and adopted, also
@@ -1568,10 +1582,12 @@ and nut-free support) is future work — see Phase 11.*
 
 *3.10 was built but never specified. The adapter is verified against live
 Bedrock endpoints (Nova Lite and Nova Pro in ap-southeast-2). Current evidence:
-Nova Lite 92.9%, Nova Pro 100% and Claude Haiku 4.5 96.4% on intent, measured
+Nova Lite **95.6%**, Nova Pro **97.8%** and Claude Haiku 4.5 **97.8%** on
+intent, re-measured 2026-09-04 against the 47-case suite as Pilot Task 16 gate
+G5. Those supersede 92.9% / 100% / 96.4%, measured
 2026-08-29 against guardrail version 2 with GuardrailBlocked excluded from the
-denominator (the older 83.3% Nova Lite figure counted three Guardrail refusals
-as wrong answers); on meal-plan invariants, paced to
+denominator on a 30-case suite (the older 83.3% Nova Lite figure counted three
+Guardrail refusals as wrong answers). On meal-plan invariants, paced to
 the account's request quota, Nova Pro 100% and Claude Haiku 4.5 100% over three
 clean reps each (the earlier "Nova Pro 64%" was measured by a scorer since
 found wrong in three ways — see AGENTS.md). Claude access was unblocked on
@@ -2023,7 +2039,7 @@ COMPLETED LIVE BASE RESOURCES
   7.1  products table created          ✓
   7.3  products PITR + encryption      ✓ (all-table PITR remains Pilot 6/9/16)
   7.4  seed data loaded                ✓
-  7.10 idempotency table created       ✓ (owner fencing/PITR still open)
+  7.10 idempotency table created       ✓ (owner fencing done; PITR enabled 2026-09-04, Task 16 gate G8)
   2.9  stored price repository         ✓ (31 contract tests passing)
   6.8  stored idempotency store        ✓ (five current outcomes only)
 

@@ -22,7 +22,7 @@ stays because it is the checklist for the NEXT run, not a to-do list:
 | # | Evidence | Command | Unblocked | Status |
 |---|---|---|---|---|
 | 1 | Live Guardrail must-block **and** must-allow | `evals/run_guardrail.py --model …` | Pilot Task 3 follow-up (b); legacy 5.9 / 8.10; Req 5.5 | ✅ 13/13, 9/9 |
-| 2 | Per-model intent scorecards | `evals/run_intent.py --model …` | Pilot Task 7; legacy 5.7 | ✅ all ≥ 92.9% |
+| 2 | Per-model intent scorecards | `evals/run_intent.py --compare …` | Pilot Task 7; legacy 5.7 | ✅ all ≥ **95.6%** (47-case suite, 2026-09-04) |
 | 3 | Prompt-cache utilisation per model | see §5 | Legacy 3.9; Req 9.6 | ✅ zero, and correct |
 
 **Re-run all three whenever the Guardrail policy changes**, whenever a model is
@@ -166,6 +166,14 @@ partly the keyword heuristic's score. Discard it and re-run.**
 Compare against the recorded baselines: scripted **85.1% (40/47)**, and live
 against guardrail v2 Nova Lite 92.9%, Claude Haiku 4.5 96.4%, Nova Pro 100.0%.
 A route needs **≥90% on its applicable golden set**.
+
+> **RE-MEASURED 2026-09-04 (Pilot Task 16, gate G5).** The current live figures
+> against the 47-case suite are **Nova Lite 95.6%, Claude Haiku 4.5 97.8%, Nova
+> Pro 97.8%** — 45 scored, 2 excluded because the Guardrail refuses inj-001 and
+> inj-002 before classification. One command:
+> `python evals/run_intent.py --compare nova-lite nova-pro claude-haiku`.
+> Quote these, not the 2026-08-29 ones below. The warning is kept because it is
+> the reason they were re-run, and because the next suite change re-arms it.
 
 **THE THREE LIVE FIGURES WERE MEASURED ON THE 30-CASE SUITE (2026-08-29) AND
 THE SUITE IS NOW 47 CASES.** They are not wrong — `config/models.json` records

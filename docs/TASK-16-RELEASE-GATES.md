@@ -122,7 +122,8 @@ at the release commit; "RUN" means it does not exist yet.
 ### G1 · Offline — *have, re-run at the release commit*
 
 - **Asserts:** the deterministic core is correct without an account.
-- **Run:** `pytest -q` (937 passed / 31 skipped), `ruff check`,
+- **Run:** `pytest -q` (945 passed / 31 skipped today; 937 when G1 ran, before
+  the Phase B fix added eight), `ruff check`,
   `ruff format --check`, `pyright`, `validate.py`, contract and grounding
   validation, both eval floors, the secret scan, and
   `cd infra && npm test` (52 assertions across 6 suites).
@@ -405,7 +406,7 @@ Release commit `c0a7c83`, clean tree, against the serving plane (`woqmel35lk`).
 
 | Gate | Result | Headline evidence |
 |---|---|---|
-| G1 Offline | **PASS** | 937 tests / 31 skipped, 52 infra assertions, pyright 0 over 125 files |
+| G1 Offline | **PASS** | 937 tests / 31 skipped at the time of the run, 52 infra assertions, pyright 0 over 125 files |
 | G2 Live-adapter | **PASS** | 5/5 adapters live; T6 discharged |
 | G3 Infrastructure | **PASS** | 11/11 reconciliation, zero drift |
 | G4 Security | **PASS** | least privilege intact; one recorded exception |

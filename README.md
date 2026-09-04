@@ -117,7 +117,11 @@ reasoning recorded in `tasks.md`:
 meal-plan candidates with `Scan` revoked, **8 alarms** + dashboard + a $25
 Budget, API-stage X-Ray, and the first latency baseline measured against the
 endpoint rather than a laptop — price check p95 **2.21s** (target 5s), meal plan
-p95 **12.2s** (target 20s). Detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3a–§3l.
+p95 **12.2s** (target 20s), both at n=8 and n=3. **Superseded 2026-09-04** by a
+paced run at n=50 per type: price check p95 **1.94s**, meal plan p95 **3.51s** —
+the meal-plan figure moved because Task 15c dropped the Nova Pro call. Detail in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3a–§3l and §3v, method in
+[`docs/TASK-16-RELEASE-GATES.md`](docs/TASK-16-RELEASE-GATES.md).
 
 **Ingestion plane deployed** (2026-09-04): the `grocery-price-history-dev`
 table, its append-only IAM grant, four ingestion alarms, and an ingestion Lambda
@@ -138,13 +142,23 @@ live turn before and after: `0 of 3` meals matched a curated recipe name, then
 invoke *before* the alias moved, and rollback is one `update-alias` call.
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3v.
 
+**Version 13 is built, proven and deliberately not serving.** It carries the
+degraded-intent routing fix Task 16's load gate found, was measured live against
+the same quota breach that exposed the defect (0 clarifications on a complete
+request, where v12 gave 14 of 24), and the alias was then rolled **back to 12**
+pending the frontend merge — so the teammates working against the endpoint see
+unchanged behaviour. Promote v13 at the cutover. Until then the live service
+still asks a throttled shopper to rephrase a complete request, which is a
+recorded state rather than an oversight.
+
 **Verified live in `ap-southeast-2`** (account `097087133897`, 2026-08-29):
 Guardrail `b1xezpqe04kx` **version 2** at 13/13 must-block and 9/9 must-allow;
-intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%;
+intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9% —
+**re-measured 2026-09-04 on the current 47-case suite as Nova Pro 97.8%, Claude Haiku 4.5 97.8%, Nova Lite 95.6% (45 scored, 2 guardrail-excluded)**;
 DynamoDB products and idempotency tables with owner-fenced claims proven against
 the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
-**Offline gates:** 931 tests passing, 31 skipped, plus **52 CDK assertions**
+**Offline gates:** 945 tests passing, 31 skipped, plus **52 CDK assertions**
 in `infra/` (6 suites) — first run by CI on 2026-08-31, having found two IAM
 regressions in a stack that was already deployed
 ([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3o). Five eval suites — intent
@@ -498,9 +512,10 @@ claimed. Read it before changing any of this, and not before.
   was reachable from every task. It is now disabled with the reason recorded,
   scorecards live in `config/models.json` as data, and a test fails the build if
   any routable model lacks qualifying evidence for the task it would serve.
-- ✅ **Scorecards, measured 2026-08-29 against guardrail version 2.** Intent:
-  Nova Pro 100.0% (28/28), Claude Haiku 4.5 96.4% (27/28), Nova Lite 92.9%
-  (26/28). Meal-plan invariants, paced, three clean reps each: Nova Pro 100%,
+- ✅ **Scorecards. Intent re-measured 2026-09-04 against the current 47-case
+  suite** (Task 16 gate G5): Nova Pro 97.8%, Claude Haiku 4.5 97.8%, Nova Lite 95.6% (45 scored, 2 guardrail-excluded). The 2026-08-29 figures below described a
+  30-case suite that no longer exists — Nova Pro 100.0% (28/28), Claude Haiku
+  4.5 96.4% (27/28), Nova Lite 92.9% (26/28). Meal-plan invariants, paced, three clean reps each: Nova Pro 100%,
   Claude Haiku 4.5 100%. All clear the 90% floor.
 - ✅ **Prose and repair are now measured**, closing the two tasks that were
   routed with nothing scoring them. `evals/run_prose.py` (11 cases) asks whether
@@ -622,9 +637,15 @@ deployment.** A running service already exists — see *Where this is right now*
 and since 2026-08-30 it is under IaC and carries a dashboard, 8 alarms (12
 since the ingestion plane deployed 2026-09-04), a $25
 Budget, API-stage X-Ray and the first latency and cost baselines measured
-against the deployed endpoint rather than a laptop. What it does not carry is a
-**load** run: those figures are n=3 and n=8, which is a baseline and not a
-qualification, and four parked decisions wait on the 200-turn run.
+against the deployed endpoint rather than a laptop.
+
+**A paced load run landed 2026-09-04** (Pilot Task 16 gate G6): p95 price
+**1.94s**, p95 meal plan **3.51s**, p99 meal plan **6.30s**, 100 of 100 turns
+successful, $0.000128 per turn — measured at the binding Nova Lite ceiling. It
+was **100 turns (50 per type), not the 200** the 2026-08-30 audit asked for, so
+p99 at n=50 is the near-maximum rather than a true 99th percentile. That is a
+large improvement on n=3 and it is **not** the full 200-turn run the four parked
+decisions were told to wait for; finishing it is one more 17-minute pass.
 
 1. ~~**Task 8 — local read-only MCP.**~~ **Done 2026-08-30.** `src/mcp/`, two
    coarse tools over stdio JSON-RPC with no new dependency, default-off, rate
