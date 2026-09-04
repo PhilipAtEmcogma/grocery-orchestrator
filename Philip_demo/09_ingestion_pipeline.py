@@ -36,7 +36,7 @@ WHAT THIS DEMONSTRATES
 
 ARCHITECTURE
 ------------
-    EventBridge Scheduler (03:00 NZ)
+    EventBridge Scheduler (weekly liveness check; DISABLED since 2026-09-03)
         v
     Step Functions, Inline Map, one branch per retailer
         v
@@ -274,7 +274,19 @@ if mode == AWS:
     print(f"  credentials: {detail}\n")
     from ingestion.handler import refresh
 
-    step(1, "resolve_source('paknsave')  ->  recorded fixtures, never a live site")
+    # PRICE_SOURCE, explicitly, because this run touches the REAL table.
+    #
+    # Without it resolve_source() returns the fixture catalogue, and since
+    # 2026-09-04 `refresh()` REFUSES to point that at a table already holding
+    # the collected one -- fixture product keys shadow the real ones, so the
+    # write would serve invented prices (ingestion/guard.py). That refusal is
+    # correct and this demo should not work around it: the deployed function
+    # runs PRICE_SOURCE=lineage_b, so a demo of the real path sets the same
+    # thing. Section 4 above already showed the fixture source, offline, where
+    # it is the right catalogue to read.
+    os.environ["PRICE_SOURCE"] = "lineage_b"
+
+    step(1, "resolve_source('paknsave')  ->  the collected catalogue (recorded, never a live site)")
     step(2, "to_item() for every offer")
     step(3, "Query grocery-products-dev per store_key for the current rows")
     step(4, "diff  --  and STOP. dry_run=True writes nothing.")

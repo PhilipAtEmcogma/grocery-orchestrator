@@ -3,12 +3,12 @@
 **Smart Grocery & Meal Budget Assistant**
 Author: Philip (Backend/Orchestration, AI/Prompt Lead)
 Status: **Products/idempotency implemented and deployed; recipes shipped (Task 15);
-price-history (Table 4) DEFINED IN CDK 2026-09-03, not yet deployed**
+price-history (Table 4) DEPLOYED 2026-09-04 and holding 2,759 rows**
 Region: `ap-southeast-2` (Sydney)
 
-The current account contains `grocery-products-dev` and
-`grocery-idempotency-dev`; the products table is seeded and both adapters have
-been live-verified. Claim-owner idempotency hardening landed 2026-08-29 and was
+The current account contains `grocery-products-dev`, `grocery-idempotency-dev`
+and, since 2026-09-04, `grocery-price-history-dev`; the products table is seeded
+and all three adapters have been live-verified. Claim-owner idempotency hardening landed 2026-08-29 and was
 verified against the live table. The candidate-query access pattern is RESOLVED
 (GSI2, 2026-08-30); the pattern was deferred until there was load evidence to
 choose from, and `tests/test_price_repository_contract.py` fails once the

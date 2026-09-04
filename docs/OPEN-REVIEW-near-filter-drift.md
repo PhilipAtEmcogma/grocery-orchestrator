@@ -237,13 +237,20 @@ item processor so one broken retailer does not discard the other two, which mean
 alarms on it — otherwise this fix would have replaced a silent wrong write with a
 silent failed write.
 
-**Still open, and deliberately not fixed here:** the schedule is DISABLED, so
-nothing refreshes prices at all. Re-enabling it needs a source decision first —
-either `PRICE_SOURCE=lineage_b` on the deployed function, or promoting
-`default_source` to `lineage_b` in `config/data-sources.json` (which needs the
-`datasets/` directory in the Lambda archive; `scripts/build_lambda.py` does not
-ship it today). Until then the guards make the wrong answer loud rather than
-choosing the right one on the project's behalf.
+**The source question that was open here was settled 2026-09-04** (PR #81,
+`ARCHITECTURE.md` §3u). `scripts/build_lambda.py` now ships
+`datasets/data/dynamodb_products` in the archive, and the deployed function runs
+`PRICE_SOURCE=lineage_b` — so the fixtures are no longer what a deployed refresh
+reaches for, by configuration as well as by refusal. The first deployed refresh
+wrote 2,759 rows with `added 0, changed 0, rejected 0`, and the fixture keys
+`milk-2l` and `butter-500g` stayed at 0 on GSI1 throughout.
+
+**The schedule stays DISABLED by choice**, now for a different reason than when
+this note was written. It is no longer blocked on a decision: the catalogue
+simply cannot get any fresher, because `LineageBSource.CAPTURED_AT` is the
+constant `2026-08-28`. The agreed cadence when it returns is WEEKLY, as a
+liveness check rather than a refresh — see `config/data-sources.json`
+`_what_the_weekly_refresh_is_actually_for`.
 
 ## How it relates to the plane/data-source work
 
