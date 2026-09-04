@@ -1,10 +1,12 @@
 # Philip_demo
 
-Nineteen runnable demonstrations of the grocery orchestrator, without a UI.
+Twenty-four runnable demonstrations of the grocery orchestrator, without a UI.
 
 Each file takes one seam of the system, opens it, and shows what is actually
 behind it — using the project's own modules, never a second implementation.
-Demo 19 puts them back together end to end.
+Demo 19 puts them back together end to end, and **demo 24 runs the whole
+backend as a service over HTTP**, which is what the frontend team will point
+at when they arrive.
 
 **Start with the demo table below, or jump straight to
 [`03_grounding_and_safety.py`](03_grounding_and_safety.py)** — the central
@@ -107,7 +109,7 @@ pip install -r requirements.txt
 ```
 
 No AWS account, no credentials, no network access, no environment variables.
-Seventeen of the nineteen demos run here.
+All twenty-four demos run here. Demo 24 additionally binds local port 8000.
 
 **For `integration`:** network access, and nothing else. Override the endpoint
 with `CHAT_ENDPOINT_URL` if you are pointing at a different stage:
@@ -168,6 +170,11 @@ this directory reads an access key, and nothing prints one.
 | 17 | [`17_configuration_and_fail_closed.py`](17_configuration_and_fail_closed.py) | The dependency selector, the invisible production failure, `assert_production_configuration`, `USE_DYNAMODB=true`, DRAFT, wildcard CORS — and the deployed function's real environment | local, **aws** | optional | optional | nothing — synthetic environments, real check |
 | 18 | [`18_evaluation_and_qualification.py`](18_evaluation_and_qualification.py) | All five eval harnesses run offline; scorecards as data; the qualification gate; pacing; the fields that keep the golden sets honest | local | no | no | model |
 | 19 | [`19_end_to_end.py`](19_end_to_end.py) | One question through every layer, stage by stage, with a ledger of what was real | local, **aws**, **integration** | optional | optional | depends on mode — the demo prints which |
+| 20 | [`20_recipe_selection.py`](20_recipe_selection.py) | Pilot Task 15c: the three filters that run BEFORE the model, why the budget is enforced *after* selection, and what changed in production when this path went live | local | no | no | prices, model |
+| 21 | [`21_ingestion_guards.py`](21_ingestion_guards.py) | The two refusals that keep the fixture catalogue out of a real table: why fixtures SHADOW rather than duplicate, the deployment signal, the COUNT probe, and the alarm that made a silent nightly defect visible | local | no | no | DynamoDB — the guard module is real |
+| 22 | [`22_price_history_and_review.py`](22_price_history_and_review.py) | Append-only price history and the data-quality reviewer that reads it: what a history row refuses to carry, baselines derived at read time, the sanitised snapshot boundary, and a fabricated quote caught deterministically | local | no | no | DynamoDB |
+| 23 | [`23_degradation_and_throttling.py`](23_degradation_and_throttling.py) | What the service says when Bedrock cannot be reached — the non-adjustable quota, the keyword fallback, and the defect where a throttle was reported as the shopper's fault | local | no | no | model |
+| 24 | [`24_backend_without_a_frontend.py`](24_backend_without_a_frontend.py) | **The whole backend running as a service.** Boots the real dev server, drives a multi-turn session over HTTP, and prints the exact `fetch()` a frontend needs | local, **integration** | no | optional | prices, model in local |
 
 `_demo_support.py` holds the shared printing helpers, the mode machinery and
 the fixture-date pin. It is not itself a demo.
@@ -181,10 +188,15 @@ the fixture-date pin. It is not itself a demo.
 **How the AI layer is actually built** — 16 → 14 → 5 → 18.
 **Where the data comes from** — 10 → 9 → 13 → 12 → 11.
 **What is deployed, and what an operator sees** — 6 → 7 → 17 → 15 → 8.
-**All of it at once** — 19.
+**The features added since the first pass** — 20 → 22 → 21 → 23.
+**All of it at once** — 19, then **24** for the backend as a running service.
+
+**If you are on the frontend team, read 24 first.** It starts the backend, shows
+you every event shape you will receive, and ends with the `fetch()` call to copy.
 
 If you have time for one file, read **3**. If you have time for two, read
-**3** and **19**.
+**3** and **19**. If you are here to integrate rather than to review, read
+**24**.
 
 ---
 

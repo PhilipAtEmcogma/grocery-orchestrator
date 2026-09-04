@@ -575,7 +575,7 @@ python scripts/apply_iam.py --dry-run     --config config/iam-<role>.json       
 python scripts/apply_state_machine.py --dry-run  # ingestion Step Functions
 python -m pytest tests/test_ingestion.py         # ingestion; no AWS
 python scripts/check_quotas.py                    # throughput ceiling, live
-python Philip_demo/run_all.py                     # nineteen demos, offline; DEMO_MODE=aws|integration
+python Philip_demo/run_all.py                     # twenty-four demos, offline; DEMO_MODE=aws|integration
 MCP_ENABLED=1 python scripts/mcp_server.py        # local read-only MCP over stdio
 python scripts/check_recipe_coverage.py --missing 20   # imported recipes vs the REAL catalogue
 python scripts/check_recipe_coverage.py --recipes curated              # 29/29 costable
