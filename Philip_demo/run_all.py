@@ -81,6 +81,17 @@ DEMOS: list[tuple[str, str, tuple[str, ...]]] = [
     ("17_configuration_and_fail_closed.py", "Configuration as a failure mode", (LOCAL, AWS)),
     ("18_evaluation_and_qualification.py", "Evaluation and the qualification gate", (LOCAL,)),
     ("19_end_to_end.py", "End to end, through every layer", (LOCAL, AWS, INTEGRATION)),
+    ("20_recipe_selection.py", "Recipe selection: the half before the model", (LOCAL,)),
+    ("21_ingestion_guards.py", "The two refusals that guard the catalogue", (LOCAL,)),
+    ("22_price_history_and_review.py", "Price history and the data-quality reviewer", (LOCAL,)),
+    ("23_degradation_and_throttling.py", "Degradation when the model is unreachable", (LOCAL,)),
+    # Last, and deliberately: it binds a port and starts a subprocess, so a
+    # failure here is about the environment rather than about the orchestrator.
+    (
+        "24_backend_without_a_frontend.py",
+        "The whole backend, running, no frontend",
+        (LOCAL, INTEGRATION),
+    ),
 ]
 
 BLOCKED_EXIT = 2

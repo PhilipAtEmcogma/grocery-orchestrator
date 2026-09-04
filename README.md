@@ -390,7 +390,7 @@ ingestion/                 Price ingestion: sources, normalise, handler, and
                            fail-closed dietary re-classifier. Deployed to
                            ap-southeast-2; live retailer acquisition stays
                            gated on ACQUISITION-RISK.md §8
-Philip_demo/               Nineteen runnable demos. Default mode is offline,
+Philip_demo/               Twenty-four runnable demos. Default mode is offline,
                            no AWS; DEMO_MODE selects integration (the deployed
                            endpoint) or aws (deployed resources, read-only).
                            run_all.py exits non-zero if any drifts from the code
