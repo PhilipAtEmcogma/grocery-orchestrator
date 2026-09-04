@@ -100,7 +100,7 @@ All of it exists.
 | Resource | Identifier | Notes |
 |---|---|---|
 | Orchestrator Lambda | `grocery-orchestrator-dev` | python3.13, x86_64, 1024 MB, 30 s, X-Ray Active |
-| Published version / alias | **`12`** / `:live` | SnapStart `OptimizationStatus: On`. v6–v11 were all 2026-08-30; **v12 published 2026-09-04** from `6270c0a` and is the first orchestrator deploy since — it carries Task 15c, `src/history/` and the reviewer modules (§3v). Rollback: point the alias back to `11` |
+| Published version / alias | **`12`** / `:live`, with **`13` built and held** | SnapStart `OptimizationStatus: On`. v6–v11 were all 2026-08-30; **v12 published 2026-09-04** from `6270c0a`, the first orchestrator deploy since (§3v). **v13** (`0467747`) carries the degraded-intent routing fix and was PROVEN live under Task 16 gate G6 Phase B — 0 clarifications on a complete request where v12 gave 14 of 24 — then the alias was rolled back to 12 **pending the frontend merge**. Promote v13 at the frontend cutover. Rollback from either: point the alias at the previous version |
 | Orchestrator role | `grocery-orchestrator-dev-role` | `config/iam-orchestrator-role.json` |
 | REST API | `grocery-orchestrator-api-dev` (`woqmel35lk`) | regional, stage `dev`, throttle 5 rps / burst 10, X-Ray tracing ON (enabled 2026-08-30) |
 | Endpoint | `POST /dev/chat` | unauthenticated; see §7 |
