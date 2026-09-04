@@ -90,7 +90,7 @@ to *create* new resources and partly to *take ownership of existing ones*.
 | IAM roles (orchestrator, ingestion) | ✅ Yes | `apply_iam.py` from `config/iam-*.json` | Codify as `Role` constructs |
 | CloudWatch alarms + metric filter + SNS | ✅ Yes | `apply_alarms.py` from [`config/alarms.json`](../../config/alarms.json) | Codify |
 | Step Functions state machine | ✅ **Yes** — `grocery-ingestion-dev` (STANDARD) | `apply_state_machine.py` | **Adopt**, then codify |
-| EventBridge schedule | ✅ **Yes, ENABLED** — `grocery-price-refresh-dev`, daily 03:00 NZ | manual | **Adopt**, then codify |
+| EventBridge schedule | ⚠️ **Yes, DISABLED 2026-09-03** — `grocery-price-refresh-dev`; returning WEEKLY as a liveness check, not a refresh | manual | **Adopt**, then codify — its cadence and state are reviewable nowhere but the account, which is how a daily fixture re-injection ran unseen |
 | Lambda function(s) | ✅ **Yes, deployed** — `grocery-orchestrator-dev`, `grocery-ingestion-dev` | `build_lambda.py`, deployed manually | **Adopt**, then codify function + alias |
 | API Gateway REST API | ✅ **Yes** — `grocery-orchestrator-api-dev` (`woqmel35lk`), stage `dev`, `POST /chat` | manual | **Adopt or replace — decide** ([08 §10](08-OPEN-DECISIONS.md)) |
 | SnapStart alias | ✅ **Yes** — `grocery-orchestrator-dev:live` → version `6` | manual | **Adopt**, then codify |

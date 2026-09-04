@@ -53,7 +53,7 @@ flowchart LR
     ORC -->|EMF + traces| CW["CloudWatch<br/>Logs, Metrics, Alarms<br/>X-Ray"]
     IAM["IAM least-privilege<br/>4 roles, one per principal"] -.-> ORC
 
-    EB["EventBridge Scheduler<br/>daily 03:00 NZ"] --> SF["Step Functions<br/>Inline Map, 3 branches"]
+    EB["EventBridge Scheduler<br/>weekly, liveness check<br/>(DISABLED since 2026-09-03)"] --> SF["Step Functions<br/>Inline Map, 3 branches"]
     SF --> ING["grocery-ingestion-dev<br/>one retailer per invocation"]
     ING -->|writes prices| P
   end
@@ -107,7 +107,7 @@ All of it exists.
 | Ingestion Lambda | `grocery-ingestion-dev` | 512 MB, 120 s, handler `ingestion.handler.lambda_handler` |
 | Ingestion role | `grocery-ingestion-dev-role` | `config/iam-ingestion-role.json`; read+write on products only, no Bedrock, no idempotency |
 | State machine | `grocery-ingestion-dev` | `config/ingestion-state-machine.json` |
-| Schedule | `grocery-price-refresh-dev` | `cron(0 3 * * ? *)` Pacific/Auckland, ENABLED |
+| Schedule | `grocery-price-refresh-dev` | **DISABLED 2026-09-03** (it was re-injecting the fixture catalogue nightly). Decision 2026-09-04: return as a WEEKLY liveness check, not a refresh — see `config/data-sources.json` `_what_the_weekly_refresh_is_actually_for`. Not codified; lives only in the account |
 | Products table | `grocery-products-dev` | **2,759 items**, the real catalogue only, GSI1 + GSI2, PAY_PER_REQUEST |
 | Idempotency table | `grocery-idempotency-dev` | TTL ACTIVE |
 | Guardrail | `b1xezpqe04kx` version `2` | v2 published 2026-08-29; DRAFT deliberately not granted in IAM |
