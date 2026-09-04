@@ -540,7 +540,7 @@ measurement here, make the instrument name its inputs.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 907 passed, 31 skipped, no AWS
+python -m pytest -q                              # 931 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -578,7 +578,7 @@ python scripts/reviewer_runtime_preflight.py      # cost-free reviewer-Runtime p
 python scripts/build_reviewer_runtime.py          # arm64 CodeZip for the reviewer Runtime (build/reviewer-runtime.zip)
 python scripts/review_runtime.py --sim            # boot the reviewer entrypoint over local HTTP, no AWS
 python scripts/review_runtime.py --arn <arn>      # invoke a DEPLOYED reviewer Runtime (see design doc §15)
-cd infra && npm ci && npm test                    # 47 CDK security assertions across 5 suites, no AWS
+cd infra && npm ci && npm test                    # 52 CDK security assertions across 6 suites, no AWS
 cd infra && npx tsc --noEmit && npx cdk synth --quiet   # what the `infra` CI job runs
 ```
 
@@ -853,7 +853,12 @@ the deployed service plane — REST API `woqmel35lk` returning HTTP 200 on
 `POST /dev/chat` in ~7s with a real Nova Lite call and grounded citations,
 Lambda alias `live` cut over from `5` on 2026-08-30 and republished since. The
 schedule `grocery-price-refresh-dev` is DISABLED (2026-09-03), returning weekly
-as a liveness check rather than a refresh. This is evidence about the
+as a liveness check rather than a refresh. **The ingestion plane was deployed
+2026-09-04** (ARCHITECTURE.md §3u): price-history table, its append-only grant,
+four ingestion alarms, and the ingestion Lambda carrying the collected catalogue
+with `PRICE_SOURCE=lineage_b` — 2,759 rows written, 0 rejected, 0 changed, and
+the fixture-default refusal watched to fire in the account and reach its alarm.
+This is evidence about the
 resources, not about behaviour: it does not prove live red-team quality.
 (Stale-claim ownership IS now proven against the live idempotency table.) (Retrieved-record/value equality is now proven offline on
 every turn, against the record the repository returned.)

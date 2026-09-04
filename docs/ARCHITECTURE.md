@@ -104,22 +104,25 @@ All of it exists.
 | Orchestrator role | `grocery-orchestrator-dev-role` | `config/iam-orchestrator-role.json` |
 | REST API | `grocery-orchestrator-api-dev` (`woqmel35lk`) | regional, stage `dev`, throttle 5 rps / burst 10, X-Ray tracing ON (enabled 2026-08-30) |
 | Endpoint | `POST /dev/chat` | unauthenticated; see §7 |
-| Ingestion Lambda | `grocery-ingestion-dev` | 512 MB, 120 s, handler `ingestion.handler.lambda_handler` |
-| Ingestion role | `grocery-ingestion-dev-role` | `config/iam-ingestion-role.json`; read+write on products only, no Bedrock, no idempotency |
+| Ingestion Lambda | `grocery-ingestion-dev` | 512 MB, 120 s, handler `ingestion.handler.lambda_handler`. **Deployed 2026-09-04** (§3u) — before that the account ran the 2026-08-27 build, which contained neither `reject_implausible` nor the history write. Env: `PRODUCTS_TABLE`, `PRICE_SOURCE=lineage_b` |
+| Ingestion role | `grocery-ingestion-dev-role` | `config/iam-ingestion-role.json`; Query/Put/BatchWrite on products, **append-only (Put/BatchWrite, no reads) on price-history since 2026-09-04**, no Bedrock, no idempotency |
 | State machine | `grocery-ingestion-dev` | `config/ingestion-state-machine.json` |
 | Schedule | `grocery-price-refresh-dev` | **DISABLED 2026-09-03** (it was re-injecting the fixture catalogue nightly). Decision 2026-09-04: return as a WEEKLY liveness check, not a refresh — see `config/data-sources.json` `_what_the_weekly_refresh_is_actually_for`. Not codified; lives only in the account |
 | Products table | `grocery-products-dev` | **2,759 items**, the real catalogue only, GSI1 + GSI2, PAY_PER_REQUEST |
+| Price-history table | `grocery-price-history-dev` | **Created 2026-09-04** by `Grocery-Stateful-dev` — the first resource this project's CDK has created rather than adopted. `history_pk`/`valid_date`, PAY_PER_REQUEST, no GSI, no PITR, RETAIN. 2,759 rows |
 | Idempotency table | `grocery-idempotency-dev` | TTL ACTIVE |
 | Guardrail | `b1xezpqe04kx` version `2` | v2 published 2026-08-29; DRAFT deliberately not granted in IAM |
 | CDK stacks (deployed) | `Grocery-Stateful-dev`, `Grocery-Service-dev` | bootstrapped 2026-08-30; service plane deployed in parallel under `-cdk`, see §3m. `Grocery-Obs`, `-Ingestion`, `-Frontend`, `-Reviewer` are DEFINED in `infra/` but NOT deployed (the Reviewer stack, ADR 0002 gate 5, also waits on the `AWS::BedrockAgentCore::Runtime` CFN type reaching ap-southeast-2 — `infra/lib/reviewer-stack.ts`). |
-| SNS topic | `grocery-orchestrator-alarms-dev` | **8 alarms**; 2 confirmed email subscribers; Budgets granted publish |
+| SNS topic | `grocery-orchestrator-alarms-dev` | **12 alarms** (8 orchestrator + 4 ingestion, applied 2026-09-04); 2 confirmed email subscribers; Budgets granted publish |
 | Dashboard | `grocery-orchestrator-dev` | 9 widgets over the EMF metrics and the gateway |
 | Budget | `grocery-orchestrator-monthly-dev` | $25/month, alerts at 50/80/100% actual + 100% forecast |
 | Usage plan | `grocery-orchestrator-dev-plan` (`v4yd7d`) | 5 rps / burst 10 on stage `dev`; created 2026-08-30 |
 
 **One artefact, two functions.** `scripts/build_lambda.py` now includes
-`ingestion` in `INCLUDE_DIRS`, and the same `build/lambda.zip` is deployed to
-both functions with different handlers. Two zips would mean two builds to keep
+`ingestion` in `INCLUDE_DIRS` — and, since 2026-09-04,
+`datasets/data/dynamodb_products`, because the deployed refresh runs
+`PRICE_SOURCE=lineage_b` and has to have something to read. The same
+`build/lambda.zip` is deployed to both functions with different handlers. Two zips would mean two builds to keep
 in step and two artefacts for the CI `package` job to verify, for about 10 KB
 of Python. The functions stay separate — separate roles, separate invocation
 paths — and only the artefact is shared.
@@ -1132,7 +1135,7 @@ table, not the Runtime.
 > `smart-grocery-*`). So "this price doubled overnight" is now *catchable in code*
 > and was the enrichment the reviewer prototype (§ below / `docs/AGENTCORE-RUNTIME-REVIEWER.md`)
 > actually ran against, but it is not yet *live*, because the ingestion write
-> path that would populate the table has not been deployed. The recommendation
+> path that would populate the table has not been deployed. **Superseded 2026-09-04: the table was created and populated (2,759 rows) — see §3u.** The recommendation
 > ("history before Runtime") held: the history module landed first and the
 > reviewer used it.
 
@@ -1891,3 +1894,95 @@ query on `product_key`. Cross-checking the surprising zero against GSI1 is what
 caught the mistake before it became a false "already fixed". When probing this
 table by hand, use GSI1 `product_key` or the exact slugged `store_key`, never
 the display-cased suburb.
+
+## 3u. The ingestion plane was deployed, and its controls were watched to fire — 2026-09-04
+
+Everything §3t and PR #80 built was, until this date, code and config. The
+account still ran the **2026-08-27** ingestion Lambda. That is not inferred from
+a timestamp: the deployed artefact was downloaded before being overwritten and
+read, and it contains neither `_append_history` nor `reject_implausible`. So
+`grocery-ingestion-row-rejected-dev` had been watching a metric the running code
+was physically incapable of emitting since 2026-08-31 — an alarm in `OK`,
+indistinguishable from a healthy service, for four days.
+
+**Applied in this order, verified between each step.** The order is not
+cosmetic: `PRICE_SOURCE` must be set before the schedule can ever run, or every
+branch hits the layer-1 refusal.
+
+| # | Step | Evidence |
+|---|---|---|
+| 1 | `cdk deploy Grocery-Stateful-dev` | `cdk diff` showed exactly one added resource. `grocery-price-history-dev` ACTIVE, `history_pk`/`valid_date`, PAY_PER_REQUEST, 0 GSIs. Products `TableId` still `7ce1af63…`, 2,759 items — **Strategy A held**; the stack holds only `CDKMetadata` and the new table |
+| 2 | `apply_iam.py` | `DynamoAppendPriceHistory`: PutItem + BatchWriteItem, on the history table only. No Query, Scan, GetItem, DeleteItem or UpdateItem — asserted, not assumed |
+| 3 | `apply_alarms.py` | 9 alarms → **12**; 3 metric filters on `/aws/lambda/grocery-ingestion-dev`; 2 confirmed SNS subscribers |
+| 4 | `update-function-code` | 9,415,148 → 9,925,606 bytes. All 89 application files in the archive were SHA-compared against a clean tree at `03f7687` before upload |
+| 5 | `update-function-configuration` | `PRICE_SOURCE=lineage_b`, `PRODUCTS_TABLE` preserved by merging rather than replacing the map |
+| 6 | Dry-run invokes | paknsave 1377 · new_world 1382 · woolworths 0 = **2,759**, the table's exact count. `added 0, changed 0, rejected 0` |
+| 7 | Real invokes | `written` and `history_written` equal `fetched` for all three. 2,759 history rows |
+
+**The dry run was the decision point and it answered two open questions.**
+`added 0, changed 0, unchanged 1377` means the catalogue shipped in the archive
+is byte-identical to what the 2026-08-30 load put in the table: **no normaliser
+drift in five days**, proven by diff rather than by argument. And `rejected 0`
+is `reject_implausible` executing in the account for the first time in its life
+and refusing nothing — the $2,490-broccoli class is absent from the real data.
+
+**The alarms went `INSUFFICIENT_DATA` → `OK`, which is the whole point of
+`default_value: 0`.** Three of the four had never held a datapoint. `OK` now
+means "checked and fine" rather than "never looked", and that distinction is
+only real because the filters 0-fill.
+
+### The refusal was watched to fire in the account, not only in tests
+
+This repository's standing rule is to assume a control is broken until it has
+been watched to fail, and every finding in §3 is a control that read as working.
+So `PRICE_SOURCE` was removed, one real refresh invoked, and the variable
+restored — the whole thing inside a `finally`, with the schedule disabled so
+nothing else could invoke the function.
+
+```
+errorType:    FixtureGuardError
+errorMessage: refusing to default to the FIXTURE catalogue in a deployment
+              (AWS_LAMBDA_FUNCTION_NAME=grocery-ingestion-dev) ...
+log line:     {"message": "ingestion_refresh_failed", "retailer": "paknsave", ...}
+alarm:        OK -> ALARM at 17:32:04
+```
+
+Three things that only a live test could establish. **The refusal names the
+signal it acted on** — `AWS_LAMBDA_FUNCTION_NAME`, which is set by the runtime;
+a check keyed on `APP_STAGE` would have found it unset on this very function and
+let the write through. **Nothing was written**: fixture keys `milk-2l` and
+`butter-500g` stayed at 0 on GSI1 through the refused run. **The log line
+reached the alarm**, which is the half `AWS/States ExecutionsFailed` cannot see,
+because the state machine's per-branch `Catch` turns a thrown refresh into a
+succeeded execution.
+
+The alarm was then set back to `OK` with a `StateReason` naming the test, after
+a dry run re-confirmed the function healthy — a deliberate alarm should not sit
+red for an hour, and the subscribers who got the page deserve the all-clear.
+
+### What is deployed and what is not
+
+**The schedule remains DISABLED**, by decision. The catalogue cannot get any
+fresher — `LineageBSource.CAPTURED_AT` is the constant `2026-08-28` — so the
+weekly cadence agreed in PR #81 is a liveness check, and enabling it is one call
+whenever it is wanted:
+
+```bash
+aws scheduler update-schedule --name grocery-price-refresh-dev \
+  --schedule-expression 'cron(0 3 ? * MON *)' \
+  --schedule-expression-timezone Pacific/Auckland --state ENABLED \
+  # plus --target/--flexible-time-window unchanged; `get-schedule` first
+```
+
+Still open, and named rather than quietly carried:
+
+- **The schedule is not codified.** Its cadence and state live only in the
+  account, which is how a nightly fixture re-injection ran unseen for days.
+  Codifying it means building out `infra/lib/ingestion-stack.ts`, still TODO.
+- **Nothing alarms on `fetched 0`.** A missing catalogue directory raises; a
+  present-but-empty one for a chain that should have rows would report a
+  successful refresh that wrote nothing. Expected for Woolworths, a real defect
+  for either other chain.
+- **The freshness cliff is 2026-10-12** at `max_price_age_days: 45`. No source
+  available to this project can move it; see `config/freshness.json`
+  `_revert_condition_re_read_2026_09_04`.

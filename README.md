@@ -90,7 +90,7 @@ operational evidence** — not first deployment.
 | 6 · Idempotency fencing, canonical hashing, pagination, PITR | ✅ done · one deferral (6b) |
 | 7 · Scorecards, route qualification, prose/repair evals | ✅ done · one deferral (7b) |
 | 8 · Local read-only MCP | ✅ done — 2 coarse tools, default-off, capped, parity-tested |
-| 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done**. ObservabilityStack written 2026-08-31 and **NOT DEPLOYED** — it alarms both planes when it is, and the account has never seen it — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms, dashboard, Budget, first deployed latency + cost baselines). Cutover deferred by decision, not pending |
+| 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done**. ObservabilityStack written 2026-08-31 and **NOT DEPLOYED** — it alarms both planes when it is, and the account has never seen it — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms then, **12 since 2026-09-04**; dashboard, Budget, first deployed latency + cost baselines). The ingestion plane was deployed 2026-09-04 — price-history table, its IAM grant and four ingestion alarms, with the fixture-default refusal watched to fire in the account (§3u). Cutover deferred by decision, not pending |
 | 13 · Controlled ingestion | 🟡 **anomaly rejection wired 2026-08-31** — `implausible_unit_price` refuses a row before it is written, with a metric and an alarm. Measured over the real catalogue: 0 rejections clean, **522 of 2,759** with the historical defect reintroduced (§3p). One catalogue since 2026-09-01, and the loader is guarded against re-shadowing it (§3t). Remaining: the decoupled review trigger (Streams -> SQS/DLQ). **And the served data covers two chains, not three** — no Woolworths rows exist |
 | 14 · AgentCore reviewer | 🟡 **14a and 14b done** — the sanitised snapshot boundary and finding validation (needed whoever reviews), and ADR 0002 answered 2026-09-02 under autonomous delegation: reviewer Runtime only. **Prototyped live and torn down** — 60% reviewer-only recall, 0 false positives, and one fabricated quote caught by the caller-side validator, which is the trust boundary working. CDK stack written; it cannot deploy until `AWS::BedrockAgentCore::Runtime` reaches Sydney. **Retention is a separate, open decision** |
 | 15 · Recipe catalogue | ✅ **done 2026-08-31** — 29 curated recipes, and **15c wired**: a meal-plan turn is built from named recipes, with the model choosing ids from a shortlist retrieval has already proven costable, dietary-viable and affordable as a set. Falls back to free composition with a notice when nothing fits. The imported 175 stay unusable: 0/175 against *both* catalogues |
@@ -119,14 +119,24 @@ Budget, API-stage X-Ray, and the first latency baseline measured against the
 endpoint rather than a laptop — price check p95 **2.21s** (target 5s), meal plan
 p95 **12.2s** (target 20s). Detail in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3a–§3l.
 
+**Ingestion plane deployed** (2026-09-04): the `grocery-price-history-dev`
+table, its append-only IAM grant, four ingestion alarms, and an ingestion Lambda
+carrying the collected catalogue with `PRICE_SOURCE=lineage_b` — 2,759 rows
+written across three retailers with `added 0, changed 0, rejected 0`. The
+account had been running the 2026-08-27 build until then, so `reject_implausible`
+executed in production for the first time here. The fixture-default refusal was
+watched to fire in the account and reach its alarm, and the weekly refresh
+schedule remains DISABLED by decision — the catalogue is a fixed 2026-08-28
+snapshot and cannot be made fresher. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3u.
+
 **Verified live in `ap-southeast-2`** (account `097087133897`, 2026-08-29):
 Guardrail `b1xezpqe04kx` **version 2** at 13/13 must-block and 9/9 must-allow;
 intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9%;
 DynamoDB products and idempotency tables with owner-fenced claims proven against
 the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
-**Offline gates:** 907 tests passing, 31 skipped, plus **47 CDK assertions**
-in `infra/` — first run by CI on 2026-08-31, having found two IAM
+**Offline gates:** 931 tests passing, 31 skipped, plus **52 CDK assertions**
+in `infra/` (6 suites) — first run by CI on 2026-08-31, having found two IAM
 regressions in a stack that was already deployed
 ([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3o). Five eval suites — intent
 85.1% (47 cases), meal plan 100% (20), prose 100% (11), repair 100% (12),
@@ -337,7 +347,7 @@ src/
   history/                 Append-only price history (Table 4): read-time
                            average/min/max baseline per product, feeding the
                            reviewer's deviation_ratio. Code built + tested;
-                           the grocery-price-history-dev table is NOT deployed
+                           table deployed 2026-09-04 and holding 2,759 rows
   review/                  Task 14: the sanitised snapshot a data-quality
                            reviewer sits behind, the validation its findings
                            must survive, and the model-half/validate-half split.
@@ -549,7 +559,7 @@ claimed. Read it before changing any of this, and not before.
 
 ### Tests, evals and CI
 
-- ✅ **907 passing, 31 skipped** — classification, extraction, arithmetic,
+- ✅ **931 passing, 31 skipped** — classification, extraction, arithmetic,
   grounding, injection resistance, bounded repair, routing, idempotency,
   Guardrail propagation, dietary fail-closed behaviour, handler mappings, and
   the CI workflow's own wiring.
@@ -600,7 +610,8 @@ struck through is not a current capability.
 
 **The critical path is operational evidence and the frontend cutover, not first
 deployment.** A running service already exists — see *Where this is right now* —
-and since 2026-08-30 it is under IaC and carries a dashboard, 8 alarms, a $25
+and since 2026-08-30 it is under IaC and carries a dashboard, 8 alarms (12
+since the ingestion plane deployed 2026-09-04), a $25
 Budget, API-stage X-Ray and the first latency and cost baselines measured
 against the deployed endpoint rather than a laptop. What it does not carry is a
 **load** run: those figures are n=3 and n=8, which is a baseline and not a
@@ -708,7 +719,7 @@ python Philip_demo/run_all.py   # nineteen demos, offline, about a minute
 And to check it:
 
 ```bash
-pytest                     # 907 passing, 31 skipped
+pytest                     # 931 passing, 31 skipped
 python validate.py         # samples/*.json against the contract
 ruff check . && ruff format --check .
 python evals/run_intent.py         # 85.1% scripted baseline (40/47)

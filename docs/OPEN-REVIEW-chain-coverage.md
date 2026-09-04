@@ -3,6 +3,16 @@
 **Status:** open, and wants the data teammates plus a product call from the owner.
 **Raised:** 2026-09-02 · **Effort:** about fifteen minutes · **You need no code.**
 
+> **Confirmed from the deployed pipeline, 2026-09-04.** This was previously an
+> argument from reading files. The first deployed refresh under
+> `PRICE_SOURCE=lineage_b` returned **paknsave 1,377 · new_world 1,382 ·
+> woolworths 0** — 2,759 rows, matching the live table exactly. The Woolworths
+> branch now reports `fetched 0` on every run rather than being masked by
+> fixture rows, so the gap is a recurring number in the execution history
+> instead of a claim in this document. It is not an error and does not alarm:
+> `LineageBSource` returns an empty list for a chain the catalogue does not
+> cover, and reserves raising for a MISSING catalogue directory.
+
 Companion to [`OPEN-REVIEW-head-terms.md`](OPEN-REVIEW-head-terms.md) and
 [`OPEN-REVIEW-min-grams-per-person-day.md`](OPEN-REVIEW-min-grams-per-person-day.md),
 and deliberately the same shape: a gap the build cannot close on its own,

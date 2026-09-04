@@ -19,7 +19,7 @@ tier:
 | **DynamoDB (on-demand)** | 25 GB storage + 25 WCU/RCU-equiv free; on-demand billed per request | tiny catalogue, few reads | **~$0** |
 | **Step Functions (Standard)** | 4,000 state transitions/mo | ~1 run/day × few states | **$0** |
 | **EventBridge** | scheduled rules free | 1 rule | **$0** |
-| **CloudWatch** | 10 metrics, 10 alarms, 5 GB logs free | 2 alarms, small logs | **$0** |
+| **CloudWatch** | 10 metrics, 10 alarms, 5 GB logs free | **12 alarms** (2026-09-04), small logs | **~$0.20/mo** — two alarms past the free ten, at $0.10 each. Named rather than rounded to zero: the point of this table is that a number nobody checked is how a bill surprises you |
 | **X-Ray** | 100,000 traces/mo free | well under | **$0** |
 | **SNS** | 1,000 email notifications/mo free | a handful of alarms | **$0** |
 | **S3 (artefacts + frontend)** | 5 GB + 20k GET + 2k PUT free (first 12 mo) | tiny | **~$0** |

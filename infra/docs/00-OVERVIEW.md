@@ -86,12 +86,13 @@ to *create* new resources and partly to *take ownership of existing ones*.
 |----------|---------------|-----------|-----------|
 | DynamoDB `grocery-products-dev` (PITR) | ✅ **Yes, seeded** | manual / `load_seed_data.py` | **Adopt (import), never replace** |
 | DynamoDB `grocery-idempotency-dev` (TTL) | ✅ **Yes** | manual | **Adopt (import), never replace** |
+| DynamoDB `grocery-price-history-dev` | ✅ **Yes, created 2026-09-04** | `Grocery-Stateful-dev` | **Already CDK-managed** — the first resource this stack creates rather than adopts, because a table that never existed holds no data to lose. RETAIN |
 | Bedrock Guardrail (`b1xezpqe04kx`, **v2**) | ✅ Yes | `apply_guardrail.py` from [`config/guardrail.json`](../../config/guardrail.json) | Re-create as a construct or adopt by id — see [08-OPEN-DECISIONS](08-OPEN-DECISIONS.md) |
 | IAM roles (orchestrator, ingestion) | ✅ Yes | `apply_iam.py` from `config/iam-*.json` | Codify as `Role` constructs |
 | CloudWatch alarms + metric filter + SNS | ✅ Yes | `apply_alarms.py` from [`config/alarms.json`](../../config/alarms.json) | Codify |
 | Step Functions state machine | ✅ **Yes** — `grocery-ingestion-dev` (STANDARD) | `apply_state_machine.py` | **Adopt**, then codify |
 | EventBridge schedule | ⚠️ **Yes, DISABLED 2026-09-03** — `grocery-price-refresh-dev`; returning WEEKLY as a liveness check, not a refresh | manual | **Adopt**, then codify — its cadence and state are reviewable nowhere but the account, which is how a daily fixture re-injection ran unseen |
-| Lambda function(s) | ✅ **Yes, deployed** — `grocery-orchestrator-dev`, `grocery-ingestion-dev` | `build_lambda.py`, deployed manually | **Adopt**, then codify function + alias |
+| Lambda function(s) | ✅ **Yes, deployed** — `grocery-orchestrator-dev`; `grocery-ingestion-dev` **refreshed 2026-09-04** (it had run the 2026-08-27 build until then) | `build_lambda.py`, deployed manually | **Adopt**, then codify function + alias |
 | API Gateway REST API | ✅ **Yes** — `grocery-orchestrator-api-dev` (`woqmel35lk`), stage `dev`, `POST /chat` | manual | **Adopt or replace — decide** ([08 §10](08-OPEN-DECISIONS.md)) |
 | SnapStart alias | ✅ **Yes** — `grocery-orchestrator-dev:live` → version `6` | manual | **Adopt**, then codify |
 | S3 + CloudFront frontend | ❌ Not yet | — | Create |
