@@ -277,6 +277,32 @@ def test_an_empty_but_present_catalogue_is_not_an_error(tmp_path):
     assert LineageBSource("woolworths", path=tmp_path).fetch() == []
 
 
+def test_the_archive_ships_every_catalogue_the_deployed_function_reads():
+    """
+    The packaging allowlist against the code that reads from it.
+
+    The deployed ingestion function runs `PRICE_SOURCE=lineage_b` (decided
+    2026-09-04, config/data-sources.json), so `LINEAGE_B_DIR` has to be inside
+    the Lambda archive. `build_lambda.py`'s INCLUDE_DIRS is an allowlist, and an
+    allowlist that stops covering what the code reads is a packaging change
+    nothing offline would otherwise notice: every test here resolves these paths
+    against the REPO, where they always exist, and the failure only appears in
+    the account. `fixtures` is asserted for the same reason and has been shipped
+    since before ingestion had a second source.
+    """
+    from ingestion.sources import FIXTURES, LINEAGE_B_DIR
+    from scripts.build_lambda import INCLUDE_DIRS, ROOT
+
+    shipped = [(ROOT / entry).resolve() for entry in INCLUDE_DIRS]
+
+    for needed in (LINEAGE_B_DIR, FIXTURES):
+        target = needed.resolve()
+        assert any(target == d or target.is_relative_to(d) for d in shipped), (
+            f"{needed} is read at runtime but no INCLUDE_DIRS entry covers it; "
+            f"the deployed function would not find it. Shipped: {INCLUDE_DIRS}"
+        )
+
+
 def test_unknown_retailer_is_rejected():
     with pytest.raises(ValueError, match="unknown retailer"):
         FixtureSource("countdown-express")

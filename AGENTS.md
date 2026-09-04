@@ -851,8 +851,9 @@ idempotency outcomes; Nova Lite/Pro invocation; Guardrail
 `b1xezpqe04kx` version `2` verified 13/13 + 9/9; and, re-confirmed 2026-08-30,
 the deployed service plane — REST API `woqmel35lk` returning HTTP 200 on
 `POST /dev/chat` in ~7s with a real Nova Lite call and grounded citations,
-Lambda alias `live` cut over from `5` on 2026-08-30 and republished since, and
-schedule `grocery-price-refresh-dev` ENABLED. This is evidence about the
+Lambda alias `live` cut over from `5` on 2026-08-30 and republished since. The
+schedule `grocery-price-refresh-dev` is DISABLED (2026-09-03), returning weekly
+as a liveness check rather than a refresh. This is evidence about the
 resources, not about behaviour: it does not prove live red-team quality.
 (Stale-claim ownership IS now proven against the live idempotency table.) (Retrieved-record/value equality is now proven offline on
 every turn, against the record the repository returned.)
