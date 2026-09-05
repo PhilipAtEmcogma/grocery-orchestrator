@@ -1,9 +1,10 @@
 """
 Bedrock-backed ModelClient.
 
-UNTESTED until the AWS account lands — it cannot be exercised without
-credentials. Everything above it is already proven by the scripted client, so
-when the account arrives the only new surface is this file.
+The adapter has limited live verification against Nova Lite and Nova Pro in
+`ap-southeast-2`. That proves the provider boundary and request shape, not
+production model qualification or the full live Guardrail red-team scorecard.
+Everything above it remains testable through the scripted client without AWS.
 
 Model ids are resolved from environment variables rather than hardcoded,
 because Sydney (ap-southeast-2) often requires cross-region inference
@@ -25,16 +26,19 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 from pydantic import ValidationError
 
-from src.models.base import ModelClient, ModelError, ModelTier, T
+from src.models.base import (
+    GuardrailBlocked,
+    ModelClient,
+    ModelError,
+    ModelOutputInvalid,
+    ModelTier,
+    T,
+)
 from src.models.guardrail import guard_content_block
 from src.models.registry import ModelRegistry, ModelSpec, RoutingPolicy
 
 REGION = os.environ.get("AWS_REGION", "ap-southeast-2")
 
-MODEL_IDS = {
-    ModelTier.FAST: os.environ.get("BEDROCK_MODEL_FAST", ""),
-    ModelTier.QUALITY: os.environ.get("BEDROCK_MODEL_QUALITY", ""),
-}
 
 def _guardrail_config() -> tuple[str, str, bool]:
     """
@@ -111,29 +115,45 @@ class BedrockModelClient(ModelClient):
         spec = self._spec_for(task)
         if spec.capabilities.tool_use:
             return self._structured_via_tool_use(
-                system=system, user=user, schema=schema, spec=spec,
+                system=system,
+                user=user,
+                schema=schema,
+                spec=spec,
                 max_tokens=max_tokens,
             )
         return self._structured_via_prose(
-            system=system, user=user, schema=schema, spec=spec,
+            system=system,
+            user=user,
+            schema=schema,
+            spec=spec,
             max_tokens=max_tokens,
         )
 
     def _structured_via_tool_use(
-        self, *, system: str, user: str, schema: type[T],
-        spec: ModelSpec, max_tokens: int,
+        self,
+        *,
+        system: str,
+        user: str,
+        schema: type[T],
+        spec: ModelSpec,
+        max_tokens: int,
     ) -> T:
         tool_name = schema.__name__
         raw = self._converse(
-            system=system, user=user, spec=spec, max_tokens=max_tokens,
+            system=system,
+            user=user,
+            spec=spec,
+            max_tokens=max_tokens,
             tool_config={
-                "tools": [{
-                    "toolSpec": {
-                        "name": tool_name,
-                        "description": f"Return the result as a {tool_name}.",
-                        "inputSchema": {"json": schema.model_json_schema()},
+                "tools": [
+                    {
+                        "toolSpec": {
+                            "name": tool_name,
+                            "description": f"Return the result as a {tool_name}.",
+                            "inputSchema": {"json": schema.model_json_schema()},
+                        }
                     }
-                }],
+                ],
                 "toolChoice": {"tool": {"name": tool_name}},
             },
         )
@@ -143,13 +163,20 @@ class BedrockModelClient(ModelClient):
                 try:
                     return schema.model_validate(block["toolUse"]["input"])
                 except ValidationError as exc:
-                    raise ModelError(f"{tool_name} failed validation: {exc}") from exc
+                    raise ModelOutputInvalid(f"{tool_name} failed validation: {exc}") from exc
 
-        raise ModelError(f"model returned no {tool_name} tool call")
+        # The model replied, just not with the tool call it was forced to
+        # make. Still the model answering badly, not the call failing.
+        raise ModelOutputInvalid(f"model returned no {tool_name} tool call")
 
     def _structured_via_prose(
-        self, *, system: str, user: str, schema: type[T],
-        spec: ModelSpec, max_tokens: int,
+        self,
+        *,
+        system: str,
+        user: str,
+        schema: type[T],
+        spec: ModelSpec,
+        max_tokens: int,
     ) -> T:
         """Fallback for models without tool use. Schema in prompt, parse reply."""
         schema_json = json.dumps(schema.model_json_schema(), indent=2)
@@ -159,17 +186,14 @@ class BedrockModelClient(ModelClient):
             f"else. No prose, no explanation, no markdown code fences.\n\n"
             f"{schema_json}"
         )
-        raw = self._converse(
-            system=augmented_system, user=user, spec=spec, max_tokens=max_tokens
-        )
+        raw = self._converse(system=augmented_system, user=user, spec=spec, max_tokens=max_tokens)
         text = "".join(
-            b.get("text", "")
-            for b in raw.get("output", {}).get("message", {}).get("content", [])
+            b.get("text", "") for b in raw.get("output", {}).get("message", {}).get("content", [])
         )
         try:
             return schema.model_validate_json(_extract_json(text))
         except (ValidationError, ValueError) as exc:
-            raise ModelError(
+            raise ModelOutputInvalid(
                 f"{schema.__name__} could not be parsed from prose reply: {exc}"
             ) from exc
 
@@ -216,11 +240,10 @@ class BedrockModelClient(ModelClient):
         kwargs: dict = {
             "modelId": model_id,
             "system": [{"text": system}],
-            # The user turn is wrapped in a guardContent block. Without this
-            # the PROMPT_ATTACK filter never evaluates anything — it has no way
-            # to tell our instructions from the user's. The system prompt is
-            # deliberately NOT wrapped, so our own instructions are not flagged.
-            "messages": [{"role": "user", "content": [guard_content_block(user)]}],
+            # Default: plain text. When a guardrail is configured (below),
+            # this is upgraded to a guardContent block so the PROMPT_ATTACK
+            # filter can distinguish user input from our instructions.
+            "messages": [{"role": "user", "content": [{"text": user}]}],
             "inferenceConfig": {
                 "maxTokens": min(max_tokens, spec.max_output_tokens),
                 "temperature": 0.0,
@@ -249,6 +272,11 @@ class BedrockModelClient(ModelClient):
                 # Required for guardContent blocks to be evaluated at all.
                 "trace": "enabled",
             }
+            # guardContent tagging only works when a guardrail is attached.
+            # Without it, Bedrock rejects the block with a ValidationException.
+            # The tag tells the PROMPT_ATTACK filter which content is untrusted
+            # user input vs our system instructions.
+            kwargs["messages"] = [{"role": "user", "content": [guard_content_block(user)]}]
         elif required:
             # Fail closed. A missing guardrail is a misconfiguration, and
             # running generation without one is exactly the state this
@@ -281,10 +309,6 @@ class BedrockModelClient(ModelClient):
             raise GuardrailBlocked("Request blocked by Bedrock Guardrail")
 
         return response
-
-
-class GuardrailBlocked(ModelError):
-    """Raised when a Guardrail intervenes. Maps to ErrorCode.GUARDRAIL_BLOCKED."""
 
 
 def describe_configuration() -> str:

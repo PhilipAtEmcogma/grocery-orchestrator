@@ -14,6 +14,13 @@ include = ["src", "tests", "evals", "scripts", "validate.py"]
 exclude = ["build", ".venv", "**/__pycache__"]
 pythonVersion = "3.13"
 typeCheckingMode = "standard"
+# `scripts/` is not a package and is deliberately not shipped in the Lambda
+# archive, so its shared helpers are imported after a sys.path insert. That is
+# a runtime fact pyright cannot see — it does not execute the insert — so the
+# path is declared here instead. Without it, `from aws_placeholders import ...`
+# in scripts/ and tests/ is an unresolved import and the type gate fails on
+# code that runs correctly.
+extraPaths = ["scripts"]
 
 [tool.ruff]
 target-version = "py313"

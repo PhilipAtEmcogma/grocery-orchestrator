@@ -43,12 +43,14 @@ import contextlib
 import json
 import os
 import time
+from collections.abc import Mapping
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from pydantic import ValidationError
 
-from src.models.base import ModelClient, ModelError
+from src.models.base import GuardrailBlocked, ModelClient, ModelError
 from src.observability import (
     NULL_TELEMETRY,
     InstrumentedModelClient,
@@ -64,6 +66,7 @@ from src.observability import (
 from src.observability.base import (
     METRIC_CACHE_READ_TOKENS,
     METRIC_GUARDRAIL_INTERVENED,
+    METRIC_IDEMPOTENCY_CLAIM_LOST,
     METRIC_IDEMPOTENCY_UNAVAILABLE,
     METRIC_IDEMPOTENT_REPLAY,
     METRIC_INPUT_TOKENS,
@@ -101,7 +104,7 @@ from src.schemas.contract import (
 from src.store.idempotency import (
     AcquireStatus,
     IdempotencyStore,
-    fingerprint,
+    fingerprint_request,
     make_key,
 )
 
@@ -119,6 +122,118 @@ _model: ModelClient | None = None
 _idempotency: IdempotencyStore | None = None
 
 
+# --------------------------------------------------------------------------
+# Production-mode fail-closed check (Req 12.5)
+# --------------------------------------------------------------------------
+
+STAGE_ENV = "APP_STAGE"
+
+#: Which stages this check applies to, READ FROM `config/stages.json` rather
+#: than written here.
+#:
+#: It was a literal `frozenset({"prod", "production", "pilot"})` until
+#: 2026-08-31, and `infra/lib/config.ts` independently held
+#: `stage === 'prod'`. Two halves of one rule, disagreeing about what the rule
+#: covers: a stack synthesised with `stage=pilot` passed the CDK's wildcard-CORS
+#: refusal and then failed this check at startup, so the earlier and cheaper of
+#: the two guards was the one that did not fire. Both planes now load this file,
+#: and `tests/test_production_config.py` plus `infra/test/config.test.ts` assert
+#: against it from either side.
+#:
+#: `config/` ships inside the Lambda archive (AGENTS.md), so this resolves in
+#: the deployed function exactly as `src/graph/feasibility.py` does.
+STAGES_CONFIG_PATH = Path(__file__).resolve().parents[1] / "config" / "stages.json"
+
+
+def _load_production_stages(config_path: Path | None = None) -> frozenset[str]:
+    """The production stage names from `config/stages.json`, lowercased."""
+    raw = json.loads((config_path or STAGES_CONFIG_PATH).read_text(encoding="utf-8"))
+    return frozenset(name.strip().lower() for name in raw["production_stages"])
+
+
+#: Kept as a module-level name because it is part of this module's surface --
+#: `tests/test_production_config.py` parametrises over it and
+#: `Philip_demo/17` prints it. It is a snapshot of the file, not a second
+#: definition: there is exactly one place the names are written down.
+PRODUCTION_STAGES: frozenset[str] = _load_production_stages()
+
+# What a stage serving real shoppers must have. Each maps to a dependency that
+# otherwise falls back to a DEMO implementation, silently.
+_PRODUCTION_REQUIREMENTS: tuple[tuple[str, str | None, str], ...] = (
+    ("USE_DYNAMODB", "1", "the stored price repository (otherwise: 26 fixture products)"),
+    ("USE_BEDROCK", "1", "the Bedrock model plane (otherwise: the scripted stand-in)"),
+    ("BEDROCK_GUARDRAIL_ID", None, "a content-safety policy on every generation call"),
+    ("BEDROCK_GUARDRAIL_VERSION", None, "a NUMBERED guardrail version, never DRAFT"),
+    ("CORS_ORIGIN", None, "a single named origin"),
+)
+
+
+class ConfigurationError(RuntimeError):
+    """A production stage is missing configuration it cannot run correctly without."""
+
+
+def assert_production_configuration(env: Mapping[str, str] | None = None) -> None:
+    """
+    Req 12.5. Fail startup rather than silently serve a demo.
+
+    THE FAILURE THIS PREVENTS IS INVISIBLE, WHICH IS WHY IT NEEDS A CHECK.
+    `_dependencies()` selects by environment: `USE_DYNAMODB=1` picks DynamoDB,
+    `USE_BEDROCK=1` picks Bedrock, and anything else falls through to the
+    fixture repository and the scripted client. Drop one variable in production
+    and the endpoint keeps returning HTTP 200 with well-formed, grounded,
+    arithmetically verified citations -- computed from 26 invented products by a
+    rule-based stand-in. Every invariant in this system still holds. No metric
+    looks wrong. The answers are simply not about real prices.
+
+    That is worse than an outage, because an outage is visible.
+
+    THIS EXISTS BECAUSE A REAL DRIFT WENT UNNOTICED. On 2026-08-30 the deployed
+    function was found applying Guardrail version 1 while every document and all
+    the qualifying evidence described version 2 -- a documented `must_allow`
+    case was being refused in production while the record said 9/9. Nothing
+    offline can read a deployed environment variable, so no gate could see it.
+    A startup assertion is where that class of drift becomes visible, because it
+    runs in the environment it is asserting about.
+
+    `DRAFT` is rejected explicitly: it is a moving target, and evidence
+    collected against it describes whatever the policy happened to be that day.
+    `CORS_ORIGIN=*` is rejected because `security.md` requires production to
+    reject wildcard CORS -- an anonymous pilot still names its one origin.
+
+    Non-production stages are unaffected: the whole point of the fallbacks is
+    that the graph runs on a laptop with no AWS account.
+    """
+    # A separate name: rebinding the parameter leaves its declared Optional
+    # type in play and every later .get() reads as a possible None.
+    config: Mapping[str, str] = os.environ if env is None else env
+    stage = config.get(STAGE_ENV, "").strip().lower()
+    if stage not in PRODUCTION_STAGES:
+        return
+
+    problems: list[str] = []
+    for name, required_value, why in _PRODUCTION_REQUIREMENTS:
+        actual = config.get(name, "").strip()
+        if not actual:
+            problems.append(f"{name} is unset - {why}")
+        elif required_value is not None and actual != required_value:
+            problems.append(f"{name}={actual!r}, expected {required_value!r} - {why}")
+
+    version = config.get("BEDROCK_GUARDRAIL_VERSION", "").strip()
+    if version.upper() == "DRAFT":
+        problems.append(
+            "BEDROCK_GUARDRAIL_VERSION=DRAFT - a numbered version is required, "
+            "because DRAFT moves and evidence gathered against it describes nothing"
+        )
+    if config.get("CORS_ORIGIN", "").strip() == "*":
+        problems.append("CORS_ORIGIN='*' - security.md forbids wildcard CORS in production")
+
+    if problems:
+        raise ConfigurationError(
+            f"{STAGE_ENV}={stage!r} but the configuration is incomplete, and the "
+            "fallbacks it would select are demo implementations (Req 12.5): " + "; ".join(problems)
+        )
+
+
 def _dependencies() -> tuple[PriceRepository, ModelClient]:
     """
     Resolve the repository and model client.
@@ -127,6 +242,11 @@ def _dependencies() -> tuple[PriceRepository, ModelClient]:
     against fixtures locally and DynamoDB/Bedrock in AWS.
     """
     global _repo, _model
+
+    # Before ANY fallback is selected. Checking afterwards would report a
+    # misconfiguration the process had already worked around, which is the
+    # shape of check this repository keeps finding to be useless.
+    assert_production_configuration()
 
     if _repo is None:
         if os.environ.get("USE_DYNAMODB") == "1":
@@ -247,7 +367,6 @@ def handle_turn(
     accumulator. The wrappers are always applied rather than applied
     conditionally: one code path is worth more than one attribute lookup.
     """
-    from src.models.bedrock import GuardrailBlocked
     from src.runner import run_turn
 
     stats = stats if stats is not None else TurnStats()
@@ -291,16 +410,15 @@ def handle_turn(
         )
 
     except AssertionError as exc:
-        # assert_grounded failed: the response contained a price with no
-        # citation. Refuse to ship it. This is the last line of the grounding
-        # defence and it must fail closed.
+        # A final grounding or response invariant failed. Refuse to ship the
+        # response rather than exposing unverifiable content. Exact immutable
+        # record/value comparison remains a separate documented follow-up.
         logger.error("grounding_violation", extra=exception_fields(exc))
         return 200, _error_response(
             session_id=request.session_id,
             turn_id=request.turn_id,
             code=ErrorCode.INTERNAL_ERROR,
-            message="I couldn't verify those prices, so I'd rather not guess. "
-            "Please try again.",
+            message="I couldn't verify those prices, so I'd rather not guess. Please try again.",
             retryable=True,
         )
 
@@ -317,18 +435,14 @@ def handle_turn(
 
 def _is_terminal(response: ChatResponse) -> bool:
     """A result worth caching: anything but a failure the client should retry."""
-    return not any(
-        e.type == "error" and getattr(e, "retryable", False) for e in response.events
-    )
+    return not any(e.type == "error" and getattr(e, "retryable", False) for e in response.events)
 
 
 def _error_codes(response: ChatResponse) -> list[str]:
     return [str(e.code) for e in response.events if e.type == "error"]
 
 
-def _emit_turn_metrics(
-    *, response: ChatResponse, stats: TurnStats, elapsed_ms: int
-) -> None:
+def _emit_turn_metrics(*, response: ChatResponse, stats: TurnStats, elapsed_ms: int) -> None:
     """
     Per-turn metrics in embedded metric format (Req 12.2).
 
@@ -443,7 +557,12 @@ def _observed_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
     # Idempotency. A client that timed out and retried must not trigger a
     # second generation — the first is often still running.
     key = make_key(request.session_id, request.turn_id)
-    payload_hash = fingerprint(raw_body)
+    # The VALIDATED request, not the raw bytes. Hashing the body made the
+    # fingerprint sensitive to whitespace, JSON key order, and omitted-versus-
+    # explicit-null, so a client whose retry serialised differently was told its
+    # correct retry was a client bug -- a 400 it is not allowed to retry, from
+    # the mechanism built to help it recover from a timeout.
+    payload_hash = fingerprint_request(request)
     store = _idempotency_store()
 
     try:
@@ -512,10 +631,23 @@ def _observed_handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
         # was only acquire() that was protected, which left the store able to
         # fail the turn from two lines further down.
         try:
+            # Owner-fenced. `acquire` returned a token; if another invocation
+            # took over this claim while the turn was running, the write is
+            # refused rather than overwriting the newer claim with an older
+            # answer. Losing the fence does NOT cost this client its response:
+            # the work was valid and it is returned below regardless. What is
+            # lost is only the right to cache it.
+            token = acquired.claim_token or ""
             if _is_terminal(response):
-                store.complete(key, response.model_dump_json())
+                stored = store.complete(key, token, response.model_dump_json())
             else:
-                store.release(key)
+                stored = store.release(key, token)
+            if not stored:
+                logger.warning(
+                    "idempotency_claim_lost",
+                    extra={"correlation_id": request.session_id, "turn_id": request.turn_id},
+                )
+                TELEMETRY.count(METRIC_IDEMPOTENCY_CLAIM_LOST)
         except Exception as exc:
             logger.error("idempotency_unavailable", extra=exception_fields(exc))
             TELEMETRY.count(METRIC_IDEMPOTENCY_UNAVAILABLE)
@@ -576,9 +708,7 @@ def lambda_handler(event: dict[str, Any], context: Any = None) -> dict[str, Any]
     Gateway synthesises from a stack trace.
     """
     try:
-        return _observed_handler(
-            event, context if context is not None else LocalLambdaContext()
-        )
+        return _observed_handler(event, context if context is not None else LocalLambdaContext())
     except Exception as exc:
         return _last_resort(event, exc)
 

@@ -50,12 +50,41 @@ REQUIREMENTS = ROOT / "requirements.txt"
 
 # Application code copied into the archive verbatim. Deliberately an
 # allowlist rather than "everything except tests/evals/scripts/.kiro": the
-# repo also holds infra/, ingestion/ and top-level docs the handler never
-# imports, which have no business inflating a Lambda archive. The effect is
-# the same either way — tests/, evals/, scripts/ and .kiro/ never appear in
-# the zip — but an allowlist can't accidentally sweep in something new added
-# to the repo root later.
-INCLUDE_DIRS = ["src", "config", "fixtures"]
+# repo also holds infra/ and top-level docs no handler imports, which have no
+# business inflating a Lambda archive. The effect is the same either way —
+# tests/, evals/, scripts/ and .kiro/ never appear in the zip — but an
+# allowlist can't accidentally sweep in something new added to the repo root
+# later.
+#
+# `ingestion` is here because ONE archive serves TWO functions: the
+# orchestrator entered at src.handler.lambda_handler and the price refresh
+# entered at ingestion.handler.lambda_handler. Two zips would mean two builds
+# to keep in step and two artefacts for the CI `package` job to verify, for
+# about 10 KB of Python. The functions stay separate — separate IAM roles,
+# separate invocation paths — and only the artefact is shared. `ingestion`
+# needs `fixtures`, which was already here.
+#
+# ENTRIES MAY BE NESTED, and exactly one is. The deployed ingestion function
+# runs with `PRICE_SOURCE=lineage_b` (2026-09-04 decision, see
+# config/data-sources.json), so it reads the data team's collected catalogue at
+# `datasets/data/dynamodb_products` — 2.2 MB of JSON, ~3,000 offers, the
+# 2026-08-28 snapshot. Without it `LineageBSource` would raise on a directory
+# that is not there, which is loud, and before 2026-09-04 it would have
+# returned an EMPTY LIST and reported a successful refresh that wrote nothing.
+#
+# The REST of `datasets/` is deliberately left out. `dynamodb_recipe_batches`
+# backs `FixtureRecipeRepository`, which is coverage tooling that nothing on
+# the runtime path constructs — `src/graph/recipe_plan.py` uses
+# `CuratedRecipeRepository`, backed by `config/recipes.json`, which already
+# ships. Shipping the whole directory would add 3.6 MB of files no deployed
+# function opens.
+INCLUDE_DIRS = [
+    "src",
+    "config",
+    "fixtures",
+    "ingestion",
+    "datasets/data/dynamodb_products",
+]
 
 # Installed but never imported by anything we ship, dead weight either way.
 # Transitive pulls from langchain-aws and langsmith respectively.
@@ -144,9 +173,7 @@ def install_dependencies(target: Path) -> None:
 
 def _matches(entry: Path, names: list[str]) -> bool:
     return any(
-        entry.name == name
-        or entry.name.startswith(f"{name}-")
-        or entry.name.startswith(f"{name}.")
+        entry.name == name or entry.name.startswith(f"{name}-") or entry.name.startswith(f"{name}.")
         for name in names
     )
 
@@ -180,6 +207,10 @@ def copy_source(target: Path) -> None:
         source = ROOT / name
         if not source.exists():
             continue
+        # `copytree` creates intermediate directories, so a nested entry lands
+        # at the same relative path inside the archive that it has in the repo
+        # -- which is what the `parents[1] / "datasets" / ...` resolution in
+        # ingestion/sources.py expects to find.
         shutil.copytree(
             source,
             target / name,
@@ -250,7 +281,33 @@ def verify_import(zip_path: Path, runtime_dir: Path) -> None:
 
         env = {**os.environ, "PYTHONPATH": str(runtime_dir)}
         result = subprocess.run(
-            [sys.executable, "-c", "from src.handler import lambda_handler"],
+            # BOTH entrypoints. The archive serves two functions, and an
+            # import that resolves for one proves nothing about the other:
+            # ingestion.handler additionally reads fixtures/products.json at a
+            # path resolved relative to the zip root, so a packaging change
+            # that drops `fixtures` would leave the orchestrator importable and
+            # every scheduled refresh failing.
+            #
+            # THE LINEAGE B CHECK FETCHES RATHER THAN LOOKING. The deployed
+            # function runs PRICE_SOURCE=lineage_b, so what has to be true is
+            # not "the directory shipped" but "offers can be built from what
+            # shipped" -- a directory of the right name holding the wrong
+            # envelope, or a transform that no longer matches the data, both
+            # pass an `exists()` and both produce a refresh that writes
+            # nothing. Asserting on a non-empty fetch is the same reasoning as
+            # asserting on a scan's file count rather than its exit code.
+            [
+                sys.executable,
+                "-c",
+                "from src.handler import lambda_handler; "
+                "from ingestion.handler import lambda_handler as ingest; "
+                "from ingestion.sources import FIXTURES, LINEAGE_B_DIR, LineageBSource; "
+                "assert FIXTURES.exists(), FIXTURES; "
+                "assert LINEAGE_B_DIR.is_dir(), LINEAGE_B_DIR; "
+                "offers = LineageBSource('paknsave').fetch(); "
+                "assert offers, 'lineage_b shipped but produced no offers'; "
+                "print(f'  lineage_b: {len(offers)} paknsave offers from the archive')",
+            ],
             cwd=tmp_path,
             env=env,
             capture_output=True,
@@ -263,9 +320,14 @@ def verify_import(zip_path: Path, runtime_dir: Path) -> None:
             raise SystemExit("Packaged archive does not import. See output above.")
 
         print(
-            "OK: from src.handler import lambda_handler resolves "
+            "OK: src.handler and ingestion.handler both resolve "
             f"(archive + {', '.join(RUNTIME_PROVIDED)} from the runtime)."
         )
+        # The offer count, not just a pass. "Found 0 offers" and "checked and
+        # found offers" exit the same way, and only one of them means the
+        # deployed refresh has anything to write.
+        if result.stdout.strip():
+            print(result.stdout.rstrip())
 
 
 def main() -> int:
@@ -283,10 +345,7 @@ def main() -> int:
     before = directory_size(STAGE_DIR)
     print(f"Pruning unused packages: {', '.join(UNUSED_TRANSITIVE)} ...")
     prune_excluded(STAGE_DIR, UNUSED_TRANSITIVE)
-    print(
-        f"Setting aside runtime-provided packages: "
-        f"{', '.join(RUNTIME_PROVIDED)} ..."
-    )
+    print(f"Setting aside runtime-provided packages: {', '.join(RUNTIME_PROVIDED)} ...")
     prune_excluded(STAGE_DIR, RUNTIME_PROVIDED, move_to=RUNTIME_DIR)
     after_prune = directory_size(STAGE_DIR)
     print(f"  {before / 1024 / 1024:.1f} MB -> {after_prune / 1024 / 1024:.1f} MB")

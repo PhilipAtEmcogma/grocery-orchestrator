@@ -49,9 +49,7 @@ def build_request(cfg: dict) -> dict:
         "contentPolicyConfig": clean(cfg["contentPolicyConfig"]),
         "topicPolicyConfig": clean(cfg["topicPolicyConfig"]),
         "wordPolicyConfig": clean(cfg["wordPolicyConfig"]),
-        "sensitiveInformationPolicyConfig": clean(
-            cfg["sensitiveInformationPolicyConfig"]
-        ),
+        "sensitiveInformationPolicyConfig": clean(cfg["sensitiveInformationPolicyConfig"]),
         "tags": cfg.get("tags", []),
     }
 
@@ -60,9 +58,7 @@ def validate(request: dict) -> list[str]:
     """Catch the mistakes that produce a guardrail which silently does nothing."""
     problems: list[str] = []
 
-    filters = {
-        f["type"]: f for f in request["contentPolicyConfig"]["filtersConfig"]
-    }
+    filters = {f["type"]: f for f in request["contentPolicyConfig"]["filtersConfig"]}
     if "PROMPT_ATTACK" not in filters:
         problems.append("PROMPT_ATTACK filter missing")
     elif filters["PROMPT_ATTACK"]["inputStrength"] != "HIGH":
@@ -100,10 +96,7 @@ def main() -> int:
     print(f"Config valid: {request['name']}")
     print(f"  {len(request['contentPolicyConfig']['filtersConfig'])} content filters")
     print(f"  {len(request['topicPolicyConfig']['topicsConfig'])} denied topics")
-    print(
-        f"  {len(request['sensitiveInformationPolicyConfig']['piiEntitiesConfig'])}"
-        f" PII rules"
-    )
+    print(f"  {len(request['sensitiveInformationPolicyConfig']['piiEntitiesConfig'])} PII rules")
 
     if args.dry_run:
         print("\nDry run - no AWS calls made.")
@@ -122,7 +115,15 @@ def main() -> int:
 
     try:
         if existing:
-            client.update_guardrail(guardrailIdentifier=existing, **request)
+            # `tags` is a create-only parameter: UpdateGuardrail rejects it
+            # outright with ParamValidationError. This script had only ever run
+            # the create path, so the update path had never executed once --
+            # the first policy change attempted after the guardrail existed
+            # failed on a parameter that has nothing to do with the policy.
+            # Tags are set at creation and are not policy, so dropping them
+            # here changes nothing about what the guardrail enforces.
+            update = {k: v for k, v in request.items() if k != "tags"}
+            client.update_guardrail(guardrailIdentifier=existing, **update)
             guardrail_id = existing
             print(f"\nUpdated guardrail {guardrail_id}")
         else:

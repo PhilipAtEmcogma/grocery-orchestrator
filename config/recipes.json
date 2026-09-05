@@ -1,0 +1,716 @@
+{
+  "_comment": "The curated recipe catalogue (Req 2.9, Pilot Task 15b). Data rather than code, like regions.json and product-synonyms.json: what goes in a meal is knowledge about cooking, not about Python, and someone who cooks should be able to correct a recipe without reading a module.",
+  "version": "1.0",
+  "_why_curated_here_and_not_imported": "The 175 TheMealDB recipes in datasets/ cannot be used: ZERO of them have every ingredient priceable against this product catalogue (best 75%, median ~12%), because they are international home cooking reaching for soy sauce, fish sauce, ginger and coriander while the catalogue is 300 fresh-weighted items per store with no spice rack. A plan built from a 12%-priced recipe states a payable total computed from a sixth of the shopping list -- not an estimate, just wrong. Decision 2026-08-30 (infra/docs/08, tasks.md 15b): write recipes against THIS catalogue instead, where every ingredient is costable by construction.",
+  "_this_is_curation_not_gaming": "Req 2.9's point is that the MODEL selects a recipe id while deterministic code owns scaling, dietary verification, arithmetic and totals. Choosing recipes the catalogue can price serves that requirement; importing recipes it cannot price defeats it. `curated` means chosen deliberately, and this is the choosing.",
+  "_ingredient_terms": "Every `term` must resolve through config/product-synonyms.json against the loaded catalogue. tests/test_recipes.py asserts that for all of them, so a recipe naming something the shops do not stock fails the build rather than producing a plan with a hole in it.",
+  "_grams_per_serving": "Quantities are grams PER SERVING, so scaling to a household is multiplication rather than judgement. `count` is used instead for things bought whole -- eggs, a loaf -- where grams would be a fiction. Code owns the scaling; a recipe never states a total and never states a price.",
+  "_review": "NOT reviewed by anyone who cooks. Portions come from general knowledge, not from a nutritionist or a recipe tester, and the same caveat applies as to config/regions.json and the synonym head terms. The likeliest errors are portion sizes for a large household, where 150g of mince per serving may be generous and 60g of rice mean. Correcting an entry needs no code change, which is the point. See also docs/OPEN-REVIEW-min-grams-per-person-day.md, which decides when a request is refused as impossible.",
+  "recipes": [
+    {
+      "recipe_id": "nz#001",
+      "name": "Beef Mince Bolognese",
+      "category": "Beef",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "beef mince",
+          "grams": 125
+        },
+        {
+          "term": "pasta",
+          "grams": 100
+        },
+        {
+          "term": "tomatoes",
+          "grams": 100
+        },
+        {
+          "term": "onions",
+          "grams": 60
+        },
+        {
+          "term": "carrots",
+          "grams": 50
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#002",
+      "name": "Roast Chicken and Vegetables",
+      "category": "Chicken",
+      "serves": 4,
+      "ingredients": [
+        {
+          "term": "whole chicken",
+          "grams": 340
+        },
+        {
+          "term": "potatoes",
+          "grams": 200
+        },
+        {
+          "term": "carrots",
+          "grams": 80
+        },
+        {
+          "term": "onions",
+          "grams": 50
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#003",
+      "name": "Sausages and Mash",
+      "category": "Pork",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "sausages",
+          "grams": 150
+        },
+        {
+          "term": "potatoes",
+          "grams": 250
+        },
+        {
+          "term": "butter",
+          "grams": 15
+        },
+        {
+          "term": "milk",
+          "grams": 40
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#004",
+      "name": "Tomato and Basil Pasta",
+      "category": "Vegetarian",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "pasta",
+          "grams": 110
+        },
+        {
+          "term": "tomatoes",
+          "grams": 150
+        },
+        {
+          "term": "onions",
+          "grams": 50
+        },
+        {
+          "term": "oil",
+          "grams": 10
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#005",
+      "name": "Vegetable Fried Rice",
+      "category": "Vegetarian",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "rice",
+          "grams": 90
+        },
+        {
+          "term": "carrots",
+          "grams": 60
+        },
+        {
+          "term": "broccoli",
+          "grams": 80
+        },
+        {
+          "term": "eggs",
+          "count": 1
+        },
+        {
+          "term": "oil",
+          "grams": 10
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#006",
+      "name": "Chicken and Rice Bake",
+      "category": "Chicken",
+      "serves": 4,
+      "ingredients": [
+        {
+          "term": "chicken",
+          "grams": 250
+        },
+        {
+          "term": "rice",
+          "grams": 90
+        },
+        {
+          "term": "onions",
+          "grams": 50
+        },
+        {
+          "term": "carrots",
+          "grams": 60
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#007",
+      "name": "Potato and Onion Frittata",
+      "category": "Vegetarian",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "eggs",
+          "count": 3
+        },
+        {
+          "term": "potatoes",
+          "grams": 180
+        },
+        {
+          "term": "onions",
+          "grams": 60
+        },
+        {
+          "term": "oil",
+          "grams": 10
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#008",
+      "name": "Porridge with Banana",
+      "category": "Breakfast",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "oats",
+          "grams": 60
+        },
+        {
+          "term": "milk",
+          "grams": 200
+        },
+        {
+          "term": "bananas",
+          "grams": 100
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#009",
+      "name": "Shepherd's Pie",
+      "category": "Beef",
+      "serves": 4,
+      "ingredients": [
+        {
+          "term": "beef mince",
+          "grams": 125
+        },
+        {
+          "term": "potatoes",
+          "grams": 220
+        },
+        {
+          "term": "carrots",
+          "grams": 70
+        },
+        {
+          "term": "onions",
+          "grams": 55
+        },
+        {
+          "term": "butter",
+          "grams": 12
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#010",
+      "name": "Broccoli and Cheese Pasta",
+      "category": "Vegetarian",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "pasta",
+          "grams": 110
+        },
+        {
+          "term": "broccoli",
+          "grams": 120
+        },
+        {
+          "term": "grated cheddar cheese",
+          "grams": 40
+        },
+        {
+          "term": "butter",
+          "grams": 12
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#011",
+      "name": "Chicken Noodle Stir Fry",
+      "category": "Chicken",
+      "serves": 3,
+      "ingredients": [
+        {
+          "term": "chicken",
+          "grams": 180
+        },
+        {
+          "term": "hokkien noodles",
+          "grams": 120
+        },
+        {
+          "term": "carrots",
+          "grams": 60
+        },
+        {
+          "term": "broccoli",
+          "grams": 80
+        },
+        {
+          "term": "oil",
+          "grams": 10
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#012",
+      "name": "Baked Potatoes with Cheese and Beans",
+      "category": "Vegetarian",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "potatoes",
+          "grams": 300
+        },
+        {
+          "term": "grated cheddar cheese",
+          "grams": 45
+        },
+        {
+          "term": "butter",
+          "grams": 15
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#013",
+      "name": "Prawn and Rice Stir Fry",
+      "category": "Seafood",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "cooked peeled prawns",
+          "grams": 110
+        },
+        {
+          "term": "rice",
+          "grams": 90
+        },
+        {
+          "term": "carrots",
+          "grams": 60
+        },
+        {
+          "term": "broccoli",
+          "grams": 70
+        },
+        {
+          "term": "oil",
+          "grams": 10
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#014",
+      "name": "Cheese and Tomato Toastie",
+      "category": "Vegetarian",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "bread",
+          "grams": 120
+        },
+        {
+          "term": "grated cheddar cheese",
+          "grams": 50
+        },
+        {
+          "term": "tomatoes",
+          "grams": 80
+        },
+        {
+          "term": "butter",
+          "grams": 15
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#015",
+      "name": "Beef and Vegetable Stew",
+      "category": "Beef",
+      "serves": 4,
+      "ingredients": [
+        {
+          "term": "beef mince",
+          "grams": 120
+        },
+        {
+          "term": "potatoes",
+          "grams": 180
+        },
+        {
+          "term": "carrots",
+          "grams": 80
+        },
+        {
+          "term": "onions",
+          "grams": 60
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#016",
+      "name": "Scrambled Eggs on Toast",
+      "category": "Breakfast",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "eggs",
+          "count": 3
+        },
+        {
+          "term": "bread",
+          "grams": 90
+        },
+        {
+          "term": "butter",
+          "grams": 15
+        },
+        {
+          "term": "milk",
+          "grams": 30
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#017",
+      "name": "Chicken and Potato Traybake",
+      "category": "Chicken",
+      "serves": 4,
+      "ingredients": [
+        {
+          "term": "chicken nibbles",
+          "grams": 220
+        },
+        {
+          "term": "potatoes",
+          "grams": 220
+        },
+        {
+          "term": "onions",
+          "grams": 60
+        },
+        {
+          "term": "oil",
+          "grams": 12
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#018",
+      "name": "Pasta with Tomato and Cheese Bake",
+      "category": "Vegetarian",
+      "serves": 3,
+      "ingredients": [
+        {
+          "term": "pasta",
+          "grams": 110
+        },
+        {
+          "term": "tomatoes",
+          "grams": 130
+        },
+        {
+          "term": "mozzarella",
+          "grams": 40
+        },
+        {
+          "term": "onions",
+          "grams": 50
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#019",
+      "name": "Banana Porridge Pancakes",
+      "category": "Breakfast",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "flour",
+          "grams": 70
+        },
+        {
+          "term": "eggs",
+          "count": 1
+        },
+        {
+          "term": "milk",
+          "grams": 120
+        },
+        {
+          "term": "bananas",
+          "grams": 90
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#020",
+      "name": "Roast Vegetable Rice Bowl",
+      "category": "Vegan",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "rice",
+          "grams": 95
+        },
+        {
+          "term": "carrots",
+          "grams": 90
+        },
+        {
+          "term": "broccoli",
+          "grams": 90
+        },
+        {
+          "term": "onions",
+          "grams": 60
+        },
+        {
+          "term": "oil",
+          "grams": 12
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#021",
+      "name": "Tuna Pasta Salad",
+      "category": "Seafood",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "pasta",
+          "grams": 100
+        },
+        {
+          "term": "yellowfin tuna loin",
+          "grams": 90
+        },
+        {
+          "term": "tomatoes",
+          "grams": 90
+        },
+        {
+          "term": "oil",
+          "grams": 10
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#022",
+      "name": "Apple and Oat Crumble",
+      "category": "Dessert",
+      "serves": 4,
+      "ingredients": [
+        {
+          "term": "apples",
+          "grams": 130
+        },
+        {
+          "term": "oats",
+          "grams": 45
+        },
+        {
+          "term": "flour",
+          "grams": 35
+        },
+        {
+          "term": "butter",
+          "grams": 30
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#023",
+      "name": "Sausage and Vegetable Pasta",
+      "category": "Pork",
+      "serves": 3,
+      "ingredients": [
+        {
+          "term": "sausages",
+          "grams": 130
+        },
+        {
+          "term": "pasta",
+          "grams": 100
+        },
+        {
+          "term": "tomatoes",
+          "grams": 100
+        },
+        {
+          "term": "broccoli",
+          "grams": 70
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#024",
+      "name": "Yoghurt, Banana and Oat Breakfast Bowl",
+      "category": "Breakfast",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "yoghurt",
+          "grams": 150
+        },
+        {
+          "term": "bananas",
+          "grams": 100
+        },
+        {
+          "term": "oats",
+          "grams": 40
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#025",
+      "name": "Potato and Vegetable Curry",
+      "category": "Vegan",
+      "serves": 3,
+      "ingredients": [
+        {
+          "term": "potatoes",
+          "grams": 220
+        },
+        {
+          "term": "carrots",
+          "grams": 80
+        },
+        {
+          "term": "onions",
+          "grams": 70
+        },
+        {
+          "term": "tomatoes",
+          "grams": 110
+        },
+        {
+          "term": "oil",
+          "grams": 12
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#026",
+      "name": "Pasta with Roast Tomato and Onion",
+      "category": "Vegan",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "pasta",
+          "grams": 115
+        },
+        {
+          "term": "tomatoes",
+          "grams": 160
+        },
+        {
+          "term": "onions",
+          "grams": 70
+        },
+        {
+          "term": "oil",
+          "grams": 12
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#027",
+      "name": "Rice, Broccoli and Carrot Bowl",
+      "category": "Vegan",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "rice",
+          "grams": 95
+        },
+        {
+          "term": "broccoli",
+          "grams": 110
+        },
+        {
+          "term": "carrots",
+          "grams": 80
+        },
+        {
+          "term": "oil",
+          "grams": 10
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#028",
+      "name": "Baked Potato with Roast Vegetables",
+      "category": "Vegan",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "potatoes",
+          "grams": 300
+        },
+        {
+          "term": "carrots",
+          "grams": 90
+        },
+        {
+          "term": "onions",
+          "grams": 60
+        },
+        {
+          "term": "oil",
+          "grams": 12
+        }
+      ]
+    },
+    {
+      "recipe_id": "nz#029",
+      "name": "Banana and Oat Porridge (dairy-free)",
+      "category": "Vegan",
+      "serves": 2,
+      "ingredients": [
+        {
+          "term": "oats",
+          "grams": 65
+        },
+        {
+          "term": "bananas",
+          "grams": 110
+        }
+      ]
+    }
+  ],
+  "_on_vegan_coverage": "Only a handful of these are vegan-viable, and that is a consequence of a deliberate choice elsewhere rather than an oversight here. ingestion/lineage_b.py maps the catalogue's 'Fresh Milk & Plant Milk' category to `dairy` wholesale, because the source does not separate oat milk from cow's milk and over-excluding is the safe direction for a vegan. So plant milks are unavailable to a vegan plan, and vegan recipes here are built from produce, pantry and grains only. Per-product allergen tagging (legacy 11.7) is what would lift it; widening the category map to improve variety would trade a safety property for a menu, which is the wrong way round."
+}

@@ -1,0 +1,30 @@
+{
+  "_comment": "CDK app for the Smart Grocery orchestrator. TWO OF FIVE STACKS ARE DEPLOYED as of 2026-08-31 (Stateful, Service); Obs, Ingestion and Frontend are still stubs and say so in their own headers. `npm test` runs the security-invariant suite and CI runs it in the `infra` job. This comment said 'NOT wired to deploy anything yet (the stacks are stubs)' for a day after the service plane went live. Node 20+.",
+  "name": "grocery-infra",
+  "version": "0.0.0",
+  "private": true,
+  "bin": {
+    "grocery": "bin/grocery.ts"
+  },
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "test": "jest",
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "deploy": "cdk deploy"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.0",
+    "aws-cdk": "^2.160.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.5.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.160.0",
+    "constructs": "^10.3.0"
+  }
+}

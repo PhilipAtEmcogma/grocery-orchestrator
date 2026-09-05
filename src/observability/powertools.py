@@ -31,6 +31,7 @@ dimensioning the whole turn by model.
 
 from __future__ import annotations
 
+import logging as _logging
 import os
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -48,6 +49,14 @@ METRICS_NAMESPACE = os.environ.get("POWERTOOLS_METRICS_NAMESPACE", "GroceryOrche
 logger = Logger(service=SERVICE_NAME, level=os.environ.get("LOG_LEVEL", "INFO"))
 tracer = Tracer(service=SERVICE_NAME)
 metrics = Metrics(namespace=METRICS_NAMESPACE, service=SERVICE_NAME)
+
+# Suppress SDK transport loggers unconditionally. At DEBUG they dump the full
+# request body (which is the user's message and constraints) into CloudWatch.
+# This is Req 11.5: no PII in logs, regardless of the application log level.
+# The Lambda runtime sets these to WARNING by default, but an explicit
+# LOG_LEVEL=DEBUG would propagate downward without this clamp.
+for _sdk_logger_name in ("botocore", "urllib3", "boto3"):
+    _logging.getLogger(_sdk_logger_name).setLevel(_logging.WARNING)
 
 
 class _XraySpan:

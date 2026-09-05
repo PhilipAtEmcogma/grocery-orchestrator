@@ -16,8 +16,10 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from src.graph.state import Constraints, GroceryState
-from src.models.base import ModelClient, ModelError, ModelTier
+from src.graph.dietary import map_exclusions
+from src.graph.regions import strip_region
+from src.graph.state import Constraints, GroceryState, usage_from
+from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier
 from src.prompts.intent import (
     SYSTEM_PROMPT,
     IntentResult,
@@ -52,9 +54,7 @@ def _fallback(message: str, hints: dict) -> IntentResult:
     )
 
 
-def _reconcile(
-    extracted: IntentResult, hints: dict
-) -> tuple[Constraints, list[str]]:
+def _reconcile(extracted: IntentResult, hints: dict) -> tuple[Constraints, list[str]]:
     """
     Merge extracted constraints with client hints.
 
@@ -70,25 +70,39 @@ def _reconcile(
         if extracted_value is not None:
             if hint_value is not None and str(hint_value) != str(extracted_value):
                 notices.append(
-                    f"Using {label} {extracted_value} from your message "
-                    f"rather than {hint_value}."
+                    f"Using {label} {extracted_value} from your message rather than {hint_value}."
                 )
             return extracted_value
         return hint_value
 
     household = take(
-        "household_size", extracted.household_size,
-        hints.get("household_size"), "household size",
+        "household_size",
+        extracted.household_size,
+        hints.get("household_size"),
+        "household size",
     )
     budget = take(
-        "budget_nzd", extracted.budget_nzd,
+        "budget_nzd",
+        extracted.budget_nzd,
         Decimal(str(hints["budget_nzd"])) if hints.get("budget_nzd") is not None else None,
         "budget of $",
     )
     days = take("days", extracted.days, hints.get("days"), "duration of")
 
-    constraints["household_size"] = household if household is not None else 1
-    constraints["days"] = days if days is not None else 1
+    # Absent means ABSENT. These used to be silently defaulted to 1, which
+    # contradicts Req 6.3 -- "reject inference of unstated constraints" -- and,
+    # worse, destroyed the only evidence that the user had not said. A plan for
+    # one person over one day is a real answer to a question nobody asked, and
+    # it is indistinguishable downstream from a plan the user actually
+    # requested.
+    #
+    # Read sites that legitimately do not care keep their own `.get(..., 1)`:
+    # a price check needs no household size. The meal-plan path instead routes
+    # to `emit_clarification`, which is the whole point of knowing.
+    if household is not None:
+        constraints["household_size"] = household
+    if days is not None:
+        constraints["days"] = days
     if budget is not None:
         constraints["budget_nzd"] = budget
 
@@ -97,9 +111,7 @@ def _reconcile(
     # hints arrives as an untyped dict from the wire, so values are coerced
     # explicitly rather than trusted.
     hinted_exclusions = [str(x) for x in (hints.get("dietary_exclusions") or [])]
-    exclusions: list[str] = sorted(
-        {*(extracted.dietary_exclusions or []), *hinted_exclusions}
-    )
+    exclusions: list[str] = sorted({*(extracted.dietary_exclusions or []), *hinted_exclusions})
     constraints["dietary_exclusions"] = exclusions
 
     hinted_stores = [Store(str(s)) for s in (hints.get("preferred_stores") or [])]
@@ -114,10 +126,19 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
     hints = state.get("hints") or {}
     degraded = False
 
+    # Read before the try, not inside it: a name bound only on the happy
+    # path is unbound on every except branch that needs it.
+    _usage_before = model.last_usage
+
     try:
         extracted = model.structured(
             system=SYSTEM_PROMPT,
-            user=build_user_prompt(message),
+            # The region is resolved separately, from the ORIGINAL message, and
+            # removed here so it cannot end up inside the item name. Without
+            # this "cheapest butter near Albany" extracts "butter albany",
+            # which resolves to nothing and returns no_data for a stocked
+            # product.
+            user=build_user_prompt(strip_region(message)),
             schema=IntentResult,
             tier=ModelTier.FAST,
             max_tokens=512,
@@ -126,6 +147,8 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
             # per-model latency metric are grouped by.
             task="classify_intent",
         )
+    except GuardrailBlocked:
+        raise
     except (ModelError, ValueError):
         extracted = _fallback(message, hints)
         degraded = True
@@ -136,6 +159,14 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
     # repository's own normaliser gets a chance rather than retrieval being
     # skipped entirely.
     constraints["query_items"] = extracted.query_items or [message]
+
+    # Terms we cannot map to a category — "gluten-free", "no nuts". Recorded
+    # in state now so a meal_plan turn refuses BEFORE doing retrieval and
+    # generation work for a request we cannot safely fulfil (Req 5.1,
+    # Invariant 3). See src/graph/dietary.py for the safety reasoning.
+    # `.get()` with a default rather than a subscript: Constraints is total=False,
+    # and pyright's flow analysis does not see the assignment three lines above.
+    _, unsupported = map_exclusions(constraints.get("dietary_exclusions", []))
 
     seq = _next_seq(state)
     events: list[object] = [
@@ -153,5 +184,7 @@ def classify_intent(state: GroceryState, model: ModelClient) -> dict:
         "intent_confidence": extracted.confidence,
         "constraints": constraints,
         "intent_degraded": degraded,
+        "unsupported_exclusions": unsupported,
         "events": events,
+        "usage": usage_from(model, _usage_before),
     }

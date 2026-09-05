@@ -20,6 +20,7 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Annotated, TypedDict
 
+from src.models.base import ModelClient
 from src.retrieval.base import PriceRecord
 from src.schemas.contract import (
     Citation,
@@ -34,9 +35,78 @@ from src.schemas.contract import (
 MAX_REPAIR_ATTEMPTS = 2
 
 
+def usage_from(model: ModelClient, previous: dict | None = None) -> UsageMeta:
+    """
+    Lift a client's most recent call into the contract's usage shape.
+
+    `last_usage` reports one call, so every node that calls the model must
+    return this and let `merge_usage` combine them. A node that calls the model
+    and does not return usage drops those tokens from the turn silently -- the
+    response still validates, it just under-reports, which is the failure mode
+    that left `model_ids` empty on every deployed response until this existed.
+
+    PASS `previous`. `BedrockModelClient` assigns `self._usage` only after
+    `converse` returns, so a call that raises `ModelError` leaves the PREVIOUS
+    call's numbers in place. Reporting them again double-counts on exactly the
+    turns that failed: a meal plan whose generation throttles through two
+    repairs bills `classify_intent`'s tokens four times. Handing in the value
+    read before the call lets an unchanged reading be recognised as "this call
+    recorded nothing" and dropped.
+
+    A guardrail block is NOT that case and keeps its numbers -- `converse`
+    returned and wrote fresh usage before the stop reason was inspected, which
+    is the call you most want the tokens for. `InstrumentedModelClient._call`
+    guards its telemetry the same way, for the same reason.
+    """
+    raw = model.last_usage or {}
+    if previous is not None and raw == previous:
+        return UsageMeta()
+    return UsageMeta(
+        model_ids=list(raw.get("model_ids") or []),
+        input_tokens=raw.get("input_tokens"),
+        output_tokens=raw.get("output_tokens"),
+        latency_ms=raw.get("latency_ms"),
+        guardrail_intervened=bool(raw.get("guardrail_intervened")),
+    )
+
+
 def append_events(left: list[Event], right: list[Event]) -> list[Event]:
     """Reducer: nodes return only their NEW events, LangGraph concatenates."""
     return [*left, *right]
+
+
+def merge_usage(left: UsageMeta | None, right: UsageMeta | None) -> UsageMeta:
+    """
+    Reducer: a turn makes several model calls -- classify_intent, generate_plan,
+    up to two repairs, generate_prose -- and the contract reports one usage
+    block for the turn. Without a reducer the last writer wins, so a plan turn
+    would report only the prose call's tokens and the field would understate
+    cost by most of the turn.
+
+    Tokens and latency sum. `latency_ms` is therefore time spent in the model,
+    not wall-clock for the turn; those differ and the summed figure is the one
+    that maps to spend. Model ids accumulate in call order, deduplicated, so a
+    turn routed entirely to one model reports it once. `guardrail_intervened`
+    is sticky: a turn in which the guardrail fired once is a turn in which it
+    fired, regardless of what a later call reports.
+    """
+    if left is None:
+        return right or UsageMeta()
+    if right is None:
+        return left
+
+    def _sum(a: int | None, b: int | None) -> int | None:
+        # None means "not reported", which is not the same as zero -- a model
+        # that returns no token counts must not read as a free call.
+        return None if a is None and b is None else (a or 0) + (b or 0)
+
+    return UsageMeta(
+        model_ids=list(dict.fromkeys([*left.model_ids, *right.model_ids])),
+        input_tokens=_sum(left.input_tokens, right.input_tokens),
+        output_tokens=_sum(left.output_tokens, right.output_tokens),
+        latency_ms=_sum(left.latency_ms, right.latency_ms),
+        guardrail_intervened=(left.guardrail_intervened or right.guardrail_intervened),
+    )
 
 
 class Constraints(TypedDict, total=False):
@@ -75,6 +145,11 @@ class GroceryState(TurnInput, total=False):
     intent_confidence: float
     intent_degraded: bool
     constraints: Constraints
+    # Dietary terms the user stated that we cannot safely honour against the
+    # current catalogue — see src/graph/dietary.py. Populated at
+    # classify_intent time, so a meal_plan turn can refuse *before* doing
+    # retrieval and generation work. An empty list is the normal case.
+    unsupported_exclusions: list[str]
 
     # ---- retrieval (the ONLY source of prices)
     records: list[PriceRecord]
@@ -85,11 +160,60 @@ class GroceryState(TurnInput, total=False):
     item_groups: dict[str, list[str]]
     # items the user asked about that we have no data for
     unresolved_items: list[str]
+    # item -> newest capture date, for items whose ONLY prices are too old to
+    # stand behind. Distinct from unresolved_items because "I hold nothing for
+    # that" and "everything I hold is six weeks old" are different facts, and
+    # collapsing them would make the honest answer the false one.
+    stale_only: dict[str, str]
+    # A region the user named that config/regions.json cannot map. Kept so the
+    # router can refuse honestly rather than answering about somewhere else.
+    unknown_region: str
     # items the user asked about that we never looked up, because the request
     # exceeded MAX_ITEMS_PER_TURN. Distinct from unresolved_items: we may well
     # have prices for these, we just did not check. Saying "no data" about them
     # would be a different lie from saying nothing.
     skipped_items: list[str]
+
+    # ---- recipes (Req 2.9, Pilot Task 15c)
+    #
+    # Populated by `retrieve_prices` on a meal_plan turn, alongside the
+    # category candidates. Retrieval resolves the ingredient terms of the
+    # curated catalogue so that `select_recipes` can offer the model a
+    # shortlist of recipes that are ALREADY proven costable and affordable --
+    # the model cannot pick an uncostable recipe because uncostable ones never
+    # reach it. Same shape as `candidates_for_budget` capping the candidate set:
+    # constraining what a price-blind model chooses FROM is the only way to keep
+    # its choice inside a budget.
+    #
+    # Empty on a price_check turn, and empty on a meal_plan turn where nothing
+    # survives the filters -- which is a fallback, not an error. See
+    # `recipe_fallback`.
+
+    #: Recipe ids offered to the model: costable, dietary-viable against the
+    #: RESOLVED products, and individually affordable at budget/days.
+    recipe_shortlist: list[str]
+    #: recipe_id -> {ingredient key -> citation ref}. Built by retrieval, so
+    #: every ref in it is one retrieval produced.
+    recipe_refs: dict[str, dict[str, str]]
+    #: What the MODEL returned, after fabricated ids are dropped and before the
+    #: node tops the list up or trims it to fit. The scorecard measures this;
+    #: the shopper is served `selected_recipes`. Kept apart because a node that
+    #: silently repairs every model mistake qualifies every model.
+    recipe_selection_model: list[str]
+    #: What the model chose. Validated against `recipe_shortlist` before use:
+    #: an id outside the shortlist is a fabrication and is dropped, the same
+    #: way a citation ref nobody retrieved is.
+    selected_recipes: list[str]
+    #: How many meals this household needs, derived by retrieval from
+    #: `min_grams_per_person_day` -- the same figure the feasibility refusal
+    #: uses. NOT `days`: a day is not a meal, and asking for one recipe per day
+    #: under-fed every household in the eval suite.
+    recipe_meals_wanted: int
+    #: Why the turn fell back to free composition, or "" if it did not. Kept as
+    #: a reason rather than a bool because the shopper is told which plan they
+    #: got, and "no recipe fits your budget" and "you excluded too much" are
+    #: different facts about their request.
+    recipe_fallback: str
 
     # ---- generation
     comparisons: list[PriceComparison]
@@ -97,13 +221,35 @@ class GroceryState(TurnInput, total=False):
     prose: str
     prose_error: str
 
+    # Set by retrieval when the budget cannot cover this household for this
+    # many days at the cheapest price per gram in the catalogue. Distinct from
+    # over_budget, which is about a plan that was actually costed: this one
+    # says no plan could exist, and is known before generation.
+    budget_impossible: bool
+
     # ---- validate / repair loop
     repair_attempts: int
     validation_errors: list[str]
+    # Set by validate_plan when a plan was produced and costs more than the
+    # budget. This is the ONLY condition that makes "your budget does not
+    # stretch" a true statement. Every other validation error -- a draft that
+    # failed its schema, a hallucinated citation ref, no products, broken
+    # arithmetic -- means we could not produce a valid plan, which is a
+    # different fact and is not the user's budget's fault. Kept as a flag
+    # rather than inferred from the error strings so that adding an error
+    # message cannot silently reclassify a failure.
+    over_budget: bool
+    # An upstream failure — Bedrock unreachable, timed out, throttled, or
+    # misconfigured. Deliberately NOT a validation error: a validation error
+    # means "the model produced a plan and the plan is wrong", which the
+    # repair loop can act on. This means "there is no model output at all",
+    # which repair cannot fix and which must not be reported to the user as
+    # a budget problem. See emit_upstream_failure.
+    upstream_error: str
 
     # ---- output
     events: Annotated[list[Event], append_events]
-    usage: UsageMeta
+    usage: Annotated[UsageMeta, merge_usage]
 
     # ---- control
     terminated: bool

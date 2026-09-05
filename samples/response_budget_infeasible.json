@@ -6,7 +6,7 @@
     { "seq": 0, "type": "session", "session_id": "sess-7f3a9c21", "turn_id": "turn-0004-b1c3", "version": "1.0" },
     { "seq": 1, "type": "intent", "intent": "meal_plan", "confidence": 0.96 },
     { "seq": 2, "type": "error", "code": "BUDGET_INFEASIBLE", "retryable": false,
-      "message": "I couldn't build a 7-day plan for 5 people within $15 using current prices. The cheapest viable plan I found was $41.20. Would you like to raise the budget, reduce the days, or see the cheapest option available?" },
+      "message": "I couldn't build a plan within $15 using current prices. Would you like to raise the budget, reduce the number of days, or see the cheapest option available?" },
     { "seq": 3, "type": "done", "server_time": "2026-07-30T19:46:15Z",
       "usage": { "model_ids": ["claude-haiku", "claude-sonnet"], "input_tokens": 2890, "output_tokens": 640, "latency_ms": 18220, "guardrail_intervened": false } }
   ]

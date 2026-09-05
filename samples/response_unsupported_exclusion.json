@@ -1,0 +1,13 @@
+{
+  "version": "1.0",
+  "session_id": "sess-7f3a9c21",
+  "turn_id": "turn-0006-e4a1",
+  "events": [
+    { "seq": 0, "type": "session", "session_id": "sess-7f3a9c21", "turn_id": "turn-0006-e4a1", "version": "1.0" },
+    { "seq": 1, "type": "intent", "intent": "meal_plan", "confidence": 0.94 },
+    { "seq": 2, "type": "error", "code": "UNSUPPORTED_EXCLUSION", "retryable": false,
+      "message": "I can't safely plan meals for gluten-free from my current data. I can plan around any of: dairy-free, fish, no dairy, no eggs, no meat, pescatarian, seafood, shellfish, vegan, vegetarian. Would you like me to try with different constraints?" },
+    { "seq": 3, "type": "done", "server_time": "2026-07-30T19:47:03Z",
+      "usage": { "model_ids": ["claude-haiku"], "input_tokens": 420, "output_tokens": 40, "latency_ms": 620, "guardrail_intervened": false } }
+  ]
+}

@@ -24,20 +24,15 @@ import re
 
 from pydantic import BaseModel, ConfigDict, Field
 
+# Imported, not redefined. The check that DEGRADES prose (here) and the check
+# that REFUSES a response (in the contract module) must never disagree. This
+# file held an equivalent copy until they were reconciled -- the copies
+# matched, which is exactly why a later drift would not have been noticed.
+from src.schemas.contract import LITERAL_MONEY
+
 # Distinct enough that a model will not produce it by accident, and unlike
 # single braces it does not collide with JSON the model might emit.
 PLACEHOLDER = re.compile(r"\[\[(c\d+|total|budget|savings)\]\]")
-
-# Money-shaped strings. Deliberately narrow: "3 meals", "500g" and "2 people"
-# are legitimate and must pass. What must not appear is a currency figure.
-LITERAL_MONEY = re.compile(
-    r"""
-    \$\s*\d
-    | \d+\.\d{2}\b
-    | \b\d+\s*(?:dollars?|bucks|cents?)\b
-    """,
-    re.IGNORECASE | re.VERBOSE,
-)
 
 
 class ProseResult(BaseModel):
@@ -75,8 +70,15 @@ PRICE_CHECK_SYSTEM = f"""\
 You explain the result of a grocery price comparison to the shopper who asked.
 
 Say which store is cheapest and give the one fact that makes the choice \
-useful — that it is on special this week, or how it compares with the dearest \
-option. Do not list every store; the comparison table already does that.
+useful — that it is on special this week, or that it saves [[savings]] against \
+the dearest option. Do not list every store; the comparison table already \
+does that.
+
+The winner is not yours to work out. The user block lists the computed \
+cheapest placeholder after CHEAPEST:. Cite that placeholder and NO other \
+[[c…]] placeholder — not even to name what it beats. Use [[savings]] for the \
+comparison instead. You are not shown prices and cannot rank the options \
+yourself.
 
 {_SHARED_RULES}"""
 
@@ -95,14 +97,34 @@ see they were respected.
 
 
 def build_price_check_prompt(
-    *, query_item: str, options: str, on_special: bool
+    *, query_item: str, options: str, on_special: bool, cheapest_refs: list[str]
 ) -> str:
-    special = (
-        "\nThe cheapest option is on special this week." if on_special else ""
-    )
+    """
+    `cheapest_refs` is not decoration. The placeholder list deliberately
+    carries no prices -- that is the whole mechanism above -- so a model asked
+    to "say which store is cheapest" without being told the answer has to
+    guess, and on a tie or a near-tie it guesses a different store than
+    `build_comparisons` computed. The sentence then contradicts the table
+    beside it, which is Req 4's failure mode dressed as fluency.
+
+    Code determines the winner from retrieved prices; the model only phrases
+    it. `generate_prose` rejects output citing anything else.
+
+    CHEAPEST carries the ref and NOTHING ELSE. The rule that explains what to
+    do with it lives in PRICE_CHECK_SYSTEM, because this string is wrapped in
+    guardrail input tags before it reaches Bedrock (src/models/guardrail.py).
+    Imperative sentences inside the tagged region are what a prompt attack
+    looks like, and the PROMPT_ATTACK filter cannot tell the difference -- the
+    first version of this function put "you must not work out a winner
+    yourself" here and every price_check turn came back GUARDRAIL_BLOCKED.
+    Instructions go in the system prompt; the tagged block carries data.
+    """
+    special = "\nThe cheapest option is on special this week." if on_special else ""
+    winners = ", ".join(f"[[{ref}]]" for ref in cheapest_refs)
     return (
         f"The shopper asked about: {query_item}\n\n"
         f"AVAILABLE PLACEHOLDERS\n{options}{special}\n\n"
+        f"CHEAPEST: {winners}\n\n"
         f"Explain the result."
     )
 
@@ -128,9 +150,7 @@ def build_meal_plan_prompt(
         lines.append(f"Reused across meals: {', '.join(reused)}")
 
     return (
-        "\n".join(lines)
-        + f"\n\nAVAILABLE PLACEHOLDERS\n{placeholders}\n\n"
-        + "Explain the plan."
+        "\n".join(lines) + f"\n\nAVAILABLE PLACEHOLDERS\n{placeholders}\n\n" + "Explain the plan."
     )
 
 
@@ -143,9 +163,7 @@ def assert_no_literal_money(text: str) -> None:
     """
     match = LITERAL_MONEY.search(text)
     if match:
-        raise ValueError(
-            f"prose contains a literal monetary value: {match.group(0)!r}"
-        )
+        raise ValueError(f"prose contains a literal monetary value: {match.group(0)!r}")
 
 
 def referenced_placeholders(text: str) -> set[str]:

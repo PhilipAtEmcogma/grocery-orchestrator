@@ -1,15 +1,18 @@
 {
   "_comment": "Model catalogue. Data, not code, for three reasons: (1) model ids and pricing change faster than releases, (2) under IaC this becomes an SSM Parameter the CDK stack writes, so operators retune routing without a deploy, (3) adding a model is a config change a non-engineer can review. Verify ids with: aws bedrock list-foundation-models --region ap-southeast-2",
-  "version": "1.0",
+  "version": "1.1",
   "region": "ap-southeast-2",
   "default_policy": "tier",
   "models": [
     {
       "key": "claude-haiku",
       "model_id_env": "BEDROCK_MODEL_CLAUDE_HAIKU",
-      "display_name": "Claude Haiku",
+      "default_model_id": "au.anthropic.claude-haiku-4-5-20251001-v1:0",
+      "display_name": "Claude Haiku 4.5",
       "family": "anthropic",
-      "tiers": ["fast"],
+      "tiers": [
+        "fast"
+      ],
       "capabilities": {
         "tool_use": true,
         "system_prompt": true,
@@ -20,15 +23,22 @@
         "max_output_tokens": 8192,
         "cache_min_tokens": 4096
       },
-      "cost_per_1k": { "input": "0.0008", "output": "0.004" },
+      "cost_per_1k": {
+        "input": "0.0008",
+        "output": "0.004"
+      },
       "enabled": true
     },
     {
       "key": "claude-sonnet",
       "model_id_env": "BEDROCK_MODEL_CLAUDE_SONNET",
-      "display_name": "Claude Sonnet",
+      "default_model_id": "au.anthropic.claude-sonnet-4-5-20250929-v1:0",
+      "display_name": "Claude Sonnet 4.5",
       "family": "anthropic",
-      "tiers": ["quality", "fast"],
+      "tiers": [
+        "quality",
+        "fast"
+      ],
       "capabilities": {
         "tool_use": true,
         "system_prompt": true,
@@ -39,15 +49,22 @@
         "max_output_tokens": 8192,
         "cache_min_tokens": 4096
       },
-      "cost_per_1k": { "input": "0.003", "output": "0.015" },
-      "enabled": true
+      "cost_per_1k": {
+        "input": "0.003",
+        "output": "0.015"
+      },
+      "enabled": false,
+      "_disabled_reason": "No qualifying scorecard on any task, and excluded on LATENCY rather than quality: p50 11.8s / p90 19.9s against the production 20s client timeout, with 9 of 98 plan calls over the ceiling (2026-08-28). It was `enabled` and second preference for generate_plan, so a Nova Pro outage failed over to a model already documented as unfit -- and because it declares both the quality and fast tiers, the cheapest-first fallback in route() made it a candidate for EVERY task. Re-enable only with a scorecard and a latency measurement under the ceiling."
     },
     {
       "key": "nova-lite",
       "model_id_env": "BEDROCK_MODEL_NOVA_LITE",
+      "default_model_id": "apac.amazon.nova-lite-v1:0",
       "display_name": "Amazon Nova Lite",
       "family": "amazon",
-      "tiers": ["fast"],
+      "tiers": [
+        "fast"
+      ],
       "capabilities": {
         "tool_use": true,
         "system_prompt": true,
@@ -58,15 +75,22 @@
         "max_output_tokens": 5120,
         "cache_min_tokens": 0
       },
-      "cost_per_1k": { "input": "0.00006", "output": "0.00024" },
-      "enabled": false
+      "cost_per_1k": {
+        "input": "0.00006",
+        "output": "0.00024"
+      },
+      "enabled": true
     },
     {
       "key": "nova-pro",
       "model_id_env": "BEDROCK_MODEL_NOVA_PRO",
+      "default_model_id": "apac.amazon.nova-pro-v1:0",
       "display_name": "Amazon Nova Pro",
       "family": "amazon",
-      "tiers": ["quality", "fast"],
+      "tiers": [
+        "quality",
+        "fast"
+      ],
       "capabilities": {
         "tool_use": true,
         "system_prompt": true,
@@ -77,15 +101,21 @@
         "max_output_tokens": 5120,
         "cache_min_tokens": 0
       },
-      "cost_per_1k": { "input": "0.0008", "output": "0.0032" },
-      "enabled": false
+      "cost_per_1k": {
+        "input": "0.0008",
+        "output": "0.0032"
+      },
+      "enabled": true
     },
     {
       "key": "llama-instruct",
       "model_id_env": "BEDROCK_MODEL_LLAMA",
+      "default_model_id": "",
       "display_name": "Meta Llama Instruct",
       "family": "meta",
-      "tiers": ["fast"],
+      "tiers": [
+        "fast"
+      ],
       "capabilities": {
         "tool_use": false,
         "system_prompt": true,
@@ -96,14 +126,212 @@
         "max_output_tokens": 4096,
         "cache_min_tokens": 0
       },
-      "cost_per_1k": { "input": "0.00072", "output": "0.00072" },
+      "cost_per_1k": {
+        "input": "0.00072",
+        "output": "0.00072"
+      },
       "enabled": false
     }
   ],
   "routing": {
-    "classify_intent": { "tier": "fast", "prefer": ["nova-lite", "claude-haiku"] },
-    "generate_plan": { "tier": "quality", "prefer": ["claude-sonnet", "nova-pro"] },
-    "repair_plan": { "tier": "fast", "prefer": ["claude-haiku", "nova-lite"] },
-    "generate_prose": { "tier": "fast", "prefer": ["claude-haiku"] }
+    "classify_intent": {
+      "tier": "fast",
+      "prefer": [
+        "nova-lite",
+        "claude-haiku"
+      ]
+    },
+    "select_recipes": {
+      "tier": "fast",
+      "_why": "Req 2.9, Pilot Task 15c. The model chooses recipe ids from a shortlist retrieval has already proven costable, dietary-viable against the RESOLVED products, and affordable as a set. FAST tier because the hard part is done in code: what is left is judgement about variety over options that are all already correct, and there is no field in RecipeSelection for a quantity or a price.",
+      "prefer": [
+        "nova-lite",
+        "claude-haiku"
+      ],
+      "exclude": [
+        "nova-pro"
+      ],
+      "_why_exclude": {
+        "nova-pro": "No selection scorecard, and it should not acquire one. It declares the FAST tier as well as quality, so `available(tier)` would hand it this task as a cost-ordered fallback -- which is how `claude-sonnet` once sat as a live fallback for every task while being documented as unfit, and it is what `unscored_routes()` caught here within minutes of the two real scorecards landing. Excluded as a ROUTING decision rather than on a score: selection is a cheap judgement over a shortlist deterministic code has already validated, it runs on every meal-plan turn, and Nova Pro is roughly thirteen times Nova Lite per token. Paying that for a choice between options that are all already correct is a cost regression, not a quality win. Same reasoning as repair_budget and repair_defect."
+      }
+    },
+    "generate_plan": {
+      "tier": "quality",
+      "prefer": [
+        "nova-pro",
+        "claude-sonnet"
+      ]
+    },
+    "repair_budget": {
+      "tier": "fast",
+      "_why": "The previous plan was costed and came out over. The repair must cut money payable while still covering the household and days -- `build_repair_prompt` names the overage and offers cheaper options.",
+      "prefer": [
+        "nova-lite"
+      ],
+      "exclude": [
+        "claude-haiku",
+        "nova-pro"
+      ],
+      "_why_exclude": {
+        "claude-haiku": "71.4% on budget repair (5/7), below the 90% floor. Perfect on DEFECT repair, which is why it serves repair_defect instead. This is the whole reason `exclude` exists: a model can be excellent at one task and below the floor on another.",
+        "nova-pro": "No repair scorecard, and it should not acquire one. It declares the fast tier so `available(tier)` would offer it as a cost-ordered fallback, but it is the quality-tier model -- routing repairs to it is a cost regression, not a quality win."
+      }
+    },
+    "repair_defect": {
+      "tier": "fast",
+      "_why": "The previous plan was rejected for something that is NOT about money: an invented price in a meal name, an unknown citation ref, broken arithmetic. `build_defect_repair_prompt` names the defects. Telling this case 'you came to $0 OVER the $X budget' describes none of them, which is why the two prompts exist -- and, as of 2026-08-31, why the two ROUTES do.",
+      "prefer": [
+        "claude-haiku"
+      ],
+      "exclude": [
+        "nova-lite",
+        "nova-pro"
+      ],
+      "_why_exclude": {
+        "nova-lite": "80% on defect repair (4/5), below the 90% floor. Perfect on BUDGET repair, which is why it serves repair_budget instead. The mirror image of claude-haiku's exclusion above, which is what makes the split worth having.",
+        "nova-pro": "Same reason as repair_budget: quality tier, no repair scorecard, and routing repairs to it is a cost regression."
+      }
+    },
+    "generate_prose": {
+      "tier": "fast",
+      "prefer": [
+        "nova-lite",
+        "claude-haiku"
+      ]
+    }
+  },
+  "scorecards": {
+    "_comment": "Measured evidence, per model per task. A model is eligible for a task only with an entry here that meets the floor; see tests/test_multimodel.py, which fails the build if a routable model has no scorecard for a task it could serve. Recording the guardrail version matters: an intent score is a measurement of the classifier AND the policy in front of it, and version 2 unblocked cases version 1 refused.",
+    "_floor": 0.9,
+    "classify_intent": {
+      "_source": "evals/run_intent.py --compare nova-lite nova-pro claude-haiku, 47 cases, guardrail version 2, paced 9/min, live in ap-southeast-2",
+      "_measured": "2026-09-04",
+      "_re_measured_because_the_suite_changed": "The previous entries were measured on 2026-08-29 against a THIRTY-case suite. f8cd86d grew it to 47, adding cases specifically because the smaller suite had passed over a live over-blocking defect (docs/CI-GATE-HEALTH.md section 1). Req 14.2 asks every active route to score at least 90% on 'its applicable golden set', and the applicable set changed underneath all three models -- so the old numbers were honest about their own provenance and were evidence about a suite that no longer exists. Re-measured as Pilot Task 16 gate G5. The scores are NOT comparable to the old ones: the instrument changed, not the system.",
+      "_what_moved": "Nova Pro fell from a recorded 100.0% to 97.8%. That is the expected shape rather than a regression -- a perfect score over 30 cases was always the fragile kind, and citing it as qualification is exactly what CI-GATE-HEALTH said the release gate should refuse. Nova Lite, the ACTIVE route, went the other way: 92.9% to 95.6%.",
+      "_blocked_cases_are_excluded_not_failed": "inj-001 and inj-002 are refused by the Guardrail before classification, identically for all three models. They appear in the red-team suite as must_block cases, where refusing them is what a passing score MEANS, so scoring them as misses would penalise every model for the safety control working. 45 scored, 2 excluded.",
+      "nova-pro": {
+        "rate": 0.978,
+        "scored": 45,
+        "blocked": 2,
+        "p50_latency_ms": 6678,
+        "cost_usd_per_suite": 0.064927
+      },
+      "claude-haiku": {
+        "rate": 0.978,
+        "scored": 45,
+        "blocked": 2,
+        "p50_latency_ms": 6652,
+        "cost_usd_per_suite": 0.086817
+      },
+      "nova-lite": {
+        "rate": 0.956,
+        "scored": 45,
+        "blocked": 2,
+        "p50_latency_ms": 6672,
+        "cost_usd_per_suite": 0.004880,
+        "_why_this_one_serves": "Equal-lowest accuracy by 2.2 points, and 13x cheaper than Nova Pro and 18x cheaper than Claude Haiku over the same 47 cases. classify_intent runs on EVERY turn, so that ratio is the routing decision. Measured on the current suite rather than argued from the old one.",
+        "_latency_note": "All three sit within 26ms of each other at p50 (6652-6678ms), which is not a model property -- it is the Guardrail hop plus the harness network path dominating. Do not read these as model latency evidence; scripts/measure_latency.py measures the deployed service instead."
+      }
+    },
+    "select_recipes": {
+      "_source": "evals/run_recipe_select.py, 12 cases, guardrail version 2, live in ap-southeast-2",
+      "_measured": "2026-08-31",
+      "_reps": "THREE reps each, paced at 9/min, zero upstream failures and zero fallbacks in any rep. Every rep identical, which on this suite confirms STABILITY rather than averaging noise: BedrockModelClient sets temperature 0.0, and the task is a choice from a short list rather than free generation.",
+      "_finding": "BOTH MODELS SCORE 100% AND THE SUITE THEREFORE CANNOT RANK THEM. That is the same ceiling the meal-plan suite hit and it is worth saying plainly: every check here is a RULE VIOLATION check -- did you invent an id, did you repeat one while alternatives remained, did you breach a stated exclusion, did you choose enough meals. Neither model breaks rules. Nothing here asks whether the MENU is good, so 100% means 'both models select validly' and says nothing about which selects better.",
+      "_the_one_signal_that_distinguishes_them": "`distinct mains`, reported and NOT scored: Claude Haiku 3.8, Nova Lite 3.4 across the same 12 cases, stable across all three reps. Haiku picks more varied menus. It is not scored because no threshold on variety is right for every request -- three meals from a seven-recipe shortlist cannot beat four from a twelve-recipe one, and scoring it would manufacture a gradient without establishing what it means. Recorded because it is the only measured difference between the two, and because the honest way to rank them later is to add harder cases rather than to promote a reported metric.",
+      "_routing_consequence": "Nova Lite is preferred on cost: $0.00006/1k input against $0.0008, roughly thirteen times cheaper, on a task that runs on EVERY meal-plan turn. Claude Haiku is the qualified fallback, which matters here more than elsewhere -- select_recipes is one of three Nova Lite calls a meal-plan turn now makes, and this is the only one of them with a second qualified model.",
+      "nova-lite": {
+        "rate": 1.0,
+        "scored": 12,
+        "reps": 3,
+        "distinct_mains": 3.4
+      },
+      "claude-haiku": {
+        "rate": 1.0,
+        "scored": 12,
+        "reps": 3,
+        "distinct_mains": 3.8
+      }
+    },
+    "generate_plan": {
+      "_source": "evals/run_meal_plan.py, 11 cases, three clean reps each, paced",
+      "_measured": "2026-08-28",
+      "nova-pro": {
+        "rate": 1.0,
+        "scored": 11,
+        "reps": 3
+      },
+      "claude-haiku": {
+        "rate": 1.0,
+        "scored": 11,
+        "reps": 3
+      }
+    },
+    "repair_budget": {
+      "_source": "evals/run_repair.py, DERIVED from the combined repair_plan run of 2026-08-30 rather than measured under these task names. That run scored 12 cases (7 budget, 5 defect) over three identical reps per model and reported budget_rate and defect_rate separately, because the harness has always separated the two case classes -- the split of the ROUTING TASK is what is new, not the measurement. Recorded as derived rather than presented as fresh: `_derived_from` names the run, and run_repair.py now scores these task names natively, so the next run measures them directly instead of inheriting.",
+      "_derived_from": "scorecards.repair_plan as of 2026-08-30, field `budget_rate`",
+      "_measured": "2026-08-30",
+      "_cases": 7,
+      "_finding": "Nova Lite is perfect here across three identical reps. Claude Haiku drops two of seven, which is a structural weakness rather than variance -- the shape did not move across reps, and it is the exact inverse of the defect half.",
+      "nova-lite": {
+        "rate": 1.0,
+        "scored": 7,
+        "reps": 3
+      },
+      "claude-haiku": {
+        "rate": 0.714,
+        "scored": 7,
+        "reps": 3
+      },
+      "_history": {
+        "_was": "scorecards._measured_not_gated.repair_plan, until 2026-08-31",
+        "_status": "GATED 2026-08-30. This entry is kept for the reasoning, not because it still applies. The suite was six cases and could not support a threshold; it was expanded to twelve, every case verified to discriminate against a model built to fail it, and re-measured over three reps per model. Nova Lite clears the 90% floor and serves repair; Claude Haiku does not and is excluded from this task only. See scorecards.repair_plan and routing.repair_plan.exclude.",
+        "_option_kept_on_record": "SPLIT THE TASK, if repair quality ever becomes the bottleneck. The two models are COMPLEMENTARY rather than ranked: Nova Lite scores 100% on budget repair and Claude Haiku 100% on defect repair. Routing `repair_budget` to one and `repair_defect` to the other would give 100% on both, where choosing either model alone gives up something. The graph already knows which kind of repair it is doing -- evals/run_repair.py separates them and src/prompts/ carries two distinct repair prompts, because a budget repair and a defect repair need different instructions. What it would cost: a second routing task, a scorecard per sub-task, and the qualification gate widening to cover both. Recorded here rather than built, because it is machinery for a problem that is not yet biting: a failed repair exhausts the bounded loop and produces an honest refusal, so the cost of the current arrangement is a refusal the shopper can act on rather than a wrong answer they cannot detect."
+      }
+    },
+    "repair_defect": {
+      "_source": "evals/run_repair.py, DERIVED from the combined repair_plan run of 2026-08-30 rather than measured under these task names. That run scored 12 cases (7 budget, 5 defect) over three identical reps per model and reported budget_rate and defect_rate separately, because the harness has always separated the two case classes -- the split of the ROUTING TASK is what is new, not the measurement. Recorded as derived rather than presented as fresh: `_derived_from` names the run, and run_repair.py now scores these task names natively, so the next run measures them directly instead of inheriting.",
+      "_derived_from": "scorecards.repair_plan as of 2026-08-30, field `defect_rate`",
+      "_measured": "2026-08-30",
+      "_cases": 5,
+      "_finding": "Claude Haiku is perfect here; Nova Lite drops one of five. FIVE CASES IS A COARSE INSTRUMENT and that is worth saying out loud: at n=5 a single failure reads as 80%, so this half cannot distinguish 'below the floor' from 'one bad draw' as confidently as the budget half can. The repair suite's own history is the argument for expanding it -- at six combined cases the failures read as variance and at twelve they were structural.",
+      "claude-haiku": {
+        "rate": 1.0,
+        "scored": 5,
+        "reps": 3
+      },
+      "nova-lite": {
+        "rate": 0.8,
+        "scored": 5,
+        "reps": 3
+      }
+    },
+    "_unscored_tasks": {
+      "_comment": "Tasks no eval measures, named rather than hidden. The test treats these as accepted gaps; deleting a task from here without adding a scorecard makes the build fail, which is the point."
+    },
+    "generate_prose": {
+      "_source": "evals/run_prose.py, 11 cases, guardrail version 2, paced 9/min",
+      "_measured": "2026-08-29",
+      "_note": "Rule compliance, not literary merit. The node imposes a protocol -- placeholders only, no money, correct cheapest attribution -- and DEGRADES silently on any breach, dropping the sentence and shipping the bare table. So what is scored is whether a model can follow the protocol; a model that cannot produces a product with no prose in it and no error to show for it. Legacy 5.6 (subjective quality) stays open.",
+      "nova-lite": {
+        "rate": 1.0,
+        "scored": 11,
+        "delivery": 1.0
+      },
+      "nova-pro": {
+        "rate": 1.0,
+        "scored": 11,
+        "delivery": 1.0
+      },
+      "claude-haiku": {
+        "rate": 0.909,
+        "scored": 11,
+        "delivery": 0.889
+      }
+    },
+    "_measured_not_gated": {
+      "_comment": "Measured, reported, and deliberately NOT used to gate routing, because the suite is too small for any threshold on it to mean anything. Distinct from _unscored_tasks, which is for tasks nothing measures at all. Expand the case set before gating. EMPTY as of 2026-08-31, and that is the point: repair_plan sat here carrying `_status: GATED` for a day -- a gated task filed under a heading meaning ungated. The reasoning it held was worth keeping, so it moved to scorecards.repair_plan._history rather than being deleted."
+    },
+    "_split_note": "repair_plan was ONE task until 2026-08-31, gated at 90% with claude-haiku excluded, which left `routable_models('repair_plan') == ['nova-lite']` -- a single model on the account's binding, unraisable 20 rpm quota, on the code path that fires when the system is already under load. Splitting does NOT restore a per-task fallback: each half still has exactly one qualified model, because the model that fails each half fails it below the floor. What it does is stop the whole repair path depending on one model. A Nova Lite quota event now degrades budget repair only, and defect repair keeps working on Haiku; before, it took out both. Quality also rises to 100% on each half, where choosing either model alone gave up one of them."
   }
 }

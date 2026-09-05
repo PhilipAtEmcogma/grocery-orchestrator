@@ -19,6 +19,7 @@ from src.models.base import ModelClient, ModelError, ModelTier, T
 from src.prompts.intent import MAX_EXTRACTED_ITEMS, IntentResult
 from src.prompts.meal_plan import DraftIngredient, DraftMeal, PlanDraft
 from src.prompts.prose import ProseResult
+from src.prompts.recipe_select import RecipeSelection
 from src.schemas.contract import Intent
 
 _MEAL_WORDS = ("meal", "plan", "dinner", "feed", "recipe", "cook", "week of")
@@ -26,16 +27,62 @@ _PRICE_WORDS = ("cheap", "price", "cost", "how much", "compare", "dearest")
 _GREETING = ("hello", "hi ", "hey", "thanks", "who are you", "what can you do")
 
 _ITEM_STOPWORDS = {
-    "what", "whats", "is", "are", "the", "a", "an", "of", "for", "me", "my",
-    "near", "nearby", "cheapest", "cheap", "price", "prices", "pricing", "cost",
-    "costs", "compare", "comparison", "how", "much", "many", "buy", "get",
-    "find", "please", "block", "some", "any", "s", "at", "in", "around", "want",
-    "need", "today", "this", "week", "dearest", "best",
+    "what",
+    "whats",
+    "is",
+    "are",
+    "the",
+    "a",
+    "an",
+    "of",
+    "for",
+    "me",
+    "my",
+    "near",
+    "nearby",
+    "cheapest",
+    "cheap",
+    "price",
+    "prices",
+    "pricing",
+    "cost",
+    "costs",
+    "compare",
+    "comparison",
+    "how",
+    "much",
+    "many",
+    "buy",
+    "get",
+    "find",
+    "please",
+    "block",
+    "some",
+    "any",
+    "s",
+    "at",
+    "in",
+    "around",
+    "want",
+    "need",
+    "today",
+    "this",
+    "week",
+    "dearest",
+    "best",
 }
 
 _WORD_NUMBERS = {
-    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
-    "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10,
+    "one": 1,
+    "two": 2,
+    "three": 3,
+    "four": 4,
+    "five": 5,
+    "six": 6,
+    "seven": 7,
+    "eight": 8,
+    "nine": 9,
+    "ten": 10,
 }
 
 
@@ -56,6 +103,7 @@ class ScriptedModelClient(ModelClient):
         hallucinate_ref: str | None = None,
         prose_writes_money: bool = False,
         prose_bad_placeholder: bool = False,
+        plan_money_attempts: int = 0,
     ) -> None:
         self.force_error = force_error
         self.overrides = overrides or {}
@@ -68,7 +116,19 @@ class ScriptedModelClient(ModelClient):
         # literal price on demand, so the rejection cannot otherwise be tested.
         self.prose_writes_money = prose_writes_money
         self.prose_bad_placeholder = prose_bad_placeholder
+        # How many of the FIRST plan attempts write a price into the meal
+        # name. Same rationale as prose_writes_money: a real model cannot be
+        # made to disobey 'NEVER state a price' on demand, so the rejection
+        # and the repair that follows it cannot otherwise be driven. Set it
+        # above MAX_REPAIR_ATTEMPTS to exercise exhaustion instead.
+        self.plan_money_attempts = plan_money_attempts
+        self._plan_calls = 0
         self.calls: list[tuple[ModelTier, str]] = []
+        # Prompts as sent, so a test can assert WHICH prompt a repair used.
+        # `calls` records tier and schema only, which cannot distinguish the
+        # budget repair prompt from the defect one -- and inverting that
+        # branch used to leave the whole suite green.
+        self.prompts: list[tuple[str, str]] = []
         self._usage: dict = {}
 
     # ------------------------------------------------------------ interface
@@ -84,6 +144,7 @@ class ScriptedModelClient(ModelClient):
         task: str = "classify_intent",
     ) -> T:
         self.calls.append((tier, schema.__name__))
+        self.prompts.append((schema.__name__, user))
         if self.force_error:
             raise ModelError("scripted failure")
 
@@ -103,6 +164,9 @@ class ScriptedModelClient(ModelClient):
 
         if schema is PlanDraft:
             return cast(T, self._plan(user, tier))
+
+        if schema is RecipeSelection:
+            return cast(T, self._select_recipes(user))
 
         if schema is ProseResult:
             return cast(T, self._prose(user))
@@ -148,8 +212,12 @@ class ScriptedModelClient(ModelClient):
             items = self._extract_items(msg)
             if len(items) > 1:
                 return IntentResult(
-                    intent=intent, confidence=confidence, query_items=items,
-                    household_size=household, budget_nzd=budget, days=days,
+                    intent=intent,
+                    confidence=confidence,
+                    query_items=items,
+                    household_size=household,
+                    budget_nzd=budget,
+                    days=days,
                     dietary_exclusions=exclusions,
                 )
         elif any(w in msg for w in _GREETING):
@@ -191,13 +259,27 @@ class ScriptedModelClient(ModelClient):
 
     @staticmethod
     def _extract_household(msg: str) -> int | None:
-        m = re.search(r"(?:flat of|family of|household of|for)\s+(\d+)", msg)
+        # The bare `for N` branch must not swallow a DURATION. "dinners for 5
+        # days on $90" was read as a household of five: a constraint the
+        # user never gave, invented from a phrase that means something else,
+        # which is precisely what Req 6.3 forbids.
+        m = re.search(
+            r"(?:flat of|family of|household of|for)\s+(\d+)"
+            r"(?!\s*(?:days?|nights?|dinners?|weeks?|meals?))",
+            msg,
+        )
         if m:
             return int(m.group(1))
         m = re.search(r"(?:flat of|family of|for)\s+([a-z]+)", msg)
         if m and m.group(1) in _WORD_NUMBERS:
             return _WORD_NUMBERS[m.group(1)]
-        m = re.search(r"(\d+)\s*(?:people|persons|of us)", msg)
+        # "3 flatmates", "2 adults", "4 of us". The dataset's own demo
+        # scenarios open with "We are 3 university flatmates", and clarifying
+        # something the user plainly said is worse than defaulting it.
+        m = re.search(
+            r"(\d+)\s+(?:\w+\s+)?(?:people|persons|of us|flatmates|adults|kids|children)",
+            msg,
+        )
         return int(m.group(1)) if m else None
 
     @staticmethod
@@ -207,6 +289,12 @@ class ScriptedModelClient(ModelClient):
             return int(m.group(1))
         if "this week" in msg or "a week" in msg or "for the week" in msg:
             return 7
+        # A single meal IS a stated duration, not a missing one. Every scenario
+        # in datasets/DATA_SCHEMA.md is one dinner and none says "1 day"; asking
+        # "how many days?" about "dinner tonight" interrogates the user over a
+        # fact they supplied in the first three words.
+        if re.search(r"tonight|this evening|one (?:meal|dinner|night)", msg):
+            return 1
         return None
 
     @staticmethod
@@ -227,11 +315,8 @@ class ScriptedModelClient(ModelClient):
     @staticmethod
     def _extract_item(msg: str) -> str | None:
         cleaned = re.sub(r"[^a-z0-9\s]", " ", msg)
-        words = [
-            w for w in cleaned.split() if len(w) > 1 and w not in _ITEM_STOPWORDS
-        ]
+        words = [w for w in cleaned.split() if len(w) > 1 and w not in _ITEM_STOPWORDS]
         return " ".join(words) if words else None
-
 
     def _plan(self, user: str, tier: ModelTier) -> PlanDraft:
         """
@@ -242,6 +327,9 @@ class ScriptedModelClient(ModelClient):
         rather than one meal repeated. Repair passes (FAST tier) shrink
         portions, mimicking a real model responding to "cut $X" feedback.
         """
+        self._plan_calls += 1
+        writes_money = self._plan_calls <= self.plan_money_attempts
+
         refs = re.findall(r"^(c\d+) \|", user, flags=re.MULTILINE)
         if not refs:
             refs = ["c1"]
@@ -269,7 +357,11 @@ class ScriptedModelClient(ModelClient):
             chosen = refs[start : start + per_meal] or refs[:per_meal]
             meals.append(
                 DraftMeal(
-                    name=f"Scripted Dinner {day + 1}",
+                    name=(
+                        f"Scripted Dinner {day + 1} for $9.99"
+                        if writes_money
+                        else f"Scripted Dinner {day + 1}"
+                    ),
                     serves=serves,
                     ingredients=[
                         DraftIngredient(
@@ -285,13 +377,57 @@ class ScriptedModelClient(ModelClient):
 
         return PlanDraft(meals=meals, reasoning="Scripted selection.")
 
+    def _select_recipes(self, user: str) -> RecipeSelection:
+        """
+        Pick recipe ids off the shortlist the prompt offered.
+
+        DELIBERATELY PARSED FROM THE PROMPT, not read from the catalogue. The
+        point of the offline baseline is to exercise the wiring end to end --
+        shortlist -> prompt -> selection -> validation -> costing -- and a
+        stand-in that consulted the catalogue directly would skip the two steps
+        most likely to be wrong. It is the same reasoning that makes the repair
+        baseline drive the real prompt builders.
+
+        Spreads across main ingredients rather than taking the first N, so the
+        "prefer variety" rule in the prompt is exercised by something rather
+        than merely stated. This is not a claim that the heuristic is good: it
+        measures the harness, not a model.
+        """
+        offered: list[tuple[str, str]] = []
+        for line in user.splitlines():
+            parts = [p.strip() for p in line.split("|")]
+            if len(parts) == 3 and parts[0] and " " not in parts[0]:
+                first_ingredient = parts[2].split(",")[0].strip()
+                offered.append((parts[0], first_ingredient))
+        if not offered:
+            raise ModelError("no recipes offered in the selection prompt")
+
+        wanted = 1
+        match = re.search(r"[Cc]hoose (\d+) meal", user)
+        if match:
+            wanted = int(match.group(1))
+
+        chosen: list[str] = []
+        seen_mains: set[str] = set()
+        # First pass: one recipe per distinct main ingredient.
+        for rid, main in offered:
+            if len(chosen) >= wanted:
+                break
+            if main not in seen_mains:
+                seen_mains.add(main)
+                chosen.append(rid)
+        # Second pass: top up in order if variety ran out before the count did.
+        for rid, _ in offered:
+            if len(chosen) >= wanted:
+                break
+            if rid not in chosen:
+                chosen.append(rid)
+        return RecipeSelection(recipe_ids=chosen)
 
     def _prose(self, user: str) -> ProseResult:
         """Placeholder-only prose, mirroring what a well-behaved model returns."""
         if self.prose_writes_money:
-            return ProseResult(
-                text="Pak'nSave is cheapest at $2.97 for 500g this week."
-            )
+            return ProseResult(text="Pak'nSave is cheapest at $2.97 for 500g this week.")
         if self.prose_bad_placeholder:
             return ProseResult(text="The cheapest option is [[c99]] this week.")
 
@@ -313,7 +449,6 @@ class ScriptedModelClient(ModelClient):
             )
         return ProseResult(text="Here is what I found.")
 
-
     @staticmethod
     def _extract_items(msg: str) -> list[str]:
         """
@@ -328,9 +463,7 @@ class ScriptedModelClient(ModelClient):
 
         out: list[str] = []
         for part in parts:
-            words = [
-                w for w in part.split() if len(w) > 1 and w not in _ITEM_STOPWORDS
-            ]
+            words = [w for w in part.split() if len(w) > 1 and w not in _ITEM_STOPWORDS]
             if words:
                 out.append(" ".join(words))
         # Bounded by what the schema accepts, NOT by how many retrieval will

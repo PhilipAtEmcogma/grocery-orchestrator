@@ -30,7 +30,7 @@ from typing import TYPE_CHECKING, Any, Protocol
 
 from pydantic import ValidationError
 
-from src.models.base import ModelError
+from src.models.base import PLAN_TASKS, REPAIR_TASKS, ModelError
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -58,6 +58,11 @@ METRIC_IDEMPOTENT_REPLAY = "IdempotentReplay"
 METRIC_TURN_WITHOUT_CONTENT = "TurnWithoutContent"
 METRIC_TURN_ID_REUSED = "TurnIdReused"
 METRIC_IDEMPOTENCY_UNAVAILABLE = "IdempotencyUnavailable"
+# A turn finished but another invocation had taken over its claim, so the result
+# could not be cached. Worth a metric rather than a silent log line: a sustained
+# rate means invocations are routinely running past the in-progress timeout,
+# which is a latency problem wearing an idempotency costume.
+METRIC_IDEMPOTENCY_CLAIM_LOST = "IdempotencyClaimLost"
 METRIC_INVALID_REQUEST = "InvalidRequest"
 METRIC_TURN_ERROR = "TurnError"
 METRIC_PREFLIGHT = "PreflightRequests"
@@ -65,8 +70,6 @@ METRIC_PREFLIGHT = "PreflightRequests"
 # Tasks whose model calls make up the meal-plan generation/repair cycle. The
 # repair loop spans several graph nodes, so it is measured as the calls it
 # makes rather than as one wrapping span — see `instrumented.py`.
-PLAN_TASKS = frozenset({"generate_plan", "repair_plan"})
-REPAIR_TASK = "repair_plan"
 
 
 # ------------------------------------------------------------------- protocol
@@ -216,9 +219,7 @@ class TurnStats:
         """True once plan generation has been attempted at least once."""
         return self.plan_calls > 0
 
-    def record_model(
-        self, *, model: str, task: str, elapsed_ms: float, usage: dict
-    ) -> None:
+    def record_model(self, *, model: str, task: str, elapsed_ms: float, usage: dict) -> None:
         self.model_calls += 1
         self.model_ms += elapsed_ms
         if model not in self.models_used:
@@ -237,7 +238,7 @@ class TurnStats:
         # rather than reading the finished plan is what makes this correct on
         # the infeasible path too, where the failing plan is discarded and
         # there is no MealPlan left to read `repair_attempts` off.
-        if task == REPAIR_TASK:
+        if task in REPAIR_TASKS:
             self.repair_attempts += 1
 
 

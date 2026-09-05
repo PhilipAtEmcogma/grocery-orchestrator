@@ -1,0 +1,124 @@
+{
+  "_comment": "Recipe selection cases (Req 2.9, Pilot Task 15c). Each drives the REAL retrieve_prices node to build the shortlist, then scores what select_recipes chose from it. The two failure modes the second audit named -- a recipe whose dietary classification does not match the request, and the same recipe five times -- are the two the suite exists for; the other checks fall out of the shape of the task.",
+
+  "_on_size": "Twelve cases, which is where the repair suite ended up and for the reason it got there: at six the failures read as variance, and at twelve they were structurally opposite. Twelve is a starting point rather than a target -- expand it before drawing a conclusion this suite cannot support, and never delete a case to raise a score.",
+
+  "_on_expectations": "`exclude_categories` states the PRODUCT categories a selection must avoid, not the user's words. The mapping from 'vegan' to {meat, seafood, dairy} lives in src/graph/dietary.py and is the reviewable source of truth; restating it here would be a second copy, and the second copy is the one that goes wrong.",
+
+  "cases": [
+    {
+      "id": "sel-001",
+      "message": "dinners for a flat of 3 for 5 days, $120",
+      "hints": { "household_size": 3, "days": 5, "budget_nzd": 120 },
+      "expect": {},
+      "note": "The ordinary case. A comfortable budget, no exclusions, so the shortlist is wide and there is no excuse for repeating or for falling back."
+    },
+    {
+      "id": "sel-002",
+      "message": "a week of dinners for one person on $35",
+      "hints": { "household_size": 1, "days": 7, "budget_nzd": 35 },
+      "expect": {},
+      "note": "The tight one. Exhaustive search over the fixture catalogue finds five distinct meals that fit $35 and none that fit six, so this case is right at the edge -- it is the case that caught the first budget design, which offered a shortlist that could not be combined."
+    },
+    {
+      "id": "sel-003",
+      "message": "vegetarian meals for 2 people for 3 days on $60",
+      "hints": {
+        "household_size": 2,
+        "days": 3,
+        "budget_nzd": 60,
+        "dietary_exclusions": ["vegetarian"]
+      },
+      "expect": { "exclude_categories": ["meat", "seafood"] },
+      "note": "Dietary, judged from the RESOLVED products. `recipe_excluded_categories` scans ingredient names and would pass 'Scrambled Eggs on Toast' as excluding nothing; the shortlist derives the answer from what each ingredient resolves to."
+    },
+    {
+      "id": "sel-004",
+      "message": "vegan dinners for 2 for 4 days on $50",
+      "hints": {
+        "household_size": 2,
+        "days": 4,
+        "budget_nzd": 50,
+        "dietary_exclusions": ["vegan"]
+      },
+      "expect": { "exclude_categories": ["meat", "seafood", "dairy"] },
+      "note": "The narrowest diet the catalogue supports -- 7 of 29 recipes against the real catalogue, fewer against the fixtures. Repeating IS legitimate here if distinct options run out, which is why the repetition check is conditional on how many were offered."
+    },
+    {
+      "id": "sel-005",
+      "message": "dairy free meals for 4 for 5 days, $90",
+      "hints": {
+        "household_size": 4,
+        "days": 5,
+        "budget_nzd": 90,
+        "dietary_exclusions": ["dairy-free"]
+      },
+      "expect": { "exclude_categories": ["dairy"] },
+      "note": "Dairy is the exclusion most likely to be got wrong by name-scanning: the source catalogue combines 'Fresh Milk & Plant Milk', so oat milk classifies as dairy and over-excludes. Over-excluding is the safe direction and the recipe path must not quietly correct it."
+    },
+    {
+      "id": "sel-006",
+      "message": "no seafood please, feed 2 for 4 days on $70",
+      "hints": {
+        "household_size": 2,
+        "days": 4,
+        "budget_nzd": 70,
+        "dietary_exclusions": ["seafood"]
+      },
+      "expect": { "exclude_categories": ["seafood"] },
+      "note": "A single exclusion phrased as a sentence rather than a label, which is how a shopper writes it."
+    },
+    {
+      "id": "sel-007",
+      "message": "vegetarian and dairy free for 3 people, 4 days, $80",
+      "hints": {
+        "household_size": 3,
+        "days": 4,
+        "budget_nzd": 80,
+        "dietary_exclusions": ["vegetarian", "dairy-free"]
+      },
+      "expect": { "exclude_categories": ["meat", "seafood", "dairy"] },
+      "note": "Two exclusions at once. Req 5.2 requires them additive and never traded off, so the union must hold rather than the last one winning."
+    },
+    {
+      "id": "sel-008",
+      "message": "meals for 5 people for 7 days on $200",
+      "hints": { "household_size": 5, "days": 7, "budget_nzd": 200 },
+      "expect": {},
+      "note": "Large household, generous budget. The meal count comes from grams needed rather than days, so this asks for the most meals of any case and is where an off-by-one in `meals_needed` would show."
+    },
+    {
+      "id": "sel-009",
+      "message": "something quick for two of us for two nights, $30",
+      "hints": { "household_size": 2, "days": 2, "budget_nzd": 30 },
+      "expect": {},
+      "note": "A preference the structured constraints cannot carry ('quick'). It is in the prompt because the shopper's own words often hold the useful part; nothing scores whether the model honoured it, because nothing in the catalogue records preparation time."
+    },
+    {
+      "id": "sel-010",
+      "message": "dinners for one for 3 days, $25",
+      "hints": { "household_size": 1, "days": 3, "budget_nzd": 25 },
+      "expect": {},
+      "note": "Small and cheap but comfortably feasible. Sits above the feasibility floor, so a refusal here would be a defect rather than an honest answer."
+    },
+    {
+      "id": "sel-011",
+      "message": "feed 4 people for 6 days on $110, no meat",
+      "hints": {
+        "household_size": 4,
+        "days": 6,
+        "budget_nzd": 110,
+        "dietary_exclusions": ["no meat"]
+      },
+      "expect": { "exclude_categories": ["meat"] },
+      "note": "No meat but seafood allowed -- distinct from vegetarian, and a mapping that collapsed the two would pass every other dietary case here."
+    },
+    {
+      "id": "sel-012",
+      "message": "plan meals for 3 people for 7 days with a $150 budget",
+      "hints": { "household_size": 3, "days": 7, "budget_nzd": 150 },
+      "expect": {},
+      "note": "The longest span with no exclusions: the case most likely to need more meals than the catalogue holds distinct options for, and therefore the one that exercises the legitimate-repeat path without a diet narrowing the shortlist."
+    }
+  ]
+}

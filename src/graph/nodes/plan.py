@@ -4,7 +4,8 @@ Meal plan node.
 Three parts:
   generate_plan  — one model call producing a PlanDraft (no prices)
   assemble_plan  — computes EVERY monetary value in Python from records
-  repair_plan    — builds targeted feedback and re-runs generation
+  repair         — builds targeted feedback and re-runs generation, routed as
+                   `repair_budget` or `repair_defect` depending on which
 
 The split matters. `assemble_plan` is pure arithmetic over retrieved data, so
 it is exhaustively testable and cannot be wrong in the way a model can be.
@@ -12,13 +13,24 @@ it is exhaustively testable and cannot be wrong in the way a model can be.
 
 from __future__ import annotations
 
-from decimal import ROUND_HALF_UP, Decimal
+from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 
-from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState
-from src.models.base import ModelClient, ModelError, ModelTier
+from src.graph.state import GroceryState, usage_from
+from src.models.base import (
+    PLAN_TASKS,
+    TASK_GENERATE_PLAN,
+    TASK_REPAIR_BUDGET,
+    TASK_REPAIR_DEFECT,
+    GuardrailBlocked,
+    ModelClient,
+    ModelError,
+    ModelOutputInvalid,
+    ModelTier,
+)
 from src.prompts.meal_plan import (
     SYSTEM_PROMPT,
     PlanDraft,
+    build_defect_repair_prompt,
     build_repair_prompt,
     build_user_prompt,
     render_products,
@@ -32,11 +44,28 @@ from src.schemas.contract import (
     StoreBasket,
 )
 
+#: Re-exported: `tests/test_plan.py` and `Philip_demo/04` build model doubles
+#: that fail only on the plan path, and importing the set from the node they are
+#: exercising reads better than reaching into `src.models.base` for it.
+__all__ = ["PLAN_TASKS", "TASK_GENERATE_PLAN", "TASK_REPAIR_BUDGET", "TASK_REPAIR_DEFECT"]
+
 CENT = Decimal("0.01")
 
 
 def _round(value: Decimal) -> Decimal:
     return value.quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+def _whole_packs(packs: Decimal) -> Decimal:
+    """
+    Packs bought for a given amount used. Always rounds UP.
+
+    Half a pack of butter still costs a whole pack, and 1.2 packs of mince
+    costs two. Rounding down, or counting one pack however much is used, would
+    understate the bill -- which is the direction that matters, because the
+    number feeds `within_budget` and a shopper acts on it at the till.
+    """
+    return packs.to_integral_value(rounding=ROUND_CEILING)
 
 
 def assemble_plan(
@@ -60,8 +89,15 @@ def assemble_plan(
     silently, which would produce a plan quietly missing an ingredient.
     """
     meals: list[Meal] = []
-    # store -> (location, refs, running total)
-    baskets: dict[str, tuple[str, set[str], Decimal]] = {}
+    # store key -> (location, {ref: total packs used across every meal})
+    #
+    # Packs are ACCUMULATED per product and rounded up once at the end, rather
+    # than counted as one pack the first time a product appears. Counting one
+    # was right only while no recipe used more than a whole pack of anything,
+    # and silently wrong the moment one did: a draft using five packs of mince
+    # reported a basket holding one, so a plan consuming $221 of food was
+    # delivered against a $40 budget as though it fitted.
+    baskets: dict[str, tuple[str, dict[str, Decimal]]] = {}
 
     for draft_meal in draft.meals:
         ingredients: list[Ingredient] = []
@@ -76,21 +112,16 @@ def assemble_plan(
                     item=line.item,
                     qty=line.qty_display,
                     citation_ref=line.citation_ref,
+                    packs=line.packs,
                     line_cost_nzd=line_cost,
                 )
             )
             subtotal += line_cost
 
             key = f"{citation.store.value}#{citation.store_location}"
-            location, refs, running = baskets.get(
-                key, (citation.store_location, set(), Decimal("0"))
-            )
-            # A pack is bought once even if used across several meals, so the
-            # basket total counts each product once at full pack price.
-            if line.citation_ref not in refs:
-                running += citation.price_nzd
-            refs.add(line.citation_ref)
-            baskets[key] = (location, refs, running)
+            location, used = baskets.get(key, (citation.store_location, {}))
+            used[line.citation_ref] = used.get(line.citation_ref, Decimal("0")) + line.packs
+            baskets[key] = (location, used)
 
         meals.append(
             Meal(
@@ -105,20 +136,32 @@ def assemble_plan(
 
     store_baskets = [
         StoreBasket(
-            store=citations[next(iter(refs))].store,
+            store=citations[next(iter(used))].store,
             store_location=location,
-            citation_refs=sorted(refs, key=lambda r: int(r[1:])),
-            basket_total_nzd=_round(running),
+            citation_refs=sorted(used, key=lambda r: int(r[1:])),
+            basket_total_nzd=_round(
+                sum(
+                    (_whole_packs(packs) * citations[ref].price_nzd for ref, packs in used.items()),
+                    Decimal(0),
+                )
+            ),
         )
-        for location, refs, running in baskets.values()
+        for location, used in baskets.values()
     ]
+
+    # What the shopper actually pays: whole packs, at full shelf price, summed
+    # across stores. `total` above is what the meals CONSUME, which differs
+    # whenever a recipe uses part of a pack -- and you cannot buy part of one.
+    # Budget questions are answered with this one.
+    payable = _round(sum((b.basket_total_nzd for b in store_baskets), Decimal(0)))
 
     return MealPlan(
         household_size=household_size,
         days=days,
         budget_nzd=budget_nzd,
         total_nzd=total,
-        within_budget=total <= budget_nzd,
+        payable_total_nzd=payable,
+        within_budget=payable <= budget_nzd,
         repair_attempts=repair_attempts,
         meals=meals,
         baskets=store_baskets,
@@ -126,9 +169,7 @@ def assemble_plan(
     )
 
 
-def _cheaper_options(
-    citations: list[Citation], used_refs: set[str], limit: int = 6
-) -> str:
+def _cheaper_options(citations: list[Citation], used_refs: set[str], limit: int = 6) -> str:
     """Name specific cheaper products the repair pass can swap toward."""
     unused = sorted(
         (c for c in citations if c.ref not in used_refs),
@@ -137,8 +178,7 @@ def _cheaper_options(
     if not unused:
         return "No cheaper unused products are available."
     rows = "\n".join(
-        f"  {c.ref} — {c.product_name} ({c.store.value} {c.store_location})"
-        for c in unused
+        f"  {c.ref} — {c.product_name} ({c.store.value} {c.store_location})" for c in unused
     )
     return f"Cheaper products you did not use:\n{rows}"
 
@@ -171,7 +211,7 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
 
     if attempts == 0:
         tier = ModelTier.QUALITY
-        task = "generate_plan"
+        task = TASK_GENERATE_PLAN
         user_prompt = build_user_prompt(
             message=state["message"],
             household_size=household,
@@ -180,18 +220,44 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
             exclusions=exclusions,
             products=products,
         )
+    elif not state.get("over_budget"):
+        # A rejection that is NOT about money: a draft that failed its schema,
+        # an unknown citation ref, broken arithmetic, or a meal name carrying
+        # an invented price. These all used to receive the budget prompt --
+        # "your plan came to $0 OVER the $X budget, cut at least $0" -- which
+        # describes none of them, so the attempt was spent asking the model to
+        # fix a defect nobody had named.
+        tier = ModelTier.FAST
+        # A SEPARATE ROUTED TASK from the budget repair below, since 2026-08-31.
+        # The two prompts already differed because the two failures do; the two
+        # MODELS now differ because the measurement did. Claude Haiku repairs
+        # defects perfectly (5/5) and drops two of seven budget repairs; Nova
+        # Lite is the exact inverse. Routing each half to the model that is
+        # perfect at it gives 100% on both, where either model alone gives up
+        # one -- and it stops the whole repair path resting on one model on the
+        # account's binding, unraisable quota. `config/models.json`
+        # `scorecards._split_note` records what the split does NOT buy: each
+        # half still has one qualified model, so this is degradation-in-half,
+        # not a fallback.
+        task = TASK_REPAIR_DEFECT
+        user_prompt = build_defect_repair_prompt(
+            products=products,
+            budget=budget,
+            household_size=household,
+            days=days,
+            exclusions=exclusions,
+            defects=state.get("validation_errors") or [],
+        )
     else:
         tier = ModelTier.FAST
-        task = "repair_plan"
+        task = TASK_REPAIR_BUDGET
         previous = state.get("plan")
-        over_by = (
-            _round(previous.total_nzd - budget) if previous else Decimal("0")
-        )
-        used = {
-            i.citation_ref
-            for m in (previous.meals if previous else [])
-            for i in m.ingredients
-        }
+        # How much to cut, measured in money the shopper would actually hand
+        # over. Telling the repair pass to save the consumption overage would
+        # under-ask by the difference between part-packs and whole packs, and
+        # the second attempt would land over budget again.
+        over_by = _round(previous.payable_total_nzd - budget) if previous else Decimal("0")
+        used = {i.citation_ref for m in (previous.meals if previous else []) for i in m.ingredients}
         user_prompt = build_repair_prompt(
             products=products,
             over_by=over_by,
@@ -204,6 +270,10 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
             ][:12],
             cheaper_options=_cheaper_options(citations, used),
         )
+
+    # Read before the try, not inside it: a name bound only on the
+    # happy path is unbound on every except branch that needs it.
+    _usage_before = model.last_usage
 
     try:
         # `task` is what the registry routes on, and it was previously left
@@ -222,8 +292,33 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
             max_tokens=2048,
             task=task,
         )
+    except GuardrailBlocked:
+        raise
+    except ModelOutputInvalid as exc:
+        # The model answered; the answer did not fit PlanDraft. That is a
+        # quality failure and precisely what the repair loop is for, so it
+        # stays a validation error. Caught BEFORE ModelError because it is a
+        # subclass: ordering these the other way sent every schema failure
+        # down the upstream path, which reported a model that could not honour
+        # its own schema — Claude Haiku 4.5 overrunning the 600-character
+        # `reasoning` cap on 8 of 11 cases — as though Bedrock were down.
+        return {
+            "plan": None,
+            "validation_errors": [f"invalid plan draft: {exc}"],
+            "usage": usage_from(model, _usage_before),
+        }
     except ModelError as exc:
-        return {"plan": None, "validation_errors": [f"generation failed: {exc}"]}
+        # NOT a validation error. Reporting an unreachable model as one sent
+        # this into the repair loop, which re-invoked the same broken client
+        # twice more and then emitted BUDGET_INFEASIBLE — telling a user whose
+        # Bedrock call had failed to "raise the budget", advice that cannot
+        # help and that they may act on. It also made a total outage
+        # indistinguishable from a genuinely unaffordable basket in the evals.
+        return {
+            "plan": None,
+            "upstream_error": str(exc),
+            "usage": usage_from(model, _usage_before),
+        }
 
     try:
         plan = assemble_plan(
@@ -241,14 +336,14 @@ def generate_plan(state: GroceryState, model: ModelClient) -> dict:
         return {
             "plan": None,
             "validation_errors": [f"plan referenced unknown product {exc}"],
+            "usage": usage_from(model, _usage_before),
         }
 
-    return {"plan": plan}
+    return {"plan": plan, "usage": usage_from(model, _usage_before)}
 
 
-def route_after_validation(state: GroceryState) -> str:
-    if not state.get("validation_errors"):
-        return "finalise"
-    if state.get("repair_attempts", 0) >= MAX_REPAIR_ATTEMPTS:
-        return "infeasible"
-    return "repair"
+# route_after_validation used to be defined here as well as in
+# src/graph/nodes/__init__.py. Only the latter was ever imported, so this copy
+# was dead, and it would have silently disagreed with the live router the
+# moment either changed — which is exactly what the upstream_error branch
+# would have done. Removed rather than kept in sync.

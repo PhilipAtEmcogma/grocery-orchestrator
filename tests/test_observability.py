@@ -33,6 +33,7 @@ import uuid
 
 import pytest
 
+from src.models.base import TASK_REPAIR_BUDGET
 from src.observability.base import (
     METRIC_CACHE_READ_TOKENS,
     METRIC_GUARDRAIL_INTERVENED,
@@ -53,11 +54,24 @@ from src.schemas.contract import ChatRequest
 # A message, a location and a set of dietary exclusions made of words that
 # appear nowhere else in this repository. If any of them reaches stdout, it
 # got there from the request.
+# $30 here is DELIBERATELY not affordable against whole-pack pricing: the
+# repair and exhaustion tests below need a turn whose drafts bust the
+# budget. Tests that need a delivered plan use _affordable_meal_plan_body.
+# Note the message names a budget, and a message beats a hint when both do.
 PERSONAL_MESSAGE = (
-    "dinner plan for a whanau of five on $20 this week, "
+    "dinner plan for a whanau of five on $30 this week, "
     "quinoa and halloumi, absolutely no shellfish"
 )
 PERSONAL_LABEL = "Aro Valley"
+# Coordinates NEAR THE FIXTURE STORES. These tests are about location not
+# leaking into logs, not about geography — but since Pilot Task 5 the radius
+# filter is real, and the Wellington coordinates this used to carry are ~490km
+# from every fixture store, so every turn now correctly returns nothing. That is
+# the filter working; it just makes these turns useless for testing what they
+# test. The label stays personal, because the label is the thing that must not
+# leak.
+PERSONAL_LOCATION = {"lat": -36.8712, "lon": 174.8200, "label": PERSONAL_LABEL}
+
 PERSONAL_EXCLUSIONS = ["shellfish", "dairy-free"]
 FORBIDDEN = [
     "quinoa",
@@ -238,22 +252,33 @@ def every_sink(capfd, log_stream):
 @pytest.fixture
 def never_affordable(monkeypatch):
     """
-    A model whose every draft busts the budget, so the repair loop runs to
-    exhaustion instead of succeeding on the first pass.
+    A turn whose draft busts the budget, so the repair loop runs to exhaustion
+    instead of succeeding on the first pass.
 
-    `plan_packs` is the scripted client's existing knob for exactly this: a
-    real model cannot be made to overspend on demand, and a test that depends
-    on the fixture prices staying unaffordable is a test that breaks the next
-    time the fixtures change.
+    Two knobs, because one is no longer enough. `plan_packs` inflates portion
+    sizes, which raises CONSUMPTION -- and the budget check now compares
+    PAYABLE, the whole-pack cost, which portion size does not move at all. On
+    its own this fixture stopped forcing anything.
+
+    So retrieval is uncapped too. Production pre-filters candidates so that
+    buying every one of them ONCE stays inside the budget, which removes the
+    common overspend without eliminating it -- a draft using 1.2 packs buys
+    two and can still exceed. Uncapping here forces that state reliably rather
+    than waiting for a multi-pack draft to turn up.
     """
     from decimal import Decimal
 
     import src.handler as handler_mod
     from src.models.scripted import ScriptedModelClient
+    from src.retrieval.memory import InMemoryPriceRepository
 
-    monkeypatch.setattr(
-        handler_mod, "_model", ScriptedModelClient(plan_packs=Decimal("5"))
-    )
+    class _Uncapped(InMemoryPriceRepository):
+        def candidates_for_budget(self, **kwargs):
+            kwargs["budget_nzd"] = None
+            return super().candidates_for_budget(**kwargs)
+
+    monkeypatch.setattr(handler_mod, "_repo", _Uncapped())
+    monkeypatch.setattr(handler_mod, "_model", ScriptedModelClient(plan_packs=Decimal("5")))
 
 
 @pytest.fixture
@@ -313,11 +338,11 @@ def _personal_body(message: str, **extra) -> dict:
         message,
         hints={
             "household_size": 5,
-            "budget_nzd": 20,
+            "budget_nzd": 30,
             "days": 3,
             "dietary_exclusions": PERSONAL_EXCLUSIONS,
         },
-        location={"lat": -41.29, "lon": 174.76, "label": PERSONAL_LABEL},
+        location=PERSONAL_LOCATION,
         **extra,
     )
 
@@ -325,6 +350,57 @@ def _personal_body(message: str, **extra) -> dict:
 def _meal_plan_body(**extra) -> dict:
     """A turn that exercises retrieval, plan generation and the repair loop."""
     return _personal_body(PERSONAL_MESSAGE, **extra)
+
+
+def _affordable_meal_plan_body(**extra) -> dict:
+    """
+    A plan turn that actually succeeds.
+
+    _meal_plan_body deliberately cannot be afforded, which is what the repair
+    and exhaustion tests want. Tests that need a delivered meal_plan event
+    need the opposite, and the budget has to be feasible against PAYABLE cost
+    -- whole packs, not fractional consumption. Both the message and the hint
+    carry the figure because the message wins when they disagree.
+    """
+    return _body(
+        "dinner plan for a whanau of five on $90 this week, no shellfish",
+        hints={
+            "household_size": 5,
+            "budget_nzd": 90,
+            "days": 3,
+            "dietary_exclusions": PERSONAL_EXCLUSIONS,
+        },
+        location=PERSONAL_LOCATION,
+        **extra,
+    )
+
+
+def _repairable_body(**extra) -> dict:
+    """
+    A turn that reaches generation and then busts its budget, so the repair
+    loop runs.
+
+    The window is narrow and both edges matter. Above the feasibility floor
+    (5 people x 7 days needs at least ~$33 at the cheapest price per gram), or
+    the turn is refused before a single model call. Below what the uncapped
+    candidate set costs (~$50), or the draft fits and there is nothing to
+    repair. $40 sits between the two.
+
+    Pair it with `never_affordable`, which removes the candidate cap. The cap
+    does not make overspend impossible -- multi-pack usage still can -- but
+    removing it makes the state reliable to reproduce.
+    """
+    return _body(
+        "dinner plan for a whanau of five on $40 this week, no shellfish",
+        hints={
+            "household_size": 5,
+            "budget_nzd": 40,
+            "days": 7,
+            "dietary_exclusions": PERSONAL_EXCLUSIONS,
+        },
+        location=PERSONAL_LOCATION,
+        **extra,
+    )
 
 
 def _invoke(body: dict | str) -> dict:
@@ -352,9 +428,7 @@ def _metric(emf: list[dict], name: str) -> list[tuple[float, dict]]:
         for group in record["_aws"]["CloudWatchMetrics"]:
             if not any(m["Name"] == name for m in group["Metrics"]):
                 continue
-            dimensions = {
-                key: record[key] for names in group["Dimensions"] for key in names
-            }
+            dimensions = {key: record[key] for names in group["Dimensions"] for key in names}
             value = record[name]
             found.append((value[0] if isinstance(value, list) else value, dimensions))
     return found
@@ -415,15 +489,18 @@ def test_no_request_content_reaches_stdout_on_a_real_turn(captured):
 
 
 def _turn_meal_plan(monkeypatch) -> None:
-    assert "meal_plan" in _types(_invoke(_meal_plan_body()))
+    # The affordable body: this scenario exists to put a DELIVERED plan in
+    # front of the log scan, and _meal_plan_body deliberately cannot be
+    # afforded. The assert above is exactly the guard described in the comment
+    # -- without it this scenario would quietly become a budget_infeasible
+    # turn and stop covering the plan path at all.
+    assert "meal_plan" in _types(_invoke(_affordable_meal_plan_body()))
 
 
 def _turn_price_check(monkeypatch) -> None:
     """butter and milk are in the fixtures, so this reaches
     generate_comparison — a node the meal-plan turn never visits."""
-    result = _invoke(
-        _personal_body("whanau shopping: how much do butter and milk cost")
-    )
+    result = _invoke(_personal_body("whanau shopping: how much do butter and milk cost"))
     assert "price_comparison" in _types(result)
 
 
@@ -446,9 +523,7 @@ def _turn_budget_infeasible(monkeypatch) -> None:
     import src.handler as handler_mod
     from src.models.scripted import ScriptedModelClient
 
-    monkeypatch.setattr(
-        handler_mod, "_model", ScriptedModelClient(plan_packs=Decimal("5"))
-    )
+    monkeypatch.setattr(handler_mod, "_model", ScriptedModelClient(plan_packs=Decimal("5")))
     assert "budget_infeasible" in _codes(_invoke(_meal_plan_body()))
 
 
@@ -458,7 +533,7 @@ def _turn_guardrail_blocked(monkeypatch) -> None:
     the process to log — and the reason the handler's guardrail branch logs a
     bare event name with no fields at all.
     """
-    from src.models.bedrock import GuardrailBlocked
+    from src.models.base import GuardrailBlocked
 
     def blocked(*_args, **_kwargs):
         raise GuardrailBlocked(f"blocked input: {PERSONAL_MESSAGE}")
@@ -510,9 +585,7 @@ def _turn_model_error(monkeypatch) -> None:
 
 def _turn_invalid_request(monkeypatch) -> None:
     """Valid JSON, wrong shape — the message rides in on a rejected field."""
-    result = _invoke(
-        {"session_id": "short", "message": PERSONAL_MESSAGE, "nonsense": True}
-    )
+    result = _invoke({"session_id": "short", "message": PERSONAL_MESSAGE, "nonsense": True})
     assert result["statusCode"] == 400
 
 
@@ -537,12 +610,14 @@ def _turn_id_reused(monkeypatch) -> None:
 
 def _turn_in_flight(monkeypatch) -> None:
     from src.handler import _idempotency_store
-    from src.store.idempotency import fingerprint, make_key
+    from src.schemas.contract import ChatRequest
+    from src.store.idempotency import fingerprint_request, make_key
 
     body = _meal_plan_body()
     raw = json.dumps(body)
     _idempotency_store().acquire(
-        make_key(body["session_id"], body["turn_id"]), fingerprint(raw)
+        make_key(body["session_id"], body["turn_id"]),
+        fingerprint_request(ChatRequest.model_validate(body)),
     )
     assert _invoke(raw)["statusCode"] == 409
 
@@ -585,9 +660,7 @@ def test_no_personal_information_reaches_any_log_sink(turn, every_sink, monkeypa
     assert written.strip(), "the turn wrote nothing at all, so the scan proves nothing"
 
     lowered = written.lower()
-    leaked = sorted(
-        {term for term in (*FORBIDDEN, *FORBIDDEN_KEYS) if term.lower() in lowered}
-    )
+    leaked = sorted({term for term in (*FORBIDDEN, *FORBIDDEN_KEYS) if term.lower() in lowered})
     if leaked:
         offending = [
             line
@@ -617,9 +690,7 @@ def test_the_leak_scan_can_actually_see_a_leak(every_sink, monkeypatch):
     sinks = {
         "stdout": lambda: print(PERSONAL_MESSAGE),
         "stderr": lambda: sys.stderr.write(PERSONAL_MESSAGE + "\n"),
-        "powertools": lambda: powertools_logger.info(
-            "careless", extra={"m": PERSONAL_MESSAGE}
-        ),
+        "powertools": lambda: powertools_logger.info("careless", extra={"m": PERSONAL_MESSAGE}),
         # The one available to a graph node, which cannot import Powertools.
         "stdlib_logging": lambda: logging.getLogger("src.graph.nodes.plan").debug(
             "planning for %s", PERSONAL_MESSAGE
@@ -633,9 +704,9 @@ def test_the_leak_scan_can_actually_see_a_leak(every_sink, monkeypatch):
         every_sink()  # discard anything buffered from the previous sink
         leak()
         lowered = every_sink().lower()
-        assert any(
-            term.lower() in lowered for term in (*FORBIDDEN, *FORBIDDEN_KEYS)
-        ), f"a leak written to {name} was invisible to the scan"
+        assert any(term.lower() in lowered for term in (*FORBIDDEN, *FORBIDDEN_KEYS)), (
+            f"a leak written to {name} was invisible to the scan"
+        )
 
 
 def test_turn_log_reports_shape_not_content(captured):
@@ -801,10 +872,12 @@ def test_correlation_state_does_not_survive_into_the_next_invocation(captured):
 # --------------------------------------------------- Req 12.2: X-Ray subsegments
 
 
-def test_subsegments_cover_retrieval_and_every_model_call(xray_segment, captured):
+def test_subsegments_cover_retrieval_and_every_model_call(no_recipes, xray_segment, captured):
     from src.handler import lambda_handler
 
-    lambda_handler(_event(_meal_plan_body()))
+    # Needs a turn that actually reaches generation: the default body is
+    # below the feasibility floor and is refused before any model call.
+    lambda_handler(_event(_affordable_meal_plan_body()))
     captured()
 
     names = [sub.name for sub in _subsegments(xray_segment)]
@@ -816,7 +889,7 @@ def test_subsegments_cover_retrieval_and_every_model_call(xray_segment, captured
 
 
 def test_each_repair_attempt_is_its_own_subsegment(
-    xray_segment, captured, never_affordable
+    no_recipes, xray_segment, captured, never_affordable
 ):
     """
     The repair loop spans four graph nodes, so it is traced as one subsegment
@@ -827,13 +900,13 @@ def test_each_repair_attempt_is_its_own_subsegment(
     from src.graph.state import MAX_REPAIR_ATTEMPTS
     from src.handler import lambda_handler
 
-    lambda_handler(_event(_meal_plan_body()))
+    lambda_handler(_event(_repairable_body()))
     captured()
 
     subsegments = _subsegments(xray_segment)
     assert [s.name for s in subsegments].count("model.generate_plan") == 1
 
-    repairs = [sub for sub in subsegments if sub.name == "model.repair_plan"]
+    repairs = [sub for sub in subsegments if sub.name == f"model.{TASK_REPAIR_BUDGET}"]
     assert len(repairs) == MAX_REPAIR_ATTEMPTS
 
     # Numbered within the turn, so a trace shows which attempt cost what.
@@ -841,15 +914,17 @@ def test_each_repair_attempt_is_its_own_subsegment(
     assert attempts == list(range(MAX_REPAIR_ATTEMPTS))
 
 
-def test_model_subsegments_are_annotated_for_latency_attribution(xray_segment, captured):
+def test_model_subsegments_are_annotated_for_latency_attribution(
+    no_recipes, xray_segment, captured
+):
     from src.handler import lambda_handler
 
-    lambda_handler(_event(_meal_plan_body()))
+    # Needs a turn that actually reaches generation: the default body is
+    # below the feasibility floor and is refused before any model call.
+    lambda_handler(_event(_affordable_meal_plan_body()))
     captured()
 
-    plan = next(
-        sub for sub in _subsegments(xray_segment) if sub.name == "model.generate_plan"
-    )
+    plan = next(sub for sub in _subsegments(xray_segment) if sub.name == "model.generate_plan")
     annotations = plan.annotations
 
     assert annotations["task"] == "generate_plan"
@@ -905,10 +980,10 @@ def test_turn_emits_the_core_metrics(captured):
     assert _metric(emf, METRIC_TURN_LATENCY)[0][0] > 0
 
 
-def test_model_latency_is_dimensioned_by_model_and_task(captured):
+def test_model_latency_is_dimensioned_by_model_and_task(no_recipes, captured, never_affordable):
     from src.handler import lambda_handler
 
-    lambda_handler(_event(_meal_plan_body()))
+    lambda_handler(_event(_repairable_body()))
     _, _, emf = captured()
 
     emitted = _metric(emf, METRIC_MODEL_LATENCY)
@@ -916,15 +991,15 @@ def test_model_latency_is_dimensioned_by_model_and_task(captured):
 
     assert by_task["classify_intent"] == "scripted-fast"
     assert by_task["generate_plan"] == "scripted-quality"
-    assert by_task["repair_plan"] == "scripted-fast"
+    assert by_task[TASK_REPAIR_BUDGET] == "scripted-fast"
     assert all("service" in dimensions for _, dimensions in emitted)
 
 
-def test_repair_attempts_are_counted_when_the_loop_exhausts(captured, never_affordable):
+def test_repair_attempts_are_counted_when_the_loop_exhausts(no_recipes, captured, never_affordable):
     from src.graph.state import MAX_REPAIR_ATTEMPTS
     from src.handler import lambda_handler
 
-    lambda_handler(_event(_meal_plan_body()))
+    lambda_handler(_event(_repairable_body()))
     _, _, emf = captured()
 
     assert _metric(emf, METRIC_REPAIR_ATTEMPTS)[0][0] == float(MAX_REPAIR_ATTEMPTS)
@@ -933,7 +1008,7 @@ def test_repair_attempts_are_counted_when_the_loop_exhausts(captured, never_affo
     assert _metric(emf, METRIC_REPAIR_EXHAUSTED)[0][0] == 1.0
 
 
-def test_repair_metric_matches_the_plan_that_was_returned(captured):
+def test_repair_metric_matches_the_plan_that_was_returned(no_recipes, captured):
     """
     On a turn that succeeds, the metric and the MealPlan agree. Two
     independent counts of the same thing — the wrapper's model calls and the
@@ -942,7 +1017,7 @@ def test_repair_metric_matches_the_plan_that_was_returned(captured):
     """
     from src.handler import lambda_handler
 
-    result = lambda_handler(_event(_meal_plan_body()))
+    result = lambda_handler(_event(_affordable_meal_plan_body()))
     _, _, emf = captured()
 
     plans = [
@@ -950,9 +1025,7 @@ def test_repair_metric_matches_the_plan_that_was_returned(captured):
     ]
     assert plans, "expected a meal plan on this turn"
 
-    assert _metric(emf, METRIC_REPAIR_ATTEMPTS)[0][0] == float(
-        plans[0]["data"]["repair_attempts"]
-    )
+    assert _metric(emf, METRIC_REPAIR_ATTEMPTS)[0][0] == float(plans[0]["data"]["repair_attempts"])
 
 
 def test_repair_attempts_absent_on_turns_that_never_planned(captured):
@@ -1014,7 +1087,7 @@ def test_idempotent_replay_is_counted(captured):
 
 def test_guardrail_intervention_is_counted(captured, monkeypatch):
     from src.handler import handle_turn
-    from src.models.bedrock import GuardrailBlocked
+    from src.models.base import GuardrailBlocked
 
     def blocked(*_args, **_kwargs):
         raise GuardrailBlocked("Request blocked by Bedrock Guardrail")

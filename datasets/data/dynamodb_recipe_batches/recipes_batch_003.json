@@ -1,0 +1,5641 @@
+{
+  "SmartGroceryRecipes": [
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53005"
+          },
+          "recipe_name": {
+            "S": "Strawberry Rhubarb Pie"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Flour"
+                  },
+                  "measure": {
+                    "S": "350g"
+                  },
+                  "key": {
+                    "S": "flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salt"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "salt"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "2 tbs"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "1 cup"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Water"
+                  },
+                  "measure": {
+                    "S": "1/2 cup"
+                  },
+                  "key": {
+                    "S": "water"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rhubarb"
+                  },
+                  "measure": {
+                    "S": "450g"
+                  },
+                  "key": {
+                    "S": "rhubarb"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Strawberries"
+                  },
+                  "measure": {
+                    "S": "450g"
+                  },
+                  "key": {
+                    "S": "strawberries"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cornstarch"
+                  },
+                  "measure": {
+                    "S": "3 tbs"
+                  },
+                  "key": {
+                    "S": "cornstarch"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cinnamon"
+                  },
+                  "measure": {
+                    "S": "1/4 tsp"
+                  },
+                  "key": {
+                    "S": "cinnamon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemon Juice"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "lemon juice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Unsalted Butter"
+                  },
+                  "measure": {
+                    "S": "2 tbs"
+                  },
+                  "key": {
+                    "S": "unsalted butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Milk"
+                  },
+                  "measure": {
+                    "S": "2 tbs"
+                  },
+                  "key": {
+                    "S": "milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "Spinkling"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "flour"
+              },
+              {
+                "S": "salt"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "water"
+              },
+              {
+                "S": "rhubarb"
+              },
+              {
+                "S": "strawberries"
+              },
+              {
+                "S": "cornstarch"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "cinnamon"
+              },
+              {
+                "S": "lemon juice"
+              },
+              {
+                "S": "unsalted butter"
+              },
+              {
+                "S": "milk"
+              },
+              {
+                "S": "sugar"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "14"
+          },
+          "instructions": {
+            "S": "Pie Crust: In a food processor, place the flour, salt, and sugar and process until combined. Add the butter and process until the mixture resembles coarse meal (about 15 seconds). Pour 1/4 cup (60 ml) water in a slow, steady stream, through the feed tube until the dough just holds together when pinched. If necessary, add more water. Do not process more than 30 seconds. Turn the dough onto your work surface and gather into a ball. Divide the dough in half, flattening each half into a disk, cover with plastic wrap, and refrigerate for about one hour before using. This will chill the butter and relax the gluten in the flour. After the dough has chilled sufficiently, remove one portion of the dough from the fridge and place it on a lightly floured surface. Roll the pastry into a 12 inch (30 cm) circle. (To prevent the pastry from sticking to the counter and to ensure uniform thickness, keep lifting up and turning the pastry a quarter turn as you roll (always roll from the center of the pastry outwards).) Fold the dough in half and gently transfer to a 9 inch (23 cm) pie pan. Brush off any excess flour and trim any overhanging pastry to an edge of 1/2 inch (1.5 cm). Refrigerate the pastry, covered with plastic wrap, while you make the filling. Remove the second round of pastry and roll it into a 13 inch (30 cm) circle. Using a pastry wheel or pizza cutter, cut the pastry into about 3/4 inch (2 cm) strips. Place the strips of pastry on a parchment paper-lined baking sheet, cover with plastic wrap, and place in the refrigerator for about 10 minutes. Make the Strawberry Rhubarb Filling: Place the cut strawberries and rhubarb in a large bowl. In a small bowl mix together the cornstarch, sugar, and ground cinnamon. Remove the chilled pie crust from the fridge. Sprinkle about 2 tablespoons of the sugar mixture over the bottom of the pastry crust. Add the remaining sugar mixture to the strawberries and rhubarb and gently toss to combine. Pour the fruit mixture into the prepared pie shell. Sprinkle the fruit with about 1 teaspoon of lemon juice and dot with 2 tablespoons of butter. Remove the lattice pastry from the refrigerator and, starting at the center with the longest strips and working outwards, place half the strips, spacing about 1 inch (2.5 cm) apart, on top of the filling. (Use the shortest pastry strips at the outer edges.) Then, gently fold back, about halfway, every other strip of pastry. Take another strip of pastry and place it perpendicular on top of the first strips of pastry. Unfold the bottom strips of pastry and then fold back the strips that weren't folded back the first time. Lay another strip of pastry perpendicular on top of the filling and then continue with the remaining strips. Trim the edges of the pastry strips, leaving a 1 inch (2.5 cm) overhang. Seal the edges of the pastry strips by folding them under the bottom pastry crust and flute the edges of the pastry. Brush the lattice pastry with milk and sprinkle with a little sugar. Cover and place in the refrigerator while you preheat the oven to 400 degrees F (205 degrees C) and place the oven rack in the lower third of the oven. Put a baking sheet, lined with aluminum foil, on the oven rack (to catch any spills.) Place the pie plate on the hot baking sheet and bake the pie for about 35 minutes and then, if the edges of the pie are browning too much, cover with a foil ring. Continue to bake the pie for about another 10 minutes or until the crust is a golden brown color and the fruit juices begin to bubble. Remove the pie from the oven and place on a wire rack to cool for several hours. Serve at room temperature with softly whipped cream or vanilla ice cream. Leftovers can be stored in the refrigerator for about 3 days. Reheat before serving. This pie can be frozen. Makes one 9 inch (23 cm) pie."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/178z5o1585514569.jpg"
+          },
+          "source_url": {
+            "S": "https://www.joyofbaking.com/StrawberryRhubarbPie.html"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=tGw5Pwm4YA0"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53005"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52889"
+          },
+          "recipe_name": {
+            "S": "Summer Pudding"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Strawberries"
+                  },
+                  "measure": {
+                    "S": "300g"
+                  },
+                  "key": {
+                    "S": "strawberries"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Blackberries"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "blackberries"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Redcurrants"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "redcurrants"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Raspberries"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "raspberries"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "175g"
+                  },
+                  "key": {
+                    "S": "caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bread"
+                  },
+                  "measure": {
+                    "S": "7 Slices"
+                  },
+                  "key": {
+                    "S": "bread"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "strawberries"
+              },
+              {
+                "S": "blackberries"
+              },
+              {
+                "S": "redcurrants"
+              },
+              {
+                "S": "raspberries"
+              },
+              {
+                "S": "caster sugar"
+              },
+              {
+                "S": "bread"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "6"
+          },
+          "instructions": {
+            "S": "Bring out the juices: Wash fruit and gently dry on kitchen paper – keep strawberries separate. Put sugar and 3 tbsp water into a large pan. Gently heat until sugar dissolves – stir a few times. Bring to a boil for 1 min, then tip in the fruit (not strawberries). Cook for 3 mins over a low heat, stirring 2-3 times. The fruit will be softened, mostly intact and surrounded by dark red juice. Put a sieve over a bowl and tip in the fruit and juice. Line the bowl with cling film and prepare the bread: Line the 1.25-litre basin with cling film as this will help you to turn out the pudding. Overlap two pieces of cling film in the middle of the bowl as it’s easier than trying to get one sheet to stick to all of the curves. Let the edges overhang by about 15cm. Cut the crusts off the bread. Cut 4 pieces of bread in half, a little on an angle, to give 2 lopsided rectangles per piece. Cut 2 slices into 4 triangles each and leave the final piece whole. Build the pud: Dip the whole piece of bread into the juice for a few secs just to coat. Push this into the bottom of the basin. Now dip the wonky rectangular pieces one at a time and press around the basin’s sides so that they fit together neatly, alternately placing wide and narrow ends up. If you can’t quite fit the last piece of bread in it doesn’t matter, just trim into a triangle, dip in juice and slot in. Now spoon in the softened fruit, adding the strawberries here and there as you go. Let flavours mingle then serve: Dip the bread triangles in juice and place on top – trim off overhang with scissors. Keep leftover juice for later. Bring cling film up and loosely seal. Put a side plate on top and weight down with cans. Chill for 6 hrs or overnight. To serve, open out cling film then put a serving plate upside-down on top and flip over. serve with leftover juice, any extra berries and cream."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/rsqwus1511640214.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/4516/summer-pudding"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=akJIO6UhXtA"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52889"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52882"
+          },
+          "recipe_name": {
+            "S": "Three Fish Pie"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Potatoes"
+                  },
+                  "measure": {
+                    "S": "1kg"
+                  },
+                  "key": {
+                    "S": "potatoes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "Knob"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Milk"
+                  },
+                  "measure": {
+                    "S": "Dash"
+                  },
+                  "key": {
+                    "S": "milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Gruyere"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "gruyere"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "75g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Leek"
+                  },
+                  "measure": {
+                    "S": "2 sliced"
+                  },
+                  "key": {
+                    "S": "leek"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "75g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "White Wine"
+                  },
+                  "measure": {
+                    "S": "150ml"
+                  },
+                  "key": {
+                    "S": "white wine"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Milk"
+                  },
+                  "measure": {
+                    "S": "568ml"
+                  },
+                  "key": {
+                    "S": "milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Parsley"
+                  },
+                  "measure": {
+                    "S": "2 tbs chopped"
+                  },
+                  "key": {
+                    "S": "parsley"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salmon"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "salmon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Haddock"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "haddock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Smoked Haddock"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "smoked haddock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Eggs"
+                  },
+                  "measure": {
+                    "S": "6"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "potatoes"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "milk"
+              },
+              {
+                "S": "gruyere"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "leek"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "white wine"
+              },
+              {
+                "S": "milk"
+              },
+              {
+                "S": "parsley"
+              },
+              {
+                "S": "salmon"
+              },
+              {
+                "S": "haddock"
+              },
+              {
+                "S": "smoked haddock"
+              },
+              {
+                "S": "eggs"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "14"
+          },
+          "instructions": {
+            "S": "Preheat the oven to 200C/400F/Gas 6 (180C fan). Put the potatoes into a saucepan of cold salted water. Bring up to the boil and simmer until completely tender. Drain well and then mash with the butter and milk. Add pepper and taste to check the seasoning. Add salt and more pepper if necessary. For the fish filling, melt the butter in a saucepan, add the leeks and stir over the heat. Cover with a lid and simmer gently for 10 minutes, or until soft. Measure the flour into a small bowl. Add the wine and whisk together until smooth. Add the milk to the leeks, bring to the boil and then add the wine mixture. Stir briskly until thickened. Season and add the parsley and fish. Stir over the heat for two minutes, then spoon into an ovenproof casserole. Scatter over the eggs. Allow to cool until firm. Spoon the mashed potatoes over the fish mixture and mark with a fork. Sprinkle with cheese. Bake for 30-40 minutes, or until lightly golden-brown on top and bubbling around the edges."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/spswqs1511558697.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbc.co.uk/food/recipes/three_fish_pie_58875"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=Ds1Jb8H5Sg8"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52882"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52822"
+          },
+          "recipe_name": {
+            "S": "Toad In The Hole"
+          },
+          "category": {
+            "S": "Pork"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "sausages"
+                  },
+                  "measure": {
+                    "S": "8"
+                  },
+                  "key": {
+                    "S": "sausages"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "vegetable oil"
+                  },
+                  "measure": {
+                    "S": "3 tbsp"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "plain flour"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "eggs"
+                  },
+                  "measure": {
+                    "S": "2 medium"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "horseradish"
+                  },
+                  "measure": {
+                    "S": "1 tbsp grated"
+                  },
+                  "key": {
+                    "S": "horseradish"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "milk"
+                  },
+                  "measure": {
+                    "S": "225ml"
+                  },
+                  "key": {
+                    "S": "milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "cherry tomatoes"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "cherry tomatoes"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "sausages"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "eggs"
+              },
+              {
+                "S": "horseradish"
+              },
+              {
+                "S": "milk"
+              },
+              {
+                "S": "cherry tomatoes"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "7"
+          },
+          "instructions": {
+            "S": "Preheat the oven to 200°C/fan180°C/gas 6. fry sausages in a non-stick pan until browned. Drizzle vegetable oil in a 30cm x 25cm x 6cm deep roasting tray and heat in the oven for 5 minutes. Put the plain flour in a bowl, crack in the medium free-range eggs, then stir in the grated horseradish. Gradually beat in the semi-skimmed milk. Season. Put the sausages into the hot roasting tray and pour over the batter. Top with cherry tomatoes on the vine and cook for 30 minutes until puffed and golden."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/ytuvwr1503070420.jpg"
+          },
+          "source_url": {
+            "S": "http://www.deliciousmagazine.co.uk/recipes/georgina-fuggles-horseradish-and-vine-tomato-toad-in-the-hole/"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=t1dWkDrC330"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52822"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52892"
+          },
+          "recipe_name": {
+            "S": "Treacle Tart"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butter"
+                  },
+                  "measure": {
+                    "S": "135g"
+                  },
+                  "key": {
+                    "S": "butter"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Golden Syrup"
+                  },
+                  "measure": {
+                    "S": "400g"
+                  },
+                  "key": {
+                    "S": "golden syrup"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Breadcrumbs"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "breadcrumbs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemons"
+                  },
+                  "measure": {
+                    "S": "Zest of 2"
+                  },
+                  "key": {
+                    "S": "lemons"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Eggs"
+                  },
+                  "measure": {
+                    "S": "1 beaten"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "butter"
+              },
+              {
+                "S": "golden syrup"
+              },
+              {
+                "S": "breadcrumbs"
+              },
+              {
+                "S": "lemons"
+              },
+              {
+                "S": "eggs"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "6"
+          },
+          "instructions": {
+            "S": "First make the short crust pastry: measure the flour into a large bowl and rub in the butter with your fingertips until the mixture resembles fine breadcrumbs (alternatively, this can be done in a food processor). Add about three tablespoons of cold water and mix to a firm dough, wrap in cling film and chill in the fridge for about 20 minutes. Preheat the oven to 200C/400F/Gas 6 and put a heavy baking tray in the oven to heat up. Grease a deep 18cm/7in loose-bottomed fluted flan tin with butter. Remove about 150g/5½oz of pastry from the main ball and set aside for the lattice top. Roll the rest of the pastry out thinly on a lightly floured work surface and line the prepared flan tin with the pastry. Prick the base with a fork, to stop the base rising up during baking. Place the reserved pastry for the lattice top on cling film and roll out thinly. Egg wash the pastry and set aside to chill in the fridge (the cling film makes it easier to move about). Do not cut into strips at this stage. Do not egg wash the strips once they are on the tart as it will drip into the treacle mixture. To make the filling, heat the syrup gently in a large pan but do not boil. Once melted, add the breadcrumbs, lemon juice and zest to the syrup. (You can add less lemon if you would prefer less citrus taste.) If the mixture looks runny, add a few more breadcrumbs. Pour the syrup mixture into the lined tin and level the surface. Remove the reserved pastry from the fridge and cut into long strips, 1cm/½in wide. Make sure they are all longer than the edges of the tart tin. Egg wash the edge of the pastry in the tin, and start to make the woven laying lattice pattern over the mixture, leave the strips hanging over the edge of the tin. Once the lattice is in place, use the tin edge to cut off the strips by pressing down with your hands, creating a neat finish. Bake on the pre-heated baking tray in the hot oven for about 10 minutes until the pastry has started to colour, and then reduce the oven temperature to 180C/350F/Gas 4. If at this stage the lattice seems to be getting too dark brown, cover the tart with tin foil. Bake for a further 25-30 minutes until the pastry is golden-brown and the filling set. Remove the tart from the oven and leave to firm up in the tin. Serve warm or cold."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/wprvrw1511641295.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbc.co.uk/food/recipes/mary_berrys_treacle_tart_28524"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=YMmgKCNcqwI"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52892"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52845"
+          },
+          "recipe_name": {
+            "S": "Turkey Meatloaf"
+          },
+          "category": {
+            "S": "Miscellaneous"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Olive Oil"
+                  },
+                  "measure": {
+                    "S": "1 tblsp"
+                  },
+                  "key": {
+                    "S": "olive oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1 large"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "1 clove peeled crushed"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Worcestershire Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "worcestershire sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Tomato Puree"
+                  },
+                  "measure": {
+                    "S": "3 tsp"
+                  },
+                  "key": {
+                    "S": "tomato puree"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Turkey Mince"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "turkey mince"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Eggs"
+                  },
+                  "measure": {
+                    "S": "1 large"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Breadcrumbs"
+                  },
+                  "measure": {
+                    "S": "85g"
+                  },
+                  "key": {
+                    "S": "breadcrumbs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Barbeque Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "barbeque sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cannellini Beans"
+                  },
+                  "measure": {
+                    "S": "800g"
+                  },
+                  "key": {
+                    "S": "cannellini beans"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Parsley"
+                  },
+                  "measure": {
+                    "S": "2 tblsp"
+                  },
+                  "key": {
+                    "S": "parsley"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "olive oil"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "worcestershire sauce"
+              },
+              {
+                "S": "tomato puree"
+              },
+              {
+                "S": "turkey mince"
+              },
+              {
+                "S": "eggs"
+              },
+              {
+                "S": "breadcrumbs"
+              },
+              {
+                "S": "barbeque sauce"
+              },
+              {
+                "S": "cannellini beans"
+              },
+              {
+                "S": "parsley"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "11"
+          },
+          "instructions": {
+            "S": "Heat oven to 180C/160C fan/gas 4. Heat the oil in a large frying pan and cook the onion for 8-10 mins until softened. Add the garlic, Worcestershire sauce and 2 tsp tomato purée, and stir until combined. Set aside to cool. Put the turkey mince, egg, breadcrumbs and cooled onion mix in a large bowl and season well. Mix everything to combine, then shape into a rectangular loaf and place in a large roasting tin. Spread 2 tbsp barbecue sauce over the meatloaf and bake for 30 mins. Meanwhile, drain 1 can of beans only, then pour both cans into a large bowl. Add the remaining barbecue sauce and tomato purée. Season and set aside. When the meatloaf has had its initial cooking time, scatter the beans around the outside and bake for 15 mins more until the meatloaf is cooked through and the beans are piping hot. Scatter over the parsley and serve the meatloaf in slices."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/ypuxtw1511297463.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/turkey-meatloaf"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=mTvlmY4vCug"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52845"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52863"
+          },
+          "recipe_name": {
+            "S": "Vegetarian Casserole"
+          },
+          "category": {
+            "S": "Vegetarian"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Rapeseed Oil"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "rapeseed oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "3 cloves"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Paprika"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "paprika"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cumin"
+                  },
+                  "measure": {
+                    "S": "½ tsp"
+                  },
+                  "key": {
+                    "S": "cumin"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thyme"
+                  },
+                  "measure": {
+                    "S": "1 tblsp"
+                  },
+                  "key": {
+                    "S": "thyme"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "3 Medium"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Celery"
+                  },
+                  "measure": {
+                    "S": "2 small stalks"
+                  },
+                  "key": {
+                    "S": "celery"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Pepper"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "red pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Yellow Pepper"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "yellow pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Tomato"
+                  },
+                  "measure": {
+                    "S": "2 x 400g tins"
+                  },
+                  "key": {
+                    "S": "tomato"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Stock Cube"
+                  },
+                  "measure": {
+                    "S": "250ml"
+                  },
+                  "key": {
+                    "S": "vegetable stock cube"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Courgettes"
+                  },
+                  "measure": {
+                    "S": "2 sliced"
+                  },
+                  "key": {
+                    "S": "courgettes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thyme"
+                  },
+                  "measure": {
+                    "S": "2 sprigs"
+                  },
+                  "key": {
+                    "S": "thyme"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lentils"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "lentils"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "rapeseed oil"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "paprika"
+              },
+              {
+                "S": "cumin"
+              },
+              {
+                "S": "thyme"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "celery"
+              },
+              {
+                "S": "red pepper"
+              },
+              {
+                "S": "yellow pepper"
+              },
+              {
+                "S": "tomato"
+              },
+              {
+                "S": "vegetable stock cube"
+              },
+              {
+                "S": "courgettes"
+              },
+              {
+                "S": "thyme"
+              },
+              {
+                "S": "lentils"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "15"
+          },
+          "instructions": {
+            "S": "Heat the oil in a large, heavy-based pan. Add the onions and cook gently for 5 – 10 mins until softened. Add the garlic, spices, dried thyme, carrots, celery and peppers and cook for 5 minutes. Add the tomatoes, stock, courgettes and fresh thyme and cook for 20 - 25 minutes. Take out the thyme sprigs. Stir in the lentils and bring back to a simmer. Serve with wild and white basmati rice, mash or quinoa."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/vptwyt1511450962.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/1993645/vegetarian-casserole"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=oHmKE9mWtWM"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52863"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52867"
+          },
+          "recipe_name": {
+            "S": "Vegetarian Chilli"
+          },
+          "category": {
+            "S": "Vegetarian"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Roasted Vegetables"
+                  },
+                  "measure": {
+                    "S": "400g"
+                  },
+                  "key": {
+                    "S": "roasted vegetables"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Kidney Beans"
+                  },
+                  "measure": {
+                    "S": "1 can"
+                  },
+                  "key": {
+                    "S": "kidney beans"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chopped Tomatoes"
+                  },
+                  "measure": {
+                    "S": "1 can"
+                  },
+                  "key": {
+                    "S": "chopped tomatoes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mixed Grain"
+                  },
+                  "measure": {
+                    "S": "1 Packet"
+                  },
+                  "key": {
+                    "S": "mixed grain"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "roasted vegetables"
+              },
+              {
+                "S": "kidney beans"
+              },
+              {
+                "S": "chopped tomatoes"
+              },
+              {
+                "S": "mixed grain"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "4"
+          },
+          "instructions": {
+            "S": "Heat oven to 200C/180C fan/ gas 6. Cook the vegetables in a casserole dish for 15 mins. Tip in the beans and tomatoes, season, and cook for another 10-15 mins until piping hot. Heat the pouch in the microwave on High for 1 min and serve with the chilli."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/wqurxy1511453156.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/veggie-chilli"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=D0bFRVH_EqU"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52867"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53097"
+          },
+          "recipe_name": {
+            "S": "Yorkshire Puddings"
+          },
+          "category": {
+            "S": "Miscellaneous"
+          },
+          "area": {
+            "S": "British"
+          },
+          "country": {
+            "S": "United Kingdom"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Flour"
+                  },
+                  "measure": {
+                    "S": "140g"
+                  },
+                  "key": {
+                    "S": "flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Egg"
+                  },
+                  "measure": {
+                    "S": "4"
+                  },
+                  "key": {
+                    "S": "egg"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Milk"
+                  },
+                  "measure": {
+                    "S": "200ml"
+                  },
+                  "key": {
+                    "S": "milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sunflower Oil"
+                  },
+                  "measure": {
+                    "S": "Drizzle"
+                  },
+                  "key": {
+                    "S": "sunflower oil"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "flour"
+              },
+              {
+                "S": "egg"
+              },
+              {
+                "S": "milk"
+              },
+              {
+                "S": "sunflower oil"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "4"
+          },
+          "instructions": {
+            "S": "step 1 Heat oven to 230C/fan 210C/gas 8. step 2 Drizzle a little sunflower oil evenly into two 4-hole Yorkshire pudding tins or two 12-hole non-stick muffin tins and place in the oven to heat through. step 3 To make the batter, tip 140g plain flour into a bowl and beat in 4 eggs until smooth. step 4 Gradually add 200ml milk and carry on beating until the mix is completely lump-free. Season with salt and pepper. step 5 Pour the batter into a jug, then remove the hot tins from the oven. Carefully and evenly pour the batter into the holes. step 6 Place the tins back in the oven and leave undisturbed for 20-25 mins until the puddings have puffed up and browned. step 7 Serve immediately. You can now cool them and freeze for up to 1 month."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/x5qz5k1761595900.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/best-yorkshire-puddings"
+          },
+          "youtube_url": {
+            "S": "https://www.bing.com/videos/riverview/relatedvideo?q=yorkshire+pudding+pecipe+youtune&&mid=8A37CC95703100D3C8E58A37CC95703100D3C8E5&mcid=757E2787DB13499281255AD4321A912C&FORM=VAMGZC"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53097"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53495"
+          },
+          "recipe_name": {
+            "S": "Amok Trey - Cambodian Fish Curry"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish fillet"
+                  },
+                  "measure": {
+                    "S": "1 lb"
+                  },
+                  "key": {
+                    "S": "fish fillet"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "1 Can"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Curry Paste"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "red curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Stock"
+                  },
+                  "measure": {
+                    "S": "1 cup"
+                  },
+                  "key": {
+                    "S": "chicken stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Egg"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "egg"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Kaffir Lime Leaves"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "kaffir lime leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Banana Leaves"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "banana leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cilantro"
+                  },
+                  "measure": {
+                    "S": "Garnish"
+                  },
+                  "key": {
+                    "S": "cilantro"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Garnish"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "fish fillet"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "red curry paste"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "chicken stock"
+              },
+              {
+                "S": "egg"
+              },
+              {
+                "S": "kaffir lime leaves"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "banana leaves"
+              },
+              {
+                "S": "cilantro"
+              },
+              {
+                "S": "lime"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "12"
+          },
+          "instructions": {
+            "S": "1. In a medium bowl, combine the coconut milk, red curry paste, fish sauce, palm sugar, and broth, whisking until smooth—this ensures no lumps in the sauce. 2. Heat the vegetable oil in a large skillet over medium heat (about 350°F) for 30 seconds until shimmering. 3. Pour the coconut milk mixture into the skillet and bring it to a gentle simmer, stirring occasionally, which should take about 3-4 minutes. 4. Add the fish cubes and kaffir lime leaves to the skillet, submerging them fully in the sauce. 5. Reduce the heat to low, cover the skillet, and let it cook for 10 minutes until the fish is opaque and flakes easily with a fork—avoid overcooking to keep it tender. 6. Stir in the beaten egg slowly, cooking for 2 more minutes until the sauce thickens slightly, which adds a rich, custard-like texture. 7. While the curry simmers, prepare the banana leaves by briefly passing them over a gas flame for 10 seconds to make them pliable, or use parchment paper as a handy alternative. 8. Spoon the curry into the center of each banana leaf square, folding the edges to form a tight packet to trap steam. 9. Place the packets in a steamer basket over boiling water and steam for 10 minutes until heated through and fragrant. 10. Carefully unwrap the packets and garnish with fresh cilantro and lime wedges before serving"
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/diuub11782687570.jpg"
+          },
+          "source_url": {
+            "S": "https://recipes-for-life.com/cambodian-recipes/"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53495"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53496"
+          },
+          "recipe_name": {
+            "S": "Bai Sach Chrouk - Grilled Pork with Rice"
+          },
+          "category": {
+            "S": "Pork"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Pork Shoulder"
+                  },
+                  "measure": {
+                    "S": "650g"
+                  },
+                  "key": {
+                    "S": "pork shoulder"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "1/4 cup"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Oyster Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "oyster sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Honey"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "honey"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "4 cloves"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Black Pepper"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "black pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Jasmine Rice"
+                  },
+                  "measure": {
+                    "S": "2 cups"
+                  },
+                  "key": {
+                    "S": "jasmine rice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Water"
+                  },
+                  "measure": {
+                    "S": "4 cups"
+                  },
+                  "key": {
+                    "S": "water"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cucumber"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "cucumber"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cilantro Leaves"
+                  },
+                  "measure": {
+                    "S": "Garnish"
+                  },
+                  "key": {
+                    "S": "cilantro leaves"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "pork shoulder"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "oyster sauce"
+              },
+              {
+                "S": "honey"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "black pepper"
+              },
+              {
+                "S": "jasmine rice"
+              },
+              {
+                "S": "water"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "cucumber"
+              },
+              {
+                "S": "cilantro leaves"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "12"
+          },
+          "instructions": {
+            "S": "1. In a large bowl, combine the coconut milk, soy sauce, oyster sauce, honey, minced garlic, and black pepper to make the marinade. 2. Add the thinly sliced pork shoulder to the marinade, ensuring each piece is fully coated, then cover and refrigerate for at least 30 minutes to allow the flavors to penetrate. 3. While the pork marinates, rinse the jasmine rice under cold water until the water runs clear to remove excess starch, which helps prevent clumping. 4. In a medium pot, combine the rinsed rice and 4 cups of water, bring to a boil over high heat, then reduce to a simmer, cover, and cook for 15 minutes until the water is absorbed and the rice is tender. 5. Heat a grill pan or outdoor grill to medium-high heat (about 400°F) and lightly brush with vegetable oil to prevent sticking. 6. Remove the pork from the marinade, shaking off any excess, and place it on the hot grill, cooking for 3-4 minutes per side until nicely charred and cooked through with an internal temperature of 145°F. 7. Tip: Avoid overcrowding the grill pan to ensure even browning and proper caramelization of the marinade. 8. Once the pork is grilled, let it rest for 5 minutes before slicing to retain its juices and tenderness. 9. Tip: If you prefer a saucier dish, simmer the leftover marinade in a small saucepan for 5 minutes until slightly thickened and drizzle it over the pork. 10. Fluff the cooked rice with a fork to separate the grains and serve it warm alongside the grilled pork slices. 11. Arrange the thinly sliced cucumber and fresh cilantro leaves on top as a refreshing garnish. 12. Tip: For an extra kick, serve with a side of pickled vegetables or a squeeze of lime juice to balance the rich, savory flavors."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/f0cdwk1782688162.jpg"
+          },
+          "source_url": {
+            "S": "https://recipes-for-life.com/cambodian-recipes/"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53496"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53421"
+          },
+          "recipe_name": {
+            "S": "BEEF LOK LAK (Lok Lak Sach Ko)"
+          },
+          "category": {
+            "S": "Beef"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Beef Tenderloin"
+                  },
+                  "measure": {
+                    "S": "1 kg"
+                  },
+                  "key": {
+                    "S": "beef tenderloin"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "5 cloves"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Oil"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Palm Sugar"
+                  },
+                  "measure": {
+                    "S": "1.5 tablespoon"
+                  },
+                  "key": {
+                    "S": "palm sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sea Salt"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "sea salt"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "White Wine"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "white wine"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Oyster Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "oyster sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sesame Seed Oil"
+                  },
+                  "measure": {
+                    "S": "1.5 tablespoon"
+                  },
+                  "key": {
+                    "S": "sesame seed oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lettuce"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "lettuce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Tomato"
+                  },
+                  "measure": {
+                    "S": "400g"
+                  },
+                  "key": {
+                    "S": "tomato"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Eggs"
+                  },
+                  "measure": {
+                    "S": "4"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sea Salt"
+                  },
+                  "measure": {
+                    "S": "1.5 tablespoon"
+                  },
+                  "key": {
+                    "S": "sea salt"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Kampot Pepper"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "kampot pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime juice"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "lime juice"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "beef tenderloin"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "oil"
+              },
+              {
+                "S": "palm sugar"
+              },
+              {
+                "S": "sea salt"
+              },
+              {
+                "S": "white wine"
+              },
+              {
+                "S": "oyster sauce"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "sesame seed oil"
+              },
+              {
+                "S": "lettuce"
+              },
+              {
+                "S": "tomato"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "eggs"
+              },
+              {
+                "S": "sea salt"
+              },
+              {
+                "S": "kampot pepper"
+              },
+              {
+                "S": "lime juice"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "16"
+          },
+          "instructions": {
+            "S": "Fry the eggs sunny-side up and set aside. Finely chop the garlic. Wash the lettuce leaves and drain well. Thinly slice the onion and tomatoes. Cut the beef tenderloin into 2–3 cm cubes. Marinate with sea salt, palm sugar, Chinese cooking wine, oyster sauce, soy sauce, and sesame oil. Mix well. Heat a frying pan on high heat with cooking oil. Add chopped garlic and stir until the garlic browns lightly. Add the marinated beef (with all the marinade) and cook for 5–7 minutes, depending on how rare you want the beef. Dry roast the black Kampot peppercorns in a frying pan over medium-low heat for 2–3 minutes until fragrant. Grind the roasted pepper, place it in a bowl, then add sea salt and lime juice. Mix well. On a serving plate, arrange a bed of lettuce, then layer tomatoes, then onions. Spoon the cooked beef over the vegetables and place fried eggs on top. Serve with the Kampot pepper sauce and fragrant steamed rice. Sear hot and fast, Lok Lak is at its best when the beef stays tender and juicy, with a bold, bright dipping sauce to cut through the richness."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/t2b8bn1779737789.jpg"
+          },
+          "source_url": {
+            "S": "https://www.chefnak.com/beef-lok-lak"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=3oWgjFhQQW0"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53421"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53418"
+          },
+          "recipe_name": {
+            "S": "Cambodian Stir-fried Morning Glory with Pork, Fermented Soybeans, and Garlic"
+          },
+          "category": {
+            "S": "Pork"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Morning Glory"
+                  },
+                  "measure": {
+                    "S": "1 bunch"
+                  },
+                  "key": {
+                    "S": "morning glory"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Minced Pork"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "minced pork"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soya Bean"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "soya bean"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "4 Cloves Chopped"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Oil"
+                  },
+                  "measure": {
+                    "S": "For frying"
+                  },
+                  "key": {
+                    "S": "oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "Dash"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "Dash"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chilli"
+                  },
+                  "measure": {
+                    "S": "Sprinkling"
+                  },
+                  "key": {
+                    "S": "chilli"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "morning glory"
+              },
+              {
+                "S": "minced pork"
+              },
+              {
+                "S": "soya bean"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "oil"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "chilli"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "8"
+          },
+          "instructions": {
+            "S": "In a wok or large pan, heat 1 tablespoon of vegetable oil over medium heat. Once the oil is hot, add the garlic and stir-fry for about 30 seconds, until fragrant but not burnt. Add the minced pork to the pan and break it up with a spatula. Stir-fry until the pork is fully cooked and browned, about 2-3 minutes. Stir in the fermented soy beans and cook for another minute, mixing it thoroughly with the pork. Toss in the cut morning glory and stir-fry for 2-3 minutes to retain its bright green colour and crisp texture. Check the seasoning and adjust with fish sauce or sugar if needed. Transfer to a serving dish and serve immediately with steamed rice."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/wympxc1779734808.jpg"
+          },
+          "source_url": {
+            "S": "https://mitziemee.com/recipe-cambodian-stir-fried-morning-glory/"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=_LsP1TP4P9Q"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53418"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53420"
+          },
+          "recipe_name": {
+            "S": "Cambodian Waffles (Num Poum)"
+          },
+          "category": {
+            "S": "Dessert"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Flour"
+                  },
+                  "measure": {
+                    "S": "1/2 cup"
+                  },
+                  "key": {
+                    "S": "rice flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Wheat Flour"
+                  },
+                  "measure": {
+                    "S": "1/2 cup"
+                  },
+                  "key": {
+                    "S": "wheat flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "1/2 cup"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Palm Sugar"
+                  },
+                  "measure": {
+                    "S": "3/4 cup"
+                  },
+                  "key": {
+                    "S": "palm sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Eggs"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "eggs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salt"
+                  },
+                  "measure": {
+                    "S": "1/2 tsp"
+                  },
+                  "key": {
+                    "S": "salt"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "rice flour"
+              },
+              {
+                "S": "wheat flour"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "palm sugar"
+              },
+              {
+                "S": "eggs"
+              },
+              {
+                "S": "salt"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "6"
+          },
+          "instructions": {
+            "S": "In a bowl, mix the flour, coconut milk, palm sugar and eggs and salt. Brush a waffle iron with oil pour in the batter and cook over an open fire until light brown and crispy."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/h7zrys1779736460.jpg"
+          },
+          "source_url": {
+            "S": "https://www.phnomenon.com/index.php/cambodian-food/category/recipes/"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=QAVOTHkYXLc"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53420"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53419"
+          },
+          "recipe_name": {
+            "S": "Crispy fried fish with ginger and fermented soybeans (trey chien chuon)"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "2 cups"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish fillet"
+                  },
+                  "measure": {
+                    "S": "1 lb"
+                  },
+                  "key": {
+                    "S": "fish fillet"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Tempura Flour"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "tempura flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Oil"
+                  },
+                  "measure": {
+                    "S": "2 cups"
+                  },
+                  "key": {
+                    "S": "oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "4 cloves"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soya Bean"
+                  },
+                  "measure": {
+                    "S": "800g"
+                  },
+                  "key": {
+                    "S": "soya bean"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "1/2 tbs"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Water"
+                  },
+                  "measure": {
+                    "S": "1/2 cup"
+                  },
+                  "key": {
+                    "S": "water"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "3"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "fish fillet"
+              },
+              {
+                "S": "tempura flour"
+              },
+              {
+                "S": "oil"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "soya bean"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "water"
+              },
+              {
+                "S": "spring onions"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "9"
+          },
+          "instructions": {
+            "S": "Fry the ginger in plenty of oil until golden and slightly crispy. Set aside for later. Cut the fish into strips. Dredge the fish in a very thin layer of tempura flour. Fry the fish in plenty of oil until golden brown and crispy. You can use the same oil as you were using to fry the ginger. Crush the garlic and chop it into small pieces. Chop the spring onion. Drain the fermented soybeans using a colander. If you are using salted beans (soybeans in a very salty brine), you need to wash the beans in water before you add them to the dish. Add a tablespoon of oil to a deep pan or a large pot, and sauté the garlic until slightly golden. Add the soybeans and stir fry for a few minutes. If the soybeans are very salty, add ¼- ½ tablespoon sugar to balance the flavor. Add water and fry for a minute. Just before serving, stir in the fried ginger, the spring onion, and the crispy fish. Serve with steamed rice."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/9q1ci41779735714.jpg"
+          },
+          "source_url": {
+            "S": "https://mitziemee.com/recipe-cambodian-fried-fish-ginger-fermented-soybeans/"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=V0G3ODvMg0k"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53419"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53502"
+          },
+          "recipe_name": {
+            "S": "Khmer Banh Xeo - Cambodian Savory Pancake"
+          },
+          "category": {
+            "S": "Pork"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Flour"
+                  },
+                  "measure": {
+                    "S": "1 cup"
+                  },
+                  "key": {
+                    "S": "rice flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cornstarch"
+                  },
+                  "measure": {
+                    "S": "1/4 cup"
+                  },
+                  "key": {
+                    "S": "cornstarch"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "1 1/4 cup"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Water"
+                  },
+                  "measure": {
+                    "S": "3/4 cup"
+                  },
+                  "key": {
+                    "S": "water"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Turmeric"
+                  },
+                  "measure": {
+                    "S": "1/2 tsp"
+                  },
+                  "key": {
+                    "S": "ground turmeric"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pork belly slices"
+                  },
+                  "measure": {
+                    "S": "1/2 lb"
+                  },
+                  "key": {
+                    "S": "pork belly slices"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bean Sprouts"
+                  },
+                  "measure": {
+                    "S": "1 cup"
+                  },
+                  "key": {
+                    "S": "bean sprouts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1/2"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "Splash"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "rice flour"
+              },
+              {
+                "S": "cornstarch"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "water"
+              },
+              {
+                "S": "ground turmeric"
+              },
+              {
+                "S": "pork belly slices"
+              },
+              {
+                "S": "bean sprouts"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "fish sauce"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "10"
+          },
+          "instructions": {
+            "S": "Whisk together rice flour, cornstarch, coconut milk, water, and turmeric in a bowl until smooth, then let rest for 15 minutes—this hydrates the flour for better texture. Heat a 10-inch non-stick skillet over medium-high heat (375°F) and add 1/2 tablespoon of vegetable oil. Sauté pork belly slices for 3–4 minutes until lightly browned, then push to one side of the skillet. Add onion slices and cook for 1 minute until slightly softened. Stir the batter briefly and pour about 1/2 cup into the skillet, immediately swirling to coat the bottom thinly. Scatter bean sprouts over half of the pancake and cover the skillet with a lid for 2 minutes to steam the sprouts. Uncover and cook for another 3–4 minutes until the edges curl and turn golden brown and crispy. Fold the pancake in half over the bean sprouts using a spatula, then transfer to a plate. Repeat steps 2–8 with remaining batter and ingredients, adding oil as needed to prevent sticking. Serve immediately with fish sauce for dipping."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/xrv78g1782769859.jpg"
+          },
+          "source_url": {
+            "S": "https://recipes-for-life.com/cambodian-recipes/"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53502"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53423"
+          },
+          "recipe_name": {
+            "S": "Meang Nem"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Dried Shrimp"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "dried shrimp"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice"
+                  },
+                  "measure": {
+                    "S": "40g"
+                  },
+                  "key": {
+                    "S": "rice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "coconut"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Orange Zest"
+                  },
+                  "measure": {
+                    "S": "20g"
+                  },
+                  "key": {
+                    "S": "orange zest"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chilli"
+                  },
+                  "measure": {
+                    "S": "3"
+                  },
+                  "key": {
+                    "S": "chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Peanuts"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "peanuts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pickled Scallion Heads"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "pickled scallion heads"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pickled Scallion Head Brine"
+                  },
+                  "measure": {
+                    "S": "30 ml"
+                  },
+                  "key": {
+                    "S": "pickled scallion head brine"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Galangal"
+                  },
+                  "measure": {
+                    "S": "25g"
+                  },
+                  "key": {
+                    "S": "galangal"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Shallots"
+                  },
+                  "measure": {
+                    "S": "30g"
+                  },
+                  "key": {
+                    "S": "shallots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Orange Juice"
+                  },
+                  "measure": {
+                    "S": "20 ml"
+                  },
+                  "key": {
+                    "S": "orange juice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime juice"
+                  },
+                  "measure": {
+                    "S": "50 ml"
+                  },
+                  "key": {
+                    "S": "lime juice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "50 ml"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Palm Sugar"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "palm sugar"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "dried shrimp"
+              },
+              {
+                "S": "rice"
+              },
+              {
+                "S": "coconut"
+              },
+              {
+                "S": "orange zest"
+              },
+              {
+                "S": "chilli"
+              },
+              {
+                "S": "peanuts"
+              },
+              {
+                "S": "pickled scallion heads"
+              },
+              {
+                "S": "pickled scallion head brine"
+              },
+              {
+                "S": "galangal"
+              },
+              {
+                "S": "shallots"
+              },
+              {
+                "S": "orange juice"
+              },
+              {
+                "S": "lime juice"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "palm sugar"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "14"
+          },
+          "instructions": {
+            "S": "Rinse the rice, soak in water for about 10 minutes, then drain well. Heat a wok or large skillet over medium heat. Add the rice and stir constantly until evenly dark golden brown and very fragrant, about 5 minutes. Transfer to a bowl to cool. Grind finely using a spice grinder or mortar and pestle, then sift through a fine mesh strainer to remove any large pieces. Set aside. Thinly slice the shallots lengthwise. Finely chop the galangal, pickled scallion heads, chili peppers, and bitter orange zest. Coarsely grind the roasted peanuts. Heat a frying pan over low heat, add shredded coconut, and toast, stirring, for 2–3 minutes. Set aside. In a large bowl, combine lime juice, bitter orange juice, palm sugar, pickled scallion brine, and fish sauce. Stir until fully dissolved and well mixed. In a mixing bowl, combine dried shrimp, toasted coconut, chopped aromatics, and dressing. Mix well. Add roasted rice powder and stir again. Top with coarsely ground roasted peanuts. Place the salad on a large plate. Let each guest spoon a little onto their own small plate, wrap in leafy greens with vegetables, and enjoy in bite-size portions. For a vegetarian version, omit the dried shrimp and fish sauce. Season to taste with soy sauce and a pinch of sea salt, keeping the sweet-sour balance."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/5rk8vc1779740302.jpg"
+          },
+          "source_url": {
+            "S": "https://www.chefnak.com/meang-nem"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53423"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53497"
+          },
+          "recipe_name": {
+            "S": "Nom Banh Chok - Cambodian Noodle Soup"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Water"
+                  },
+                  "measure": {
+                    "S": "8 cups"
+                  },
+                  "key": {
+                    "S": "water"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Thighs"
+                  },
+                  "measure": {
+                    "S": "1lb"
+                  },
+                  "key": {
+                    "S": "chicken thighs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "4 Cloves Crushed"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salt"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "salt"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Noodles"
+                  },
+                  "measure": {
+                    "S": "8 oz"
+                  },
+                  "key": {
+                    "S": "rice noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bean Sprouts"
+                  },
+                  "measure": {
+                    "S": "2 cups"
+                  },
+                  "key": {
+                    "S": "bean sprouts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mint"
+                  },
+                  "measure": {
+                    "S": "1 cup"
+                  },
+                  "key": {
+                    "S": "mint"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "water"
+              },
+              {
+                "S": "chicken thighs"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "salt"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "rice noodles"
+              },
+              {
+                "S": "bean sprouts"
+              },
+              {
+                "S": "mint"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "red chilli"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "12"
+          },
+          "instructions": {
+            "S": "1. Heat the vegetable oil in a large pot over medium heat until it shimmers, about 2 minutes. 2. Add the minced garlic and sauté until fragrant and lightly golden, about 1 minute, stirring constantly to prevent burning. 3. Add the chicken pieces and cook until they turn opaque on all sides, about 5 minutes, stirring occasionally. 4. Pour in the 8 cups of water and bring to a boil over high heat, which should take about 8 minutes. 5. Reduce the heat to low, stir in the fish sauce, salt, and sugar, and simmer uncovered for 20 minutes to develop the flavors. 6. While the broth simmers, cook the rice noodles according to package instructions until al dente, then drain and rinse under cold water to stop the cooking. 7. Divide the cooked noodles evenly among four bowls. 8. Ladle the hot broth and chicken over the noodles in each bowl. 9. Top each bowl with bean sprouts, chopped mint leaves, and optional red chili slices. 10. Serve immediately with lime wedges on the side for squeezing over the soup."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/6g9gif1782688663.jpg"
+          },
+          "source_url": {
+            "S": "https://recipes-for-life.com/cambodian-recipes/"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53497"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53500"
+          },
+          "recipe_name": {
+            "S": "Num Ansom - Sticky Rice Cake"
+          },
+          "category": {
+            "S": "Side"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Glutinous Rice"
+                  },
+                  "measure": {
+                    "S": "2 cups"
+                  },
+                  "key": {
+                    "S": "glutinous rice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "1 cup"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "1/2 cup"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salt"
+                  },
+                  "measure": {
+                    "S": "1/2 tsp"
+                  },
+                  "key": {
+                    "S": "salt"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Banana Leaves"
+                  },
+                  "measure": {
+                    "S": "8"
+                  },
+                  "key": {
+                    "S": "banana leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mung Bean Paste"
+                  },
+                  "measure": {
+                    "S": "1 cup"
+                  },
+                  "key": {
+                    "S": "mung bean paste"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "glutinous rice"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "salt"
+              },
+              {
+                "S": "banana leaves"
+              },
+              {
+                "S": "mung bean paste"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "6"
+          },
+          "instructions": {
+            "S": "1. Drain the soaked glutinous rice thoroughly in a fine-mesh strainer. 2. In a medium bowl, combine the coconut milk, palm sugar, and salt, stirring until the sugar dissolves completely. 3. Add the drained rice to the coconut milk mixture, mixing gently to coat every grain evenly. Let it sit for 15 minutes to absorb the liquid. 4. Prepare a steamer by filling the bottom pot with 2 inches of water and bringing it to a boil over high heat. 5. Lay a banana leaf square flat on your work surface, shiny side up. Spoon ¼ cup of the rice mixture into the center, spreading it into a 4-inch rectangle. 6. Place 2 tablespoons of mung bean paste in a line down the middle of the rice rectangle. 7. Fold the banana leaf over the filling lengthwise, then fold in the sides to create a tight parcel. Tip: Press firmly to compact the rice, which helps it hold its shape during steaming. 8. Secure the parcel with kitchen twine, tying it firmly but not too tight to allow for expansion. 9. Repeat steps 5–8 with the remaining ingredients to make 8 parcels total. 10. Arrange the parcels in a single layer in the steamer basket, leaving small gaps between them for steam circulation. 11. Cover the steamer and steam over medium heat for 90 minutes, checking halfway to ensure the water hasn’t boiled dry—add more hot water if needed. Tip: The parcels are done when the banana leaves turn a deep green and the rice feels firm to the touch. 12. Carefully remove the parcels from the steamer and let them cool for 20 minutes before unwrapping. Tip: Cooling sets the texture, making slicing cleaner. 13. Unwrap the banana leaves and slice each parcel into 1-inch thick rounds for serving."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/fycrai1782690897.jpg"
+          },
+          "source_url": {
+            "S": "https://recipes-for-life.com/cambodian-recipes/"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53500"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53422"
+          },
+          "recipe_name": {
+            "S": "Num E (Sticky Rice Balls in Sugar Syrup and Coconut Cream)"
+          },
+          "category": {
+            "S": "Side"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Sticky Rice Flour"
+                  },
+                  "measure": {
+                    "S": "700g"
+                  },
+                  "key": {
+                    "S": "sticky rice flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pandan Leaves"
+                  },
+                  "measure": {
+                    "S": "7"
+                  },
+                  "key": {
+                    "S": "pandan leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Beetroot"
+                  },
+                  "measure": {
+                    "S": "1/4"
+                  },
+                  "key": {
+                    "S": "beetroot"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pumpkin"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "pumpkin"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Taro"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "taro"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Longan"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "longan"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "coconut"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Water"
+                  },
+                  "measure": {
+                    "S": "2L"
+                  },
+                  "key": {
+                    "S": "water"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Water"
+                  },
+                  "measure": {
+                    "S": "1 L"
+                  },
+                  "key": {
+                    "S": "water"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salt"
+                  },
+                  "measure": {
+                    "S": "1/2 tsp"
+                  },
+                  "key": {
+                    "S": "salt"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "5 Slices"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Cream"
+                  },
+                  "measure": {
+                    "S": "3 Cups"
+                  },
+                  "key": {
+                    "S": "coconut cream"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "sticky rice flour"
+              },
+              {
+                "S": "pandan leaves"
+              },
+              {
+                "S": "beetroot"
+              },
+              {
+                "S": "pumpkin"
+              },
+              {
+                "S": "taro"
+              },
+              {
+                "S": "longan"
+              },
+              {
+                "S": "coconut"
+              },
+              {
+                "S": "water"
+              },
+              {
+                "S": "water"
+              },
+              {
+                "S": "salt"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "coconut cream"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "12"
+          },
+          "instructions": {
+            "S": "Place coconut cream in a small pot over low heat. Cut 3 pandan leaves into large strips and add to the pot with brown sugar, salt, and ginger. Bring to a boil, then cook 2 more minutes. Turn off the heat, remove the pandan leaves, and let cool. Chop the remaining 4 pandan leaves, blend with ¼ cup water until very green, then strain well. In a bowl, place 200 g sticky rice flour, add a little pandan liquid, and knead until smooth. Peel and chop beetroot, blend with ¼ cup water until red, then strain well. In a bowl, place 200 g sticky rice flour, add a little beetroot liquid, and knead until smooth. Bring 3 litres of water to a boil in a medium–large pot. Divide each dough into small pieces, roll into balls about ⅓ the size of a ping pong ball, then drop into boiling water. When they float, remove and place them into fresh, icy water to keep them separate. Drain well, then place the mixed colored balls into the cooled coconut sugar syrup and stir. Serve in small bowls (add longan and shredded coconut as desired). Add the coloring liquids gradually—each flour absorbs differently. You want a dough that’s smooth and pliable, not sticky."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/5572yt1779739329.jpg"
+          },
+          "source_url": {
+            "S": "https://www.chefnak.com/sticky-rice-balls-in-coconut-syrup"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=RDlkKhMho90"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53422"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53501"
+          },
+          "recipe_name": {
+            "S": "Num Pang - Cambodian Baguette Sandwich"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Baguette"
+                  },
+                  "measure": {
+                    "S": "4"
+                  },
+                  "key": {
+                    "S": "baguette"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Thighs"
+                  },
+                  "measure": {
+                    "S": "1 lb"
+                  },
+                  "key": {
+                    "S": "chicken thighs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "1/4 cup"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Honey"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "honey"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "1/2 cup"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Daikon Radish"
+                  },
+                  "measure": {
+                    "S": "1/2 cup"
+                  },
+                  "key": {
+                    "S": "daikon radish"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Vinegar"
+                  },
+                  "measure": {
+                    "S": "1/4 cup"
+                  },
+                  "key": {
+                    "S": "rice vinegar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mayonnaise"
+                  },
+                  "measure": {
+                    "S": "1/4 cup"
+                  },
+                  "key": {
+                    "S": "mayonnaise"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sriracha"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "sriracha"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cilantro Leaves"
+                  },
+                  "measure": {
+                    "S": "1/2 cup"
+                  },
+                  "key": {
+                    "S": "cilantro leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cucumber"
+                  },
+                  "measure": {
+                    "S": "1/4 cup"
+                  },
+                  "key": {
+                    "S": "cucumber"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "baguette"
+              },
+              {
+                "S": "chicken thighs"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "honey"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "daikon radish"
+              },
+              {
+                "S": "rice vinegar"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "mayonnaise"
+              },
+              {
+                "S": "sriracha"
+              },
+              {
+                "S": "cilantro leaves"
+              },
+              {
+                "S": "cucumber"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "13"
+          },
+          "instructions": {
+            "S": "1. In a medium bowl, whisk together the soy sauce and honey to create a marinade. 2. Add the chicken thigh strips to the marinade, ensuring each piece is fully coated, and let it sit for 20 minutes at room temperature. 3. While the chicken marinates, combine the julienned carrots, daikon radish, rice vinegar, and granulated sugar in a separate bowl, stirring until the sugar dissolves to pickle the vegetables. 4. In a small bowl, mix the mayonnaise and sriracha sauce thoroughly to make a spicy aioli. 5. Heat the vegetable oil in a large skillet or wok over medium-high heat until it shimmers, about 2 minutes. 6. Add the marinated chicken strips to the hot skillet in a single layer, cooking for 4-5 minutes per side until they reach an internal temperature of 165°F and develop a golden-brown crust. 7. While the chicken cooks, lightly toast the split baguettes in a toaster oven or under a broiler for 2-3 minutes until just crisp on the edges. 8. Spread a generous layer of the spicy aioli on the inside of each toasted baguette. 9. Drain the pickled carrots and daikon radish from their liquid, then layer them onto the bottom half of each baguette. 10. Place the cooked chicken strips evenly over the pickled vegetables in each sandwich. 11. Top the chicken with fresh cilantro leaves and thinly sliced cucumber. 12. Close the sandwiches by pressing the top half of each baguette down gently."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/o93jur1782769321.jpg"
+          },
+          "source_url": {
+            "S": "https://recipes-for-life.com/cambodian-recipes/"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53501"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53499"
+          },
+          "recipe_name": {
+            "S": "Prahok Ktis - Pork and Coconut Dip"
+          },
+          "category": {
+            "S": "Pork"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Pork"
+                  },
+                  "measure": {
+                    "S": "1 lb"
+                  },
+                  "key": {
+                    "S": "ground pork"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "1 cup"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Prahok"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons"
+                  },
+                  "key": {
+                    "S": "prahok"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "4 Cloves Crushed"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Shallots"
+                  },
+                  "measure": {
+                    "S": "2 chopped"
+                  },
+                  "key": {
+                    "S": "shallots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chilli"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 1"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cilantro"
+                  },
+                  "measure": {
+                    "S": "Garnish"
+                  },
+                  "key": {
+                    "S": "cilantro"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "ground pork"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "prahok"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "shallots"
+              },
+              {
+                "S": "chilli"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "cilantro"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "11"
+          },
+          "instructions": {
+            "S": "1. Heat 2 tbsp vegetable oil in a large skillet over medium-high heat until shimmering, about 1 minute. 2. Add 4 cloves minced garlic and 2 finely chopped shallots to the skillet, stirring constantly until fragrant and lightly golden, 2-3 minutes. 3. Tip: Keep the heat medium to prevent burning—garlic can turn bitter if overcooked. 4. Add 1 lb ground pork to the skillet, breaking it up with a spoon, and cook until no pink remains, 5-7 minutes. 5. Stir in 3 tbsp prahok and cook for 1 minute to blend the flavors, mashing it slightly into the pork. 6. Pour in 1 cup coconut milk, stirring to combine, then reduce heat to medium-low and simmer for 10 minutes until the mixture thickens slightly. 7. Tip: Simmer gently to avoid curdling the coconut milk—a steady bubble is ideal. 8. Add 2 tbsp fish sauce, 1 tbsp palm sugar, and 2 minced Thai chilies, stirring until the sugar dissolves, about 2 minutes. 9. Remove the skillet from heat and stir in 2 tbsp lime juice, mixing thoroughly. 10. Tip: Add lime juice off the heat to preserve its fresh, tangy flavor without cooking it out. 11. Transfer the dip to a serving bowl and garnish with ¼ cup chopped fresh cilantro. 12. Let the dip cool for 5 minutes before serving to allow the flavors to meld."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/g80f4t1782690273.jpg"
+          },
+          "source_url": {
+            "S": "https://recipes-for-life.com/cambodian-recipes/"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53499"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53498"
+          },
+          "recipe_name": {
+            "S": "Samlar Kari - Khmer Red Curry"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Thighs"
+                  },
+                  "measure": {
+                    "S": "1 lb"
+                  },
+                  "key": {
+                    "S": "chicken thighs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1 medium chopped"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "3 Cloves Crushed"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Curry Paste"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "red curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coconut Milk"
+                  },
+                  "measure": {
+                    "S": "1 can"
+                  },
+                  "key": {
+                    "S": "coconut milk"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Stock"
+                  },
+                  "measure": {
+                    "S": "1 cup"
+                  },
+                  "key": {
+                    "S": "chicken stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bamboo Shoot"
+                  },
+                  "measure": {
+                    "S": "1 cup"
+                  },
+                  "key": {
+                    "S": "bamboo shoot"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Pepper"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Basil"
+                  },
+                  "measure": {
+                    "S": "Pinch"
+                  },
+                  "key": {
+                    "S": "basil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "chicken thighs"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "red curry paste"
+              },
+              {
+                "S": "coconut milk"
+              },
+              {
+                "S": "chicken stock"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "bamboo shoot"
+              },
+              {
+                "S": "red pepper"
+              },
+              {
+                "S": "basil"
+              },
+              {
+                "S": "lime"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "14"
+          },
+          "instructions": {
+            "S": "1. Heat 1 tbsp vegetable oil in a large pot or Dutch oven over medium-high heat until it shimmers, about 2 minutes. 2. Add 1 lb chicken pieces to the pot and cook until browned on all sides, approximately 5–7 minutes, stirring occasionally to prevent sticking. 3. Remove the chicken from the pot and set it aside on a plate, leaving any oil and juices in the pot. 4. Reduce the heat to medium and add 1 sliced onion to the pot, cooking until softened and translucent, about 4 minutes. 5. Stir in 3 cloves minced garlic and 1 tbsp grated ginger, cooking for 1 minute until fragrant to avoid burning. 6. Add 2 tbsp red curry paste to the pot and cook for 1 minute, stirring constantly to toast the spices and deepen the flavor. 7. Pour in 1 can coconut milk and 1 cup chicken broth, scraping the bottom of the pot to incorporate any browned bits for extra richness. 8. Stir in 1 tbsp fish sauce and 1 tbsp palm sugar until fully dissolved, then return the browned chicken to the pot. 9. Bring the mixture to a gentle boil, then reduce the heat to low, cover, and simmer for 15 minutes to allow the flavors to meld. 10. Add 1 cup bamboo shoots and 1 sliced red bell pepper to the pot, simmering uncovered for an additional 5 minutes until the vegetables are tender-crisp. 11. Remove the pot from the heat and stir in 1 cup Thai basil leaves until just wilted, about 1 minute, to preserve their fresh aroma. 12. Serve the curry hot, garnished with lime wedges for a bright, acidic finish."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/k5qzdl1782689660.jpg"
+          },
+          "source_url": {
+            "S": "https://recipes-for-life.com/cambodian-recipes/"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53498"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53503"
+          },
+          "recipe_name": {
+            "S": "Samlar Machu Kreung - Cambodian Sour Stew"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "Cambodia"
+          },
+          "country": {
+            "S": "Cambodia"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Thighs"
+                  },
+                  "measure": {
+                    "S": "1 lb"
+                  },
+                  "key": {
+                    "S": "chicken thighs"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Water"
+                  },
+                  "measure": {
+                    "S": "4 cups"
+                  },
+                  "key": {
+                    "S": "water"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Tamarind Paste"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "tamarind paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pineapple Chunks"
+                  },
+                  "measure": {
+                    "S": "1 cup"
+                  },
+                  "key": {
+                    "S": "pineapple chunks"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cherry Tomatoes"
+                  },
+                  "measure": {
+                    "S": "1 cup"
+                  },
+                  "key": {
+                    "S": "cherry tomatoes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Green Beans"
+                  },
+                  "measure": {
+                    "S": "1 cup"
+                  },
+                  "key": {
+                    "S": "green beans"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemongrass"
+                  },
+                  "measure": {
+                    "S": "1 Stalk"
+                  },
+                  "key": {
+                    "S": "lemongrass"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Kaffir Lime Leaves"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "kaffir lime leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chilli"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "chilli"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "chicken thighs"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "water"
+              },
+              {
+                "S": "tamarind paste"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "pineapple chunks"
+              },
+              {
+                "S": "cherry tomatoes"
+              },
+              {
+                "S": "green beans"
+              },
+              {
+                "S": "lemongrass"
+              },
+              {
+                "S": "kaffir lime leaves"
+              },
+              {
+                "S": "chilli"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "12"
+          },
+          "instructions": {
+            "S": "1. Heat 1 tbsp vegetable oil in a large pot over medium-high heat until it shimmers, about 1 minute. 2. Add 1 lb boneless, skinless chicken thighs to the pot and cook until browned on all sides, approximately 5-7 minutes, stirring occasionally to prevent sticking. 3. Pour 4 cups water into the pot and bring to a boil, then reduce heat to a simmer. 4. Stir in 2 tbsp tamarind paste, 1 tbsp fish sauce, and 1 tsp sugar until fully dissolved, about 1 minute. 5. Add 1 stalk lemongrass and 2 kaffir lime leaves to the pot, then cover and simmer for 10 minutes to infuse the broth with flavor. 6. Tip: Bruising the lemongrass before adding helps release its essential oils for a more aromatic stew. 7. Add 1 cup pineapple chunks, 1 cup cherry tomatoes, and 1 cup green beans to the pot, stirring gently to combine. 8. Simmer uncovered for 10-12 minutes, or until the green beans are tender but still crisp and the tomatoes start to soften. 9. Tip: Avoid overcooking the vegetables to maintain their vibrant color and texture in the final dish. 10. Stir in 1 Thai chili and simmer for an additional 2 minutes to incorporate the heat. 11. Tip: Taste the broth and adjust with extra tamarind paste or fish sauce if desired, but do so gradually to avoid overpowering the balance. 12. Remove the pot from heat and discard the lemongrass and kaffir lime leaves before serving. 13. Present the stew hot in bowls, optionally garnished with fresh herbs like cilantro."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/bmbvjk1782770310.jpg"
+          },
+          "source_url": {
+            "S": "https://recipes-for-life.com/cambodian-recipes/"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53503"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53373"
+          },
+          "recipe_name": {
+            "S": "Air Fryer Egg Rolls"
+          },
+          "category": {
+            "S": "Side"
+          },
+          "area": {
+            "S": "Chinese"
+          },
+          "country": {
+            "S": "China"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Olive Oil"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "olive oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Pork"
+                  },
+                  "measure": {
+                    "S": "1 lb"
+                  },
+                  "key": {
+                    "S": "ground pork"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "1 clove peeled crushed"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "1 medium"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Scallions"
+                  },
+                  "measure": {
+                    "S": "3 chopped"
+                  },
+                  "key": {
+                    "S": "scallions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cabbage"
+                  },
+                  "measure": {
+                    "S": "3 Cups"
+                  },
+                  "key": {
+                    "S": "cabbage"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Vinegar"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "rice vinegar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Egg Roll Wrappers"
+                  },
+                  "measure": {
+                    "S": "12"
+                  },
+                  "key": {
+                    "S": "egg roll wrappers"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Oil"
+                  },
+                  "measure": {
+                    "S": "For brushing"
+                  },
+                  "key": {
+                    "S": "oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Duck Sauce"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "duck sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plum Sauce"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "plum sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "olive oil"
+              },
+              {
+                "S": "ground pork"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "scallions"
+              },
+              {
+                "S": "cabbage"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "rice vinegar"
+              },
+              {
+                "S": "egg roll wrappers"
+              },
+              {
+                "S": "oil"
+              },
+              {
+                "S": "duck sauce"
+              },
+              {
+                "S": "plum sauce"
+              },
+              {
+                "S": "soy sauce"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "14"
+          },
+          "instructions": {
+            "S": "Alternative Pan Fry Method: If you don’t have access to an air fryer, you can make these egg rolls using a traditional pan fry method. Add enough oil to a medium skillet with high walls so the oil is about 1/2 inch up the side of the skillet. Heat oil on medium high heat until it reaches 350°F. Add egg rolls and fry for 3 to 4 minutes, flip, and fry for another 3 to 4 minutes until golden brown. Remove and let them drain and cool on a few paper towels. Cook the filling: In a large skillet over medium heat, add the olive oil along with the ground pork or chicken. Break apart the meat with a spatula or wooden spoon as it cooks. Cook until the meat is cooked through, 6 to 8 minutes. Add garlic, ginger, carrot, scallions, and cabbage. Continue to cook until cabbage wilts down and is soft, another 3 to 4 minutes, stirring regularly. Season the filling with soy sauce and rice wine vinegar, and take off the heat to cool. (This filling can be made in advance.) Assemble the egg rolls: Place a single egg roll wrapper on a dry surface with one point of the square facing you (like a diamond). Place about 1/4 cup of the egg roll filling mixture in the middle of the wrapper. Dip your fingers in water and run around the edges of the wrapper. Then fold the edges of the wrapper over the center and start rolling the egg roll away from you to form a tight cylinder. Place on a plate and repeat until you are out of filling. You should get at least a dozen egg rolls. Air fry the egg rolls: Place the egg rolls in the basket of your air fryer. Spray or brush them lightly with oil. Add as many as you can without stacking the egg rolls, making sure they don’t touch. Air needs to circulate around them. Brush the egg rolls lightly with oil. Place the basket in the air fryer and turn the air fryer to 350°F. Cook for 6 to 7 minutes, then flip the egg rolls, spray or brush with oil a second time on the bottom side, and cook for another 4 to 5 minutes. Finished egg rolls should be golden brown and crispy! Serve immediately."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/grhn401765687086.jpg"
+          },
+          "source_url": {
+            "S": "https://www.simplyrecipes.com/recipes/air_fryer_chinese_egg_rolls/"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=XnA-wcVb4l0"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53373"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    }
+  ]
+}

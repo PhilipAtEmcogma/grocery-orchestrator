@@ -45,19 +45,33 @@ import pytest
 
 from src.graph.nodes import MEAL_CATEGORIES
 from src.retrieval.base import PriceRecord
+from src.retrieval.dynamo import MAX_QUERY_PAGES, DynamoPriceRepository
+from src.retrieval.memory import InMemoryPriceRepository
 from src.schemas.contract import Store
+
+# RESOLVED 2026-08-30 — kept for the reasoning, no longer a ceiling.
+#
+# This was the row count past which a full-table Scan per meal-plan turn stopped
+# being defensible, and the test below failed once the dataset passed it. That
+# was the point: the decision was deferred (Pilot Task 6b) until there was
+# evidence to make it on, and the test forced the choice rather than letting
+# "accepted for the fixture dataset" quietly become production.
+#
+# The forcing worked. `candidates_for_budget` now queries GSI2 (partition by
+# category, sort by zero-padded price) instead of scanning, so the row count is
+# no longer the thing that matters. The number is kept because it is the
+# threshold the judgement was made against, not because anything still checks it.
+SCAN_CEILING_RECORDS = 1000
 
 # --------------------------------------------------------------- registry
 
 
 def _in_memory():
-    from src.retrieval.memory import InMemoryPriceRepository
 
     return InMemoryPriceRepository()
 
 
 def _dynamo():
-    from src.retrieval.dynamo import DynamoPriceRepository
 
     table = os.environ.get("PRICE_REPO_DYNAMO_TABLE")
     if not table:
@@ -142,10 +156,7 @@ class TestCheapestForProduct:
     def test_returns_prices_cheapest_first(self, repo, known_products):
         """The ordering guarantee, checked on every product the store holds."""
         for record in known_products:
-            prices = [
-                r.price_nzd
-                for r in repo.cheapest_for_product(record.product_key, limit=50)
-            ]
+            prices = [r.price_nzd for r in repo.cheapest_for_product(record.product_key, limit=50)]
             assert prices == sorted(prices), (
                 f"{record.product_key} came back unsorted: {prices}. Callers "
                 f"take element 0 as the cheapest and never re-sort."
@@ -166,9 +177,7 @@ class TestCheapestForProduct:
     def test_limit_is_respected(self, repo, a_product_key):
         assert len(repo.cheapest_for_product(a_product_key, limit=2)) <= 2
 
-    def test_limit_keeps_the_cheapest_not_an_arbitrary_slice(
-        self, repo, a_product_key
-    ):
+    def test_limit_keeps_the_cheapest_not_an_arbitrary_slice(self, repo, a_product_key):
         """
         A store that applied the limit before sorting would pass the ordering
         test and still return the wrong rows.
@@ -185,24 +194,18 @@ class TestCheapestForProduct:
         everything = repo.cheapest_for_product(a_product_key, limit=50)
         wanted = everything[0].store
 
-        filtered = repo.cheapest_for_product(
-            a_product_key, limit=50, stores=[wanted]
-        )
+        filtered = repo.cheapest_for_product(a_product_key, limit=50, stores=[wanted])
         assert filtered, "filtering to a store that stocks it returned nothing"
         assert {r.store for r in filtered} == {wanted}
 
     def test_store_filter_preserves_ordering(self, repo, a_product_key):
         prices = [
             r.price_nzd
-            for r in repo.cheapest_for_product(
-                a_product_key, limit=50, stores=list(Store)
-            )
+            for r in repo.cheapest_for_product(a_product_key, limit=50, stores=list(Store))
         ]
         assert prices == sorted(prices)
 
-    def test_empty_store_filter_is_not_treated_as_no_filter(
-        self, repo, a_product_key
-    ):
+    def test_empty_store_filter_is_not_treated_as_no_filter(self, repo, a_product_key):
         """
         An explicit empty list means "no store qualifies". Callers pass None for
         "any store" — the retrieval node does exactly that. Coercing [] to None
@@ -223,9 +226,7 @@ class TestResolveProductKey:
 
     def test_strips_noise_words(self, repo):
         """SEEDED. The model is meant to send a clean term; users do not."""
-        assert repo.resolve_product_key("what's the cheapest butter near me") == (
-            SEED_KEY
-        )
+        assert repo.resolve_product_key("what's the cheapest butter near me") == (SEED_KEY)
 
     def test_is_case_insensitive(self, repo):
         """SEEDED."""
@@ -284,8 +285,7 @@ class TestResolveProductKey:
         """Whatever the store advertises, it must be able to serve."""
         for record in known_products[:15]:
             assert repo.cheapest_for_product(record.product_key), (
-                f"{record.product_key} was returned as a candidate but has no "
-                f"retrievable prices"
+                f"{record.product_key} was returned as a candidate but has no retrievable prices"
             )
 
 
@@ -387,8 +387,7 @@ class TestRecordShape:
                 f"Parse the stored string to Decimal; do not use the numeric type."
             )
             assert isinstance(record.unit_price_nzd, Decimal), (
-                f"{record.product_key}.unit_price_nzd is "
-                f"{type(record.unit_price_nzd).__name__}"
+                f"{record.product_key}.unit_price_nzd is {type(record.unit_price_nzd).__name__}"
             )
 
     def test_money_survives_a_round_trip_exactly(self, repo, known_products):
@@ -421,10 +420,225 @@ class TestRecordShape:
         for record in known_products:
             assert isinstance(record.pack_grams, int)
 
-    def test_no_duplicate_rows_for_one_product_at_one_location(
-        self, repo, a_product_key
-    ):
+    def test_no_duplicate_rows_for_one_product_at_one_location(self, repo, a_product_key):
         """A duplicate row double-counts a store in the comparison."""
         records = repo.cheapest_for_product(a_product_key, limit=50)
         seen = [(r.store, r.store_location) for r in records]
         assert len(seen) == len(set(seen)), f"duplicate location rows: {seen}"
+
+
+# ================================= Pilot Task 6: query pagination and scan scale
+#
+# `cheapest_for_product` issued ONE query with `Limit=limit * 5` and ignored
+# `LastEvaluatedKey`. DynamoDB applies `Limit` to items READ, before any
+# application-side filter, so when a store filter was supplied and none of the
+# first page happened to be at those stores, the method returned an empty list.
+#
+# The graph reads an empty list as `no_data` and tells the shopper "I don't have
+# price data for butter" — about a product that store stocks. An honest-failure
+# outcome produced by a silent truncation is worse than a loud error, because it
+# is indistinguishable from the truth.
+#
+# It cannot fire on the fixtures: six records per product is a single page. It
+# fires at real scale, where a popular product spans three chains and many
+# stores.
+
+
+def _item(ref: int, store: str, location: str, price: str) -> dict:
+    return {
+        "product_key": "butter-500g",
+        "store": store,
+        "store_location": location,
+        "display_name": f"Butter {ref}",
+        "canonical_name": "butter",
+        "category": "dairy",
+        "price_nzd": Decimal(price),
+        "unit": "500g",
+        "unit_price_nzd": Decimal(price) * 2,
+        "pack_grams": 500,
+        "on_special": False,
+        "valid_date": "2026-07-31",
+        "lat": Decimal("-36.9"),
+        "lon": Decimal("174.8"),
+        "store_key": f"{store}#{location}",
+    }
+
+
+class _PagingTable:
+    """A GSI that hands back one page at a time, as DynamoDB does."""
+
+    def __init__(self, pages: list[list[dict]]) -> None:
+        self._pages = pages
+        self.queries = 0
+
+    def query(self, **kwargs):
+        self.queries += 1
+        index = int(kwargs.get("ExclusiveStartKey", {}).get("n", 0))
+        page = self._pages[index] if index < len(self._pages) else []
+        response: dict = {"Items": page}
+        if index + 1 < len(self._pages):
+            response["LastEvaluatedKey"] = {"n": index + 1}
+        return response
+
+
+def _repo_with(pages: list[list[dict]]) -> tuple[DynamoPriceRepository, _PagingTable]:
+    """A repository wired to a fake table, without touching AWS."""
+    repo = object.__new__(DynamoPriceRepository)
+    table = _PagingTable(pages)
+    repo._table = table  # type: ignore[attr-defined]
+    repo._table_name = "grocery-products-dev"  # type: ignore[attr-defined]
+    return repo, table
+
+
+def test_a_store_filter_does_not_report_no_data_for_a_stocked_product():
+    """
+    The defect, stated as the shopper sees it.
+
+    Page one is entirely PAK'nSAVE; the Woolworths price the shopper asked for
+    is on page two. Before pagination this returned [] and the graph said "I
+    don't have price data for that".
+    """
+    pages = [
+        [_item(i, "paknsave", "mangere", "2.9") for i in range(5)],
+        [_item(9, "woolworths", "ponsonby", "3.5")],
+    ]
+    repo, table = _repo_with(pages)
+
+    found = repo.cheapest_for_product("butter-500g", limit=5, stores=[Store.WOOLWORTHS])
+
+    assert len(found) == 1, "the second page holds the only matching store"
+    assert found[0].store is Store.WOOLWORTHS
+    assert table.queries == 2, "the first page was short of matches; follow the key"
+
+
+def test_paging_stops_as_soon_as_enough_matches_are_held():
+    """Bounded work: no reason to read page two when page one satisfied the limit."""
+    pages = [
+        [_item(i, "paknsave", "mangere", "2.9") for i in range(5)],
+        [_item(9, "paknsave", "albany", "3.5")],
+    ]
+    repo, table = _repo_with(pages)
+
+    found = repo.cheapest_for_product("butter-500g", limit=3)
+
+    assert len(found) == 3
+    assert table.queries == 1, "stop once the limit is satisfied"
+
+
+def test_paging_is_bounded_when_nothing_ever_matches():
+    """
+    Latency has to stay bounded against the gateway ceiling. Exhausting the cap
+    is the honest `no_data` case: this store has nothing near the cheapest end.
+    """
+    pages = [[_item(i, "paknsave", "mangere", "2.9")] for i in range(50)]
+    repo, table = _repo_with(pages)
+
+    found = repo.cheapest_for_product("butter-500g", limit=5, stores=[Store.NEW_WORLD])
+
+    assert found == []
+    assert table.queries == MAX_QUERY_PAGES, "must not walk the whole index"
+
+
+def test_meal_plan_candidates_are_queried_by_category_not_scanned():
+    """
+    Pilot Task 6b, resolved: the Scan is gone and must not come back.
+
+    `candidates_for_budget` ran a full-table Scan on every meal-plan turn. That
+    was defensible at 152 seeded rows -- one page -- and indefensible at the
+    2,939 the data team's catalogue brings, where it reads the whole table to
+    return about two dozen rows and DynamoDB charges for rows READ.
+
+    The replacement was chosen on the evidence DYNAMODB-SCHEMA.md required:
+    the access pattern is partition-by-category/sort-by-price, the load is now
+    real, and the data team's own table independently carries the same
+    `CategoryPriceIndex` shape.
+
+    Asserted on the CALLS, not on the row count. A row-count ceiling could only
+    ever say "the dataset is still small enough to get away with it"; this says
+    the query pattern is right at any size, which is the property that actually
+    matters.
+    """
+    table = _RecordingTable(_dynamo_items())
+    repo = DynamoPriceRepository.__new__(DynamoPriceRepository)
+    repo._table = table  # type: ignore[attr-defined]
+    repo._table_name = "test"  # type: ignore[attr-defined]
+
+    found = repo.candidates_for_budget(
+        categories=["produce", "dairy"], exclude_categories=[], limit_per_category=2
+    )
+
+    assert table.scans == 0, "candidates_for_budget must never Scan"
+    assert table.queries > 0
+    assert all(q == "GSI2" for q in table.indexes), table.indexes
+    # One partition per wanted category, not one per row.
+    assert set(table.categories) == {"produce", "dairy"}
+    assert found, "the query returned nothing; the index or the fixture is wrong"
+
+
+def test_the_category_index_is_populated_for_every_seeded_row():
+    """
+    A sparse GSI is silent.
+
+    DynamoDB simply omits an item with no sort-key attribute from the index, so
+    a row missing `gsi2_sk` disappears from meal-plan candidates with no error
+    anywhere -- the plan is just quietly worse. Both the fixture generator and
+    the seed loader must carry it.
+    """
+    import json
+    from pathlib import Path
+
+    fixture = json.loads(
+        (Path(__file__).resolve().parents[1] / "fixtures" / "products.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert fixture, "no fixture records"
+    for record in fixture:
+        assert record.get("gsi2_sk"), f"{record['product_key']} has no gsi2_sk"
+        # Zero-padded cents lead, so lexicographic order is price order.
+        cents, _, rest = record["gsi2_sk"].partition("#")
+        assert cents.isdigit() and len(cents) == 9, record["gsi2_sk"]
+        assert rest.startswith(record["product_key"]), record["gsi2_sk"]
+
+
+class _RecordingTable:
+    """A stand-in that records how it was asked, not just what it returned."""
+
+    def __init__(self, items: list[dict]) -> None:
+        self._items = items
+        self.scans = 0
+        self.queries = 0
+        self.indexes: list[str] = []
+        self.categories: list[str] = []
+
+    def scan(self, **kwargs):
+        self.scans += 1
+        return {"Items": self._items}
+
+    def query(self, **kwargs):
+        self.queries += 1
+        self.indexes.append(kwargs.get("IndexName", ""))
+        # The condition object does not expose its value publicly; the values
+        # are positional on the private tuple, which is stable enough for a
+        # test and far clearer than reconstructing the expression.
+        category = kwargs["KeyConditionExpression"]._values[1]
+        self.categories.append(category)
+        items = [i for i in self._items if i["category"] == category]
+        items.sort(key=lambda i: i["gsi2_sk"])
+        return {"Items": items[: kwargs.get("Limit", len(items))]}
+
+
+def _dynamo_items() -> list[dict]:
+    """The fixture rows in the shape DynamoDB hands back."""
+    import json
+    from pathlib import Path
+
+    raw = json.loads(
+        (Path(__file__).resolve().parents[1] / "fixtures" / "products.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    for record in raw:
+        record["lat"] = Decimal(str(record["lat"]))
+        record["lon"] = Decimal(str(record["lon"]))
+    return raw

@@ -1,0 +1,77 @@
+{
+  "_comment": "Prose golden set. Every check is a RULE VIOLATION check, deliberately: the meal-plan suite's lesson was that a non-deterministic scorer inside a deterministic suite buys a gradient nobody can trust. What this measures is whether a model can produce SHIPPABLE prose under the node's constraints - placeholders only, no money, correct attribution - not whether the sentence is pleasant. The prose node degrades on every failure, so a model that cannot follow the rules delivers nothing and the shopper gets a bare table.",
+  "version": "1.0",
+  "cases": [
+    {
+      "id": "pr-001",
+      "message": "cheapest butter",
+      "intent": "price_check",
+      "expect_prose": true,
+      "note": "The simplest possible case. If this degrades, the model cannot use the placeholder protocol at all."
+    },
+    {
+      "id": "pr-002",
+      "message": "price of milk",
+      "intent": "price_check",
+      "expect_prose": true
+    },
+    {
+      "id": "pr-003",
+      "message": "how much is bread",
+      "intent": "price_check",
+      "expect_prose": true
+    },
+    {
+      "id": "pr-004",
+      "message": "cheapest cheese",
+      "intent": "price_check",
+      "expect_prose": true
+    },
+    {
+      "id": "pr-005",
+      "message": "price of butter and milk and bread",
+      "intent": "price_check",
+      "expect_prose": true,
+      "note": "Multi-item. More citations means more placeholders to choose between, and more ways to attribute the cheapest one wrongly."
+    },
+    {
+      "id": "pr-006",
+      "message": "how much are eggs",
+      "intent": "price_check",
+      "expect_prose": true
+    },
+    {
+      "id": "mp-001",
+      "message": "feed 2 people for 3 days on $50",
+      "intent": "meal_plan",
+      "expect_prose": true,
+      "note": "Plan prose uses the figure placeholders ([[total]], [[budget]]) rather than citations, which resolve to fixed words and never to a number."
+    },
+    {
+      "id": "mp-002",
+      "message": "dinner for 4 for a week on $120, vegetarian",
+      "intent": "meal_plan",
+      "expect_prose": true
+    },
+    {
+      "id": "mp-003",
+      "message": "meals for 1 person for 5 days, budget $40",
+      "intent": "meal_plan",
+      "expect_prose": true
+    },
+    {
+      "id": "nd-001",
+      "message": "how much is wagyu ribeye",
+      "intent": "price_check",
+      "expect_prose": false,
+      "note": "Nothing retrieved, so the graph terminates at emit_no_data and prose never runs. Prose here would be a sentence about a price we do not have."
+    },
+    {
+      "id": "oos-001",
+      "message": "what is the weather tomorrow",
+      "intent": "out_of_scope",
+      "expect_prose": false,
+      "note": "Out of scope terminates before retrieval. Included so the suite fails if prose starts appearing on turns that have no citations behind it."
+    }
+  ]
+}

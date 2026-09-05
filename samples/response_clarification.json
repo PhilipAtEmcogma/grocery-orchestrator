@@ -1,0 +1,43 @@
+{
+  "version": "1.0",
+  "session_id": "sess-7f3a9c21",
+  "turn_id": "turn-0007-c1a2",
+  "events": [
+    {
+      "seq": 0,
+      "type": "session",
+      "session_id": "sess-7f3a9c21",
+      "turn_id": "turn-0007-c1a2",
+      "version": "1.0"
+    },
+    {
+      "seq": 1,
+      "type": "intent",
+      "intent": "meal_plan",
+      "confidence": 0.94
+    },
+    {
+      "seq": 2,
+      "type": "clarification",
+      "missing": [
+        "days",
+        "budget_nzd"
+      ],
+      "message": "Happy to plan that — I just need to know how many days it needs to cover and what you'd like to spend. For example: \"dinner for 3 people for 5 days on $80\"."
+    },
+    {
+      "seq": 3,
+      "type": "done",
+      "usage": {
+        "model_ids": [
+          "scripted-fast"
+        ],
+        "input_tokens": 345,
+        "output_tokens": 40,
+        "latency_ms": 1,
+        "guardrail_intervened": false
+      },
+      "server_time": "2026-08-29T02:14:07Z"
+    }
+  ]
+}

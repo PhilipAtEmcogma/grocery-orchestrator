@@ -1,0 +1,16 @@
+# CDK / Node build artefacts
+node_modules/
+cdk.out/
+*.js
+!jest.config.js
+*.d.ts
+*.tsbuildinfo
+
+# Live AWS evidence is LOCAL, never committed (DYNAMODB-SCHEMA.md "Migration path
+# to CDK"): describe-table dumps carry account-bearing ARNs. Keep regenerated
+# copies here and out of version control; commit sanitized assertions instead.
+manual/
+
+# Local env
+.env
+.env.*

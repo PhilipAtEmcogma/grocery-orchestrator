@@ -1,7 +1,7 @@
 """
 Prose node.
 
-Generates the explanatory text, renders placeholders into real figures from
+Generates explanatory text, renders placeholders into non-monetary labels from
 retrieved records, and validates that no literal money survived.
 
 DEGRADATION: prose is a nicety. If generation or validation fails, the turn
@@ -14,8 +14,8 @@ from __future__ import annotations
 
 import re
 
-from src.graph.state import GroceryState
-from src.models.base import ModelClient, ModelError, ModelTier
+from src.graph.state import GroceryState, usage_from
+from src.models.base import GuardrailBlocked, ModelClient, ModelError, ModelTier
 from src.prompts.prose import (
     MEAL_PLAN_SYSTEM,
     PRICE_CHECK_SYSTEM,
@@ -53,10 +53,9 @@ def store_name(value: str) -> str:
 
 
 def _describe(citation: Citation) -> str:
-    """How a citation reads inside a sentence."""
+    """How a citation reads inside a sentence — non-monetary label only."""
     return (
-        f"${citation.price_nzd} at {store_name(citation.store.value)} "
-        f"{citation.store_location}"
+        f"{citation.product_name} at {store_name(citation.store.value)} {citation.store_location}"
     )
 
 
@@ -71,7 +70,7 @@ def _placeholder_list(citations: list[Citation]) -> str:
 
 def render(text: str, citations: dict[str, Citation], figures: dict[str, str]) -> str:
     """
-    Expand placeholders into real figures.
+    Expand placeholders into verified non-monetary labels.
 
     An unknown placeholder raises rather than being left visible or silently
     dropped: a shopper reading "cheapest at [[c9]]" has been shown a defect,
@@ -100,10 +99,15 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
     plan = state.get("plan")
 
     figures: dict[str, str] = {}
+    # Bound here rather than in the PRICE_CHECK branch alone: the check after
+    # generation reads it, and a name assigned on only one branch is unbound
+    # on the others as far as the type checker -- and a meal-plan turn -- are
+    # concerned.
+    cheapest_refs: list[str] = []
 
     if intent == Intent.MEAL_PLAN and plan is not None:
-        figures["total"] = f"${plan.total_nzd}"
-        figures["budget"] = f"${plan.budget_nzd}"
+        figures["total"] = "the plan total"
+        figures["budget"] = "your budget"
 
         used = [i.citation_ref for m in plan.meals for i in m.ingredients]
         reused = sorted(
@@ -121,30 +125,37 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
             household_size=plan.household_size,
             exclusions=plan.dietary_exclusions_applied,
             placeholders=_placeholder_list(in_plan),
-            stores=[
-                f"{store_name(b.store.value)} {b.store_location}"
-                for b in plan.baskets
-            ],
+            stores=[f"{store_name(b.store.value)} {b.store_location}" for b in plan.baskets],
             reused=reused,
         )
     elif intent == Intent.PRICE_CHECK:
-        cheapest = citations[0]
-        dearest = citations[-1]
-        figures["savings"] = f"${(dearest.price_nzd - cheapest.price_nzd):.2f}"
+        figures["savings"] = "the price difference"
 
         groups = state.get("item_groups") or {}
-        items = ", ".join(k.rsplit("-", 1)[0].replace("-", " ") for k in groups) or (
-            "that item"
-        )
+        # One winner per item the shopper asked about. retrieve_prices fills
+        # each group from cheapest_for_product, which reads GSI1's zero-padded
+        # price sort key, so refs[0] is that item's cheapest and equal prices
+        # resolve by store key. build_comparisons derives is_cheapest from the
+        # same ordering, and that shared ordering is the only reason the
+        # sentence and the table name the same store.
+        cheapest_refs = [refs[0] for refs in groups.values() if refs]
+        cheapest = (citation_index.get(cheapest_refs[0]) if cheapest_refs else None) or citations[0]
+
+        items = ", ".join(k.rsplit("-", 1)[0].replace("-", " ") for k in groups) or ("that item")
 
         system = PRICE_CHECK_SYSTEM
         user = build_price_check_prompt(
             query_item=items,
             options=_placeholder_list(citations),
             on_special=cheapest.on_special,
+            cheapest_refs=cheapest_refs or [cheapest.ref],
         )
     else:
         return {}
+
+    # Read before the try, not inside it: a name bound only on the happy
+    # path is unbound on every except branch that needs it.
+    _usage_before = model.last_usage
 
     try:
         result = model.structured(
@@ -157,24 +168,60 @@ def generate_prose(state: GroceryState, model: ModelClient) -> dict:
         )
         assert_no_literal_money(result.text)
 
-        unknown = referenced_placeholders(result.text) - (
-            set(citation_index) | set(figures)
-        )
+        unknown = referenced_placeholders(result.text) - (set(citation_index) | set(figures))
         if unknown:
             raise ValueError(f"prose referenced unknown placeholders: {sorted(unknown)}")
 
+        # Verified against the retrieved records, not against what the model
+        # claims (Req 5.4's rule, applied to the price claim). The prompt names
+        # the computed winner; citing any other option would put a dearer store
+        # in the sentence while the table beside it flags a different one as
+        # cheapest. Degrading to the structured payload is the honest failure.
+        if intent == Intent.PRICE_CHECK and cheapest_refs:
+            cited = referenced_placeholders(result.text) & set(citation_index)
+            misattributed = cited - set(cheapest_refs)
+            if misattributed:
+                raise ValueError(
+                    "prose cited a non-cheapest option: "
+                    f"{sorted(misattributed)}, computed cheapest "
+                    f"{sorted(cheapest_refs)}"
+                )
+
         rendered = render(result.text, citation_index, figures)
 
+        # Checked AGAIN, on the other side of rendering.
+        #
+        # The check above runs on the model's template, where the money would
+        # be written as `[[total]]` rather than as a number. Between the two
+        # lines, placeholders are expanded — so the string that actually
+        # reaches the user is not the string that was validated.
+        #
+        # Nothing can put money there today: `figures` maps to the fixed words
+        # "the plan total", "your budget", "the price difference", and
+        # `_describe` emits a product and store label. That makes the guarantee
+        # true by construction, which is a property of the current code rather
+        # than a rule about it — and "show the price in the sentence" is a
+        # plausible, well-meant edit to either that nothing would catch.
+        #
+        # Inside the same try, so it degrades like every other prose failure:
+        # the sentence is dropped and the cited table still ships. That matters
+        # more than it sounds. The whole-response assertion in `validate.py`
+        # would be the obvious place to put this, but `run_turn` raises on the
+        # assertions it calls, so wiring it in there would turn "you lose the
+        # sentence" into "you lose the turn" for exactly this case.
+        assert_no_literal_money(rendered)
+
+    except GuardrailBlocked:
+        raise
     except (ModelError, ValueError, KeyError) as exc:
         # Degrade silently to the structured payload. The comparison table or
         # plan is the substance; the sentence above it is not.
-        return {"prose_error": str(exc)}
+        return {"prose_error": str(exc), "usage": usage_from(model, _usage_before)}
 
     seq = _next_seq(state)
     sentences = [s for s in SENTENCE_END.split(rendered.strip()) if s]
     events = [
-        TokenEvent(seq=seq + i, text=s if i == 0 else f" {s}")
-        for i, s in enumerate(sentences)
+        TokenEvent(seq=seq + i, text=s if i == 0 else f" {s}") for i, s in enumerate(sentences)
     ]
 
-    return {"prose": rendered, "events": events}
+    return {"prose": rendered, "events": events, "usage": usage_from(model, _usage_before)}

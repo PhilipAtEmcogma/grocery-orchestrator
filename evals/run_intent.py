@@ -40,11 +40,13 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from evals._pacing import DEFAULT_MAX_RPM, pace_bedrock_calls
 from src.graph.nodes.intent import classify_intent
 from src.graph.state import GroceryState
-from src.models.base import ModelClient
+from src.models.base import GuardrailBlocked, ModelClient
 from src.models.registry import ModelSpec
 from src.models.scripted import ScriptedModelClient
+from src.retrieval.filters import pin_to_fixture_snapshot
 from src.retrieval.memory import InMemoryPriceRepository
 
 CASES = Path(__file__).parent / "cases" / "intent.json"
@@ -59,6 +61,19 @@ class CaseResult:
     latency_ms: int = 0
     input_tokens: int = 0
     output_tokens: int = 0
+    # The model call failed and `classify_intent` fell back to keyword
+    # heuristics. Recorded because this harness CANNOT see such a failure any
+    # other way: the node degrades rather than raising, so a throttled run
+    # still produces a classification for every case and still reports a tidy
+    # accuracy -- one that measures the keyword fallback, not the model.
+    degraded: bool = False
+    # The Guardrail refused the turn, so the model never classified it. NOT a
+    # classification failure: the same prompts appear in the red-team suite as
+    # must_block cases, where blocking them is what a passing score MEANS.
+    # Scored as a miss, three of these cost every model ten points and capped
+    # the suite at 27/30 = 90.0% -- exactly the routing floor, with no headroom
+    # for any model however good.
+    guardrail_blocked: bool = False
 
 
 @dataclass
@@ -67,8 +82,21 @@ class Scorecard:
     results: list[CaseResult]
 
     @property
+    def degraded(self) -> list[CaseResult]:
+        """Cases scored on the keyword fallback rather than on the model."""
+        return [r for r in self.results if r.degraded]
+
+    @property
     def scored(self) -> list[CaseResult]:
-        return [r for r in self.results if r.known_gap is None]
+        # Guardrail-blocked cases leave the denominator for the same reason
+        # known_gap cases do: the accuracy is a claim about classification, and
+        # the model was never given the chance to classify these.
+        return [r for r in self.results if r.known_gap is None and not r.guardrail_blocked]
+
+    @property
+    def blocked(self) -> list[CaseResult]:
+        """Refused by the Guardrail before the classifier saw them."""
+        return [r for r in self.results if r.guardrail_blocked]
 
     @property
     def gaps(self) -> list[CaseResult]:
@@ -133,10 +161,21 @@ def _check(case: dict, out: dict, repo: InMemoryPriceRepository) -> list[str]:
             failures.append(f"budget {actual} != {wanted}")
 
     if "exclusions" in expect:
-        actual = set(constraints.get("dietary_exclusions", []))
-        wanted = set(expect["exclusions"])
-        if not wanted.issubset(actual):
-            failures.append(f"exclusions {sorted(actual)} missing {sorted(wanted - actual)}")
+        # Assert what the exclusions RESOLVE to (categories), not the exact
+        # term string. "no meat" and "vegetarian" both map to {meat, seafood}
+        # — the system's behaviour is identical for both. Asserting the literal
+        # term tests the model's vocabulary alignment, not correctness.
+        from src.graph.dietary import map_exclusions
+
+        actual_terms = constraints.get("dietary_exclusions", [])
+        actual_cats, _ = map_exclusions(actual_terms)
+        wanted_cats, _ = map_exclusions(list(expect["exclusions"]))
+        actual_set = set(actual_cats)
+        wanted_set = set(wanted_cats)
+        if not wanted_set.issubset(actual_set):
+            failures.append(
+                f"exclusions {sorted(actual_terms)} missing {sorted(wanted_set - actual_set)}"
+            )
 
     if "multi_item" in expect:
         # Every item must resolve, not just the first. This is the check the
@@ -145,9 +184,7 @@ def _check(case: dict, out: dict, repo: InMemoryPriceRepository) -> list[str]:
         resolved = [repo.resolve_product_key(t) for t in items]
         missing = [w for w in expect["multi_item"] if w not in resolved]
         if missing:
-            failures.append(
-                f"multi-item: resolved {resolved}, missing {missing}"
-            )
+            failures.append(f"multi-item: resolved {resolved}, missing {missing}")
 
     return failures
 
@@ -167,9 +204,20 @@ def run(model: ModelClient, label: str) -> Scorecard:
         }
 
         started = time.perf_counter()
+        degraded = False
+        blocked = False
         try:
             out = classify_intent(state, model)
+            degraded = bool(out.get("intent_degraded"))
             failures = _check(case, out, repo)
+        except GuardrailBlocked:
+            # Caught BEFORE the generic handler because it is a subclass of
+            # ModelError and, unlike every other exception here, it is the
+            # SAFETY LAYER WORKING. classify_intent re-raises it deliberately
+            # (Pilot Task 3's propagation). Recording it as a wrong answer made
+            # the content filter look like a bad classifier.
+            blocked = True
+            failures = []
         except Exception as exc:
             failures = [f"raised {type(exc).__name__}: {exc}"]
         elapsed = int((time.perf_counter() - started) * 1000)
@@ -181,6 +229,8 @@ def run(model: ModelClient, label: str) -> Scorecard:
                 passed=not failures,
                 known_gap=case.get("known_gap"),
                 failures=failures,
+                degraded=degraded,
+                guardrail_blocked=blocked,
                 latency_ms=elapsed,
                 input_tokens=usage.get("input_tokens") or 0,
                 output_tokens=usage.get("output_tokens") or 0,
@@ -190,11 +240,17 @@ def run(model: ModelClient, label: str) -> Scorecard:
     return Scorecard(model_label=label, results=results)
 
 
-def report(
-    card: Scorecard, spec: ModelSpec | None = None, verbose: bool = False
-) -> None:
+def report(card: Scorecard, spec: ModelSpec | None = None, verbose: bool = False) -> None:
     print(f"\n=== {card.model_label} ===")
     print(f"  accuracy   {card.accuracy:.1%}  ({card.passed}/{len(card.scored)})")
+    if card.blocked:
+        # Named, never silently dropped. A reader who sees 96% over 27 cases
+        # must be able to see that three were refused before the model saw them.
+        ids = ", ".join(r.case_id for r in card.blocked)
+        print(
+            f"  guardrail  {len(card.blocked)} of {len(card.results)} cases refused "
+            f"before classification ({ids}) — excluded, not failed"
+        )
     print(f"  p50 latency {card.p50_latency_ms} ms")
     if spec is not None:
         print(f"  est. cost   ${card.cost(spec)} for {len(card.results)} cases")
@@ -219,10 +275,26 @@ def report(
 
 
 def main() -> int:
+    # Freshness is judged as of the fixture capture, not the wall clock: these
+    # run against a committed SNAPSHOT, and judging a snapshot against today
+    # makes every price stale on a date nobody chose. See filters.py.
+    pin_to_fixture_snapshot()
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", help="Model key to pin, e.g. claude-haiku")
     parser.add_argument("--compare", nargs="+", help="Compare several model keys")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument(
+        "--max-rpm",
+        type=int,
+        default=DEFAULT_MAX_RPM,
+        help=(
+            f"Bedrock requests per minute (default {DEFAULT_MAX_RPM}). This "
+            f"suite is 30 cases against a 10/min account limit for Claude. "
+            f"Unpaced, the tail is classified by the keyword FALLBACK rather "
+            f"than by the model, and the run reports a plausible accuracy for "
+            f"a model that answered a third of it. 0 disables pacing."
+        ),
+    )
     parser.add_argument(
         "--min-accuracy",
         type=float,
@@ -242,18 +314,17 @@ def main() -> int:
             "\nBaseline only. The scripted client is rule-based, so this measures "
             "the harness, not a model. Pass --model once Bedrock is configured."
         )
-        return _gate(card.accuracy, args.min_accuracy, "accuracy")
+        return _gate(card.accuracy, args.min_accuracy, "accuracy", card)
 
     from src.models.bedrock import BedrockModelClient
     from src.models.registry import ModelRegistry, RoutingPolicy
 
+    pace_bedrock_calls(args.max_rpm)
     registry = ModelRegistry()
     cards: list[tuple[Scorecard, ModelSpec]] = []
 
     for key in keys:
-        spec = registry.route(
-            "classify_intent", policy=RoutingPolicy.PINNED, pinned_key=key
-        )
+        spec = registry.route("classify_intent", policy=RoutingPolicy.PINNED, pinned_key=key)
         client = BedrockModelClient(pinned_spec=spec)
         card = run(client, spec.display_name)
         report(card, spec, verbose=args.verbose)
@@ -272,8 +343,22 @@ def main() -> int:
     return _gate(best, args.min_accuracy, "accuracy")
 
 
-def _gate(actual: float, floor: float | None, label: str) -> int:
+def _gate(actual: float, floor: float | None, label: str, card: Scorecard | None = None) -> int:
     """Regression floor. Absent a floor, reporting is the only job."""
+    # A degraded case was classified by the keyword fallback because the model
+    # call failed, so the accuracy is part model and part heuristic. Unlike the
+    # meal-plan harness, nothing here errors: `classify_intent` degrades by
+    # design, so an unpaced run against a 10/min quota still answers all 30
+    # cases and still prints a plausible percentage. That number is not a
+    # measurement of the model, and it is not a pass or a failure either.
+    if card is not None and card.degraded:
+        print(
+            f"\nINCONCLUSIVE: {len(card.degraded)}/{len(card.results)} cases fell back "
+            f"to keyword matching because the model call failed, so {actual:.1%} is "
+            f"partly the fallback's score. Re-run, and pace it (--max-rpm).",
+            file=sys.stderr,
+        )
+        return 2
     if floor is None:
         return 0
     if actual < floor:

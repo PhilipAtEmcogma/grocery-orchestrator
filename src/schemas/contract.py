@@ -22,12 +22,14 @@ Owner: Backend/Orchestration + AI/Prompt Lead
 
 from __future__ import annotations
 
+import re
+from collections.abc import Mapping
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 from enum import StrEnum
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 CONTRACT_VERSION = "1.0"
 
@@ -49,6 +51,17 @@ class ErrorCode(StrEnum):
     NO_DATA = "NO_DATA"
     STALE_DATA = "STALE_DATA"
     BUDGET_INFEASIBLE = "BUDGET_INFEASIBLE"
+    # We could not build a plan we were willing to stand behind — repair
+    # exhausted on drafts that failed validation, not on price. Separate from
+    # BUDGET_INFEASIBLE because the budget may be perfectly generous, and
+    # separate from INTERNAL_ERROR because the model plane is up and
+    # answering. Additive under the v1 rules: clients tolerate unknown codes.
+    PLAN_GENERATION_FAILED = "PLAN_GENERATION_FAILED"
+    # An honest refusal when the user states a dietary exclusion we cannot
+    # guarantee against our current data. Additive per Req 7.9 — dropping a
+    # restriction is the dangerous direction of error, so the safe response
+    # is refusal, not a best-effort plan.
+    UNSUPPORTED_EXCLUSION = "UNSUPPORTED_EXCLUSION"
     GUARDRAIL_BLOCKED = "GUARDRAIL_BLOCKED"
     OUT_OF_SCOPE = "OUT_OF_SCOPE"
     UPSTREAM_TIMEOUT = "UPSTREAM_TIMEOUT"
@@ -68,13 +81,49 @@ class Store(StrEnum):
 
 # The user's approximate location, used to scope which stores are relevant.
 class Location(BaseModel):
+    """
+    Where the shopper is, expressed as coordinates OR as a named region.
+
+    `lat`/`lon` were required, which meant a client could not say "North Shore"
+    at all — and four of the five demo scenarios in `datasets/DATA_SCHEMA.md`
+    ask exactly that. Worse, the 3,000-record dataset carries no coordinates on
+    any row, so a radius filter cannot run against it however well the client
+    specifies one.
+
+    Both are now optional and at least one is required: a `Location` that
+    expresses no place is a client bug, and accepting it would silently widen
+    the request back to national results — the direction Req 1.5 forbids.
+
+    Additive under the v1 rules: every previously valid request is still valid,
+    since coordinates alone still satisfy the validator.
+    """
+
     # Reject unknown fields instead of silently ignoring them.
     model_config = ConfigDict(extra="forbid")
 
-    lat: float = Field(ge=-90, le=90)
-    lon: float = Field(ge=-180, le=180)
+    lat: float | None = Field(default=None, ge=-90, le=90)
+    lon: float | None = Field(default=None, ge=-180, le=180)
+    region: str | None = Field(
+        default=None,
+        max_length=60,
+        description="A named area, e.g. 'North Shore'. See config/regions.json.",
+    )
     label: str | None = Field(default=None, max_length=120)
     radius_km: float = Field(default=10.0, gt=0, le=50)
+
+    @model_validator(mode="after")
+    def _must_express_a_place(self) -> Location:
+        has_point = self.lat is not None and self.lon is not None
+        if not has_point and not self.region:
+            raise ValueError(
+                "location needs coordinates (lat and lon) or a region; "
+                "omit `location` entirely for national results"
+            )
+        if (self.lat is None) != (self.lon is None):
+            # Half a coordinate is not a place, and guessing the other half
+            # would put the shopper somewhere they are not.
+            raise ValueError("lat and lon must be given together")
+        return self
 
 
 class ClientHints(BaseModel):
@@ -184,6 +233,16 @@ class Ingredient(BaseModel):
     item: str
     qty: str = Field(description="Human-readable, e.g. '500g', '2 cloves'")
     citation_ref: str = Field(pattern=r"^c\d+$")
+    # How much of the cited PACK this line uses: 0.5 is half a 1kg pack, 2 is
+    # two whole packs. Carried on the wire because without it the plan cannot
+    # verify its own arithmetic -- `qty` is a display string, so nothing
+    # downstream could re-derive line_cost or the whole-pack basket totals, and
+    # `assert_arithmetic` was reduced to checking that four sums agreed with
+    # each other. A consistently wrong line cost passed every one of them.
+    #
+    # Response-side only, so adding it breaks no client: readers ignore fields
+    # they do not know, and nobody constructs an Ingredient to send us.
+    packs: Decimal = Field(gt=0, description="Multiplier on the cited pack size")
     line_cost_nzd: Decimal = Field(ge=0)
 
 
@@ -215,8 +274,30 @@ class MealPlan(BaseModel):
     household_size: int = Field(ge=1)
     days: int = Field(ge=1)
     budget_nzd: Decimal = Field(gt=0)
-    total_nzd: Decimal = Field(ge=0)
-    within_budget: bool
+    total_nzd: Decimal = Field(
+        ge=0,
+        description=(
+            "Value CONSUMED: line costs at fractional pack multipliers. Using "
+            "500g of a 1kg pack contributes half that pack's price. This is "
+            "not what the shopper pays and must not be used for budget "
+            "messaging -- see payable_total_nzd."
+        ),
+    )
+    payable_total_nzd: Decimal = Field(
+        ge=0,
+        description=(
+            "Money actually PAYABLE: every distinct pack counted once at its "
+            "full shelf price, because half a pack of butter cannot be "
+            "bought. Equals the sum of the store baskets, and is the "
+            "authoritative figure for anything the user is told about cost."
+        ),
+    )
+    within_budget: bool = Field(
+        description=(
+            "payable_total_nzd <= budget_nzd. Computed from what the shopper "
+            "pays, not from what the meals consume."
+        ),
+    )
     repair_attempts: int = Field(
         default=0, ge=0, description="Validate-and-repair cycles used. Observability."
     )
@@ -283,6 +364,45 @@ class NoticeEvent(_Event):
     message: str
 
 
+class MissingConstraint(StrEnum):
+    """
+    A required planning constraint the user did not supply.
+
+    Named to match `ClientHints` exactly, so a frontend can raise the control
+    that collects it — the budget slider, the household stepper — instead of
+    parsing English out of the message.
+    """
+
+    HOUSEHOLD_SIZE = "household_size"
+    BUDGET_NZD = "budget_nzd"
+    DAYS = "days"
+
+
+class ClarificationEvent(_Event):
+    """
+    We understood the request and cannot answer it without one more fact.
+
+    A SEPARATE event type rather than an error, and the distinction is not
+    cosmetic. Nothing failed: the request was valid and the intent was
+    classified. `ErrorEvent.retryable` cannot express "retry with more
+    information" either — a client that reads `retryable: true` resends the
+    identical request and loops forever. A `notice` is equally wrong, because a
+    notice accompanies a result and this one REPLACES it.
+
+    Additive under the v1 rules: clients are already required to ignore unknown
+    event types, so an older client degrades to "no plan and no error", which is
+    the same thing it would have shown before this existed.
+
+    Emitted BEFORE retrieval. There is no point pricing a basket for a plan we
+    have already decided we cannot build — the same reasoning that puts
+    `emit_dietary_unsupported` ahead of retrieval.
+    """
+
+    type: Literal["clarification"] = "clarification"
+    missing: list[MissingConstraint] = Field(min_length=1)
+    message: str
+
+
 class NoDataEvent(_Event):
     """
     The explicit "I don't have data for that" outcome.
@@ -333,6 +453,7 @@ Event = Annotated[
     | PriceComparisonEvent
     | MealPlanEvent
     | NoticeEvent
+    | ClarificationEvent
     | NoDataEvent
     | ErrorEvent
     | DoneEvent,
@@ -361,33 +482,294 @@ def assert_grounded(response: ChatResponse) -> None:
     """
     Contract invariant check. Run this in CI against every response.
 
-    Enforces: every citation_ref used by a payload was actually emitted as a
-    CitationEvent earlier in the same turn. This is the mechanical expression
-    of "no price may originate from model generation".
-    """
-    declared: set[str] = set()  # refs announced via a CitationEvent
-    used: set[str] = set()      # refs actually referenced by payload data
+    Enforces:
+    1. Every citation_ref used by a payload was emitted as a CitationEvent
+       BEFORE the event that uses it (ordering).
+    2. Every CitationEvent source identifies a plausible base-table record:
+       table name is non-empty, pk matches <store>#<location-slug>, and sk is
+       a normalized product key.
+    3. Citation price_nzd and unit_price_nzd are non-negative Decimals (schema
+       already enforces, but verified here for completeness).
+    4. A terminal 'done' event is present.
 
-    # Walk the whole event list, collecting which refs were declared and
-    # which were used by any price-comparison or meal-plan payload.
+    NOT enforced here: literal money in prose. That is
+    `assert_no_literal_money_in_response`, and it is deliberately a separate
+    call rather than folded in, because the two have different consequences.
+    This function runs inside `run_turn` on every response, so anything it
+    rejects fails the whole turn; a model writing a price into its prose is
+    instead handled at the prose node, which drops the sentence and still
+    delivers the cited comparison. Raising here would turn that graceful
+    degradation into a dead turn.
+
+    This docstring previously listed the money rule as enforced. It was not,
+    and had not been -- a reader following "run this in CI against every
+    response" would have believed prose was covered by it. `validate.py`
+    calls both, which is the pairing to copy.
+    """
+    # Track citations declared so far (order-sensitive).
+    declared: dict[str, Citation] = {}
+    violations: list[str] = []
+
     for ev in response.events:
         if isinstance(ev, CitationEvent):
-            declared.add(ev.citation.ref)
+            c = ev.citation
+            declared[c.ref] = c
+
+            # Source key structure validation.
+            if not c.source.table:
+                violations.append(f"{c.ref}: source.table is empty")
+            if "#" not in c.source.pk:
+                violations.append(f"{c.ref}: source.pk {c.source.pk!r} missing '#' separator")
+            if not c.source.sk:
+                violations.append(f"{c.ref}: source.sk is empty")
+
         elif isinstance(ev, PriceComparisonEvent):
-            used.update(o.citation_ref for o in ev.data.options)
+            for opt in ev.data.options:
+                if opt.citation_ref not in declared:
+                    violations.append(
+                        f"PriceComparison uses {opt.citation_ref} before it "
+                        f"was declared (or never declared)"
+                    )
+
         elif isinstance(ev, MealPlanEvent):
             for meal in ev.data.meals:
-                used.update(i.citation_ref for i in meal.ingredients)
+                for ing in meal.ingredients:
+                    if ing.citation_ref not in declared:
+                        violations.append(
+                            f"MealPlan ingredient uses {ing.citation_ref} "
+                            f"before it was declared (or never declared)"
+                        )
             for basket in ev.data.baskets:
-                used.update(basket.citation_refs)
-
-    # Any ref used but never declared is an ungrounded (hallucinated) price.
-    orphans = used - declared
-    if orphans:
-        raise AssertionError(f"Ungrounded citation refs: {sorted(orphans)}")
+                for ref in basket.citation_refs:
+                    if ref not in declared:
+                        violations.append(
+                            f"StoreBasket uses {ref} before it was declared (or never declared)"
+                        )
 
     if not any(isinstance(ev, DoneEvent) for ev in response.events):
-        raise AssertionError("Response missing terminal 'done' event")
+        violations.append("Response missing terminal 'done' event")
+
+    if violations:
+        raise AssertionError(
+            f"Grounding violations ({len(violations)}):\n"
+            + "\n".join(f"  - {v}" for v in violations)
+        )
+
+
+class RetrievedRecord(Protocol):
+    """
+    The retrieved-record shape `assert_citations_match_retrieval` compares
+    against. `src.retrieval.base.PriceRecord` satisfies it structurally.
+
+    Declared as a Protocol rather than imported, and that is not stylistic:
+    `retrieval/base.py` imports `Store` from this module, so importing
+    PriceRecord here would close a cycle. A Protocol states exactly the fields
+    the equality proof needs and nothing else, which also documents the
+    coupling instead of hiding it behind a concrete class.
+
+    Members are read-only properties rather than plain attributes, which is
+    load-bearing: `PriceRecord` is a FROZEN dataclass, and a Protocol declaring
+    mutable attributes demands settable ones, so the concrete type would not
+    satisfy it. Read-only is also the honest declaration — this rule compares
+    retrieved values, it never assigns them.
+    """
+
+    @property
+    def product_key(self) -> str: ...
+    @property
+    def store(self) -> Store: ...
+    @property
+    def store_location(self) -> str: ...
+    @property
+    def display_name(self) -> str: ...
+    @property
+    def price_nzd(self) -> Decimal: ...
+    @property
+    def unit(self) -> str: ...
+    @property
+    def unit_price_nzd(self) -> Decimal: ...
+    @property
+    def on_special(self) -> bool: ...
+    @property
+    def valid_date(self) -> str: ...
+    @property
+    def store_key(self) -> str: ...
+
+
+def assert_citations_match_retrieval(
+    response: ChatResponse,
+    *,
+    table: str,
+    records: Mapping[str, RetrievedRecord],
+) -> None:
+    """
+    Req 3.5: every citation must BE a record that was actually retrieved.
+
+    `assert_grounded` cannot do this and never could. It sees only the
+    response, so it can check that a ref was declared before use and that the
+    source keys are shaped like keys -- `table` non-empty, a `#` in the pk, a
+    non-empty sk. Shape is not identity. A citation naming the right table with
+    a plausible pk and a price nobody retrieved passed it cleanly, which meant
+    the system's central claim rested on the fact that no code path currently
+    fabricates one, rather than on a check that would notice if one did.
+
+    This closes that by comparing each Citation against the immutable
+    `PriceRecord` the retrieval node kept for it:
+
+    * the ref was retrieved at all (an unknown ref is a fabricated citation)
+    * table, partition key and sort key identify that exact stored record
+    * every published value equals the retrieved value
+
+    `records` is keyed by citation ref and comes from `GroceryState`'s
+    `record_index`, which only `retrieve_prices` writes. `PriceRecord` is a
+    frozen slots dataclass, so what is compared cannot have been edited between
+    retrieval and here -- "immutable retrieved context" is a property of the
+    type, not a convention.
+
+    Raises rather than returning findings: Req 3.5 says refuse the response,
+    and by the time this runs there is no repair available. `run_turn` calls
+    it, which is the only place holding both the response and the state.
+
+    NOT called by `validate.py` over `samples/`, because a committed sample has
+    no retrieval context to compare against -- the samples prove shape, this
+    proves identity, and conflating the two is what let shape stand in for
+    identity in the first place. `validate.py` carries the wrong-key and
+    altered-value negative controls Req 3.6 names, built against a stub record.
+    """
+    violations: list[str] = []
+
+    for ev in response.events:
+        if not isinstance(ev, CitationEvent):
+            continue
+        c = ev.citation
+        rec = records.get(c.ref)
+
+        if rec is None:
+            # The dangerous one. Not "a payload referenced an undeclared ref"
+            # (assert_grounded's check) but "a citation exists that retrieval
+            # never produced" -- a fabricated price, correctly shaped.
+            violations.append(f"{c.ref}: no retrieved record — this citation was not retrieved")
+            continue
+
+        for label, published, retrieved in (
+            ("source.table", c.source.table, table),
+            ("source.pk", c.source.pk, rec.store_key),
+            ("source.sk", c.source.sk, rec.product_key),
+            ("store", c.store, rec.store),
+            ("store_location", c.store_location, rec.store_location),
+            ("product_name", c.product_name, rec.display_name),
+            ("price_nzd", c.price_nzd, rec.price_nzd),
+            ("unit", c.unit, rec.unit),
+            ("unit_price_nzd", c.unit_price_nzd, rec.unit_price_nzd),
+            ("on_special", c.on_special, rec.on_special),
+            ("valid_date", c.valid_date.isoformat(), rec.valid_date),
+        ):
+            if published != retrieved:
+                violations.append(
+                    f"{c.ref}: {label} is {published!r}, retrieved record has {retrieved!r}"
+                )
+
+    if violations:
+        raise AssertionError(
+            f"Citations do not match retrieval ({len(violations)}):\n"
+            + "\n".join(f"  - {v}" for v in violations)
+        )
+
+
+def assert_costed_from_citations(
+    plan: MealPlan,
+    citations: Mapping[str, Citation],
+    tolerance: Decimal = Decimal("0.02"),
+) -> None:
+    """
+    Req 2.2/2.3: re-derive every figure from the cited prices.
+
+    `assert_arithmetic` checks that four sums agree WITH EACH OTHER — meals sum
+    to the total, baskets sum to the payable. That is worth having and it is not
+    enough: a line cost that is wrong by construction propagates consistently
+    through all four and passes every one of them. Nothing re-derived a line
+    cost, and nothing checked a basket total at all.
+
+    The reuse/multipack case is why it matters. A product used 0.5 packs in one
+    meal and 0.7 in another totals 1.2, and you must buy TWO packs. Counting one
+    pack per appearance, or summing the fractions, or rounding per meal instead
+    of once at the end, all produce a plausible basket that the old checks
+    accepted. A draft using five packs of mince once reported a basket holding
+    one, and a plan consuming $221 of food shipped against a $40 budget.
+
+    Verified here:
+
+    * every line cost equals the cited pack price times the packs used
+    * pack counts are aggregated per product ACROSS MEALS and rounded up ONCE
+    * every basket total equals whole packs times price, for that store's cited
+      products
+    * every basket's citations really are at the store the basket names
+
+    Requires the citations, so it lives beside `assert_citations_match_retrieval`
+    rather than inside `assert_arithmetic`: both are the same shape of check,
+    which is that a number in the response must be traceable to a retrieved
+    record rather than merely self-consistent.
+    """
+    violations: list[str] = []
+    # store key -> ref -> packs accumulated across every meal
+    per_store: dict[str, dict[str, Decimal]] = {}
+
+    for meal in plan.meals:
+        for ing in meal.ingredients:
+            citation = citations.get(ing.citation_ref)
+            if citation is None:
+                violations.append(f"{meal.name!r}: {ing.citation_ref} is not a declared citation")
+                continue
+
+            expected = (citation.price_nzd * ing.packs).quantize(
+                Decimal("0.01"), rounding=ROUND_HALF_UP
+            )
+            if abs(expected - ing.line_cost_nzd) > tolerance:
+                violations.append(
+                    f"{meal.name!r} / {ing.item!r}: line cost {ing.line_cost_nzd} != "
+                    f"{citation.price_nzd} x {ing.packs} = {expected}"
+                )
+
+            key = f"{citation.store.value}#{citation.store_location}"
+            per_store.setdefault(key, {})
+            per_store[key][ing.citation_ref] = (
+                per_store[key].get(ing.citation_ref, Decimal("0")) + ing.packs
+            )
+
+    for basket in plan.baskets:
+        key = f"{basket.store.value}#{basket.store_location}"
+        used = per_store.get(key)
+        if used is None:
+            violations.append(f"basket at {basket.store_location} matches no meal ingredient")
+            continue
+
+        # Rounded up ONCE per product, after aggregating every meal's use.
+        expected_total = Decimal("0")
+        for ref, packs in used.items():
+            citation = citations.get(ref)
+            if citation is None:
+                continue
+            whole = packs.to_integral_value(rounding=ROUND_CEILING)
+            expected_total += whole * citation.price_nzd
+        expected_total = expected_total.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+        if abs(expected_total - basket.basket_total_nzd) > tolerance:
+            violations.append(
+                f"basket at {basket.store_location}: {basket.basket_total_nzd} != "
+                f"{expected_total} (whole packs at shelf price)"
+            )
+
+        if sorted(basket.citation_refs) != sorted(used):
+            violations.append(
+                f"basket at {basket.store_location} lists {sorted(basket.citation_refs)}, "
+                f"meals used {sorted(used)}"
+            )
+
+    if violations:
+        raise AssertionError(
+            "Plan figures do not follow from the citations "
+            f"({len(violations)}):" + chr(10) + chr(10).join(f"  - {v}" for v in violations)
+        )
 
 
 def assert_arithmetic(plan: MealPlan, tolerance: Decimal = Decimal("0.02")) -> None:
@@ -400,15 +782,193 @@ def assert_arithmetic(plan: MealPlan, tolerance: Decimal = Decimal("0.02")) -> N
     for meal in plan.meals:
         expected = sum((i.line_cost_nzd for i in meal.ingredients), Decimal(0))
         if abs(expected - meal.subtotal_nzd) > tolerance:
-            raise AssertionError(
-                f"Meal '{meal.name}' subtotal {meal.subtotal_nzd} != {expected}"
-            )
+            raise AssertionError(f"Meal '{meal.name}' subtotal {meal.subtotal_nzd} != {expected}")
 
     # Same check for the plan-level total against the sum of meal subtotals.
     expected_total = sum((m.subtotal_nzd for m in plan.meals), Decimal(0))
     if abs(expected_total - plan.total_nzd) > tolerance:
         raise AssertionError(f"Plan total {plan.total_nzd} != {expected_total}")
 
-    # The within_budget flag must agree with the actual total vs. budget.
-    if (plan.total_nzd <= plan.budget_nzd) != plan.within_budget:
-        raise AssertionError("within_budget flag contradicts the arithmetic")
+    # The payable amount is the sum of the store baskets, each of which counts
+    # a pack once at full price. Verified rather than trusted for the same
+    # reason as every other figure here.
+    expected_payable = sum((b.basket_total_nzd for b in plan.baskets), Decimal(0))
+    if abs(expected_payable - plan.payable_total_nzd) > tolerance:
+        raise AssertionError(
+            f"Payable total {plan.payable_total_nzd} != {expected_payable} (sum of store baskets)"
+        )
+
+    # within_budget is a claim about what the shopper pays, so it is checked
+    # against the payable amount.
+    #
+    # It used to be checked against total_nzd, the CONSUMPTION figure, and a
+    # plan could therefore report within_budget=True while its shopping list
+    # cost nearly twice the budget: $34.39 "of $60" against baskets totalling
+    # $65.01. Consumption is the value the meals use; payable is the money
+    # that leaves the shopper's account, and only the second one can answer
+    # "can I afford this".
+    if (plan.payable_total_nzd <= plan.budget_nzd) != plan.within_budget:
+        raise AssertionError(
+            f"within_budget={plan.within_budget} contradicts payable "
+            f"{plan.payable_total_nzd} vs budget {plan.budget_nzd}"
+        )
+
+
+# Money-shaped strings that must never appear in user-visible prose-like fields.
+#
+# THE single definition. `src/prompts/prose.py` imports this one rather than
+# keeping its own -- it previously held a byte-for-byte equivalent copy, and
+# two copies of a safety rule drift the moment one of them is tuned. The prose
+# node's check is what lets prose degrade; this module's check is what refuses
+# a response. They must agree by construction, not by review.
+#
+# Deliberately narrow: "3 meals", "500g" and "2 people" are legitimate and must
+# pass. Known over-match: a two-decimal number before a space and a unit
+# ("1.25 kg") reads as money. Nothing in `fixtures/` or in the 585 records
+# under `datasets/` matches it, and the fields where an over-match would be
+# expensive are the ones that degrade rather than fail.
+LITERAL_MONEY = re.compile(
+    r"""
+    \$\s*\d              # $3, $ 4.99
+    | \d+\.\d{2}\b       # 3.49, 12.00
+    | \b\d+\s*(?:dollars?|bucks|cents?)\b
+    """,
+    re.IGNORECASE | re.VERBOSE,
+)
+
+
+def find_literal_money_in_plan(plan: MealPlan) -> list[str]:
+    """
+    Model-authored text inside a plan that carries a money-shaped string.
+
+    `PlanDraft` has no price field, so the model cannot put a price in a
+    STRUCTURED slot. It can still write one into free text: `DraftMeal.name`,
+    `DraftIngredient.item` and `DraftIngredient.qty_display` pass through
+    `assemble_plan` unchanged and reach the user.
+
+    Those three were unchecked. A plan naming a meal "Budget Pasta - only
+    $4.99 a head" with an ingredient "Butter (was 7.50, now 5.00)" passed
+    assert_grounded, assert_arithmetic and assert_no_literal_money_in_response
+    together, shipping two invented figures -- one of them a fabricated "was"
+    price -- through a system whose central claim is that a price the user
+    sees was retrieved. SYSTEM_PROMPT already forbids it ("NEVER state a
+    price"), and nothing verified the instruction was obeyed. An instruction a
+    model can ignore is exactly what this codebase replaces with a check
+    everywhere else; this closes the last place it had not.
+
+    Returns descriptions rather than raising. The caller is `validate_plan`,
+    and the right response is a repair cycle: Req 3.7 says essential
+    structured content fails rather than degrading, and in this graph
+    "fails" means bounded repair and then an honest terminal, not an
+    exception thrown at a user who asked for a meal plan.
+    """
+    violations: list[str] = []
+    for meal in plan.meals:
+        match = LITERAL_MONEY.search(meal.name)
+        if match:
+            violations.append(f"meal name {meal.name!r} states {match.group(0)!r}")
+        for ing in meal.ingredients:
+            for field, value in (("item", ing.item), ("qty", ing.qty)):
+                match = LITERAL_MONEY.search(value)
+                if match:
+                    violations.append(f"ingredient {field} {value!r} states {match.group(0)!r}")
+    return violations
+
+
+def assert_no_model_authored_money(response: ChatResponse) -> None:
+    """
+    Response-boundary backstop over model-authored text in a meal plan.
+
+    `run_turn` calls this. It can only fire on a bug: `validate_plan` rejects
+    these fields, and a plan that never came back clean is discarded in favour
+    of `emit_plan_generation_failed` rather than emitted. Reaching here means
+    the repair loop or the router let one through, and shipping an invented
+    price is worse than losing the turn.
+
+    Deliberately NARROWER than `assert_no_literal_money_in_response`: it does
+    not look at token text. Prose is model-authored too, but it is
+    non-essential, and the prose node already drops the sentence and ships the
+    table when it finds money -- raising here would convert that degradation
+    into a dead turn, contradicting the rule in `tests/test_prose.py` that a
+    table with no sentence beats a sentence with a wrong price. Req 3.7 draws
+    exactly this line: non-essential text is discarded, essential structured
+    content fails.
+    """
+    violations: list[str] = []
+    for ev in response.events:
+        if isinstance(ev, MealPlanEvent):
+            violations.extend(find_literal_money_in_plan(ev.data))
+
+    if violations:
+        raise AssertionError(
+            f"Model-authored money in plan ({len(violations)}):\n"
+            + "\n".join(f"  - {v}" for v in violations)
+        )
+
+
+def assert_no_literal_money_in_response(response: ChatResponse) -> None:
+    """
+    Reject any literal monetary value in user-visible prose-like fields.
+
+    Checks: token text, comparison reasoning, notice messages, and the
+    model-authored text inside a meal plan (meal names, ingredient labels and
+    quantities). Prices must live only in citation events and structured
+    fields that carry a citation_ref -- never in free text where provenance
+    cannot be verified.
+
+    The whole-response call belongs to `validate.py` and CI. `run_turn` calls
+    the narrower `assert_no_model_authored_money` instead; see its docstring
+    for why the two differ.
+
+    DELIBERATELY NOT CHECKED, and the exclusion is the interesting part:
+
+    * `ErrorEvent.message` restates the user's OWN budget -- "I couldn't build
+      a plan within $15 using current prices". That figure is the constraint
+      they supplied, not a price we are claiming, and dropping it makes the
+      refusal harder to act on. The rule is about prices presented as prices,
+      not about digits.
+    * `NoDataEvent.message` and `.requested_item` echo the user's own search
+      term. Same reasoning, plus a blanket check here would let a user fail
+      their own turn by typing a dollar sign.
+    * `ClarificationEvent.message` shows an EXAMPLE budget when asking for one
+      -- "dinner for 3 people for 5 days on $80". It is code-authored, and the
+      figure is an illustration of the syntax rather than a claim about any
+      product's price. Asking someone for a budget without showing what one
+      looks like is worse guidance for a strictly notional gain.
+
+    Both exclusions are safe only while those messages stay code-authored. A
+    model-written error or no-data message would need this rule extended to
+    it, because the argument above is entirely about who wrote the text.
+    """
+    violations: list[str] = []
+
+    for ev in response.events:
+        if isinstance(ev, TokenEvent):
+            match = LITERAL_MONEY.search(ev.text)
+            if match:
+                violations.append(
+                    f"TokenEvent seq={ev.seq}: literal money {match.group(0)!r} in text"
+                )
+        elif isinstance(ev, PriceComparisonEvent):
+            match = LITERAL_MONEY.search(ev.data.reasoning)
+            if match:
+                violations.append(
+                    f"PriceComparison '{ev.data.query_item}': literal money "
+                    f"{match.group(0)!r} in reasoning"
+                )
+        elif isinstance(ev, NoticeEvent):
+            match = LITERAL_MONEY.search(ev.message)
+            if match:
+                violations.append(
+                    f"NoticeEvent seq={ev.seq}: literal money {match.group(0)!r} in message"
+                )
+        elif isinstance(ev, MealPlanEvent):
+            violations.extend(
+                f"MealPlan seq={ev.seq}: {v}" for v in find_literal_money_in_plan(ev.data)
+            )
+
+    if violations:
+        raise AssertionError(
+            f"Literal money in prose ({len(violations)}):\n"
+            + "\n".join(f"  - {v}" for v in violations)
+        )

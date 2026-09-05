@@ -23,9 +23,9 @@ def repo() -> InMemoryPriceRepository:
 
 def _run(repo, message: str):
     return run_turn(
-        ChatRequest(session_id="sess-multi01", turn_id="turn-multi01",
-                    message=message),
-        repo, ScriptedModelClient(),
+        ChatRequest(session_id="sess-multi01", turn_id="turn-multi01", message=message),
+        repo,
+        ScriptedModelClient(),
     )
 
 
@@ -46,9 +46,7 @@ def _notices(resp) -> list[str]:
 
 def test_three_items_produce_three_comparisons(repo):
     resp = _run(repo, "what's cheapest for butter, milk and eggs?")
-    assert set(_comparisons(resp)) == {
-        "butter-500g", "milk-2l", "eggs-size7-dozen"
-    }
+    assert set(_comparisons(resp)) == {"butter-500g", "milk-2l", "eggs-size7-dozen"}
 
 
 def test_two_items_joined_by_and(repo):
@@ -105,9 +103,7 @@ def test_each_comparison_cites_only_its_own_item(repo):
 
     citations = {e.citation.ref: e.citation for e in resp.events if e.type == "citation"}
     for event in (e for e in resp.events if e.type == "price_comparison"):
-        products = {
-            citations[o.citation_ref].source.sk for o in event.data.options
-        }
+        products = {citations[o.citation_ref].source.sk for o in event.data.options}
         assert len(products) == 1, f"{event.data.query_item} mixes {products}"
 
 
@@ -181,9 +177,7 @@ def test_skipped_items_recorded_in_state(repo):
     from src.models.scripted import ScriptedModelClient
 
     graph = build_graph(repo, ScriptedModelClient())
-    state = graph.invoke(
-        {"session_id": "s", "turn_id": "t", "message": EIGHT_ITEMS}
-    )
+    state = graph.invoke({"session_id": "s", "turn_id": "t", "message": EIGHT_ITEMS})
     assert state["skipped_items"] == ["rice", "pasta", "carrots"]
 
 
@@ -194,8 +188,7 @@ def test_overflow_is_reported_even_when_nothing_resolved(repo):
     """
     resp = _run(
         repo,
-        "cheapest wagyu ribeye, truffle oil, saffron, caviar, foie gras, "
-        "butter, milk, eggs",
+        "cheapest wagyu ribeye, truffle oil, saffron, caviar, foie gras, butter, milk, eggs",
     )
     assert not _comparisons(resp)
     assert any("didn't check" in n for n in _notices(resp))

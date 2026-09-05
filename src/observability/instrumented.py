@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import time
 from contextlib import contextmanager
+from decimal import Decimal
 from typing import TYPE_CHECKING
 
 from src.models.base import ModelClient, ModelTier, T
@@ -35,6 +36,7 @@ from src.observability.base import (
     TurnStats,
 )
 from src.retrieval.base import PriceRecord, PriceRepository
+from src.retrieval.filters import FreshnessFilter, NearFilter
 
 if TYPE_CHECKING:
     from src.schemas.contract import Store
@@ -49,12 +51,14 @@ class InstrumentedPriceRepository(PriceRepository):
     cannot answer. The per-turn total lands on TurnStats for the metric.
     """
 
-    def __init__(
-        self, inner: PriceRepository, telemetry: Telemetry, stats: TurnStats
-    ) -> None:
+    def __init__(self, inner: PriceRepository, telemetry: Telemetry, stats: TurnStats) -> None:
         self._inner = inner
         self._telemetry = telemetry
         self._stats = stats
+
+    @property
+    def table_name(self) -> str:
+        return self._inner.table_name
 
     def cheapest_for_product(
         self,
@@ -62,12 +66,20 @@ class InstrumentedPriceRepository(PriceRepository):
         *,
         limit: int = 5,
         stores: list[Store] | None = None,
+        near: NearFilter | None = None,
+        locations: frozenset[str] | None = None,
+        freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         with self._span("cheapest_for_product") as span:
             started = time.perf_counter()
             try:
                 found = self._inner.cheapest_for_product(
-                    product_key, limit=limit, stores=stores
+                    product_key,
+                    limit=limit,
+                    stores=stores,
+                    near=near,
+                    locations=locations,
+                    freshness=freshness,
                 )
             finally:
                 self._record(started)
@@ -99,6 +111,10 @@ class InstrumentedPriceRepository(PriceRepository):
         categories: list[str],
         exclude_categories: list[str],
         limit_per_category: int = 3,
+        budget_nzd: Decimal | None = None,
+        near: NearFilter | None = None,
+        locations: frozenset[str] | None = None,
+        freshness: FreshnessFilter | None = None,
     ) -> list[PriceRecord]:
         with self._span("candidates_for_budget") as span:
             started = time.perf_counter()
@@ -107,14 +123,21 @@ class InstrumentedPriceRepository(PriceRepository):
                     categories=categories,
                     exclude_categories=exclude_categories,
                     limit_per_category=limit_per_category,
+                    budget_nzd=budget_nzd,
+                    near=near,
+                    locations=locations,
+                    freshness=freshness,
                 )
             finally:
                 self._record(started)
             # The COUNT of excluded categories, never which ones: the
             # exclusion list is derived from dietary restrictions (Req 11.5).
+            # `budget_applied` is a boolean, never the amount: a budget is the
+            # user's financial circumstances and does not belong in a trace.
             span.annotate(
                 categories=len(categories),
                 excluded_categories=len(exclude_categories),
+                budget_applied=budget_nzd is not None,
                 records=len(found),
             )
             return found
@@ -140,9 +163,7 @@ class InstrumentedModelClient(ModelClient):
     for.
     """
 
-    def __init__(
-        self, inner: ModelClient, telemetry: Telemetry, stats: TurnStats
-    ) -> None:
+    def __init__(self, inner: ModelClient, telemetry: Telemetry, stats: TurnStats) -> None:
         self._inner = inner
         self._telemetry = telemetry
         self._stats = stats
@@ -224,9 +245,7 @@ class InstrumentedModelClient(ModelClient):
                     usage = {}
                 model = _model_label(usage)
 
-                self._stats.record_model(
-                    model=model, task=task, elapsed_ms=elapsed_ms, usage=usage
-                )
+                self._stats.record_model(model=model, task=task, elapsed_ms=elapsed_ms, usage=usage)
                 span.annotate(
                     model=model,
                     schema=schema,
@@ -239,9 +258,7 @@ class InstrumentedModelClient(ModelClient):
                 # Dimensioned, so latency is comparable per model and per
                 # task — the number Task 10.5 needs to attribute the plan
                 # path's share of the 29-second ceiling.
-                self._telemetry.duration(
-                    METRIC_MODEL_LATENCY, elapsed_ms, model=model, task=task
-                )
+                self._telemetry.duration(METRIC_MODEL_LATENCY, elapsed_ms, model=model, task=task)
 
 
 def _elapsed_ms(started: float) -> float:

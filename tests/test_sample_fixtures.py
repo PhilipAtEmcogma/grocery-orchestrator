@@ -58,6 +58,17 @@ CASES: dict[str, dict[str, Any]] = {
         "turn_id": "turn-0005-d3a2",
         "message": "price of butter and wagyu ribeye",
     },
+    # The meal plan. ADDED 2026-08-31, and it should have been here from the
+    # start: Pilot Task 15c changed what this endpoint returns for a meal-plan
+    # turn -- meals now carry curated recipe NAMES rather than "Scripted Dinner
+    # 1" -- and the committed sample went stale with nothing to notice. It is
+    # the published contract the frontend reads, and two of the four samples
+    # this file could cover were the two it did.
+    "response_meal_plan.json": json.loads(
+        (Path(__file__).resolve().parents[1] / "samples" / "request_meal_plan.json").read_text(
+            encoding="utf-8"
+        )
+    ),
 }
 
 # `json.tool`, which produced the committed files.
@@ -128,7 +139,13 @@ def _carry_forward_volatile(live: dict[str, Any], path: Path) -> dict[str, Any]:
             cur["server_time"] = prev["server_time"]
         prev_usage, cur_usage = prev.get("usage"), cur.get("usage")
         if isinstance(prev_usage, dict) and isinstance(cur_usage, dict):
-            if "latency_ms" in prev_usage and "latency_ms" in cur_usage:
+            # `is not None` matters. Carrying forward suppresses CHURN in a
+            # wall-clock value; carrying forward a null suppresses the field
+            # appearing at all. When usage went from never-populated to
+            # populated, this pinned latency_ms at null beside real token
+            # counts -- a combination the server cannot produce, published as
+            # the contract the frontend reads.
+            if prev_usage.get("latency_ms") is not None and "latency_ms" in cur_usage:
                 cur_usage["latency_ms"] = prev_usage["latency_ms"]
     return out
 

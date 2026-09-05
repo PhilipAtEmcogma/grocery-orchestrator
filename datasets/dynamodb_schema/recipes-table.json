@@ -1,0 +1,76 @@
+{
+  "TableName": "SmartGroceryRecipes",
+  "BillingMode": "PAY_PER_REQUEST",
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "recipe_id",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "category",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "recipe_name",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "area",
+      "AttributeType": "S"
+    }
+  ],
+  "KeySchema": [
+    {
+      "AttributeName": "recipe_id",
+      "KeyType": "HASH"
+    }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "CategoryRecipeIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "category",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "recipe_name",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    },
+    {
+      "IndexName": "AreaRecipeIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "area",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "recipe_name",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    }
+  ],
+  "Tags": [
+    {
+      "Key": "Project",
+      "Value": "SmartGroceryAssistant"
+    },
+    {
+      "Key": "Owner",
+      "Value": "AUT-AWS-DataPipeline"
+    },
+    {
+      "Key": "Source",
+      "Value": "TheMealDB"
+    }
+  ]
+}

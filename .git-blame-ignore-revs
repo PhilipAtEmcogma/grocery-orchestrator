@@ -1,0 +1,12 @@
+# Revisions that changed formatting only, and should not be attributed blame.
+#
+# Use it:
+#     git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# GitHub reads this file automatically; git needs the config line above, once
+# per clone. Without it, `git blame` on 59 files points at a mechanical
+# reformat instead of at whoever wrote the line — which matters here, because
+# most of this repository's value is in comments attached to specific lines.
+
+# style: adopt ruff format across the tree (2026-08-29)
+c25280a237d0bcf21de02f3ba48e377f0eed62ed

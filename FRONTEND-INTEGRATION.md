@@ -7,8 +7,38 @@ Contract version **1.0**. This guide is the practical companion to
 ever disagree, [`src/schemas/contract.py`](src/schemas/contract.py) is the source
 of truth — it's Pydantic, and CI validates every sample against it.
 
-Everything below was run against the dev server on 2026-08-10. The responses are
-real captured output, not hand-written examples.
+Everything below was captured from the handler and re-verified on
+**2026-08-31**. It describes current behaviour, and the four release-blocking
+defects this section used to warn about are all fixed.
+
+<details>
+<summary>What that warning said, and why it is gone</summary>
+
+Between 2026-08-10 and 2026-08-29 this guide opened by telling you not to trust
+its own examples: citation `table` was a logical label, `pk` used category
+instead of location, `sk` was not always the normalized base key, and
+comparison and prose text contained literal money. Pilot Task 2 fixed all four
+in the code and regenerated the samples atomically, on 2026-08-29.
+
+**The notice then outlived the defects by two days, and the examples outlived
+them by longer.** The JSON captures were regenerated at the time; the two
+hand-written event tables in §6 and §7 were not, and went on showing
+`The cheapest option is $2.97 at Pak'nSave Mangere.` — prose the orchestrator
+had stopped emitting, in the one document a frontend team builds against.
+Corrected 2026-08-31 by capture rather than by hand (audit finding D7).
+
+The lesson is the one this repository keeps relearning: a worked example is
+code that nothing executes. `samples/` is regenerated and CI-validated;
+`UPDATE_FIXTURES=1 python -m pytest tests/test_sample_fixtures.py` is what
+keeps it honest. Prose tables in Markdown have no such gate, so re-derive them
+from a real turn rather than editing them.
+</details>
+
+Prices reach you only in structured fields. **Prose never contains money** — it
+names products and stores, so `token` text carries pack sizes like `500g` but
+no dollar figure, checked twice on the way out (the model's template and the
+rendered string). Render money from `price_comparison` and `meal_plan`, never
+by parsing `token` text.
 
 ---
 
@@ -60,9 +90,11 @@ curl -X POST http://localhost:8000/chat \
 ```
 
 `session_id` and `turn_id` are **client-generated**, 8–64 chars, UUIDv4 is fine.
-`turn_id` must be unique per turn — it's the idempotency key, so if you retry a
-timed-out request with the *same* `turn_id` you get the original answer back
-rather than a second generation.
+`turn_id` must be unique per turn. On retry, resend the same validated request
+with the same `turn_id`; the target service replays the completed answer rather
+than starting a second generation. Pilot Task 6 still has to add canonical
+validated-request hashing and stale-owner fencing before that exactly-once
+property is production-ready.
 
 ### The response you get back
 
@@ -78,38 +110,66 @@ rather than a second generation.
         "ref": "c1", "store": "paknsave", "store_location": "Mangere",
         "product_name": "Pams Butter 500g", "price_nzd": "2.97", "unit": "500g",
         "unit_price_nzd": "5.94", "on_special": true, "valid_date": "2026-07-31",
-        "source": { "table": "Products", "pk": "paknsave#dairy", "sk": "butter-500g" } } },
+        "source": { "table": "grocery-products-dev", "pk": "paknsave#mangere", "sk": "butter-500g" } } },
     { "seq": 3, "type": "citation", "citation": {
         "ref": "c2", "store": "paknsave", "store_location": "Sylvia Park",
         "product_name": "Pams Butter 500g", "price_nzd": "2.97", "unit": "500g",
         "unit_price_nzd": "5.94", "on_special": true, "valid_date": "2026-07-31",
-        "source": { "table": "Products", "pk": "paknsave#dairy", "sk": "butter-500g" } } },
-    { "seq": 4, "type": "token", "text": "The cheapest option is $2.97 at Pak'nSave Mangere." },
-    { "seq": 5, "type": "token", "text": " That is the best price across the stores near you." },
-    { "seq": 6, "type": "price_comparison", "data": {
+        "source": { "table": "grocery-products-dev", "pk": "paknsave#sylvia-park", "sk": "butter-500g" } } },
+    { "seq": 4, "type": "citation", "citation": {
+        "ref": "c3", "store": "woolworths", "store_location": "Mt Wellington",
+        "product_name": "Butter, 500g", "price_nzd": "3.91", "unit": "500g",
+        "unit_price_nzd": "7.82", "on_special": false, "valid_date": "2026-07-31",
+        "source": { "table": "grocery-products-dev", "pk": "woolworths#mt-wellington", "sk": "butter-500g" } } },
+    { "seq": 5, "type": "citation", "citation": {
+        "ref": "c4", "store": "woolworths", "store_location": "Ponsonby",
+        "product_name": "Butter, 500g", "price_nzd": "3.91", "unit": "500g",
+        "unit_price_nzd": "7.82", "on_special": false, "valid_date": "2026-07-31",
+        "source": { "table": "grocery-products-dev", "pk": "woolworths#ponsonby", "sk": "butter-500g" } } },
+    { "seq": 6, "type": "citation", "citation": {
+        "ref": "c5", "store": "new_world", "store_location": "Devonport",
+        "product_name": "Value BUTTER 500G", "price_nzd": "4.12", "unit": "500g",
+        "unit_price_nzd": "8.24", "on_special": false, "valid_date": "2026-07-31",
+        "source": { "table": "grocery-products-dev", "pk": "new_world#devonport", "sk": "butter-500g" } } },
+    { "seq": 7, "type": "token", "text": "The cheapest option is Pams Butter 500g at Pak'nSave Mangere." },
+    { "seq": 8, "type": "token", "text": " That is the best price across the stores near you." },
+    { "seq": 9, "type": "price_comparison", "data": {
         "query_item": "butter-500g",
         "options": [
-          { "citation_ref": "c1", "is_cheapest": true,  "savings_vs_dearest_nzd": "0.00" },
-          { "citation_ref": "c2", "is_cheapest": false, "savings_vs_dearest_nzd": null }
+          { "citation_ref": "c1", "is_cheapest": true,  "savings_vs_dearest_nzd": "1.15" },
+          { "citation_ref": "c2", "is_cheapest": false, "savings_vs_dearest_nzd": null },
+          { "citation_ref": "c3", "is_cheapest": false, "savings_vs_dearest_nzd": null },
+          { "citation_ref": "c4", "is_cheapest": false, "savings_vs_dearest_nzd": null },
+          { "citation_ref": "c5", "is_cheapest": false, "savings_vs_dearest_nzd": null }
         ],
-        "reasoning": "Paknsave Mangere is cheapest at $2.97 for 500g." } },
-    { "seq": 7, "type": "done", "server_time": "2026-08-10T05:44:49.113992Z",
-      "usage": { "model_ids": [], "input_tokens": null, "output_tokens": null,
-                 "latency_ms": null, "guardrail_intervened": false } }
+        "reasoning": "Paknsave Mangere is cheapest for Pams Butter 500g (on special)." } },
+    { "seq": 10, "type": "done", "server_time": "2026-08-29T01:17:34.913566Z",
+      "usage": { "model_ids": ["scripted-fast"], "input_tokens": 607, "output_tokens": 80,
+                 "latency_ms": 2, "guardrail_intervened": false } }
   ]
 }
 ```
 
-Read that shape carefully, because it's the whole model:
+Captured from the handler on 2026-08-29, not hand-written. The two defects
+this section used to flag are fixed:
 
-- **No price appears inside `price_comparison`.** The options carry a
-  `citation_ref` and nothing else. To render "$2.97" you look up `c1` in the
-  citations you already received. This is deliberate — it makes "never invent a
-  price" a structural guarantee rather than a promise.
-- **Citations always arrive before anything that references them.** So build the
-  lookup map as events stream past and it will always be populated in time.
-- **`price_comparison` arrives late**, after the prose tokens — not immediately
-  after the citations. Don't wait for it before showing anything.
+- **Prose and `reasoning` carry no money.** The sentence names the product and
+  store; every figure lives in a `citation` or in a structured field beside a
+  `citation_ref`. Resolve prices from citations and never parse prose for
+  monetary truth — that rule has not changed, but the example now demonstrates
+  it rather than contradicting it.
+- **Citation `source` is the real provenance**: the configured physical table
+  name, a `<store>#<location-slug>` partition key, and a normalized product
+  sort key.
+
+Citations arrive before any structured content event that references them, and
+`assert_grounded` rejects a response where they do not.
+
+One thing the example cannot show you: money is also rejected inside the plan's
+model-authored text — `meals[].name`, `meals[].ingredients[].item` and
+`.qty`. If the model writes a price there the plan is regenerated, and refused
+outright if regeneration cannot fix it, so a `meal_plan` payload you receive
+never carries a figure that did not come from a citation.
 
 ---
 
@@ -143,6 +203,7 @@ function handleEvent(ev, ui) {
     case "meal_plan":        ui.renderPlan(ev.data); break;
     case "notice":           ui.addInlineNote(ev.message); break;
     case "no_data":          ui.addAssistantReply(ev.message); break;
+    case "clarification":    ui.askFor(ev.missing, ev.message); break;
     case "error":            ui.showError(ev.code, ev.message, ev.retryable); break;
     case "done":             ui.stopSpinner(); break;
     default:                 break;   // see 2.3
@@ -194,7 +255,29 @@ a price passes through a `Number`, the precision is gone. That includes
 `JSON.parse` reviver tricks and any ORM-ish layer that "helpfully" coerces types.
 
 Fields affected: `price_nzd`, `unit_price_nzd`, `savings_vs_dearest_nzd`,
-`line_cost_nzd`, `subtotal_nzd`, `basket_total_nzd`, `total_nzd`, `budget_nzd`.
+`line_cost_nzd`, `subtotal_nzd`, `basket_total_nzd`, `total_nzd`,
+`payable_total_nzd`, `budget_nzd`.
+
+### 2.2a Show `payable_total_nzd`, not `total_nzd`
+
+A meal plan carries two totals and they are not interchangeable:
+
+- **`payable_total_nzd`** — what the shopper hands over. Every pack counted
+  once at full shelf price; equals the sum of the store baskets. **This is the
+  one to render**, and the one `within_budget` is computed from.
+- **`total_nzd`** — what the meals *consume*, at fractional pack multipliers.
+  Smaller, because a recipe using 500g of a 1kg pack counts half a pack.
+
+The difference is large. A plan whose `total_nzd` is `$34.39` against a `$60`
+budget has a shopping list costing `$65.01`, because half a pack of butter
+cannot be bought. `total_nzd` is the right number for "how much food value
+this plan uses" and the wrong number for "can I afford it".
+
+If you already shipped against `total_nzd` as the headline figure, that is the
+field to change — it was understating the bill, and until recently
+`within_budget` agreed with it, so plans that busted the budget reported
+`within_budget: true`. `samples/response_meal_plan.json` showed exactly that
+and has been corrected.
 
 ### 2.3 Ignore unknown event types — don't throw
 
@@ -239,7 +322,7 @@ seq  type              query_item
  2   citation          Pams Butter 500g
  …   citation          … (15 citations across the three items)
 16   citation          White Bread, 700g
-17   token             The cheapest option is $2.97 at Pak'nSave Mangere.
+17   token             The cheapest option is Pams Butter 500g at Pak'nSave Mangere.
 18   token             That is the best price across the stores near you.
 19   price_comparison  butter-500g
 20   price_comparison  milk-2l
@@ -263,7 +346,33 @@ That whole response is committed as
 [`samples/response_multi_comparison.json`](samples/response_multi_comparison.json)
 — load it as a fixture and check you get three cards.
 
-### 3.2 `no_data` and `notice` can appear *alongside* results, not only instead of them
+### 3.2 `clarification` asks for one more fact, and is not an error
+
+A meal plan needs three things: household size, duration and budget. When the
+message and `hints` between them do not supply all three, the turn returns a
+`clarification` event instead of a plan — **and no error**.
+
+```json
+{ "seq": 2, "type": "clarification",
+  "missing": ["days", "budget_nzd"],
+  "message": "Happy to plan that — I just need to know how many days it needs to cover and what you'd like to spend. For example: \"dinner for 3 people for 5 days on $80\"." }
+```
+
+`missing` names `hints` fields **exactly**, which is the point of it: raise the
+budget slider or the household stepper rather than parsing the sentence. Resend
+with those hints populated, or let the user restate it in words.
+
+Do not route this through your error UI. Nothing failed, and there is nothing to
+retry as-is — a client that resends the identical request will get the identical
+question back forever. Treat it as the assistant asking, because that is what it
+is.
+
+**We do not guess on your behalf.** `household_size` and `days` used to default
+silently to 1, so an under-specified request came back as a confident plan for
+one person for one day. What we DO read is what the user actually said: "3
+university flatmates" is a household of three, and "tonight" is one day.
+
+### 3.3 `no_data` and `notice` can appear *alongside* results, not only instead of them
 
 The original contract table describes `no_data` as "when we have no data", and
 `samples/response_no_data.json` shows it as the only content event in the turn.
@@ -280,7 +389,7 @@ seq  type              detail
  2   citation          Pams Butter 500g
  …   citation          … (5 butter citations)
  7   no_data           I don't have price data for wagyu ribeye.
- 8   token             The cheapest option is $2.97 at Pak'nSave Mangere.
+ 8   token             The cheapest option is Pams Butter 500g at Pak'nSave Mangere.
  9   token             That is the best price across the stores near you.
 10   price_comparison  butter-500g
 11   done
@@ -324,8 +433,30 @@ other was ever heard — which reads as the app ignoring them.
 | `token` | Streaming prose | Append `ev.text` to the message bubble. Already includes its own leading space where needed — don't add one. |
 | `price_comparison` | `price_check` turns | Render a comparison table. **Possibly several per turn — append, don't replace.** Resolve each `citation_ref` against your citation map for the prices. |
 | `meal_plan` | `meal_plan` turns | Render meals plus the per-store shopping list. All prices via `citation_ref`. `repair_attempts` is observability — don't show it. |
-| `notice` | Occasionally, mid-turn | Small inline note: data age, an overridden hint, items we didn't check. Non-fatal, non-blocking. |
-| `no_data` | We have no data for an item | Render as a **normal assistant reply, not an error**. May appear alongside results (§3.2), and more than once. |
+| `notice` | Occasionally, mid-turn | Small inline note: data age, an overridden hint, items we didn't check, or a meal plan built from products rather than named recipes. Non-fatal, non-blocking. |
+
+**One notice worth rendering rather than collapsing (added 2026-08-31).** A
+meal-plan turn is normally built from a curated recipe catalogue, so
+`Meal.name` reads "Sausages and Mash". When no recipe fits the request -- a
+narrow diet, a tight budget -- the turn falls back to composing a plan from
+individual products and emits:
+
+```
+I couldn't build this from my recipe collection (nothing in it fits your budget
+and preferences), so I've put together a shopping list of affordable items
+instead.
+```
+
+The response SHAPE is identical either way: same `meal_plan` event, same
+`MealPlan`, same arithmetic guarantees. Only `Meal.name` differs -- a recipe
+name in the first case, a composed label in the second. Nothing in your client
+needs to branch on it, and there is no new field.
+
+It is a notice rather than a silent difference because those two are different
+products, and a shopper who asked for meal ideas should know which one they
+got. Render it near the plan.
+| `clarification` | A plan needs one more fact | **Not an error.** Raise the control named in `missing` (a `hints` field) and resend; see §3.2. |
+| `no_data` | We have no data for an item | Render as a **normal assistant reply, not an error**. May appear alongside results (§3.3), and more than once. |
 | `error` | On failure | Show `ev.message` — it's already written to be user-safe. Offer retry if `ev.retryable`. |
 | `done` | Always last | Stop the spinner. **Emitted even after an `error`** — so `done` is the only reliable "turn finished" signal. |
 
@@ -364,6 +495,8 @@ Two behaviours that surprise people:
 | `INVALID_REQUEST` | ❌ | A bug on one of our sides |
 | `STALE_DATA` | ⬜ | Data too old to trust |
 | `BUDGET_INFEASIBLE` | ❌ | **Render the `message`** — it contains real alternatives ("raise the budget, reduce the days…"). Not a generic failure. |
+| `PLAN_GENERATION_FAILED` | ✅ | Our side couldn't produce a valid plan. Offer a retry. Do **not** show budget advice — the budget may be fine. |
+| `UNSUPPORTED_EXCLUSION` | ❌ | A stated dietary term we cannot safely honour (e.g. `gluten-free` while we still lack allergen tagging). Also **render the `message`** — it lists the terms we can honour, so the user has an actionable next step |
 | `GUARDRAIL_BLOCKED` | ❌ | Refused on safety grounds |
 | `OUT_OF_SCOPE` | ❌ | Not a grocery question |
 | `UPSTREAM_TIMEOUT` | ✅ | Retry with the **same** `turn_id` |
@@ -388,9 +521,11 @@ are validated in CI, so if they drift from the implementation the build breaks.
 | [`samples/response_meal_plan.json`](samples/response_meal_plan.json) | Happy path: full plan, meals, per-store baskets |
 | [`samples/response_no_data.json`](samples/response_no_data.json) | **Failure case** — `no_data` as the whole answer |
 | [`samples/response_budget_infeasible.json`](samples/response_budget_infeasible.json) | **Failure case** — `BUDGET_INFEASIBLE` error with alternatives in the message |
+| [`samples/response_unsupported_exclusion.json`](samples/response_unsupported_exclusion.json) | **Failure case** — `UNSUPPORTED_EXCLUSION` for a dietary term we cannot honour (e.g. gluten-free) |
 | [`samples/response_guardrail_blocked.json`](samples/response_guardrail_blocked.json) | **Failure case** — `GUARDRAIL_BLOCKED` |
 | [`samples/response_multi_comparison.json`](samples/response_multi_comparison.json) | **§3.1** — three items, three `price_comparison` events, 15 citations |
-| [`samples/response_partial.json`](samples/response_partial.json) | **§3.2** — a partial answer: `no_data` at `seq 7`, results at `seq 10` |
+| [`samples/response_clarification.json`](samples/response_clarification.json) | **§3.2** — a plan request missing its duration and budget |
+| [`samples/response_partial.json`](samples/response_partial.json) | **§3.3** — a partial answer: `no_data` at `seq 7`, results at `seq 10` |
 
 The last two are captured verbatim from the dev server for the queries in §3, so
 they're the exact bytes your handler will see. Use them as the fixtures for your

@@ -1,0 +1,14 @@
+{
+  "_comment": "Which deployment stages count as PRODUCTION, as data rather than as a constant in two languages. Data, not code, for the same reason the guardrail, the alarms and the IAM policies are (design.md 10.1): reviewable in a pull request, diffable over time, and readable by more than one runtime.",
+  "version": "1.0",
+
+  "_why_this_file_exists": "The list was written twice and the two copies disagreed. src/handler.py held {prod, production, pilot} and infra/lib/config.ts held `stage === 'prod'`, so a stage named `pilot` passed CDK synth with wildcard CORS -- the synth-time half of Req 12.5 -- and then failed the runtime half at startup. Two checks that are supposed to enforce one rule, disagreeing about what the rule applies to, is the shape this repository keeps finding: a control that reads as working. Both now load this file.",
+
+  "_asymmetry_is_deliberate": "The list errs toward MORE stages being production, never fewer. Treating a non-production stage as production costs an operator one explicit CORS_ORIGIN; treating a production stage as non-production serves real shoppers from 26 fixture products with every invariant still passing. Those are not symmetric, which is the same reasoning classify() in ingestion/lineage_b.py uses about dietary categories.",
+
+  "production_stages": ["prod", "production", "pilot"],
+
+  "_pilot_note": "`pilot` is in the list because an anonymous pilot is still real shoppers reading real prices. It is the stage this project is heading for, and it is the one most likely to be spelled a third way -- so add the spelling here rather than to a frozenset in one language.",
+
+  "_on_adding_a_stage": "Adding a name here arms the fail-closed check for it in BOTH planes at once: src/handler.py refuses to start without USE_DYNAMODB, USE_BEDROCK, a numbered guardrail version and a named CORS origin, and infra/lib/config.ts refuses to synth a stack with wildcard CORS. tests/test_production_config.py and infra/test/config.test.ts both assert against this file, so the two cannot drift apart again."
+}

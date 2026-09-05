@@ -1,0 +1,6299 @@
+{
+  "SmartGroceryRecipes": [
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52997"
+          },
+          "recipe_name": {
+            "S": "Beef Banh Mi Bowls with Sriracha Mayo, Carrot & Pickled Cucumber"
+          },
+          "category": {
+            "S": "Beef"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice"
+                  },
+                  "measure": {
+                    "S": "White"
+                  },
+                  "key": {
+                    "S": "rice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic Clove"
+                  },
+                  "measure": {
+                    "S": "3"
+                  },
+                  "key": {
+                    "S": "garlic clove"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cucumber"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "cucumber"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "3 oz"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Beef"
+                  },
+                  "measure": {
+                    "S": "1 lb"
+                  },
+                  "key": {
+                    "S": "ground beef"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "2 oz"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "rice"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "garlic clove"
+              },
+              {
+                "S": "cucumber"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "ground beef"
+              },
+              {
+                "S": "soy sauce"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "8"
+          },
+          "instructions": {
+            "S": "Add'l ingredients: mayonnaise, siracha 1 Place rice in a fine-mesh sieve and rinse until water runs clear. Add to a small pot with 1 cup water (2 cups for 4 servings) and a pinch of salt. Bring to a boil, then cover and reduce heat to low. Cook until rice is tender, 15 minutes. Keep covered off heat for at least 10 minutes or until ready to serve. 2 Meanwhile, wash and dry all produce. Peel and finely chop garlic. Zest and quarter lime (for 4 servings, zest 1 lime and quarter both). Trim and halve cucumber lengthwise; thinly slice crosswise into half-moons. Halve, peel, and medium dice onion. Trim, peel, and grate carrot. 3 In a medium bowl, combine cucumber, juice from half the lime, ¼ tsp sugar (½ tsp for 4 servings), and a pinch of salt. In a small bowl, combine mayonnaise, a pinch of garlic, a squeeze of lime juice, and as much sriracha as you’d like. Season with salt and pepper. 4 Heat a drizzle of oil in a large pan over medium-high heat. Add onion and cook, stirring, until softened, 4-5 minutes. Add beef, remaining garlic, and 2 tsp sugar (4 tsp for 4 servings). Cook, breaking up meat into pieces, until beef is browned and cooked through, 4-5 minutes. Stir in soy sauce. Turn off heat; taste and season with salt and pepper. 5 Fluff rice with a fork; stir in lime zest and 1 TBSP butter. Divide rice between bowls. Arrange beef, grated carrot, and pickled cucumber on top. Top with a squeeze of lime juice. Drizzle with sriracha mayo."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/z0ageb1583189517.jpg"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52997"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53238"
+          },
+          "recipe_name": {
+            "S": "Beef pho"
+          },
+          "category": {
+            "S": "Beef"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Beef Stock"
+                  },
+                  "measure": {
+                    "S": "1 L"
+                  },
+                  "key": {
+                    "S": "beef stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "1 large"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "1 Large Chopped"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cinnamon Stick"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "cinnamon stick"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Star Anise"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "star anise"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander Seeds"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "coriander seeds"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cloves"
+                  },
+                  "measure": {
+                    "S": "1/2 teaspoon"
+                  },
+                  "key": {
+                    "S": "cloves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sirloin steak"
+                  },
+                  "measure": {
+                    "S": "225g"
+                  },
+                  "key": {
+                    "S": "sirloin steak"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Palm Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "palm sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "1 ½ tbsp"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Noodles"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "rice noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "2 sliced"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Birds-eye Chillies"
+                  },
+                  "measure": {
+                    "S": "1 small"
+                  },
+                  "key": {
+                    "S": "birds eye chillies"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Basil"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "basil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "beef stock"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "cinnamon stick"
+              },
+              {
+                "S": "star anise"
+              },
+              {
+                "S": "coriander seeds"
+              },
+              {
+                "S": "cloves"
+              },
+              {
+                "S": "sirloin steak"
+              },
+              {
+                "S": "palm sugar"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "rice noodles"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "birds eye chillies"
+              },
+              {
+                "S": "basil"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "lime"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "17"
+          },
+          "instructions": {
+            "S": "step 1 Tip the beef stock along with 500ml of water into a large saucepan. Sit the onion and ginger in a frying pan over a high heat and char on all sides, around 3-5 mins (you can also do this under your grill). Once charred, add to the beef stock. In the same pan, toast the spices for 2-3 mins and once they begin to smell fragrant, add them to the beef stock as well. Bring the stock to the boil, then turn to a simmer and cook for 30mins before straining. step 2 Meanwhile, cut the fat from the steak and wrap in cling film, then put into the freezer for 15 mins – this will make your steak really easy to slice! Slice it thinly, then cover with cling film again and pop into the fridge. step 3 Taste the beef stock and use the palm sugar, fish sauce and soy to season. Cook the noodles according to package instructions and split between two bowls, topping each with the sliced beef. Bring the stock to the boil and then pour into the bowls (the heat will cook the beef). Top each with the spring onions, chilli slices and herbs. Serve with the lime wedges to squeeze over."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/pbzcrx1763765096.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/beef-pho"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=WlosNFMCnE4"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53238"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53245"
+          },
+          "recipe_name": {
+            "S": "Noodle bowl salad"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Noodles"
+                  },
+                  "measure": {
+                    "S": "125g"
+                  },
+                  "key": {
+                    "S": "rice noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar Snap Peas"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "sugar snap peas"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sesame Seed Oil"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "sesame seed oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "4 sliced"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Hot Smoked Flaked Salmon"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "hot smoked flaked salmon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pretzels"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "pretzels"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Clear Honey"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "clear honey"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemon Juice"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "lemon juice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Nut Oil"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "ground nut oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "1 clove finely chopped"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "Knob"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "rice noodles"
+              },
+              {
+                "S": "sugar snap peas"
+              },
+              {
+                "S": "sesame seed oil"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "hot smoked flaked salmon"
+              },
+              {
+                "S": "pretzels"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "clear honey"
+              },
+              {
+                "S": "lemon juice"
+              },
+              {
+                "S": "ground nut oil"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "ginger"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "13"
+          },
+          "instructions": {
+            "S": "step 1 Drop the noodles into a large bowl, then pour over enough boiling water to cover. Tip in the sliced sugar snaps and leave for 4 minutes. Drain in a colander, put under cold running water to cool off, then drain again. Tip into a bowl and toss in the sesame oil. step 2 Mix the dressing ingredients. Pile spring onions, coriander and salmon onto the noodles, pour over the dressing and toss everything together. Serve with a pretzel or bread roll."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/zry07j1763779321.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/noodle-bowl-salad"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=7EAdKeikJ9o"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53245"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53244"
+          },
+          "recipe_name": {
+            "S": "Prawn & noodle salad with crispy shallots"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Noodles"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "rice noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Prawns"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "prawns"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Onions"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cucumber"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "cucumber"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mint"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "mint"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Roasted Peanut"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "roasted peanut"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 3"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "1 clove peeled crushed"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Shallots"
+                  },
+                  "measure": {
+                    "S": "5 Slices"
+                  },
+                  "key": {
+                    "S": "shallots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "For frying"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Flour"
+                  },
+                  "measure": {
+                    "S": "Sprinkling"
+                  },
+                  "key": {
+                    "S": "flour"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "rice noodles"
+              },
+              {
+                "S": "prawns"
+              },
+              {
+                "S": "red onions"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "cucumber"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "mint"
+              },
+              {
+                "S": "roasted peanut"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "shallots"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "flour"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "15"
+          },
+          "instructions": {
+            "S": "step 1 For the crispy shallots, heat 5cm of oil until hot in a wok. You will know the oil is hot enough when one piece of shallot sizzles as soon as it’s dropped in. Toss the shallot slices with flour, shake off excess and fry in the oil until golden. They fry quickly, about 1 min. Drain on kitchen paper, sprinkle with salt and set aside. step 2 To make the dressing, mix the lime juice, sugar, fish sauce and garlic and set aside. In a large mixing bowl, pour boiling water over the noodles. Leave them for 2 mins or until they are just cooked, then rinse under cold water. Drain well, shaking the sieve numerous times to get out the excess water, then place back in the bowl. Add prawns, onion, chilli, cucumber and herbs. Pour the dressing over, mix, then sprinkle with the shallots and peanuts."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/0iryz91763778419.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/vietnamese-prawn-noodle-salad-crispy-shallots"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53244"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53230"
+          },
+          "recipe_name": {
+            "S": "Purple sprouting broccoli tempura with nuoc cham"
+          },
+          "category": {
+            "S": "Miscellaneous"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Corn Flour"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "corn flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sesame Seed"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "sesame seed"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "For frying"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soda Water"
+                  },
+                  "measure": {
+                    "S": "250ml"
+                  },
+                  "key": {
+                    "S": "soda water"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Purple Sprouting Broccoli"
+                  },
+                  "measure": {
+                    "S": "200g"
+                  },
+                  "key": {
+                    "S": "purple sprouting broccoli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 2"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Birds-eye Chillies"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "birds eye chillies"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "corn flour"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "sesame seed"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "soda water"
+              },
+              {
+                "S": "purple sprouting broccoli"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "birds eye chillies"
+              },
+              {
+                "S": "sugar"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "10"
+          },
+          "instructions": {
+            "S": "step 1 For the nuoc cham, whisk together all of the ingredients with 5 tbsp hot water in a small bowl. Set aside while you make the tempura. step 2 Whisk the cornflour, plain flour, sesame seeds (if using) and a large pinch of salt together. Fill a large, deep pan no more than a third full with the vegetable oil and heat until it reaches 180C or a cube of bread dropped in browns in 20 seconds. step 3 Quickly whisk the soda water into the flour mixture, being careful not to overmix, then dunk in the broccoli using tongs. Carefully lower into the hot oil and cook for 2-3 mins until crisp. Drain on kitchen paper, then serve with the nuoc cham on the side for dipping."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/xnv4wf1763756529.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/purple-sprouting-broccoli-tempura-with-nuoc-cham"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53230"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53227"
+          },
+          "recipe_name": {
+            "S": "Rice paper dumplings"
+          },
+          "category": {
+            "S": "Pork"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "White Cabbage"
+                  },
+                  "measure": {
+                    "S": "1/4"
+                  },
+                  "key": {
+                    "S": "white cabbage"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Shiitake Mushrooms"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "shiitake mushrooms"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Pork"
+                  },
+                  "measure": {
+                    "S": "400g"
+                  },
+                  "key": {
+                    "S": "ground pork"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "2 cloves minced"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "20g"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sesame Seed Oil"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "sesame seed oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "3 sliced thinly"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Paper Sheets"
+                  },
+                  "measure": {
+                    "S": "20"
+                  },
+                  "key": {
+                    "S": "rice paper sheets"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "75 ml"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Vinegar"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "rice vinegar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sesame Seed"
+                  },
+                  "measure": {
+                    "S": "1/2 tbs"
+                  },
+                  "key": {
+                    "S": "sesame seed"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "2 sliced"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "white cabbage"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "shiitake mushrooms"
+              },
+              {
+                "S": "ground pork"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "sesame seed oil"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "rice paper sheets"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "rice vinegar"
+              },
+              {
+                "S": "sesame seed"
+              },
+              {
+                "S": "spring onions"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "15"
+          },
+          "instructions": {
+            "S": "step 1 Tip the cabbage into a food processor and blitz until finely chopped. Season with ½ tsp salt, toss well and set aside for 15 mins. Tip into a clean tea towel and squeeze out as much water as you can. Tip into a bowl with the carrot, mushrooms, pork mince, garlic, ginger, soy sauce, sesame oil and spring onions. Season with black pepper. Scrunch everything together using your hands, mixing well until everything is combined. step 2 Soak the spring roll sheets for a couple of seconds in a shallow dish of warm water, then transfer to an oiled chopping board. Working with one sheet at a time, spoon 1 heaped tbsp of the filling into the middle, then fold the bottom up and over the filling. Fold down the top of the sheet, then the sides to fully encase and make a neat square. If the dumpling feels a little fragile, soak another sheet and wrap it again. Repeat with the remaining sheets and filling, transferring the dumplings to an oiled plate as you go. step 3 Heat the oil in a large, non-stick frying pan (ensuring it is no more than a third full) over a medium-high heat and fry the dumplings for 3-5 mins until golden brown. Use a slotted spoon or spider to turn them, then cover with a lid and cook for another 3-4 mins until golden. Remove the lid and cook for 1-2 mins. step 4 Meanwhile, combine all the dipping sauce ingredients in small bowl. Serve the dumplings with the dipping sauce on the side."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/sfahy01763752319.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/rice-paper-dumplings"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/shorts/YU09jIusxo4"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53227"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53234"
+          },
+          "recipe_name": {
+            "S": "Salmon noodle soup"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Stock"
+                  },
+                  "measure": {
+                    "S": "1 L"
+                  },
+                  "key": {
+                    "S": "chicken stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Thai Red Curry Paste"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "thai red curry paste"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Noodles"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "rice noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Shiitake Mushrooms"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "shiitake mushrooms"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sweetcorn"
+                  },
+                  "measure": {
+                    "S": "125g"
+                  },
+                  "key": {
+                    "S": "sweetcorn"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salmon"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "salmon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 2"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "Pinch"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Bunch"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "chicken stock"
+              },
+              {
+                "S": "thai red curry paste"
+              },
+              {
+                "S": "rice noodles"
+              },
+              {
+                "S": "shiitake mushrooms"
+              },
+              {
+                "S": "sweetcorn"
+              },
+              {
+                "S": "salmon"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "coriander"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "10"
+          },
+          "instructions": {
+            "S": "step 1 Pour the stock into a large pan, bring to the boil, then stir in the curry paste. Add the noodles and cook for 8 mins. Tip in the mushrooms and corn and cook for 2 mins more. step 2 Add the salmon to the pan and cook for 3 mins or until cooked through. Remove from the heat and stir in the lime juice, soy sauce and a pinch of sugar. Ladle into 4 bowls and sprinkle over the coriander just before you serve."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/ikizdm1763760862.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/salmon-noodle-soup"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=__Kh1sizUAM"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53234"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53248"
+          },
+          "recipe_name": {
+            "S": "Salmon noodle wraps"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Noodles"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "rice noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "3 sliced thinly"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Petit Pois"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "petit pois"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chilli"
+                  },
+                  "measure": {
+                    "S": "85g"
+                  },
+                  "key": {
+                    "S": "chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "85g"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "85g"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Salmon"
+                  },
+                  "measure": {
+                    "S": "300g"
+                  },
+                  "key": {
+                    "S": "salmon"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "rice noodles"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "petit pois"
+              },
+              {
+                "S": "chilli"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "salmon"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "7"
+          },
+          "instructions": {
+            "S": "step 1 Heat oven to 200C/fan 180C/gas 6. Put the noodles in a bowl and pour over enough boiling water to just cover them. Leave for 2 mins, until they are bendable, but not too soft, then drain well. Return to the bowl with the spring onions, petit pois, salt and pepper and a third of the butter. Mix well until the butter has melted. step 2 Pile the noodles and vegetables onto two large squares of baking parchment, then sit the salmon on top. Slice the remaining butter and arrange over the top of the salmon. Bring the ends of the paper over the fish, fold them together to seal, then tuck the ends of the paper underneath so there are no gaps. Put the parcels on a baking sheet and bake for 15-20 mins. Transfer to dinner plates and serve without delay."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/prrirc1763781360.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/salmon-noodle-wraps"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=9j2qftITN-Y"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53248"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53233"
+          },
+          "recipe_name": {
+            "S": "Salt & pepper squid"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Corn Flour"
+                  },
+                  "measure": {
+                    "S": "85g"
+                  },
+                  "key": {
+                    "S": "corn flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Plain Flour"
+                  },
+                  "measure": {
+                    "S": "85g"
+                  },
+                  "key": {
+                    "S": "plain flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Black Pepper"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "black pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Szechuan Peppercorns"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "szechuan peppercorns"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sunflower Oil"
+                  },
+                  "measure": {
+                    "S": "For frying"
+                  },
+                  "key": {
+                    "S": "sunflower oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Squid"
+                  },
+                  "measure": {
+                    "S": "400g"
+                  },
+                  "key": {
+                    "S": "squid"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "Sliced"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Green Chilli"
+                  },
+                  "measure": {
+                    "S": "Sliced"
+                  },
+                  "key": {
+                    "S": "green chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cucumber"
+                  },
+                  "measure": {
+                    "S": "1/2"
+                  },
+                  "key": {
+                    "S": "cucumber"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Onions"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "red onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Vinegar"
+                  },
+                  "measure": {
+                    "S": "100 ml"
+                  },
+                  "key": {
+                    "S": "rice vinegar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "corn flour"
+              },
+              {
+                "S": "plain flour"
+              },
+              {
+                "S": "black pepper"
+              },
+              {
+                "S": "szechuan peppercorns"
+              },
+              {
+                "S": "sunflower oil"
+              },
+              {
+                "S": "squid"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "green chilli"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "cucumber"
+              },
+              {
+                "S": "red onions"
+              },
+              {
+                "S": "rice vinegar"
+              },
+              {
+                "S": "caster sugar"
+              },
+              {
+                "S": "fish sauce"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "14"
+          },
+          "instructions": {
+            "S": "step 1 To make the dipping sauce, mix all the ingredients in a small bowl until the sugar has dissolved, then set aside. Mix the cornflour and plain flour with both peppers and 2 tsp sea salt in a large bowl, then set aside. Line a tray with kitchen paper and make sure you have more salt to sprinkle with. step 2 Heat about 7cm of oil to 180C in a deep fryer, wok or deep pan. If you don’t have a thermometer, you can test it with a cube of bread – it should brown in 20 secs. Coat the squid well with the flour mix and fry in batches for about 2 mins each or until crisp. Use a slotted spoon to lift out the squid, then drain on the kitchen paper and sprinkle with a little more salt. Serve the squid scattered with the spring onion and chilli, with the dipping sauce on the side."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/yxiilf1763759428.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/salt-pepper-squid"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=l1Ik6k22s1I"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53233"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53247"
+          },
+          "recipe_name": {
+            "S": "Sea bass with sizzled ginger, chilli & spring onions"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Sea Bass Fillets"
+                  },
+                  "measure": {
+                    "S": "6"
+                  },
+                  "key": {
+                    "S": "sea bass fillets"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sunflower Oil"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons"
+                  },
+                  "key": {
+                    "S": "sunflower oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "Knob"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic Clove"
+                  },
+                  "measure": {
+                    "S": "3 sliced thinly"
+                  },
+                  "key": {
+                    "S": "garlic clove"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "3 Large"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "Bunch"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "sea bass fillets"
+              },
+              {
+                "S": "sunflower oil"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "garlic clove"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "soy sauce"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "7"
+          },
+          "instructions": {
+            "S": "step 1 Season 6 sea bass fillets with salt and pepper, then slash the skin 3 times. step 2 Heat a heavy-based frying pan and add 1 tbsp sunflower oil. step 3 Once hot, fry the sea bass fillets, skin-side down, for 5 mins or until the skin is very crisp and golden. The fish will be almost cooked through. step 4 Turn over, cook for another 30 seconds - 1 minute, then transfer to a serving plate and keep warm. You’ll need to fry the sea bass fillets in 2 batches. step 5 Heat 2 tbsp sunflower oil, then fry the large knob of peeled ginger, cut into matchsticks, 3 thinly sliced garlic cloves and 3 thinly shredded red chillies for about 2 mins until golden. step 6 Take off the heat and toss in the bunch of shredded spring onions. Splash the fish with 1 tbsp soy sauce and spoon over the contents of the pan."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/tqd7s21763780609.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/sea-bass-sizzled-ginger-chilli-spring-onions"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=xzDYKZl50FQ"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53247"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53229"
+          },
+          "recipe_name": {
+            "S": "Steak & Vietnamese noodle salad"
+          },
+          "category": {
+            "S": "Beef"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Rice Noodle"
+                  },
+                  "measure": {
+                    "S": "85g"
+                  },
+                  "key": {
+                    "S": "brown rice noodle"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rapeseed Oil"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "rapeseed oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fillet Of Steak"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "fillet of steak"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chinese Cabbage"
+                  },
+                  "measure": {
+                    "S": "1/2"
+                  },
+                  "key": {
+                    "S": "chinese cabbage"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "4 finely sliced"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 1"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Vinegar"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "rice vinegar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic Clove"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "garlic clove"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "1/2 tbs"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "brown rice noodle"
+              },
+              {
+                "S": "rapeseed oil"
+              },
+              {
+                "S": "fillet of steak"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "chinese cabbage"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "rice vinegar"
+              },
+              {
+                "S": "garlic clove"
+              },
+              {
+                "S": "fish sauce"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "13"
+          },
+          "instructions": {
+            "S": "step 1 Mix all the ingredients for the dressing together in a bowl with 1 tbsp water until the sugar has dissolved. step 2 Cook the noodles following pack instructions, then plunge into a bowl of cold water to cool completely. Drain the noodles, then add the carrot, cabbage, spring onion and dressing, and toss to combine. step 3 Heat the oil in a frying pan over a high heat. Season the steak, then cook to your liking; 2-3 mins on each side for medium rare. Leave to rest for 5 mins, then slice. Divide the salad and steak slices between bowls and scatter over some coriander to serve."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/st9shl1763755808.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/steak-vietnamese-noodle-salad"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=Lo4_GdyetEU"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53229"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53246"
+          },
+          "recipe_name": {
+            "S": "Tangy carrot, cabbage & onion salad"
+          },
+          "category": {
+            "S": "Vegetarian"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "4 sliced"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Cabbage"
+                  },
+                  "measure": {
+                    "S": "1/2"
+                  },
+                  "key": {
+                    "S": "red cabbage"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Onions"
+                  },
+                  "measure": {
+                    "S": "2 sliced"
+                  },
+                  "key": {
+                    "S": "red onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mint"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "mint"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander Leaves"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "coriander leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Roasted Peanut"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "roasted peanut"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 2"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Nut Oil"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "ground nut oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "red cabbage"
+              },
+              {
+                "S": "red onions"
+              },
+              {
+                "S": "mint"
+              },
+              {
+                "S": "coriander leaves"
+              },
+              {
+                "S": "roasted peanut"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "ground nut oil"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "brown sugar"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "10"
+          },
+          "instructions": {
+            "S": "step 1 Tip the carrots, cabbage and onions into a bowl. Make the dressing by stirring the ingredients together until the sugar has dissolved. Pour over salad, tossing the vegetables in the dressing. Add the herbs, toss again, then scatter over the peanuts."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/dbazbg1763779999.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/tangy-carrot-red-cabbage-onion-salad"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=-BJWMkJMIns"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53246"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53240"
+          },
+          "recipe_name": {
+            "S": "Tofu, greens & cashew stir-fry"
+          },
+          "category": {
+            "S": "Vegetarian"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Broccoli"
+                  },
+                  "measure": {
+                    "S": "1 head"
+                  },
+                  "key": {
+                    "S": "broccoli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic Clove"
+                  },
+                  "measure": {
+                    "S": "4 sliced"
+                  },
+                  "key": {
+                    "S": "garlic clove"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "1 bunch"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soya Bean"
+                  },
+                  "measure": {
+                    "S": "140g"
+                  },
+                  "key": {
+                    "S": "soya bean"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pak Choi"
+                  },
+                  "measure": {
+                    "S": "2 heads"
+                  },
+                  "key": {
+                    "S": "pak choi"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Marinated Tofu"
+                  },
+                  "measure": {
+                    "S": "300g"
+                  },
+                  "key": {
+                    "S": "marinated tofu"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Hoisin Sauce"
+                  },
+                  "measure": {
+                    "S": "1 ½ tbsp"
+                  },
+                  "key": {
+                    "S": "hoisin sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cashew Nuts"
+                  },
+                  "measure": {
+                    "S": "25g"
+                  },
+                  "key": {
+                    "S": "cashew nuts"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "broccoli"
+              },
+              {
+                "S": "garlic clove"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "soya bean"
+              },
+              {
+                "S": "pak choi"
+              },
+              {
+                "S": "marinated tofu"
+              },
+              {
+                "S": "hoisin sauce"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "cashew nuts"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "11"
+          },
+          "instructions": {
+            "S": "step 1 Heat the oil in a non-stick wok. Add the broccoli, then fry on a high heat for 5 mins or until just tender, adding a little water if it begins to catch. Add the garlic and chilli, fry for 1 min, then toss through the spring onions, soya beans, pak choi and tofu. Stir-fry for 2-3 mins. Add the hoisin, soy and nuts to warm through."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/minfsc1763766806.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/tofu-greens-cashew-stir-fry"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=l8wuWeNy3J4"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53240"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53249"
+          },
+          "recipe_name": {
+            "S": "Turkey Banh mi"
+          },
+          "category": {
+            "S": "Miscellaneous"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Baguette"
+                  },
+                  "measure": {
+                    "S": "2 small"
+                  },
+                  "key": {
+                    "S": "baguette"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Liver"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "chicken liver"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cucumber"
+                  },
+                  "measure": {
+                    "S": "1/4"
+                  },
+                  "key": {
+                    "S": "cucumber"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Turkey"
+                  },
+                  "measure": {
+                    "S": "140g"
+                  },
+                  "key": {
+                    "S": "turkey"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mayonnaise"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "mayonnaise"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mint"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "mint"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "2 small"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Cabbage"
+                  },
+                  "measure": {
+                    "S": "75g"
+                  },
+                  "key": {
+                    "S": "red cabbage"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Ginger"
+                  },
+                  "measure": {
+                    "S": "1/4 tsp"
+                  },
+                  "key": {
+                    "S": "ground ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Vinegar"
+                  },
+                  "measure": {
+                    "S": "½ tablespoon"
+                  },
+                  "key": {
+                    "S": "rice vinegar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Golden Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "1/2 teaspoon"
+                  },
+                  "key": {
+                    "S": "golden caster sugar"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "baguette"
+              },
+              {
+                "S": "chicken liver"
+              },
+              {
+                "S": "cucumber"
+              },
+              {
+                "S": "turkey"
+              },
+              {
+                "S": "mayonnaise"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "mint"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "red cabbage"
+              },
+              {
+                "S": "ground ginger"
+              },
+              {
+                "S": "rice vinegar"
+              },
+              {
+                "S": "golden caster sugar"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "12"
+          },
+          "instructions": {
+            "S": "step 1 To make the pickled slaw, tip the carrots and cabbage into a large bowl. In a small bowl, combine the ginger, rice vinegar, sugar and a few pinches of salt. Pour over the vegetables and toss together. Set aside for at least 15 mins. step 2 Halve the baguettes lengthways and spread the pâté over the bottom half. Top with the pickled slaw, cucumber and turkey. Mix the mayonnaise with the chopped chilli and dollop over the top. Scatter over the mint leaves and sliced chilli. Sandwich together and dig in."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/1wj8w31763781990.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/turkey-banh-mi"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=L-ItzFfVgos"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53249"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53251"
+          },
+          "recipe_name": {
+            "S": "Turkish lahmacun"
+          },
+          "category": {
+            "S": "Beef"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Strong white bread flour"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "strong white bread flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fast action yeast"
+                  },
+                  "measure": {
+                    "S": "10g"
+                  },
+                  "key": {
+                    "S": "fast action yeast"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Corn Flour"
+                  },
+                  "measure": {
+                    "S": "Sprinkling"
+                  },
+                  "key": {
+                    "S": "corn flour"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Tomato"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "tomato"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Green Chilli"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "green chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "4 Chopped"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Parsley"
+                  },
+                  "measure": {
+                    "S": "Bunch"
+                  },
+                  "key": {
+                    "S": "parsley"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Beef"
+                  },
+                  "measure": {
+                    "S": "250g"
+                  },
+                  "key": {
+                    "S": "ground beef"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chilli Flakes"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "chilli flakes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Cumin"
+                  },
+                  "measure": {
+                    "S": "Pinch"
+                  },
+                  "key": {
+                    "S": "ground cumin"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Allspice"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "allspice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Olive Oil"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "olive oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemon"
+                  },
+                  "measure": {
+                    "S": "1/2"
+                  },
+                  "key": {
+                    "S": "lemon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Onions"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "red onions"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "strong white bread flour"
+              },
+              {
+                "S": "fast action yeast"
+              },
+              {
+                "S": "corn flour"
+              },
+              {
+                "S": "tomato"
+              },
+              {
+                "S": "green chilli"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "parsley"
+              },
+              {
+                "S": "ground beef"
+              },
+              {
+                "S": "chilli flakes"
+              },
+              {
+                "S": "ground cumin"
+              },
+              {
+                "S": "allspice"
+              },
+              {
+                "S": "olive oil"
+              },
+              {
+                "S": "lemon"
+              },
+              {
+                "S": "red onions"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "14"
+          },
+          "instructions": {
+            "S": "step 1 Sift the flour into a large bowl, make a well in the middle and sprinkle in the yeast. Pour 125ml water over the yeast, then flick flour over the liquid to create a layer. Cover and leave to rise in a warm place for 15 mins until cracks appear on the surface of that layer. step 2 Use your hands to mix in 250ml more water along with 1 tsp salt and knead the dough for about 10 mins until elastic and no longer sticky. Add a little more flour if you need to. Cover and leave to rise again in a warm place for 30 mins until doubled in size. step 3 Heat the oven to as high as it will go (about 240C/220C fan/gas 9) and sprinkle one or two baking trays thinly with cornmeal. step 4 Pour boiling water from the kettle over the tomatoes, leave to stand briefly, then drain and slip off the skins. Cut the tomatoes in half, cut out the stalks, scoop out the seeds and discard, then chop the flesh. step 5 Halve the chillies lengthways, cut out the stalks, seeds and white inner membrane, then rinse. Cut lengthwise into fine strips, then crosswise into fine dice. step 6 Put the tomatoes, chillies, spring onions, finely chopped parsley, beef mince, spices, 1 tsp salt and ½ tsp freshly ground black pepper into a bowl and mix well. step 7 Take the dough and knead it briefly, then divide into four pieces and shape each into a ball. Roll each ball into a thin circle, place on the prepared baking trays. Spread with a thin layer of the meat mixture. step 8 Bake each flatbread for 10-15 mins until the edges begin to darken. After removing from the oven, sprinkle the lahmacun with the roughly chopped parsley and sliced onion, then squeeze over a few drops of lemon juice. Serve straightaway."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/tqd3ac1763786065.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/lahmacun"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=8HTa64s8RK8"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53251"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53250"
+          },
+          "recipe_name": {
+            "S": "Vegan banh mi"
+          },
+          "category": {
+            "S": "Vegan"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Raw Vegetables"
+                  },
+                  "measure": {
+                    "S": "150g"
+                  },
+                  "key": {
+                    "S": "raw vegetables"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegan White Wine Vinegar"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons"
+                  },
+                  "key": {
+                    "S": "vegan white wine vinegar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Golden Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "golden caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Baguette"
+                  },
+                  "measure": {
+                    "S": "1 large"
+                  },
+                  "key": {
+                    "S": "baguette"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Hummus"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "hummus"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Tempeh"
+                  },
+                  "measure": {
+                    "S": "175g"
+                  },
+                  "key": {
+                    "S": "tempeh"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mint"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "mint"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Hotsauce"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "hotsauce"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "raw vegetables"
+              },
+              {
+                "S": "vegan white wine vinegar"
+              },
+              {
+                "S": "golden caster sugar"
+              },
+              {
+                "S": "baguette"
+              },
+              {
+                "S": "hummus"
+              },
+              {
+                "S": "tempeh"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "mint"
+              },
+              {
+                "S": "hotsauce"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "9"
+          },
+          "instructions": {
+            "S": "step 1 Put the shredded veg in a bowl and add the vinegar, sugar and 1 tsp salt. Toss everything together, then set aside to pickle quickly while you prepare the rest of the sandwich. step 2 Heat oven to 180C/160C fan/gas 4. Cut the baguette into four, then slice each piece horizontally in half. Put the baguette pieces in the oven for 5 mins until lightly toasted and warm. Spread each piece with a layer of hummus, then top four pieces with the tempeh slices and pile the pickled veg on top. To serve, sprinkle over the herbs and squeeze over some hot sauce, then top with the other baguette pieces to make sandwiches."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/sonirb1763782831.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/boxing-day-banh-mi"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=i0_C3eRTbgg"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53250"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53228"
+          },
+          "recipe_name": {
+            "S": "Vietnamese caramel trout"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Golden Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "golden caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "large piece"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rainbow Trout"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "rainbow trout"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Bok Choi"
+                  },
+                  "measure": {
+                    "S": "2 heads"
+                  },
+                  "key": {
+                    "S": "bok choi"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemon"
+                  },
+                  "measure": {
+                    "S": "Juice of 1/2"
+                  },
+                  "key": {
+                    "S": "lemon"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Sprigs of fresh"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice"
+                  },
+                  "measure": {
+                    "S": "Steamed"
+                  },
+                  "key": {
+                    "S": "rice"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "golden caster sugar"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "rainbow trout"
+              },
+              {
+                "S": "bok choi"
+              },
+              {
+                "S": "lemon"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "rice"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "9"
+          },
+          "instructions": {
+            "S": "step 1 Put the sugar in a large shallow pan, along with a small splash of water. Heat gently, swirling the pan, until the sugar has dissolved. Increase the heat and bubble the syrup until it turns a dark amber colour. Add the fish sauce, most of the chilli and ginger, then splash in 1 tbsp water to dilute. Boil again until syrupy, then add the fish fillets, skin-side down, and the bok choi, cut-side down. step 2 Cover the pan with a lid and simmer for 4-5 mins until the fish is cooked and the bok choi has wilted. Turn off the heat, squeeze over the lemon and scatter with the remaining chilli, ginger and the coriander sprigs. Serve with rice."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/p02vq41763754350.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/vietnamese-caramel-trout"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=3MBbvrUtn74"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53228"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53232"
+          },
+          "recipe_name": {
+            "S": "Vietnamese chicken salad"
+          },
+          "category": {
+            "S": "Chicken"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Noodles"
+                  },
+                  "measure": {
+                    "S": "140g"
+                  },
+                  "key": {
+                    "S": "rice noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cucumber"
+                  },
+                  "measure": {
+                    "S": "1/2"
+                  },
+                  "key": {
+                    "S": "cucumber"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Breasts"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "chicken breasts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Radish"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "radish"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Onions"
+                  },
+                  "measure": {
+                    "S": "1/2"
+                  },
+                  "key": {
+                    "S": "red onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mint"
+                  },
+                  "measure": {
+                    "S": "Bunch"
+                  },
+                  "key": {
+                    "S": "mint"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Peanuts"
+                  },
+                  "measure": {
+                    "S": "25g"
+                  },
+                  "key": {
+                    "S": "peanuts"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Zest and juice of 1"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "1 ½ tbsp"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "1 ½ tbsp"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sesame Seed Oil"
+                  },
+                  "measure": {
+                    "S": "1 ½ tbsp"
+                  },
+                  "key": {
+                    "S": "sesame seed oil"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "rice noodles"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "cucumber"
+              },
+              {
+                "S": "chicken breasts"
+              },
+              {
+                "S": "radish"
+              },
+              {
+                "S": "red onions"
+              },
+              {
+                "S": "mint"
+              },
+              {
+                "S": "peanuts"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "sesame seed oil"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "13"
+          },
+          "instructions": {
+            "S": "step 1 To make the dressing, whisk all the ingredients together in a large serving bowl. Cook the noodles following pack instructions, then drain and add to the bowl with the dressing. step 2 Peel the carrot into long strips using a vegetable peeler. Do the same for the cucumber, until you reach the seeds (discard them). Add the carrot and cucumber to the noodle mixture along with the shredded chicken, radishes, red onion and mint. Toss well to coat in the dressing, scatter over the peanuts and serve."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/pk8wtn1763758591.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/vietnamese-chicken-salad"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=behSkhzKpHI"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53232"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#52828"
+          },
+          "recipe_name": {
+            "S": "Vietnamese Grilled Pork (bun-thit-nuong)"
+          },
+          "category": {
+            "S": "Pork"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Pork"
+                  },
+                  "measure": {
+                    "S": "1.5 pounds sliced"
+                  },
+                  "key": {
+                    "S": "pork"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Vermicelli"
+                  },
+                  "measure": {
+                    "S": "1 package thin"
+                  },
+                  "key": {
+                    "S": "rice vermicelli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Egg Rolls"
+                  },
+                  "measure": {
+                    "S": "4-6"
+                  },
+                  "key": {
+                    "S": "egg rolls"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Challots"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons minced"
+                  },
+                  "key": {
+                    "S": "challots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic"
+                  },
+                  "measure": {
+                    "S": "1.5 tablespoons minced garlic"
+                  },
+                  "key": {
+                    "S": "garlic"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sugar"
+                  },
+                  "measure": {
+                    "S": "¼ cup"
+                  },
+                  "key": {
+                    "S": "sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy sauce"
+                  },
+                  "measure": {
+                    "S": "½ tablespoon thick"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pepper"
+                  },
+                  "measure": {
+                    "S": "½ tablespoon"
+                  },
+                  "key": {
+                    "S": "pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Olive Oil"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons"
+                  },
+                  "key": {
+                    "S": "olive oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cucumber"
+                  },
+                  "measure": {
+                    "S": "Sliced"
+                  },
+                  "key": {
+                    "S": "cucumber"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mint"
+                  },
+                  "measure": {
+                    "S": "Leaves"
+                  },
+                  "key": {
+                    "S": "mint"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Peanuts"
+                  },
+                  "measure": {
+                    "S": "Crushed"
+                  },
+                  "key": {
+                    "S": "peanuts"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "pork"
+              },
+              {
+                "S": "rice vermicelli"
+              },
+              {
+                "S": "egg rolls"
+              },
+              {
+                "S": "challots"
+              },
+              {
+                "S": "garlic"
+              },
+              {
+                "S": "sugar"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "pepper"
+              },
+              {
+                "S": "olive oil"
+              },
+              {
+                "S": "cucumber"
+              },
+              {
+                "S": "mint"
+              },
+              {
+                "S": "peanuts"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "13"
+          },
+          "instructions": {
+            "S": "Slice the uncooked pork thinly, about ⅛\". It helps to slightly freeze it (optional). Mince garlic and shallots. Mix in a bowl with sugar, fish sauce, thick soy sauce, pepper, and oil until sugar dissolves. Marinate the meat for 1 hour, or overnight for better results. Bake the pork at 375F for 10-15 minutes or until about 80% cooked. Finish cooking by broiling in the oven until a nice golden brown color develops, flipping the pieces midway. Assemble your bowl with veggies, noodles, and garnish. Many like to mix the whole bowl up and pour the fish sauce on top, but I like to make individual bites and sauce it slowly."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/qqwypw1504642429.jpg"
+          },
+          "source_url": {
+            "S": "http://www.hungryhuy.com/bun-thit-nuong-recipe-vietnamese-grilled-bbq-pork-with-rice-vermicelli-vegetables/"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=Q3qcQcENzbU"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/52828"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53231"
+          },
+          "recipe_name": {
+            "S": "Vietnamese lamb shanks with sweet potatoes"
+          },
+          "category": {
+            "S": "Lamb"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Nut Oil"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "ground nut oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lamb Shanks"
+                  },
+                  "measure": {
+                    "S": "4"
+                  },
+                  "key": {
+                    "S": "lamb shanks"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Onion"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "onion"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "2 tbs chopped"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic Clove"
+                  },
+                  "measure": {
+                    "S": "3 sliced thinly"
+                  },
+                  "key": {
+                    "S": "garlic clove"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Star Anise"
+                  },
+                  "measure": {
+                    "S": "3"
+                  },
+                  "key": {
+                    "S": "star anise"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemongrass Stalks"
+                  },
+                  "measure": {
+                    "S": "2"
+                  },
+                  "key": {
+                    "S": "lemongrass stalks"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lamb Stock"
+                  },
+                  "measure": {
+                    "S": "1L"
+                  },
+                  "key": {
+                    "S": "lamb stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Tomato Puree"
+                  },
+                  "measure": {
+                    "S": "1 ½ tbsp"
+                  },
+                  "key": {
+                    "S": "tomato puree"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sweet Potatoes"
+                  },
+                  "measure": {
+                    "S": "4"
+                  },
+                  "key": {
+                    "S": "sweet potatoes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 2"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mint"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "mint"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Basil Leaves"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "basil leaves"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "ground nut oil"
+              },
+              {
+                "S": "lamb shanks"
+              },
+              {
+                "S": "onion"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "garlic clove"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "star anise"
+              },
+              {
+                "S": "lemongrass stalks"
+              },
+              {
+                "S": "lamb stock"
+              },
+              {
+                "S": "tomato puree"
+              },
+              {
+                "S": "sweet potatoes"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "mint"
+              },
+              {
+                "S": "basil leaves"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "18"
+          },
+          "instructions": {
+            "S": "step 1 Heat oven to 160C/140C fan/gas 3. Heat 1 tbsp oil in a heavy-bottomed casserole, season the shanks, then brown them 2 at a time on all sides, adding the remaining oil for the second batch. Remove the lamb and add the onions. Fry them quite briskly, about 30 secs, add the ginger, garlic and chopped chilli, then turn the heat down and cook for 1 min. Add 1 tbsp sugar, stir, then add the star anise, lemongrass, stock, purée and seasoning. Bring to the boil. step 2 Cover and cook in the oven for 1½ hrs, then add the sweet potatoes and cook for 1 hr more. The lamb should be completely tender and almost falling off the bones. Stir in the fish sauce, lime juice and 1 tsp sugar to just lift the flavour, then scatter with the mint, basil and the sliced chilli to serve."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/7xte3u1763757761.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/vietnamese-lamb-shanks-sweet-potatoes"
+          },
+          "youtube_url": {
+            "S": "https://www.tiktok.com/@shanice_and_lima/video/7280471655959383297"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53231"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53237"
+          },
+          "recipe_name": {
+            "S": "Vietnamese pork salad"
+          },
+          "category": {
+            "S": "Pork"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Golden Caster Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tsp"
+                  },
+                  "key": {
+                    "S": "golden caster sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 2"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Sesame Seed Oil"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "sesame seed oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pork Tenderloin"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "pork tenderloin"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "For brushing"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "White Cabbage"
+                  },
+                  "measure": {
+                    "S": "1/4"
+                  },
+                  "key": {
+                    "S": "white cabbage"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cucumber"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "cucumber"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Celery"
+                  },
+                  "measure": {
+                    "S": "5 chopped"
+                  },
+                  "key": {
+                    "S": "celery"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "3 sliced thinly"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lemongrass Stalks"
+                  },
+                  "measure": {
+                    "S": "2 chopped"
+                  },
+                  "key": {
+                    "S": "lemongrass stalks"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Zest of 1"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mint"
+                  },
+                  "measure": {
+                    "S": "Handful"
+                  },
+                  "key": {
+                    "S": "mint"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "golden caster sugar"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "sesame seed oil"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "pork tenderloin"
+              },
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "white cabbage"
+              },
+              {
+                "S": "cucumber"
+              },
+              {
+                "S": "celery"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "lemongrass stalks"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "mint"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "18"
+          },
+          "instructions": {
+            "S": "step 1 The day before: make the dressing. Put the sugar and lime juice in a pan with 1 tbsp water and bring to the boil to dissolve the sugar. Add the chilli and coriander and stir well, then pulse in a blender until smooth. Tip into a bowl, then stir in the sesame oil, fish sauce, soy sauce and sesame seeds to make a dressing. Cover and chill until needed. step 2 Two hours before serving: heat a griddle pan. Preheat the oven to 200C/gas 6/fan 180C. Brush the pork with oil and griddle on all sides for a few minutes until seared. Transfer to a baking tray and put in the oven for about 10-12 minutes until cooked through. Cool, thinly slice against the grain of the meat. Tip into a bowl and pour over half the dressing. step 3 To serve: toss the remaining salad ingredients in a bowl with the remaining dressing. Pile on to a platter, top with the pork slices and spoon over any juices."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/g7jomp1763763994.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/vietnamese-pork-salad"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=_DCJNrNTTB4"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53237"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53243"
+          },
+          "recipe_name": {
+            "S": "Vietnamese prawn spiralized rolls"
+          },
+          "category": {
+            "S": "Seafood"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 1/2"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Vinegar"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "rice vinegar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Palm Sugar"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "palm sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "3 tablespoons"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Birds-eye Chillies"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "birds eye chillies"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Paper Sheets"
+                  },
+                  "measure": {
+                    "S": "6"
+                  },
+                  "key": {
+                    "S": "rice paper sheets"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mint"
+                  },
+                  "measure": {
+                    "S": "Small bunch"
+                  },
+                  "key": {
+                    "S": "mint"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "Small bunch"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "King Prawns"
+                  },
+                  "measure": {
+                    "S": "12"
+                  },
+                  "key": {
+                    "S": "king prawns"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "1 large"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Courgettes"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "courgettes"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "lime"
+              },
+              {
+                "S": "rice vinegar"
+              },
+              {
+                "S": "palm sugar"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "birds eye chillies"
+              },
+              {
+                "S": "rice paper sheets"
+              },
+              {
+                "S": "mint"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "king prawns"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "courgettes"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "11"
+          },
+          "instructions": {
+            "S": "step 1 Mix all the ingredients for the dipping sauce along with 50ml water in a bowl and set aside to allow the sugar to dissolve and flavour to infuse. step 2 To assemble the rolls, fill a wide bowl with warm water and grab a clean damp tea towel to work on. Dip a rice paper wrapper into the water for a few seconds until it softens then carefully place onto the tea towel. step 3 Put a few mint and coriander leaves in the centre of the wrapper then top with two prawns and a small handful of the spiralized veg, which may need to be cut up if the spirals are too long. step 4 Fold the sides of the wrapper into the centre, over the filling, then fold in the edges, so that the filling is completely encased, then tightly roll. Repeat until all of the wrappers and filling have been used. To serve, slice on a diagonal and eat with the dipping sauce."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/9r2xrg1763771238.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/vietnamese-prawn-spiralized-rolls"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=lNU0LKVtHC4"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53243"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53241"
+          },
+          "recipe_name": {
+            "S": "Vietnamese veg parcels"
+          },
+          "category": {
+            "S": "Vegetarian"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Flour Pancakes"
+                  },
+                  "measure": {
+                    "S": "100g"
+                  },
+                  "key": {
+                    "S": "rice flour pancakes"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Noodles"
+                  },
+                  "measure": {
+                    "S": "50g"
+                  },
+                  "key": {
+                    "S": "rice noodles"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chicken Breast"
+                  },
+                  "measure": {
+                    "S": "1"
+                  },
+                  "key": {
+                    "S": "chicken breast"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Carrots"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "carrots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Cucumber"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "cucumber"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Pepper"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red pepper"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lettuce"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "lettuce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "coriander"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Mint"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "mint"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "4 tablespoons"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice Vinegar"
+                  },
+                  "measure": {
+                    "S": "2 tablespoons"
+                  },
+                  "key": {
+                    "S": "rice vinegar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Lime"
+                  },
+                  "measure": {
+                    "S": "Juice of 1/2"
+                  },
+                  "key": {
+                    "S": "lime"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 sliced"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "rice flour pancakes"
+              },
+              {
+                "S": "rice noodles"
+              },
+              {
+                "S": "chicken breast"
+              },
+              {
+                "S": "carrots"
+              },
+              {
+                "S": "cucumber"
+              },
+              {
+                "S": "red pepper"
+              },
+              {
+                "S": "lettuce"
+              },
+              {
+                "S": "coriander"
+              },
+              {
+                "S": "mint"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "rice vinegar"
+              },
+              {
+                "S": "lime"
+              },
+              {
+                "S": "red chilli"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "13"
+          },
+          "instructions": {
+            "S": "step 1 Soak the rice fl our pancakes according to pack instructions or in boiling water for 30 secs. Remove and cool on kitchen paper. Soak the rice noodles according to pack instructions, then drain and cut them into 2cm strips. step 2 Lay a rice pancake on a board and arrange some rice noodles, chicken, vegetables and herb leaves about a third of the way up, leaving a 1cm edge at the side. Fold the sides over the vegetables and then roll up lengthways to make a cigar. Store in the fridge, covered with moist kitchen paper for up to 1 day. step 3 Mix together the ingredients for the dipping sauce and put into a bowl. To serve, arrange the rolls on a plate along with the leaves and herbs. To eat, wrap each roll in a piece of lettuce with a herb sprig and dunk into the sauce."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/f698g91763768731.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/vietnamese-veg-parcels"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=k3ciVdNBuK0"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53241"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53235"
+          },
+          "recipe_name": {
+            "S": "Vietnamese-style caramel pork"
+          },
+          "category": {
+            "S": "Pork"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Nut Oil"
+                  },
+                  "measure": {
+                    "S": "1 ½ tbsp"
+                  },
+                  "key": {
+                    "S": "ground nut oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pork Shoulder Steaks"
+                  },
+                  "measure": {
+                    "S": "500g"
+                  },
+                  "key": {
+                    "S": "pork shoulder steaks"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Shallots"
+                  },
+                  "measure": {
+                    "S": "2 chopped"
+                  },
+                  "key": {
+                    "S": "shallots"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ground Ginger"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "ground ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Red Chilli"
+                  },
+                  "measure": {
+                    "S": "1 chopped"
+                  },
+                  "key": {
+                    "S": "red chilli"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "75g"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Fish Sauce"
+                  },
+                  "measure": {
+                    "S": "1 tablespoon"
+                  },
+                  "key": {
+                    "S": "fish sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Chilli Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "chilli sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "4"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Rice"
+                  },
+                  "measure": {
+                    "S": "Steamed"
+                  },
+                  "key": {
+                    "S": "rice"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Pak Choi"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "pak choi"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "ground nut oil"
+              },
+              {
+                "S": "pork shoulder steaks"
+              },
+              {
+                "S": "shallots"
+              },
+              {
+                "S": "ground ginger"
+              },
+              {
+                "S": "red chilli"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "fish sauce"
+              },
+              {
+                "S": "chilli sauce"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "rice"
+              },
+              {
+                "S": "pak choi"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "11"
+          },
+          "instructions": {
+            "S": "step 1 Heat 1 tbsp of the oil in a wok over a high heat and stir-fry the pork in batches until browned all over. Remove with a slotted spoon and set aside. step 2 Turn the heat right down and add the remaining oil, then stir in the shallots, ginger and chilli. Cook over a low heat for a couple of mins until just starting to soften. Add the sugar, fish sauce and 200ml water to the pan and stir everything together. Bring to the boil, stirring, so that the sugar dissolves, then return the pork to the pan. Bubble vigorously for 8-10 mins until the sauce thickens to coat the meat and become glossy. Taste and stir in a little more fish sauce, if needed, along with the chilli sauce. Sprinkle with the spring onions and serve with steamed rice and pak choi."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/4mzt101763761546.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/vietnamese-style-caramel-pork"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=qmQe0Qxvyzc"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53235"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    },
+    {
+      "PutRequest": {
+        "Item": {
+          "recipe_id": {
+            "S": "mealdb#53236"
+          },
+          "recipe_name": {
+            "S": "Vietnamese-style veggie hotpot"
+          },
+          "category": {
+            "S": "Vegetarian"
+          },
+          "area": {
+            "S": "Vietnamese"
+          },
+          "country": {
+            "S": "Vietnam"
+          },
+          "ingredients": {
+            "L": [
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Oil"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "vegetable oil"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Ginger"
+                  },
+                  "measure": {
+                    "S": "4cm finely chopped"
+                  },
+                  "key": {
+                    "S": "ginger"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Garlic Clove"
+                  },
+                  "measure": {
+                    "S": "2 chopped"
+                  },
+                  "key": {
+                    "S": "garlic clove"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Butternut Squash"
+                  },
+                  "measure": {
+                    "S": "1/2"
+                  },
+                  "key": {
+                    "S": "butternut squash"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Soy Sauce"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "soy sauce"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Brown Sugar"
+                  },
+                  "measure": {
+                    "S": "2 tsp"
+                  },
+                  "key": {
+                    "S": "brown sugar"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Vegetable Stock"
+                  },
+                  "measure": {
+                    "S": "200ml"
+                  },
+                  "key": {
+                    "S": "vegetable stock"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Green Beans"
+                  },
+                  "measure": {
+                    "S": "100g shredded"
+                  },
+                  "key": {
+                    "S": "green beans"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Spring Onions"
+                  },
+                  "measure": {
+                    "S": "4 sliced"
+                  },
+                  "key": {
+                    "S": "spring onions"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Coriander Leaves"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "coriander leaves"
+                  }
+                }
+              },
+              {
+                "M": {
+                  "name": {
+                    "S": "Jasmine Rice"
+                  },
+                  "measure": {
+                    "S": "To serve"
+                  },
+                  "key": {
+                    "S": "jasmine rice"
+                  }
+                }
+              }
+            ]
+          },
+          "ingredient_keys": {
+            "L": [
+              {
+                "S": "vegetable oil"
+              },
+              {
+                "S": "ginger"
+              },
+              {
+                "S": "garlic clove"
+              },
+              {
+                "S": "butternut squash"
+              },
+              {
+                "S": "soy sauce"
+              },
+              {
+                "S": "brown sugar"
+              },
+              {
+                "S": "vegetable stock"
+              },
+              {
+                "S": "green beans"
+              },
+              {
+                "S": "spring onions"
+              },
+              {
+                "S": "coriander leaves"
+              },
+              {
+                "S": "jasmine rice"
+              }
+            ]
+          },
+          "ingredient_count": {
+            "N": "11"
+          },
+          "instructions": {
+            "S": "step 1 Heat the oil in a medium-size, lidded saucepan. Add the ginger and garlic, then stir-fry for about 5 mins. Add the squash, soy sauce, sugar and stock. Cover, then simmer for 10 mins. Remove the lid, add the green beans, then cook for 3 mins more until the squash and beans are tender. Stir the spring onions through at the last minute, then sprinkle with coriander and serve with rice."
+          },
+          "thumbnail_url": {
+            "S": "https://www.themealdb.com/images/media/meals/4uje7l1763762276.jpg"
+          },
+          "source_url": {
+            "S": "https://www.bbcgoodfood.com/recipes/vietnamese-veggie-hotpot"
+          },
+          "youtube_url": {
+            "S": "https://www.youtube.com/watch?v=OR6jC9gw_Hw"
+          },
+          "mealdb_url": {
+            "S": "https://www.themealdb.com/meal/53236"
+          },
+          "source_terms_url": {
+            "S": "https://www.themealdb.com/terms_of_use.php"
+          },
+          "attribution": {
+            "S": "Recipe data from TheMealDB official API. Keep source and copyright/trademark notices."
+          },
+          "fetched_at": {
+            "S": "2026-08-10T01:05:06Z"
+          },
+          "dataset_version": {
+            "S": "2026-08-10T01:05:06Z"
+          }
+        }
+      }
+    }
+  ]
+}
