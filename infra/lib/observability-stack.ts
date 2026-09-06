@@ -109,7 +109,10 @@ const MISSING_DATA: Record<string, cloudwatch.TreatMissingData> = {
 };
 
 export class ObservabilityStack extends cdk.Stack {
-  public readonly topic: sns.Topic;
+  // `ITopic`, not `Topic`: this is adopted by reference and the interface is
+  // what an imported topic satisfies. The narrower type would compile only for
+  // a topic this stack creates — which is the thing that failed in August.
+  public readonly topic: sns.ITopic;
   public readonly artefacts: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: ObservabilityStackProps) {
@@ -142,10 +145,40 @@ export class ObservabilityStack extends cdk.Stack {
     // that is deliberate: an SNS email subscription needs out-of-band
     // confirmation, so a declared one sits PendingConfirmation and reads as
     // subscribed. Added by hand, recorded in the runbook.
-    this.topic = new sns.Topic(this, 'Alarms', {
-      topicName: alarms.notification.topic_name,
-      displayName: 'Smart Grocery orchestrator alarms',
-    });
+    //
+    // ADOPTED BY REFERENCE, NOT CREATED — and this is the line that failed the
+    // only deploy this stack has ever been given. On 2026-08-31 it was
+    // `new sns.Topic(...)`, the topic already existed because
+    // `scripts/apply_alarms.py` had created it, and CloudFormation answered
+    // "Topic creation failed because the topic already exists". Every other
+    // resource in the stack reported "Resource creation cancelled" behind it,
+    // the stack rolled back to ROLLBACK_COMPLETE, and it sat there — a failed
+    // deploy that nobody recorded, while four documents went on saying the
+    // stack had never been deployed at all.
+    //
+    // WHY ADOPT RATHER THAN TAKE OWNERSHIP. The same Strategy A that
+    // `stateful-stack.ts` uses for the seeded tables: the template contains no
+    // topic resource, so CloudFormation cannot create, replace or delete it,
+    // and the adoption evidence is the ABSENCE. Here it also protects
+    // something specific — the topic carries a CONFIRMED email subscription,
+    // and the twelve alarms `apply_alarms.py` created point their actions at
+    // this exact ARN. Deleting and recreating the topic to let CDK own it
+    // would silently drop the subscriber this stack exists to notify, which is
+    // the same failure as declaring a PendingConfirmation subscription and
+    // calling it coverage.
+    //
+    // The cost, stated: the topic is not in IaC. Bringing it in wants
+    // `cdk import` rather than a create, and that is a separate, reviewable
+    // operation — not something to attach to a deploy that is already
+    // reconciling twelve alarms.
+    this.topic = sns.Topic.fromTopicArn(
+      this,
+      'Alarms',
+      cdk.Stack.of(this).formatArn({
+        service: 'sns',
+        resource: alarms.notification.topic_name,
+      }),
+    );
 
     // ------------------------------------------------------- metric filters
 
@@ -207,9 +240,13 @@ export class ObservabilityStack extends cdk.Stack {
         // it.
         //
         // Changing a construct id changes a CloudFormation logical id, which
-        // on a DEPLOYED stack means replacing every alarm. This stack has
-        // never been deployed, so the change costs nothing today and would
-        // have been awkward in a month. Doing it now is the cheap moment.
+        // on a stack with live resources means replacing every alarm. This one
+        // has none: its single deploy attempt (2026-08-31) failed on the SNS
+        // topic below and rolled back, so every alarm logical id in the
+        // deployed template maps to a resource that is DELETE_COMPLETE. The
+        // rename therefore costs nothing today and would have been genuinely
+        // awkward once these alarms were real. Verified against the account
+        // rather than assumed -- `describe-stack-resources` on 2026-09-07.
         const alarm = new cloudwatch.Alarm(this, `Alarm-${spec.name}${suffix}`, {
           alarmName: plane ? `${spec.name}-${plane.label}` : spec.name,
           alarmDescription: spec.description,
