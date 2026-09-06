@@ -1,9 +1,39 @@
+# RUNTIME dependencies -- the set that goes into the Lambda archive.
+#
+# THE RULE, AND IT IS HELD BY A TEST. Every distribution named here must be
+# imported by code that ships in the archive (scripts/build_lambda.py
+# INCLUDE_DIRS). `tests/test_requirements.py` asserts it, because a
+# requirements file is a claim about what the code needs and nothing was
+# checking that claim.
+#
+# It found three that were false on 2026-09-06:
+#
+#   langchain-aws  Nothing in the repository has ever imported it.
+#                  src/models/bedrock.py talks to Bedrock through boto3
+#                  `converse` directly. It was 1.1 MB of archive, and it was
+#                  the SOLE reason numpy was installed -- which is why numpy
+#                  then had to be named in build_lambda.py's prune list. A dead
+#                  dependency that had grown a workaround around it.
+#                  Pilot Task 7b proposes aligning the adapter with
+#                  `langchain-aws`; if that is done, this line comes back
+#                  WITH the import that justifies it.
+#   langchain-core Never imported directly. langgraph depends on it, so it is
+#                  in the archive either way and its version is resolved by the
+#                  package that actually uses it -- which is better than an
+#                  unpinned direct declaration floating against langgraph's
+#                  expectations.
+#   python-dotenv  Never imported, and required by nothing else, so it was
+#                  installed for no reader at all. Configuration reaches this
+#                  service through environment variables set by the CDK stack
+#                  and SSM, never a .env file.
+#
+# Removing all three is behaviour-preserving: langchain-core still arrives via
+# langgraph, and the other two were imported by nobody.
+
 langgraph
-langchain-core
-langchain-aws
 boto3
 pydantic
-python-dotenv
+
 # Observability (Req 12.1, 12.2). Imported only by src/observability/powertools.py
 # and src/handler.py; the graph, the model plane and both eval harnesses stay
 # free of it so they keep running with no AWS account. The [tracer] extra pulls

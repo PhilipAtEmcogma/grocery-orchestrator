@@ -5,8 +5,18 @@ AWS AI Innovation Mentorship Workshop (AUT). Six-week sprint. This repo is the
 the data/S3 side.
 
 A conversational assistant for budget-conscious New Zealand shoppers: compare
-grocery prices across Pak'nSave, Woolworths and New World, and generate meal
+grocery prices across the supermarkets we hold data for, and generate meal
 plans that provably fit a budget.
+
+**Today that is Pak'nSave and New World — two banners, both Foodstuffs.** The
+served catalogue holds no Woolworths rows; the collected dataset never
+contained any. The retailer is still *supported* in code and the ingestion
+branch for it runs and fetches zero, so the gap is visible on every refresh
+rather than asserted here. `docs/OPEN-REVIEW-chain-coverage.md` carries the
+numbers and the options, and `ACQUISITION-RISK.md` §4.5 is why the wording
+above is specific: Fair Trading exposure attaches to the comparison we
+publish, so "across three chains" is a claim to earn with data rather than to
+open with.
 
 A second, subordinate objective is broad hands-on AWS learning, especially
 Bedrock and AgentCore. Every service needs a product purpose, bounded scope,
@@ -37,10 +47,16 @@ service into an implementation claim.
   are one coordinated break. Do not apply it early without reading that
   document — and do not forget it either: `infra/test/app.test.ts` fails the
   moment `FrontendStack` creates a resource.
-- `docs/OPEN-REVIEW-chain-coverage.md` — **we say we compare three chains and we
-  compare two.** The served catalogue holds no Woolworths rows at all; the
-  fixtures were masking that until they were removed on 2026-09-01. Read before
-  quoting the three-chain claim, and before any demo outside the team.
+- `docs/OPEN-REVIEW-chain-coverage.md` — **the false claim is fixed; the data
+  gap is not.** We said we compared three chains and we compare two: the served
+  catalogue holds no Woolworths rows at all, and the fixtures were masking that
+  until they were removed on 2026-09-01. Option B was taken on 2026-09-06 —
+  every user-facing document now says what we actually cover, and
+  `KNOWN_RETAILERS` records that Woolworths is supported and carries no data.
+  **What stays open is option A: getting the data.** That needs the data
+  teammates and is not this repository's to close. Read before any demo outside
+  the team, and do not reintroduce a three-chain comparison claim without rows
+  behind it.
 - `docs/OPEN-REVIEW-min-grams-per-person-day.md` — the one judgement in the
   planning path that has NOT had domain review. Self-contained, needs no
   code reading, and says what would change the answer. Read it if you know

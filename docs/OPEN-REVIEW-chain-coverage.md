@@ -1,7 +1,28 @@
 # Open review — we say we compare three supermarket chains. We compare two.
 
-**Status:** open, and wants the data teammates plus a product call from the owner.
+**Status:** **half answered 2026-09-06 — option B taken.** The claim now matches
+the data; getting the data (option A) stays open and wants the data teammates.
 **Raised:** 2026-09-02 · **Effort:** about fifteen minutes · **You need no code.**
+
+> **ANSWERED IN PART, 2026-09-06 (Philip).** The two questions in this brief
+> were always separable, and only one of them needed anyone outside this
+> repository. **"Do we stop saying we have it?" — yes, done.** `AGENTS.md` no
+> longer opens with a three-chain comparison, the README records what changed,
+> and `ingestion/sources.py` explains why `KNOWN_RETAILERS` keeps a retailer
+> that carries no rows. That took a wording change and it was taken immediately
+> rather than queued behind a meeting, because §4.5 below attaches Fair Trading
+> exposure to the comparison we publish and a false headline is the part of
+> this that has a legal edge.
+>
+> **"Do we get Woolworths data?" — still open, and deliberately not chased.**
+> The workshop is in its final week and the collection is the data teammates'
+> to run; asking them to re-collect under that deadline is a request the
+> project cannot back up. If a Woolworths slice arrives, `lineage_b.py` already
+> maps both `Woolworths` and `Countdown` and the ingestion branch already runs,
+> so it is a data drop rather than a code change — and everything below becomes
+> true again on its own.
+>
+> The rest of this document is unchanged and stays the record of the reasoning.
 
 > **Confirmed from the deployed pipeline, 2026-09-04.** This was previously an
 > argument from reading files. The first deployed refresh under

@@ -87,9 +87,19 @@ INCLUDE_DIRS = [
 ]
 
 # Installed but never imported by anything we ship, dead weight either way.
-# Transitive pulls from langchain-aws and langsmith respectively.
+# A transitive pull from langsmith.
 # verify_unused() checks this claim against src/ directly rather than trusting
 # the design doc.
+#
+# NUMPY WAS REMOVED FROM THIS LIST ON 2026-09-06, and the reason is worth
+# keeping. It was here as a transitive pull from `langchain-aws` -- which
+# `tests/test_requirements.py` then found nothing had ever imported. Dropping
+# the dead dependency also dropped its only reason to be installed, so an
+# entry naming it would match nothing and prune nothing while reading like a
+# working exclusion. The repository has found that shape three times now (a
+# skip with no condition, a forcing test pointed at a file that cannot change,
+# and a prune entry for a package that is gone); an exclusion list is only
+# honest while every name on it is something that would otherwise be there.
 #
 # jmespath used to be on this list, on the reasoning that it was a boto3-only
 # dependency and therefore moot once boto3 was excluded. That stopped being
@@ -99,7 +109,7 @@ INCLUDE_DIRS = [
 # statable — bundle everything our dependency tree declares, except what AWS
 # documents the runtime provides — and jmespath is declared by a package we
 # bundle, so it is ours. It costs ~50 KB.
-UNUSED_TRANSITIVE = ["numpy", "zstandard"]
+UNUSED_TRANSITIVE = ["zstandard"]
 
 # The opposite case: imported, but never bundled, because the Lambda Python
 # runtime ships its own copies in /var/runtime. Bundling ours would only be
