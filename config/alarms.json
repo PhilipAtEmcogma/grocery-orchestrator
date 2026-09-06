@@ -260,6 +260,44 @@
       "threshold": 1,
       "comparison_operator": "GreaterThanOrEqualToThreshold",
       "treat_missing_data": "notBreaching"
+    },
+    {
+      "name": "grocery-orchestrator-model-throttled-dev",
+      "description": "Bedrock is refusing calls for RATE. Until 2026-09-06 a throttle was indistinguishable from any other model failure -- both raised a bare ModelError and both landed in TurnError -- so the dashboard could say the model plane was unhealthy when the true answer was 'we asked faster than our quota allows'. Those want different responses: an outage is escalated, a throttle is answered by pacing, a quota increase, or routing to a second model. Dimensioned by model and task, because a throttle concentrated on one model is a routing decision and one spread across all of them is a quota decision.",
+      "_why_it_is_not_covered_by_turn_error": "A throttled CALL is not necessarily a failed TURN. The graph degrades -- classify_intent falls back to keyword heuristics and the turn can still answer -- so TurnError under-reports throttling by exactly the turns that survived it. This metric is the leading indicator and TurnError is the lagging one; watching only the second means finding out when shoppers are already being refused.",
+      "namespace": "GroceryOrchestrator",
+      "metric_name": "ModelThrottled",
+      "_dimensions_note": "Left EMPTY on purpose, unlike the internal-error alarm. model and task are emitted as dimensions so an operator can break the number down in the console, but the ALARM wants the total: a quota is shared across models and tasks, so binding this to one dimension pair would leave every other pair unwatched and read as coverage. The breakdown is for diagnosis, the total is for paging.",
+      "dimensions": {},
+      "statistic": "Sum",
+      "period": 300,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "_threshold_note": "Five in five minutes. A single throttle is normal at the edge of a quota and the SDK's own retry usually absorbs it; five means the retries are not keeping up and turns are being degraded. Deliberately above one, so this is not an alarm people mute. Task 16's load gate (G6 Phase B) drove a 21x breach and produced far more than five, so the level is known to fire when it should.",
+      "threshold": 5,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching"
+    },
+    {
+      "name": "grocery-orchestrator-stale-data-dev",
+      "description": "Every price a request touched was too old to stand behind, so the turn refused rather than publishing a comparison it could not defend. One is a normal answer about a thin corner of the catalogue. A sustained rate means the SERVING DATA HAS AGED OUT and the product is refusing shoppers it could have served -- which is a data-pipeline failure wearing a correct-refusal costume, and nothing else reports it: the turn is an HTTP 200 with a contract-valid body.",
+      "_this_is_the_alarm_for_a_dated_risk": "config/freshness.json holds max_price_age_days at 45 against a catalogue whose only capture date is 2026-08-28, and no source available to this project can stamp a newer one. On 2026-10-12 every priced query starts returning STALE_DATA. This alarm is what turns that from a date somebody has to remember into a page on the day it happens.",
+      "_why_no_new_metric_was_needed": "tasks.md recorded throttling and stale data together as 'neither has a metric yet'. That was true of throttling and NOT of stale data: TurnError has carried a `code` dimension since 2026-08-30, so STALE_DATA has been published all along and only the alarm was missing. Worth recording because the note was the reason nobody looked.",
+      "namespace": "GroceryOrchestrator",
+      "metric_name": "TurnError",
+      "dimensions": {
+        "service": "grocery-orchestrator",
+        "code": "STALE_DATA"
+      },
+      "statistic": "Sum",
+      "_period_note": "Fifteen minutes, matching the silent-turns alarm rather than the five-minute error alarms. Staleness is a property of the DATA, not of a request: it does not spike and recover, it starts and continues. A longer window costs nothing in detection time for a condition that lasts until someone reloads the catalogue, and it keeps a thin-catalogue afternoon from paging anyone.",
+      "period": 900,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "_threshold_note": "Ten in fifteen minutes. Below the volume at which one shopper asking about an obscure product repeatedly could reach it, and far below what the 2026-10-12 cliff would produce -- past that date the rate is every priced turn.",
+      "threshold": 10,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching"
     }
   ],
   "tags": [
@@ -276,7 +314,7 @@
       "value": "config/alarms.json"
     }
   ],
-  "_coverage_note": "Req 12.8 asks for escaped handlers and API 5xx before pilot traffic, then MEASURED alarms for latency, model errors, Guardrail interventions, throttling, stale data, idempotency failures and silent turns. The first two shipped 2026-08-27; the rest were added 2026-08-30 after an audit found that the most consequential failure the service has -- a production stage silently configured as a demo -- fired neither of them. Every alarm here binds to a metric CONFIRMED present in CloudWatch with the dimensions named, because an alarm on a metric that never reports looks exactly like a healthy service. Still absent deliberately: throttling and stale-data alarms, because neither has a metric yet -- adding the alarm before the metric would be adding the appearance of coverage.",
+  "_coverage_note": "Req 12.8 asks for escaped handlers and API 5xx before pilot traffic, then MEASURED alarms for latency, model errors, Guardrail interventions, throttling, stale data, idempotency failures and silent turns. The first two shipped 2026-08-27; the rest were added 2026-08-30 after an audit found that the most consequential failure the service has -- a production stage silently configured as a demo -- fired neither of them. Every alarm here binds to a metric CONFIRMED present in CloudWatch with the dimensions named, because an alarm on a metric that never reports looks exactly like a healthy service. THROTTLING AND STALE DATA CLOSED 2026-09-06, and the two halves of that note turned out to be different problems. Throttling genuinely had no metric: every ClientError from Bedrock became one opaque ModelError, so `ModelThrottled` was added as a typed failure and `METRIC_MODEL_THROTTLED` counts it at the instrumented seam. Stale data had a metric all along -- TurnError carries a `code` dimension, so STALE_DATA was published from the day that dimension shipped -- and only the alarm was missing. The note that grouped them is why nobody checked the second one. Req 12.8's list is now fully covered.",
   "_emf_note": "Metrics the APPLICATION emits as Embedded Metric Format, as distinct from metric_filters, which CloudWatch derives from log lines. Both end up in the same namespace and an alarm can watch either, but only filters are declared by this file -- so EMF names are listed here explicitly rather than left unvalidated. That keeps the teeth: an alarm on a mistyped metric name still fails validation, and a metric name that never reports looks exactly like a healthy service. tests/test_alarms.py asserts this list matches the METRIC_ constants in src/observability/base.py, so renaming a metric in code without updating an alarm fails the build.",
   "emf_metrics": [
     "CacheReadTokens",
@@ -288,6 +326,7 @@
     "InvalidRequest",
     "ModelCalls",
     "ModelLatency",
+    "ModelThrottled",
     "OutputTokens",
     "PreflightRequests",
     "RepairAttempts",

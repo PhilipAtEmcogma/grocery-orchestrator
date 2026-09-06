@@ -2092,3 +2092,134 @@ ingestion    $LATEST   Nr7qEdE9rVDNlmXYqmZyEaK1
 Three values, one hash. Anyone can run that comparison in one call, and it is
 the honest form of the claim: not "we build one artefact" but "these two
 functions are running the same bytes, today".
+
+
+## 3w. Throttling, stale data, and the artefact bucket's other half — 2026-09-06
+
+Pilot Task 12 had carried the same three-item "still open" list since
+2026-08-30: the artefact bucket's lifecycle and restore tests, and "throttling
+and stale-data metrics, the alarms deliberately absent until the metrics
+exist". All three are now written and gated. **None of them is deployed** — see
+§3q, and Task 12f.
+
+### The note that bundled two facts hid one of them
+
+`config/alarms.json` said neither throttling nor stale data had a metric yet.
+That was true of throttling and **false of stale data**. `TurnError` has been
+emitted with a `code` dimension since 2026-08-30 — that dimension is what makes
+the internal-error alarm possible at all — so `STALE_DATA` had been publishing
+to CloudWatch for a week. The missing piece was fifteen lines of alarm.
+
+A sentence that joins two claims is read as one claim. This one cost nothing in
+the end, but the shape is worth naming: it is the same failure as a skip with no
+condition and a forcing test pointed at a file that cannot change. A deferral
+should name each thing it defers separately, so discharging one is visible.
+
+### Throttling genuinely had nothing, and it mattered more than it looked
+
+`BedrockModelClient._converse` caught every `ClientError` and raised one opaque
+`ModelError("Bedrock call failed: ...")`. So these two incidents produced an
+identical signal:
+
+| What happened | What an operator should do |
+|---|---|
+| Bedrock is unreachable or erroring | Escalate; check service health |
+| We asked faster than our quota allows | Pace, raise the quota, or route to a second model |
+
+Nothing in CloudWatch could tell them apart. Task 16's load gate (G6 Phase B,
+2026-09-04) already showed this path is not theoretical: a deliberate 21x quota
+breach produced 14 of 24 turns coming back as clarifications, because a
+throttled *first* call degraded classification and the shopper was asked to
+rephrase a request that was already complete. That defect was found by running
+the gate by hand and reading transcripts.
+
+`ModelThrottled` is now a typed failure:
+
+- **A subclass of `ModelError`**, so every `except ModelError` at the edges
+  keeps catching it. A sibling class would have let a throttle escape the error
+  boundary and become the 500 the contract invariant exists to prevent — there
+  is a test asserting the subclass relationship for exactly that reason.
+- **Three names plus the status code.** `ThrottlingException` (botocore's
+  standard), `TooManyRequestsException` (Bedrock Runtime's on-demand path) and
+  `ThrottledException`, and any HTTP 429 whatever the body calls it. Matching
+  only the first would leave the metric reading zero during the incident it
+  exists to describe.
+- **`ServiceQuotaExceededException` is deliberately excluded.** That is a hard
+  account limit, not a rate. It is not fixed by pacing, and counting it here
+  would put a ticket-to-AWS problem on a graph that says "slow down".
+- **Counted at the instrumented seam**, not in `bedrock.py`, so the model plane
+  still imports no observability. `InstrumentedModelClient` already owns the
+  span, the latency metric and the accounting for a call; the count joins them
+  in the same `finally` rather than becoming a second place a call is measured.
+
+15 tests in `tests/test_throttling.py`, verified by mutation: dropping the
+classification branch fails 4, dropping the 429 fallback fails 1, never counting
+fails 1, and counting every failure as a throttle fails 1.
+
+### The two alarms take opposite decisions about dimensions
+
+Worth recording together, because each looks wrong from the other's side:
+
+- **Stale data is dimensioned** `code=STALE_DATA`. Undimensioned it would fire
+  on every honest `NO_DATA` and `BUDGET_INFEASIBLE` refusal — correct answers at
+  healthy volume. Same argument as the internal-error alarm.
+- **Throttling is deliberately undimensioned.** A quota is shared across models
+  and tasks, so binding the alarm to one `model`/`task` pair would leave every
+  other pair unwatched while reading as coverage. The dimensions are emitted for
+  diagnosis in the console; the alarm wants the total.
+
+Both carry a test, so neither gets "corrected" into the other later.
+
+**The stale-data alarm is also the control on a dated risk.**
+`config/freshness.json` holds `max_price_age_days` at 45 against a catalogue
+whose only capture date is 2026-08-28, and no source available to this project
+can stamp a newer one. On **2026-10-12** every priced query starts returning
+`STALE_DATA`. This alarm is what turns that from a date somebody has to
+remember into a page on the day it happens.
+
+### A real synth failure, found by the CDK suite
+
+`observability-stack.ts` built each alarm's construct id as
+`Alarm-${spec.metric_name}`, which quietly assumed one alarm per metric. The
+second `TurnError` alarm broke `cdk synth` outright:
+
+```
+There is already a Construct with name 'Alarm-TurnError' in ObservabilityStack
+```
+
+Dimensioning one metric several ways is the *normal* shape for this config — it
+is precisely how an honest refusal is told apart from a fault — so the metric
+was never the right key. It is `spec.name` now, which `apply_alarms.py` already
+rejects duplicates of and `tests/test_alarms.py` holds.
+
+Changing a construct id changes a CloudFormation logical id, which on a deployed
+stack means replacing every alarm. `Grocery-Obs-dev` has never been deployed, so
+this cost nothing today and would have been awkward in a month. The regression
+test asserts the shape rather than the absence: two alarms on `TurnError`,
+carrying `INTERNAL_ERROR` and `STALE_DATA`.
+
+### The artefact bucket: lifecycle now, restore as a drill
+
+Four scoped prefixes, because the three things that land here are not
+interchangeable — an approved `datasets/` snapshot is somebody else's input, an
+`evaluations/` result is a measurement of this code at a commit, a `reviews/`
+snapshot is sanitised input handed to something untrusted, and `baselines/`
+holds latency and cost. One namespace would mean one lifecycle rule and one
+grant for all four.
+
+Each prefix expires **noncurrent versions** (90 days, 30 for reviews) and aborts
+incomplete multipart uploads. Versioning is what makes restore possible and it
+is also what makes a bucket grow forever: every overwrite keeps the copy it
+replaced. **No rule expires a current object, and a test asserts that** — this
+bucket exists so a measurement outlives the commit that made it, and one that
+silently deletes itself leaves an absence that reads like it was never taken.
+
+Restore and deletion are `scripts/artefact_drill.py`, a drill rather than a
+test, for the same reason the alarm drill exists: the CDK assertions prove the
+template says "versioned", and only overwriting a real object and getting it
+back proves recovery works. It restores by copying the old version **forward**
+rather than deleting the new one — restoring by deleting is how the second
+mistake gets made during a recovery. It writes under `drills/`, outside the four
+managed prefixes, and cleans up after itself.
+
+**It has not been run.** It needs the bucket, and the bucket needs the deploy.

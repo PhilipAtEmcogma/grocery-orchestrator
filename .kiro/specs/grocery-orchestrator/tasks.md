@@ -722,6 +722,70 @@ proposed, or gated as labelled; it is not implemented.
     lifecycle and restore tests, throttling and stale-data metrics (the alarms
     are deliberately absent until the metrics exist), and a larger latency run —
     n=8 and n=3 are a baseline, not a qualification.
+  - [x] **12e — The three deferred halves, written and gated. Done 2026-09-06.**
+    Everything above except the larger latency run, which is a measurement
+    rather than a build and belongs with the next release-gate battery.
+
+    **THE TWO "MISSING METRICS" WERE ONE MISSING METRIC AND ONE MISSING
+    ALARM, and grouping them is why nobody checked.** `config/alarms.json` said
+    "neither has a metric yet" and that was true of throttling only.
+    `TurnError` has carried a `code` dimension since 2026-08-30, so
+    `STALE_DATA` was being published the whole time and the stale-data half was
+    a fifteen-line alarm nobody had written. A note that bundles two facts is
+    read as one fact, and this one hid a discharged prerequisite for a week.
+
+    **Throttling genuinely had nothing.** `BedrockModelClient._converse`
+    caught every `ClientError` and raised one opaque `ModelError`, so "Bedrock
+    is down" and "we exceeded our quota" produced the identical signal — and
+    they want opposite responses, escalation versus pacing. `ModelThrottled` is
+    now a typed failure (a SUBCLASS, so every `except ModelError` at the edges
+    is unchanged), raised on the three names AWS uses plus any HTTP 429, and
+    counted by `InstrumentedModelClient` with the same `model`/`task`
+    dimensions the latency metric carries. 15 tests in
+    `tests/test_throttling.py`, verified by mutation: dropping the branch fails
+    4, dropping the 429 fallback fails 1, never counting fails 1, and counting
+    every failure fails 1.
+
+    **The two alarms take opposite dimension decisions, on purpose.**
+    Stale-data is dimensioned `code=STALE_DATA`, because undimensioned it would
+    fire on every honest `NO_DATA` refusal. Throttling is deliberately
+    UNdimensioned, because a quota is shared across models and tasks and
+    binding it to one pair would leave the rest unwatched while reading as
+    coverage. Both choices carry a test, so neither can be "fixed" into the
+    other.
+
+    **A REAL SYNTH FAILURE CAME OUT OF IT.** `observability-stack.ts` derived
+    each alarm's construct id from the METRIC name, which quietly assumed one
+    alarm per metric. The second `TurnError` alarm broke `cdk synth` outright:
+    *"There is already a Construct with name 'Alarm-TurnError'"*. Keyed on
+    `spec.name` now, which `apply_alarms.py` already guarantees unique.
+    Changing a construct id would mean replacing every alarm on a DEPLOYED
+    stack — `Grocery-Obs-dev` has never been deployed, so this was the cheap
+    moment and it would have been awkward in a month.
+
+    **The artefact bucket gained the lifecycle half.** Four scoped prefixes
+    (`datasets/`, `evaluations/`, `reviews/`, `baselines/`), each with a
+    noncurrent-version expiry and an incomplete-multipart abort. Old VERSIONS
+    expire; no rule expires a current object, and there is a test asserting
+    that — a baseline that silently deletes itself is worse than an absent one,
+    because the absence looks like the measurement was never taken.
+
+    **Restore and deletion are a DRILL, not a unit test**
+    (`scripts/artefact_drill.py`), for the reason the alarm drill exists: the
+    CDK assertions prove the template says "versioned", and only overwriting a
+    real object and getting it back proves recovery works. It restores by
+    copying the old version FORWARD rather than deleting the new one, because
+    restoring by deleting is how the second mistake gets made. **Not yet run —
+    it needs the bucket, which needs the deploy below.**
+
+    Offline gates: 966 passed, 31 skipped; 56 CDK assertions; pyright 0 errors.
+  - [ ] **12f — Deploy `Grocery-Obs-dev`.** Everything in 12e is written and
+    gated and NONE of it is in the account. The alarms currently in CloudWatch
+    were applied by `scripts/apply_alarms.py`, so the deploy has to reconcile
+    against them rather than assume an empty account — a stack that adopts
+    twelve existing alarm names is the thing to get right before adding two.
+    `docs/ARCHITECTURE.md` §3q carries the ordered checklist. Until this runs,
+    the artefact bucket does not exist and the drill above cannot be executed.
   - **Partial, 2026-08-30: end-to-end X-Ray tracing now exists.** API Gateway
     stage tracing was enabled on `woqmel35lk`/`dev`, so a trace's entry point is
     the gateway rather than the Lambda and the gateway hop is measurable for the
