@@ -2223,3 +2223,64 @@ mistake gets made during a recovery. It writes under `drills/`, outside the four
 managed prefixes, and cleans up after itself.
 
 **It has not been run.** It needs the bucket, and the bucket needs the deploy.
+
+### The stack was not un-deployed. It was ROLLBACK_COMPLETE — found 2026-09-07
+
+Before deploying, the account was checked rather than the documentation. Four
+places — `README.md`, `infra/bin/grocery.ts`, `tasks.md` and §3q here — agreed
+that `Grocery-Obs-dev` had never been deployed. They agreed with each other and
+not with the account:
+
+```
+$ aws cloudformation describe-stacks --stack-name Grocery-Obs-dev
+Status:  ROLLBACK_COMPLETE
+Created: 2026-08-31T14:32:16Z
+```
+
+A deploy **was** attempted, on the day the stack was written, and it failed. The
+cause is one line of the stack events:
+
+```
+Alarms04B5A0BF  AWS::SNS::Topic
+  "Topic creation failed because the topic already exists" (HandlerErrorCode: AlreadyExists)
+```
+
+`scripts/apply_alarms.py` had already created `grocery-orchestrator-alarms-dev`,
+so `new sns.Topic(...)` could not. Every other resource in the stack reported
+*"Resource creation cancelled"* behind it, and the whole thing rolled back.
+
+**The documents were true of the resources and false about the history**, which
+is the more expensive half. "Never deployed" invites you to run `cdk deploy` and
+watch it work; "rolled back on a name collision a week ago" tells you what to fix
+first. A failed deploy nobody writes down looks exactly like a deploy nobody
+attempted — and this one had a diagnosable, one-line cause sitting in CloudTrail
+for a week.
+
+**Fixed by adopting the topic instead of creating it.** Strategy A, the same move
+`stateful-stack.ts` makes for the seeded tables: the template contains no topic
+resource, so CloudFormation cannot create, replace or delete it, and the
+adoption evidence is the absence. Here it protects two specific things — the
+topic carries a **confirmed** email subscription, and the twelve alarms
+`apply_alarms.py` created point their actions at that exact ARN. Deleting and
+recreating the topic so CDK could own it would have silently dropped the only
+subscriber the stack exists to notify.
+
+The cost, stated plainly: **the topic is not in IaC.** Bringing it in wants
+`cdk import`, which is a separate reviewable operation and not something to
+attach to a deploy already reconciling twelve alarms.
+
+### What the retry looks like, and the one thing still unknown
+
+A `ROLLBACK_COMPLETE` stack **cannot be updated** — the only valid operation is
+delete. So the retry is delete-then-deploy, and the delete is provably empty:
+every resource is `DELETE_COMPLETE` except the artefact bucket, which is
+`DELETE_SKIPPED` under its RETAIN policy and was never created in the first place
+(`list-buckets` returns nothing matching).
+
+**The open question is the twelve alarms**, which exist in CloudWatch under the
+names this stack wants. Whether CloudFormation adopts, overwrites or refuses
+them is not something to guess at: the August attempt never reached the alarms,
+so there is no evidence either way, and the three outcomes want different
+follow-ups. An attempt is cheap — a CREATE failure rolls back, which is exactly
+what happened last time and it damaged nothing — so trying is the way to find
+out, and the answer decides whether the twelve are deleted first.

@@ -12,10 +12,23 @@
  *                          throttling, usage plan. Runs BESIDE the hand-made
  *                          plane under a `-cdk` name suffix; the cutover is
  *                          deferred by decision (docs/ARCHITECTURE.md §3m).
- *   Grocery-Obs-dev        REAL, not yet deployed. SNS, metric filters and
- *                          alarms from config/alarms.json ON BOTH PLANES,
- *                          a dashboard, a $25 budget, and the artefact bucket.
- *                          Deploy it before the cutover, not after.
+ *   Grocery-Obs-dev        REAL. Metric filters and alarms from
+ *                          config/alarms.json ON BOTH PLANES, a dashboard, a
+ *                          $25 budget, and the artefact bucket. The SNS topic
+ *                          is ADOPTED by reference, not created.
+ *                          STATE: ROLLBACK_COMPLETE, not "never deployed".
+ *                          One deploy was attempted on 2026-08-31 and failed
+ *                          on `new sns.Topic` -- the topic already existed,
+ *                          created by scripts/apply_alarms.py -- so every
+ *                          other resource cancelled behind it and the stack
+ *                          rolled back holding nothing. This file, the README,
+ *                          tasks.md and ARCHITECTURE all recorded it as never
+ *                          deployed, which is true of its RESOURCES and false
+ *                          of its history; a failed deploy that nobody writes
+ *                          down looks exactly like a deploy nobody attempted.
+ *                          A ROLLBACK_COMPLETE stack cannot be updated, so the
+ *                          retry is delete-then-deploy. Deploy it before the
+ *                          cutover, not after.
  *   Grocery-Ingestion-dev  STUB.
  *   Grocery-Frontend-dev   STUB.
  *   Grocery-Reviewer-dev   REAL (ADR 0002 WS2), not deployed. The data-quality

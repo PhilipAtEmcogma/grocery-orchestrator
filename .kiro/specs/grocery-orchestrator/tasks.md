@@ -779,13 +779,41 @@ proposed, or gated as labelled; it is not implemented.
     it needs the bucket, which needs the deploy below.**
 
     Offline gates: 966 passed, 31 skipped; 56 CDK assertions; pyright 0 errors.
-  - [ ] **12f — Deploy `Grocery-Obs-dev`.** Everything in 12e is written and
-    gated and NONE of it is in the account. The alarms currently in CloudWatch
-    were applied by `scripts/apply_alarms.py`, so the deploy has to reconcile
-    against them rather than assume an empty account — a stack that adopts
-    twelve existing alarm names is the thing to get right before adding two.
-    `docs/ARCHITECTURE.md` §3q carries the ordered checklist. Until this runs,
-    the artefact bucket does not exist and the drill above cannot be executed.
+  - [ ] **12f — Deploy `Grocery-Obs-dev`. DIAGNOSED 2026-09-07, not yet run.**
+    Everything in 12e is written and gated and NONE of it is in the account.
+
+    **The stack is not un-deployed, it is `ROLLBACK_COMPLETE`.** Checking the
+    account before deploying — rather than trusting four documents that agreed
+    with each other — found a failed create from **2026-08-31** that nobody
+    recorded. Cause, from the stack events: `AWS::SNS::Topic` returned *"Topic
+    creation failed because the topic already exists"*, because
+    `scripts/apply_alarms.py` had already created
+    `grocery-orchestrator-alarms-dev`. Every other resource reported *"Resource
+    creation cancelled"* behind it. A failed deploy that nobody writes down is
+    indistinguishable from a deploy nobody attempted, and this one cost a week.
+
+    **Fixed by adopting the topic** rather than creating it — Strategy A, the
+    same move `stateful-stack.ts` makes for the seeded tables, and here it also
+    protects a CONFIRMED email subscription plus the twelve live alarms whose
+    actions point at that ARN. `cdk diff` now shows the topic gone from the
+    template. Cost, stated: the topic is not in IaC; bringing it in wants
+    `cdk import`, which is its own reviewable operation.
+
+    **The retry is delete-then-deploy**, because a `ROLLBACK_COMPLETE` stack
+    cannot be updated. Deleting it is provably empty: every resource is
+    `DELETE_COMPLETE` except the artefact bucket, which is `DELETE_SKIPPED`
+    under its RETAIN policy and was never created (`list-buckets` confirms).
+
+    **The open question is the twelve alarms.** They exist in CloudWatch with
+    the names this stack wants, put there by `apply_alarms.py`. Whether
+    CloudFormation adopts, overwrites or refuses them is not something to
+    guess: the 2026-08-31 attempt never reached the alarms, so there is no
+    evidence either way. An attempt is cheap — a CREATE failure rolls back, as
+    it already did once — so the deploy is safe to try and the answer decides
+    whether the twelve get deleted first.
+
+    Until this runs, the artefact bucket does not exist and the drill in 12e
+    cannot be executed.
   - **Partial, 2026-08-30: end-to-end X-Ray tracing now exists.** API Gateway
     stage tracing was enabled on `woqmel35lk`/`dev`, so a trace's entry point is
     the gateway rather than the Lambda and the gateway hop is measurable for the

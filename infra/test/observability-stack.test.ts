@@ -231,6 +231,33 @@ describe('ObservabilityStack', () => {
     }
   });
 
+  it('adopts the alarm topic by reference and never declares one', () => {
+    // THE ABSENCE IS THE ADOPTION EVIDENCE, exactly as in stateful-stack.ts:
+    // a template with no topic resource is one CloudFormation cannot create,
+    // replace or delete.
+    //
+    // This is a regression test for the ONLY deploy this stack has ever been
+    // given. On 2026-08-31 it declared `new sns.Topic(...)`, the topic already
+    // existed because scripts/apply_alarms.py had created it, and the create
+    // failed with "Topic creation failed because the topic already exists".
+    // Every other resource reported "Resource creation cancelled" behind it
+    // and the stack sat in ROLLBACK_COMPLETE.
+    //
+    // Re-declaring it would not merely repeat that failure: the live topic
+    // carries a CONFIRMED email subscription and the alarms already in the
+    // account point their actions at that ARN.
+    expect(template.findResources('AWS::SNS::Topic')).toEqual({});
+
+    // ...and the alarms must still HAVE an action. An adopted topic that
+    // nothing references would make this file's other assertions pass while
+    // leaving every alarm a dashboard widget.
+    const alarms = Object.values(template.findResources('AWS::CloudWatch::Alarm'));
+    expect(alarms.length).toBeGreaterThan(0);
+    for (const alarm of alarms) {
+      expect(props(alarm).AlarmActions?.length ?? 0).toBeGreaterThan(0);
+    }
+  });
+
   it('declares no SNS subscription, because an unconfirmed one reads as subscribed', () => {
     // Email subscriptions need out-of-band confirmation. A declared one sits in
     // PendingConfirmation and looks, in a console and in a template, exactly
