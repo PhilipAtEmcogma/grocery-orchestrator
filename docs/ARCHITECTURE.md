@@ -2492,6 +2492,38 @@ the other plane".
    keep the alias target plus one or two, delete the rest — and nothing in this
    repository automates that today. It is the obvious follow-up to §3x and it
    is not built.
+### Deployed and verified, 2026-09-07
+
+`cdk deploy Grocery-Service-dev` with `SNAPSTART` unset. Confirmed against the
+account rather than assumed:
+
+```
+grocery-orchestrator-dev-cdk   SnapStart.ApplyOn: None      (was PublishedVersions)
+```
+
+**The old snapshot cleaned itself up, which was not guaranteed.** Turning the
+flag off does not retroactively remove a snapshot already published — the
+concern that made this a two-step job. In the event it was one step: CDK's
+`currentVersion` publishes a NEW version per deploy, so CloudFormation replaced
+version 1 with version 2 and deleted the old resource, taking its snapshot with
+it. A hand-made function would have needed the version deleted explicitly; this
+one did not, because the version is a stack resource.
+
+Account-wide afterwards, only the serving plane bills for snapshots:
+
+```
+grocery-orchestrator-dev: versions 11, 12, 13   (billed)
+grocery-orchestrator-dev-cdk: none
+```
+
+**Both planes were smoke-tested after the change** and both answered HTTP 200
+with a grounded `price_comparison`. Warm latency is unchanged and identical
+across them — serving 1.91 / 1.83 / 1.82s, idle 1.73 / 1.74 / 1.78s over three
+calls each. That is the expected result and worth stating plainly: **SnapStart
+buys cold starts, not warm ones.** The number it protects is the first request
+after a quiet period, which is exactly what a demo audience produces and what
+these three-call samples cannot show.
+
 3. **Restore is not free either**, though it is small: `APS2-Lambda-SnapStart-Restored-GB`
    was $0.004 against $8.15 of storage. At real traffic that ratio inverts, and
    the decision becomes a genuine trade rather than the one-sided one it is on
