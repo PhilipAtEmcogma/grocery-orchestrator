@@ -14,6 +14,21 @@ include = ["src", "tests", "evals", "scripts", "validate.py"]
 exclude = ["build", ".venv", "**/__pycache__"]
 pythonVersion = "3.13"
 typeCheckingMode = "standard"
+# WHICH ENVIRONMENT PYRIGHT RESOLVES IMPORTS AGAINST. Without these two lines
+# it uses whatever `python` is first on PATH, and on a developer machine that
+# is the global interpreter rather than `.venv` -- which has none of this
+# project's dependencies in it. The effect was a type gate that reported
+# `Import "aws_lambda_powertools" could not be resolved` (4 errors) on every
+# local run while reporting zero in CI, where there is no venv and pip installs
+# into the runner's system Python. Green in the gate, red on the desk, for the
+# same code: the developer learns to ignore the checker, which is worse than
+# not having one. Found 2026-09-06.
+#
+# Safe in CI: when `.venv` is absent pyright warns that the configured
+# environment was not found and falls back to the default interpreter -- a
+# warning, not an error, so the `pyright --stats` step still passes there.
+venvPath = "."
+venv = ".venv"
 # `scripts/` is not a package and is deliberately not shipped in the Lambda
 # archive, so its shared helpers are imported after a sys.path insert. That is
 # a runtime fact pyright cannot see — it does not execute the insert — so the

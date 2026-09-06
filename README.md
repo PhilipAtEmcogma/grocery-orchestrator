@@ -933,13 +933,25 @@ specific question arises.
   reading — and it unblocks the CDK cutover, which has been waiting for a
   frontend to coordinate the URL change with.
 - [`docs/OPEN-REVIEW-chain-coverage.md`](docs/OPEN-REVIEW-chain-coverage.md) —
-  **open, and wants the data teammates plus a product call.** Every document
-  here opens by promising a comparison across Pak'nSave, Woolworths and New
-  World. The served catalogue has **zero Woolworths rows** — 1,500 New World and
-  1,500 Pak'nSave, both Foodstuffs banners. The fixtures carried all three and
-  were masking it until they were removed from the live table on 2026-09-01,
-  which turned a recorded caveat into a false headline claim. Fifteen minutes,
-  no code reading. Options and a recommendation are in the brief.
+  **half closed 2026-09-06; the remaining half wants the data teammates.** Every
+  document here used to open by promising a comparison across Pak'nSave,
+  Woolworths and New World. The served catalogue has **zero Woolworths rows** —
+  1,500 New World and 1,500 Pak'nSave, both Foodstuffs banners. The fixtures
+  carried all three and were masking it until they were removed from the live
+  table on 2026-09-01, which turned a recorded caveat into a false headline
+  claim.
+
+  **The brief's option B was taken** — the claim now matches the data. The
+  headline in `AGENTS.md` says what we actually cover, and `KNOWN_RETAILERS`
+  carries a comment saying Woolworths is *supported* and holds no rows, with
+  the reason its branch is deliberately left to fetch zero rather than removed.
+  That was a wording change inside this repository's control, and it was taken
+  rather than left waiting because `ACQUISITION-RISK.md` §4.5 attaches Fair
+  Trading exposure to the comparison we publish.
+
+  **Option A — actually getting Woolworths data — stays open**, needs the data
+  teammates, and is not gated on anything here. The brief keeps the numbers and
+  the reasoning.
 - [`docs/OPEN-REVIEW-head-terms.md`](docs/OPEN-REVIEW-head-terms.md) — **open,
   and wants somebody who shops these stores.** Which product a one-word query
   like "cheapest butter" should return, when the catalogue holds fourteen

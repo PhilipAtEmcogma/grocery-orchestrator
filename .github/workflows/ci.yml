@@ -88,9 +88,18 @@ jobs:
       # pyright running — loudly, as a failed step — but cannot quietly change
       # a verdict, which is the drift that pinning ruff exists to prevent. The
       # runner's own Node is used (no download in the log); local runs here use
-      # Node 22 and produce byte-identical output: 53 files, same version, same
-      # zero. If this step ever fails on Node, pin it then, and pin it to a
-      # version, not to whatever fixes the build that day.
+      # Node 22 and produce byte-identical output: same version, same zero. If
+      # this step ever fails on Node, pin it then, and pin it to a version, not
+      # to whatever fixes the build that day.
+      #
+      # THE FILE COUNT WAS QUOTED HERE AS 53 AND IS 127 NOW. It is evidence
+      # that the check ran on something, not a constant to match, and the
+      # repository grew underneath it -- so the sentence above no longer names
+      # a number. Corrected 2026-09-06, in the same change that gave pyright a
+      # `venvPath`/`venv` in pyproject.toml: without those it resolved imports
+      # against the global interpreter and reported four unresolved imports on
+      # a developer machine while reporting zero here. A gate that is green in
+      # CI and red on the desk teaches people to ignore it.
       - name: Type check
         run: pyright --stats
 
@@ -350,10 +359,64 @@ jobs:
         working-directory: infra
         run: npx cdk synth --quiet
 
+  frontend:
+    name: Frontend lint and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # WHY THIS JOB EXISTS, AND WHY IT EXISTS BEFORE THE UI DOES. `frontend/`
+      # is a Vite/React client that has been in the repository since
+      # 2026-08-31 and had no gate of any kind -- no lint, no build, nothing.
+      # That is the same finding the `infra` job above was created to fix on
+      # the same day, in a different directory: source that ships, with nothing
+      # under it. When that gap was found in `infra/`, running the suite for
+      # the first time turned up two IAM regressions in an already-deployed
+      # stack.
+      #
+      # The UI is a teammate's scope and is being rewritten now -- it currently
+      # renders the response as raw JSON rather than per event type. This job is
+      # added BEFORE that work arrives on purpose. A gate added afterwards
+      # checks a merge that already happened; a gate added now means their pull
+      # request is checked on the way in, which is the only moment a build
+      # failure is cheap to fix.
+      #
+      # NO AWS CREDENTIALS, like every other job here: `vite build` is a static
+      # bundle and the client reads its endpoint from VITE_API_URL at runtime.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+
+      # `npm run lint`, not `oxlint --max-warnings=0`. The stricter form is
+      # tempting and it is the wrong call here: `package.json` documents `npm
+      # run lint` as THE lint command, so a CI step that enforces more than the
+      # documented local command fails builds that pass on the author's machine
+      # -- the exact drift the ruff-format and secrets-baseline notes above
+      # were written about. `.oxlintrc.json` currently grades
+      # `react/only-export-components` as a warning; if warnings should block,
+      # raise the rule to "error" in the config so the local command and this
+      # step change together.
+      - name: Lint
+        working-directory: frontend
+        run: npm run lint
+
+      # The build is the load-bearing half. Lint cannot see an unresolved
+      # import, a bad JSX entry point or a broken Vite config, and every one of
+      # those is a client that cannot be served at all.
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
   summary:
     name: All checks
     runs-on: ubuntu-latest
-    needs: [quality, contract, security, evals, package, infra]
+    needs: [quality, contract, security, evals, package, infra, frontend]
     if: always()
     steps:
       # A single job to require in branch protection, so adding a job later
