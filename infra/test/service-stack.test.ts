@@ -353,4 +353,53 @@ describe('ServiceStack security invariants', () => {
       expect(id).toBeTruthy();
     }
   });
+  // ------------------------------------------------------------- SnapStart
+
+  it('SnapStart is OFF by default on this plane, and says so explicitly', () => {
+    // A CACHED SNAPSHOT BILLS CONTINUOUSLY, PER PUBLISHED VERSION, whether or
+    // not anything invokes it -- which a request-shaped mental model does not
+    // see at all. On 2026-09-07 that was 79% of the month's spend on a service
+    // whose invocation charges are $0.00, and it had this no-traffic project
+    // on course through its own $25 budget (docs/ARCHITECTURE.md 3x).
+    //
+    // This plane serves nobody while the cutover is deferred, so it is the
+    // clearest waste available. The HAND-MADE plane keeps SnapStart, because it
+    // answers the requests and the pilot's latency baselines depend on it.
+    const fns = Object.values(t.findResources('AWS::Lambda::Function'));
+    expect(fns.length).toBeGreaterThan(0);
+    for (const fn of fns) {
+      // 'None' EXPLICITLY, not absent. An omitted property leaves whatever the
+      // function already has, so a function that once had SnapStart would keep
+      // it while the config flag read as effective -- a quiet no-op wearing the
+      // costume of a control.
+      expect((fn as any).Properties?.SnapStart).toEqual({ ApplyOn: 'None' });
+    }
+  });
+
+  it('SNAPSTART=1 turns it back on, so the off switch is reversible', () => {
+    // The restore path is one env var, and this is the proof it still works.
+    // A disabled feature nobody can re-enable is a deleted feature, and this
+    // one has to come back before the cutover -- see ARCHITECTURE.md 3y.
+    const previous = process.env.SNAPSTART;
+    process.env.SNAPSTART = '1';
+    try {
+      const onApp = new cdk.App();
+      const onCfg = loadConfig('dev');
+      const onStateful = new StatefulStack(onApp, 'StatefulOn', { env, cfg: onCfg });
+      const onService = new ServiceStack(onApp, 'ServiceOn', {
+        env,
+        cfg: onCfg,
+        tables: onStateful,
+      });
+      const onTemplate = Template.fromStack(onService);
+      const fns = Object.values(onTemplate.findResources('AWS::Lambda::Function'));
+      expect(fns.length).toBeGreaterThan(0);
+      for (const fn of fns) {
+        expect((fn as any).Properties?.SnapStart).toEqual({ ApplyOn: 'PublishedVersions' });
+      }
+    } finally {
+      if (previous === undefined) delete process.env.SNAPSTART;
+      else process.env.SNAPSTART = previous;
+    }
+  });
 });

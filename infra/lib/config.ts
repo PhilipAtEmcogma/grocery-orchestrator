@@ -46,6 +46,31 @@ export interface GroceryConfig {
    */
   readonly dataSuffix: string;
 
+  /**
+   * Whether the orchestrator publishes SnapStart-optimised versions.
+   *
+   * OFF BY DEFAULT SINCE 2026-09-07, AND THIS IS A COST DECISION WITH A
+   * MEASURED CAUSE, not a doubt about SnapStart. See
+   * `docs/ARCHITECTURE.md` §3x and §3y.
+   *
+   * SnapStart bills for the cached snapshot of every PUBLISHED VERSION,
+   * continuously, whether or not anything invokes it. That is invisible to a
+   * request-shaped mental model: on this service, whose invocation charges are
+   * literally $0.00, snapshot storage was **79% of September's bill** and put a
+   * no-traffic project on course to break its own $25 budget.
+   *
+   * This plane is the `-cdk` one. The cutover is deferred (§3m), so it serves
+   * nobody, and paying for a warm-start optimisation on an endpoint with no
+   * users is the clearest possible waste. The HAND-MADE plane keeps SnapStart,
+   * because it is the one answering requests and the latency baselines the
+   * pilot is measured against (p95 1.94s on a price check) depend on it.
+   *
+   * TURNING IT BACK ON IS ONE ENV VAR: `SNAPSTART=1 npx cdk deploy
+   * Grocery-Service-dev`. Do that before the cutover, not after — the plane
+   * that serves shoppers should be the fast one, and §3y is the checklist.
+   */
+  readonly snapStart: boolean;
+
   // Physical names. Two groups, and the distinction is the point:
   //   - CREATED by this app: named from the stage plus `suffix`.
   //   - ADOPTED from the account: named from `dataSuffix`, never the stage.
@@ -138,6 +163,11 @@ export function loadConfig(stage: string): GroceryConfig {
     // plane. Deliberately explicit rather than clever: someone cutting over
     // sets NAME_SUFFIX='' and reads the diff.
     suffix: process.env.NAME_SUFFIX ?? '-cdk',
+    // Opt-IN, matching USE_DYNAMODB / USE_BEDROCK / MCP_ENABLED: matched
+    // exactly against '1', so a typo reads as off rather than as on. Off is
+    // the cheap direction and on is the one that bills continuously, so a
+    // misread should fall to off.
+    snapStart: process.env.SNAPSTART === '1',
     guardrailId: process.env.BEDROCK_GUARDRAIL_ID ?? 'b1xezpqe04kx',
     guardrailVersion: process.env.BEDROCK_GUARDRAIL_VERSION ?? '2',
     names: {

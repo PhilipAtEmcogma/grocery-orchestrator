@@ -196,8 +196,20 @@ export class ServiceStack extends cdk.Stack {
     // SnapStart on published versions. The alias is what the API integrates,
     // because SnapStart only benefits published versions and an integration
     // pointed at the unqualified ARN silently forfeits it while still working.
+    //
+    // NOW A DECISION RATHER THAN A CONSTANT (2026-09-07), default OFF on this
+    // plane. `cfg.snapStart` carries the full reasoning; the short version is
+    // that a cached snapshot bills CONTINUOUSLY per published version, this
+    // plane serves nobody while the cutover is deferred, and snapshot storage
+    // was 79% of September's spend on a service with no traffic.
+    //
+    // `applyOn: 'None'` is written EXPLICITLY rather than omitting the
+    // property. Omitting it leaves whatever the function already has, so a
+    // function that once had SnapStart would keep it and the config flag would
+    // read as effective while changing nothing — the same class of quiet no-op
+    // as an exclusion list naming a package that is gone.
     (this.orchestrator.node.defaultChild as lambda.CfnFunction).snapStart = {
-      applyOn: 'PublishedVersions',
+      applyOn: cfg.snapStart ? 'PublishedVersions' : 'None',
     };
 
     this.alias = new lambda.Alias(this, 'Live', {

@@ -2380,3 +2380,119 @@ corrected.
 cost and scaling, but publishing is done by the deploy scripts with no ceiling
 on how many versions accumulate. Thirteen is what a fortnight of deploys
 produces.
+
+
+## 3y. Two deferrals taken deliberately, with their restore paths — 2026-09-07
+
+Both decided by the owner after §3x. Neither is a retreat from the thing being
+deferred; both are "not during the demo week", and each is written here with
+the route back so that "for now" cannot quietly become "never".
+
+### A. The alarm migration finishes AFTER the demo
+
+**Decision: leave the twelve imperative alarms in place through the demo.**
+CloudFormation refuses to create over them (§3x), so completing
+`Grocery-Obs-dev` requires deleting them first, and a coverage gap — however
+short — is not worth taking in the week the service is being shown.
+
+**What is true meanwhile, stated so nobody is surprised:**
+
+- The twelve alarms `scripts/apply_alarms.py` created are live and working.
+  Coverage is not reduced by this decision; it is *unchanged*.
+- The two NEW alarms from Task 12e — `ModelThrottled` and the `STALE_DATA`
+  one — are **not deployed**, because they live in the stack that cannot
+  create. The metrics behind them ARE being emitted, so the data is
+  accumulating and the alarms will have history the moment they exist.
+- The artefact bucket does not exist, so `scripts/artefact_drill.py` cannot
+  run. Task 12 stays open on exactly that.
+
+**The plan of action, in order, for after the demo:**
+
+1. **Re-read this section and §3x.** The account may have moved; the alarm list
+   is the thing to check first, not this document.
+2. **Snapshot the current alarms**, the way §3x did:
+   `aws cloudwatch describe-alarms --query 'MetricAlarms[?contains(AlarmName,\`grocery\`)]' > before.json`.
+   The comparison afterwards is what turns "it worked" into evidence.
+3. **Delete the twelve.** They are recreated from the same
+   `config/alarms.json` seconds later, so this is a gap and not a loss:
+   `aws cloudwatch delete-alarms --alarm-names <the twelve>`.
+4. **`cdk deploy Grocery-Obs-dev`.** It creates fifteen — the twelve, plus
+   `ModelThrottled`, plus `STALE_DATA`, plus the second API-5xx alarm the
+   dual-plane arrangement needs.
+5. **Diff the alarm list against `before.json`.** Every original name must be
+   present with the same threshold and dimensions. A missing one is the failure
+   mode this whole sequence is designed to make visible.
+6. **Run the artefact drill** — `python scripts/artefact_drill.py --bucket
+   <ArtefactBucket output>` — and record the date here, like the alarm drill.
+7. **Stop `apply_alarms.py` creating anything.** It stays as the validator and
+   the `--dry-run` CI gate; that is the half worth keeping, and it is the half
+   that caught the metric-filter and statistic-kind cases. Two mechanisms
+   creating the same alarms is how this collision happened.
+
+**The risk of waiting** is that the two new alarms are the ones watching a
+throttle and the 2026-10-12 staleness cliff, and neither is armed. The cliff is
+five weeks out and the throttle is only reached under load, so the exposure is
+small and bounded — but it is not zero, and that is the price of the deferral.
+
+### B. SnapStart is off on the CDK plane, and here is how to bring it back
+
+**Decision: turn SnapStart off on `grocery-orchestrator-dev-cdk`, keep it on the
+hand-made plane.** The hand-made plane answers requests and the pilot's latency
+numbers depend on it; the CDK plane serves nobody while the cutover is deferred,
+so its snapshot was the clearest waste in the account.
+
+`cfg.snapStart` in `infra/lib/config.ts` now carries the decision, default off,
+and `infra/test/service-stack.test.ts` asserts BOTH directions — off by default,
+and back on under `SNAPSTART=1`. The second test is the one that matters: a
+disabled feature nobody can re-enable is a deleted feature.
+
+**What SnapStart bought us, recorded because the numbers are the reason to
+bring it back.** It has been on the serving plane since 2026-08-27, applied to
+published versions with the API integrated against the `live` alias:
+
+| Measurement | With SnapStart | Source |
+|---|---|---|
+| Price check p95 | **1.94s** (n=50) against a 5s target | §3l, Task 16 gate T3 |
+| Meal plan p95 | **3.51s** (n=50) against a 20s target | same |
+| Restore visible in a trace | `Restore` subsegment on the X-Ray timeline | §9 |
+
+A Python 3.13 Lambda importing pydantic, langgraph and Powertools has a cold
+start measured in seconds, not milliseconds. Those p95 figures are warm-path
+numbers that SnapStart is what makes typical rather than lucky.
+
+**What it costs, which nothing recorded until §3x.** A cached snapshot bills
+per PUBLISHED VERSION, continuously, invoked or not — `APS2-Lambda-SnapStart-Cached-GB-S`.
+At 1024 MB that is roughly **$2.50-$3.90 per version per month** on the measured
+September rate. Thirteen accumulated versions made it 79% of the bill.
+
+**How to turn it back on:**
+
+```bash
+# The CDK plane. One env var; the test above proves the switch works.
+SNAPSTART=1 npx cdk deploy Grocery-Service-dev --profile grocery
+
+# The hand-made plane never had it turned off. To confirm:
+aws lambda get-function-configuration --function-name grocery-orchestrator-dev \
+  --query 'SnapStart' --profile grocery
+```
+
+**Do this BEFORE the cutover, not after.** The plane that serves shoppers should
+be the fast one, and the cutover is precisely the moment the CDK plane stops
+being idle. It belongs in the §3q checklist between "choose the URL" and "retire
+the other plane".
+
+**Three things to know if this is ever taken to production:**
+
+1. **SnapStart only applies to PUBLISHED VERSIONS.** An API integration pointed
+   at the unqualified function ARN silently forfeits it while still working
+   perfectly — the failure mode is a latency regression with no error.
+   `service-stack.ts` integrates the alias for exactly this reason.
+2. **Publishing has no ceiling and every version bills.** Thirteen is what a
+   fortnight of deploys produced here. Production wants a retention rule —
+   keep the alias target plus one or two, delete the rest — and nothing in this
+   repository automates that today. It is the obvious follow-up to §3x and it
+   is not built.
+3. **Restore is not free either**, though it is small: `APS2-Lambda-SnapStart-Restored-GB`
+   was $0.004 against $8.15 of storage. At real traffic that ratio inverts, and
+   the decision becomes a genuine trade rather than the one-sided one it is on
+   an idle plane.
