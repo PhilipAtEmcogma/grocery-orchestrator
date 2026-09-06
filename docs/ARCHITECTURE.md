@@ -819,7 +819,7 @@ they build against, and its open questions do not auto-adopt defaults until
 2026-09-11. Moving a URL to spare a consumer nobody has written yet is work that
 would have to be re-done against the consumer they actually write.
 
-Both planes are scale-to-zero, so the duplicate costs essentially nothing. The
+Both planes are scale-to-zero for INVOCATIONS, and that is not the same as costing nothing -- see `docs/ARCHITECTURE.md` §3x. SnapStart bills for cached snapshots per PUBLISHED VERSION, continuously, whether or not anything is invoked, and on 2026-09-07 that was 79% of the month's spend. The duplicate plane is still cheap (one published version), but the sentence that used to be here -- "the duplicate costs essentially nothing" -- was measuring the wrong thing. The
 hand-made one is the one alarmed and the one the frontend contract names, so it,
 not the CDK one, is still production.
 
@@ -2284,3 +2284,99 @@ so there is no evidence either way, and the three outcomes want different
 follow-ups. An attempt is cheap — a CREATE failure rolls back, which is exactly
 what happened last time and it damaged nothing — so trying is the way to find
 out, and the answer decides whether the twelve are deleted first.
+
+
+## 3x. CloudFormation refuses existing alarms, and SnapStart was 79% of the bill — 2026-09-07
+
+Two findings from one session: what the observability deploy actually does, and
+what an unrelated look at the bill turned up while doing it.
+
+### The deploy, and the answer to the question §3w left open
+
+§3w recorded that nobody knew whether CloudFormation would **adopt, overwrite or
+refuse** the twelve alarms `scripts/apply_alarms.py` had created, because the
+August attempt never reached them. It refuses:
+
+```
+Resource of type 'AWS::CloudWatch::Alarm' with identifier
+'grocery-orchestrator-internal-error-dev' already exists.
+```
+
+...and the same for every other colliding name. **This is the good outcome of
+the three.** Overwriting would have silently transferred twelve alarms into a
+stack while changing their definitions underneath an operator; refusing is
+CloudFormation declining to take something it did not create.
+
+**Nothing was damaged, and that was checked rather than assumed.** The alarm
+list was captured before the deploy and diffed after: byte-identical, all twelve
+still present. The failure happened at change-set creation, so the stack never
+entered a rollback — it sat in `REVIEW_IN_PROGRESS` with no resources, and has
+been deleted.
+
+**What it costs to proceed:** the twelve alarms have to be deleted so CDK can
+create and own them. That is a coverage gap of a minute or two and it is the
+entire point of the migration — `apply_alarms.py` stays as the validator and the
+`--dry-run` gate, but it stops being the thing that creates. That deletion is a
+decision, not a detail, and it is recorded as owed rather than taken.
+
+### SnapStart snapshot storage was 79% of September's bill
+
+Unrelated to the deploy, and it would not have been found by looking at the
+service the way the cost baseline does.
+
+| Period | Total | Largest line |
+|---|---|---|
+| August | $21.77 | Bedrock models $14.27 (the live eval sessions) |
+| September 1-7 | $10.25 | **AWS Lambda $8.15** |
+
+$8.15 of Lambda in a week, on a service whose invocation charges are **$0.00**.
+The whole of it is one usage type:
+
+```
+APS2-Lambda-SnapStart-Cached-GB-S    8.1494967589
+APS2-Lambda-SnapStart-Restored-GB    0.0044735936
+APS2-Request                         0
+APS2-Lambda-GB-Second                0
+```
+
+**SnapStart bills for the cached snapshot of every PUBLISHED VERSION,
+continuously, whether or not anything invokes it.** `grocery-orchestrator-dev`
+had accumulated **13 published versions** at 1024 MB, each carrying its own
+snapshot, while the `live` alias pointed at exactly one of them (version 12).
+Twelve snapshots were being paid for so that nothing could use them.
+
+Left alone, September was tracking about **$44/month** — comfortably through the
+$25 budget, on a service with no traffic.
+
+**Fixed:** versions 1-10 deleted, keeping 11, 12 (live) and 13 — one behind and
+one ahead of the alias, so a rollback target survives. Snapshots across the
+account went from 14 to 4. On the measured rate that is roughly **$25/month
+less**; the next full billing period is what confirms it.
+
+The live endpoint was smoke-tested immediately afterwards and answered HTTP 200
+with a fully grounded price comparison, because deleting a version the alias does
+not reference cannot affect what the alias serves — but "cannot" is a claim, and
+the 200 is the evidence.
+
+### Why the existing cost baseline could not see this
+
+§3l's first baseline read "$17.63 for August, of which 60% is two models the
+service does not route to" — true, and it framed cost as a question about
+**Bedrock**. In September the eval sessions stopped and the composition
+inverted: Bedrock fell to $0.66 and Lambda rose to $8.15. A baseline that
+attributes spend to the thing that dominated *last* month is a snapshot, not an
+instrument.
+
+**The correction that matters is conceptual, not arithmetic.** Two documents
+said the dual-plane arrangement "costs essentially nothing" because both planes
+are scale-to-zero. Scale-to-zero is a statement about *invocations*. SnapStart,
+provisioned concurrency, retained versions, versioned S3 and PITR are all
+storage-shaped costs that a request-shaped mental model does not see at all —
+and this project has three of those five switched on. Both sentences are
+corrected.
+
+**A published version is not free, and nothing in this repository said so.**
+`scripts/build_lambda.py` guards the archive size and `infra/docs/07` covers
+cost and scaling, but publishing is done by the deploy scripts with no ceiling
+on how many versions accumulate. Thirteen is what a fortnight of deploys
+produces.
