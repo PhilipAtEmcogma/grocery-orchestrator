@@ -683,7 +683,7 @@ proposed, or gated as labelled; it is not implemented.
   2026-09-11. Moving a URL to spare a consumer nobody has written is work that
   would be re-done against the one they actually write.
 
-  Both planes are scale-to-zero so the duplicate costs essentially nothing. The
+  Both planes are scale-to-zero for INVOCATIONS, and that is not the same as costing nothing -- see `docs/ARCHITECTURE.md` §3x. SnapStart bills for cached snapshots per PUBLISHED VERSION, continuously, whether or not anything is invoked, and on 2026-09-07 that was 79% of the month's spend. The duplicate plane is still cheap (one published version), but the sentence that used to be here -- "the duplicate costs essentially nothing" -- was measuring the wrong thing. The
   hand-made one stays production, which means production keeps `null` log
   retention and hand-added tracing — not urgent, and the reason not to let
   "stay dual" become permanent by default.
@@ -804,13 +804,26 @@ proposed, or gated as labelled; it is not implemented.
     `DELETE_COMPLETE` except the artefact bucket, which is `DELETE_SKIPPED`
     under its RETAIN policy and was never created (`list-buckets` confirms).
 
-    **The open question is the twelve alarms.** They exist in CloudWatch with
-    the names this stack wants, put there by `apply_alarms.py`. Whether
-    CloudFormation adopts, overwrites or refuses them is not something to
-    guess: the 2026-08-31 attempt never reached the alarms, so there is no
-    evidence either way. An attempt is cheap — a CREATE failure rolls back, as
-    it already did once — so the deploy is safe to try and the answer decides
-    whether the twelve get deleted first.
+    **ANSWERED 2026-09-07 — CloudFormation REFUSES.** The stack was deleted
+    and redeployed, and every colliding name came back as
+    `Resource of type 'AWS::CloudWatch::Alarm' with identifier
+    'grocery-orchestrator-internal-error-dev' already exists`. That is the best
+    of the three outcomes: overwriting would have silently moved twelve alarms
+    into a stack while changing their definitions underneath an operator.
+
+    **Nothing was damaged, and it was checked rather than assumed** — the alarm
+    list was captured before and diffed after, byte-identical, all twelve
+    present. The failure came at change-set creation, so the stack never even
+    rolled back; it sat in `REVIEW_IN_PROGRESS` holding nothing and has been
+    deleted.
+
+    **What remains is one decision, and it is the owner's:** delete the twelve
+    alarms so CDK can create and own them. That is a coverage gap of a minute
+    or two, and it is the whole point of the migration — `apply_alarms.py`
+    stays as the validator and the `--dry-run` CI gate, but stops being the
+    thing that creates. Not taken unilaterally, because deleting live alarms
+    during a demo week is a judgement about risk appetite rather than a
+    mechanical step. `docs/ARCHITECTURE.md` §3x.
 
     Until this runs, the artefact bucket does not exist and the drill in 12e
     cannot be executed.
