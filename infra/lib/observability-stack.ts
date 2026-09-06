@@ -46,6 +46,42 @@ import { Construct } from 'constructs';
 import { GroceryConfig } from './config';
 import { ServiceStack } from './service-stack';
 
+/**
+ * The prefixes the artefact bucket is allowed to hold, and how long an old
+ * version of each survives being replaced.
+ *
+ * SCOPED PREFIXES ARE A REQUIREMENT, NOT TIDINESS (Pilot Task 12). Three kinds
+ * of thing land here and they are not interchangeable: an approved DATASET is
+ * an input somebody else collected, an EVALUATION result is a measurement of
+ * this code at a commit, and a REVIEW artefact is a sanitised snapshot handed
+ * to something untrusted. Mixing them into one namespace means one lifecycle
+ * rule for all three, one grant for all three, and no way to answer "what did
+ * the reviewer actually see" without reading the whole bucket.
+ *
+ * THE RETENTION FIGURES ARE FOR SUPERSEDED VERSIONS ONLY. The current version
+ * of every object is kept indefinitely. What differs is how long the copy an
+ * overwrite replaced is worth keeping:
+ *
+ *   datasets/    90 days. Re-collecting is the data team's, not ours, and an
+ *                overwritten snapshot is the only record of what we served
+ *                before it -- the longest window here, because the 2026-08-28
+ *                capture showed exactly how hard a snapshot is to reproduce.
+ *   evaluations/ 90 days. A superseded baseline is what a regression is
+ *                measured AGAINST; deleting it early turns "this got worse"
+ *                into an unanswerable question.
+ *   reviews/     30 days. Sanitised snapshots are derived, regenerable from
+ *                the catalogue, and Req 13.8 argues for holding the reviewer's
+ *                inputs no longer than the finding they support.
+ *   baselines/   90 days. Latency and cost baselines, same argument as
+ *                evaluations.
+ */
+const ARTEFACT_PREFIXES = [
+  { prefix: 'datasets/', keepOldVersionsDays: 90 },
+  { prefix: 'evaluations/', keepOldVersionsDays: 90 },
+  { prefix: 'reviews/', keepOldVersionsDays: 30 },
+  { prefix: 'baselines/', keepOldVersionsDays: 90 },
+] as const;
+
 export interface ObservabilityStackProps extends cdk.StackProps {
   readonly cfg: GroceryConfig;
   readonly service: ServiceStack;
@@ -157,7 +193,24 @@ export class ObservabilityStack extends cdk.Stack {
       for (const plane of targets) {
         const dims = plane ? { ...dimensions, ApiName: plane.apiName } : dimensions;
         const suffix = plane ? `-${plane.label}` : '';
-        const alarm = new cloudwatch.Alarm(this, `Alarm-${spec.metric_name}${suffix}`, {
+        // KEYED ON THE ALARM NAME, NOT THE METRIC NAME. It was the metric
+        // until 2026-09-06, which assumed one alarm per metric -- and the
+        // moment a second alarm watched `TurnError` (the stale-data alarm,
+        // dimensioned code=STALE_DATA, beside the internal-error alarm
+        // dimensioned code=INTERNAL_ERROR) synth failed with "There is already
+        // a Construct with name 'Alarm-TurnError'". Dimensioning one metric
+        // several ways is the normal shape for this config -- it is what makes
+        // an honest refusal distinguishable from a fault -- so the metric was
+        // never the right key. `spec.name` is unique by construction:
+        // `scripts/apply_alarms.py` rejects duplicates and
+        // `tests/test_alarms.py::test_duplicate_alarm_names_are_caught` holds
+        // it.
+        //
+        // Changing a construct id changes a CloudFormation logical id, which
+        // on a DEPLOYED stack means replacing every alarm. This stack has
+        // never been deployed, so the change costs nothing today and would
+        // have been awkward in a month. Doing it now is the cheap moment.
+        const alarm = new cloudwatch.Alarm(this, `Alarm-${spec.name}${suffix}`, {
           alarmName: plane ? `${spec.name}-${plane.label}` : spec.name,
           alarmDescription: spec.description,
           metric: new cloudwatch.Metric({
@@ -259,6 +312,33 @@ export class ObservabilityStack extends cdk.Stack {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       enforceSSL: true,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
+      lifecycleRules: ARTEFACT_PREFIXES.map((p) => ({
+        id: `${p.prefix.replace(/\/$/, '')}-retention`,
+        prefix: p.prefix,
+        enabled: true,
+        // Old VERSIONS, not old objects. Versioning is what makes the restore
+        // drill possible, and it is also what makes a bucket grow without
+        // limit: every overwrite of a baseline keeps the one it replaced,
+        // forever, with nothing ever deleting it. This is the rule that stops
+        // "keep the evidence" becoming "pay for every draft of it".
+        noncurrentVersionExpiration: cdk.Duration.days(p.keepOldVersionsDays),
+        // Deliberately NOT `expiration`. Nothing here expires the CURRENT
+        // version of an artefact: an evaluation baseline whose provenance is
+        // a commit message is the thing this bucket exists to outlive, and a
+        // measurement that silently deletes itself after a year is worse than
+        // no measurement, because the absence looks like it was never taken.
+        // If a prefix ever needs true expiry, it needs a retention decision
+        // recorded next to it rather than a number chosen here.
+        abortIncompleteMultipartUploadAfter: cdk.Duration.days(7),
+      })),
+    });
+
+    // The prefixes are outputs, not documentation: a writer that invents its
+    // own path gets no lifecycle rule at all, and the object silently falls
+    // outside the retention policy this stack declares.
+    new cdk.CfnOutput(this, 'ArtefactPrefixes', {
+      value: ARTEFACT_PREFIXES.map((p) => p.prefix).join(', '),
+      description: 'The only prefixes with a lifecycle rule. Write nowhere else.',
     });
 
     // -------------------------------------------------------------- outputs
