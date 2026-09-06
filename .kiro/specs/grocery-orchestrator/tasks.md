@@ -817,13 +817,29 @@ proposed, or gated as labelled; it is not implemented.
     rolled back; it sat in `REVIEW_IN_PROGRESS` holding nothing and has been
     deleted.
 
-    **What remains is one decision, and it is the owner's:** delete the twelve
-    alarms so CDK can create and own them. That is a coverage gap of a minute
-    or two, and it is the whole point of the migration — `apply_alarms.py`
-    stays as the validator and the `--dry-run` CI gate, but stops being the
-    thing that creates. Not taken unilaterally, because deleting live alarms
-    during a demo week is a judgement about risk appetite rather than a
-    mechanical step. `docs/ARCHITECTURE.md` §3x.
+    **DECIDED 2026-09-07 by the owner: leave the twelve imperative alarms in
+    place through the demo; finish the migration after it.** Deleting live
+    alarms to let CDK recreate them is a coverage gap of a minute or two, and
+    that is not a trade worth taking in the week the service is being shown.
+
+    **Coverage is unchanged, not reduced** — the twelve are live and working.
+    What is NOT armed is the two new alarms from 12e (`ModelThrottled` and
+    `STALE_DATA`), because they live in the stack that cannot create. Their
+    metrics ARE being emitted, so both will have history the moment they
+    exist. The artefact bucket also does not exist, so the 12e drill still
+    cannot run, and this task stays open on exactly that.
+
+    **The ordered plan of action for after the demo is written down** rather
+    than left as an intention — `docs/ARCHITECTURE.md` §3y.A, seven steps:
+    snapshot the alarms, delete the twelve, deploy, diff the list against the
+    snapshot, run the artefact drill, and stop `apply_alarms.py` creating
+    anything (it stays the validator and the CI `--dry-run` gate; two
+    mechanisms creating the same alarms is how the collision happened).
+
+    **The price of waiting, stated:** the two unarmed alarms are the ones
+    watching a throttle and the 2026-10-12 staleness cliff. The cliff is five
+    weeks out and a throttle needs load, so the exposure is small and bounded
+    — but it is not zero.
 
     Until this runs, the artefact bucket does not exist and the drill in 12e
     cannot be executed.
@@ -1122,6 +1138,29 @@ proposed, or gated as labelled; it is not implemented.
 
   The ordered checklist for coming back is `docs/ARCHITECTURE.md` §3q. Step 2 is
   "deploy this stack BEFORE pointing a consumer at the CDK plane, not after".
+
+- [x] **Pilot Task 12g — SnapStart turned off on the idle plane. Done
+  2026-09-07.** A cached snapshot bills per PUBLISHED VERSION continuously,
+  invoked or not, and that was 79% of September's spend on a service whose
+  invocation charges are $0.00 (§3x). Thirteen accumulated versions on the
+  serving plane; ten deleted, keeping the alias target plus one either side.
+
+  **The CDK plane's SnapStart is now a decision rather than a constant.**
+  `cfg.snapStart` defaults OFF — that plane serves nobody while the cutover is
+  deferred, so a warm-start optimisation on it is the clearest waste available.
+  The HAND-MADE plane keeps it, because it answers the requests and the pilot's
+  latency baselines (p95 1.94s price check) depend on it.
+
+  **`applyOn: 'None'` is written explicitly rather than omitting the property**,
+  because an omitted property leaves whatever the function already has — a
+  config flag that reads as effective while changing nothing.
+
+  **The restore path is one env var and it is TESTED**: `SNAPSTART=1 cdk deploy
+  Grocery-Service-dev`, with `service-stack.test.ts` asserting both directions.
+  A disabled feature nobody can re-enable is a deleted feature. What SnapStart
+  bought, what it costs, and the three things to know before taking it to
+  production are in §3y.B — including that publishing has no ceiling and every
+  version bills, which is the root cause here and is still not automated.
 
 - [ ] **Pilot Task 12d — Bound the endpoints, not just watch them.** DECIDED
   2026-08-31 by the owner, and DEFERRED TO A TRIGGER rather than to a date:
