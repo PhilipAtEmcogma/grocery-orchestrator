@@ -71,6 +71,30 @@ export interface GroceryConfig {
    */
   readonly snapStart: boolean;
 
+  /**
+   * Whether the daily ingestion schedule is created ENABLED.
+   *
+   * OFF BY DEFAULT, and the reason is in `config/data-sources.json`:
+   * `LineageBSource.CAPTURED_AT` is the constant `2026-08-28` and the dataset
+   * is documented as a one-off snapshot, so a nightly refresh rewrites the same
+   * 2,759 rows with the same capture date. It would cost money, write to the
+   * serving catalogue every night, and change nothing.
+   *
+   * THE STATE IS EXPLICIT HERE BECAUSE IT DRIFTED ONCE ALREADY. The 2026-08-30
+   * account audit recorded the hand-made schedule as ENABLED; it is DISABLED
+   * in the account today and nobody wrote down the change or why. A schedule
+   * whose state lives only in the console is one that can flip without a
+   * review — in either direction, and the dangerous direction writes to the
+   * catalogue.
+   *
+   * Enable with `INGESTION_SCHEDULE=1` when a source exists that can stamp a
+   * NEW capture date — a fresh collection from the data team, or Task 11.4
+   * live acquisition. That is the same condition `config/freshness.json` names
+   * for reverting `max_price_age_days`, and it is not a coincidence: both are
+   * waiting on data that can actually change.
+   */
+  readonly ingestionScheduleEnabled: boolean;
+
   // Physical names. Two groups, and the distinction is the point:
   //   - CREATED by this app: named from the stage plus `suffix`.
   //   - ADOPTED from the account: named from `dataSuffix`, never the stage.
@@ -168,6 +192,10 @@ export function loadConfig(stage: string): GroceryConfig {
     // the cheap direction and on is the one that bills continuously, so a
     // misread should fall to off.
     snapStart: process.env.SNAPSTART === '1',
+    // Same opt-in shape, and for the stronger version of the same reason: the
+    // dangerous direction here writes to the serving catalogue on a timer, so
+    // a typo must read as off.
+    ingestionScheduleEnabled: process.env.INGESTION_SCHEDULE === '1',
     guardrailId: process.env.BEDROCK_GUARDRAIL_ID ?? 'b1xezpqe04kx',
     guardrailVersion: process.env.BEDROCK_GUARDRAIL_VERSION ?? '2',
     names: {

@@ -2528,3 +2528,101 @@ these three-call samples cannot show.
    was $0.004 against $8.15 of storage. At real traffic that ratio inverts, and
    the decision becomes a genuine trade rather than the one-sided one it is on
    an idle plane.
+
+
+## 3z. The ingestion plane is in IaC — Pilot Task 13, 2026-09-07
+
+`infra/lib/ingestion-stack.ts` was a stub with four TODOs while the plane it
+describes **was running in the account**, deployed imperatively on 2026-09-04.
+It was the last live plane with no template behind it: a Lambda, a Step
+Functions state machine, a scheduler, and the only IAM role in the system that
+can WRITE the serving catalogue — none of it reproducible, none of it under
+review.
+
+### Built from the account, not from the spec
+
+`infra/docs/03` sketched this stack in August. Three of its details are now
+wrong, because the hand-made plane moved and the document did not. Each was
+corrected against `describe-*` output rather than followed:
+
+| infra/docs/03 says | The account says | Which wins, and why |
+|---|---|---|
+| `events.Rule` + UTC cron | **EventBridge Scheduler**, `Pacific/Auckland` | The account. NZST is UTC+12, NZDT UTC+13, so a fixed UTC cron drifts an hour twice a year — the spec's own note apologises for this. Scheduler removes it. |
+| 60-second timeout | **120** | The account. A refresh walks 2,759 rows and diffs each; 60s was guessed before the real catalogue existed. |
+| no environment block | `PRICE_SOURCE=lineage_b` | The account. That is the 2026-09-04 decision that made the refresh read the real catalogue instead of the fixtures. |
+
+This is worth naming as a pattern rather than three corrections: **a design
+document written before a thing exists describes an intention, and the account
+describes the thing.** Where they disagree after deployment, the account is the
+evidence. `infra/docs/03` is not edited to match — it is a design record, and
+rewriting it would destroy the fact that the design was refined by contact with
+reality.
+
+### What it deliberately does NOT do
+
+- **No `grantWriteData`.** The role is built statement-by-statement from
+  `config/iam-ingestion-role.json`, the same file `scripts/apply_iam.py`
+  applies. The CDK grant helpers ADD a statement rather than checking one, with
+  the CDK's idea of "write" — which includes `DeleteItem` and `UpdateItem`. The
+  price-history grant is deliberately append-only, because a history row is the
+  baseline a future deviation is measured against and a role that could rewrite
+  one could rewrite the evidence. A convenience helper would hand it exactly
+  that. This is the same refusal `service-stack.ts` makes, and the service
+  suite found it had been violated the first time it ran.
+- **No table resource.** Strategy A, as everywhere: the stack grants against
+  adopted `ITable`s and cannot replace 2,759 real rows.
+- **No `logRetention` prop.** It is deprecated *and* implemented as a custom
+  resource — an extra Lambda, role and policy whose entire job is one
+  `PutRetentionPolicy` call. A second function in the account to express a
+  number, on the stack whose whole point is least privilege. A declared
+  `LogGroup` says the same thing as one resource. Dropping it took the stack
+  from 14 synthesised resources to 11.
+
+### The ASL is reused verbatim, with one rewrite
+
+`config/ingestion-state-machine.json` is read as a string rather than rebuilt
+with the L2 `stepfunctions-tasks` API. Its comments are load-bearing and two of
+them record real defects: `ResultPath: null` because Map items here are STRINGS
+and a ResultPath on a non-object raises `States.ResultPathMatchFailure` —
+aborting the very Map the Catch exists to protect — and a Retry list covering
+transient Lambda errors only, so a `ValueError` from an unknown retailer fails
+fast instead of being retried three times. The L2 route would give type-checked
+retries and silently drop every one of those.
+
+The one rewrite is the function name. The ASL names `grocery-ingestion-dev`
+literally, so without it **the CDK state machine would invoke the hand-made
+Lambda** — two planes that look independent while sharing the half that writes
+to the catalogue, which is worse than either alone. A test asserts the rewrite,
+and mutation-verified: removing it fails that test and nothing else.
+
+### The schedule is created DISABLED, and that is now a reviewed decision
+
+`config/data-sources.json` already argued the case: `LineageBSource.CAPTURED_AT`
+is the constant `2026-08-28` and the dataset is a one-off snapshot, so a nightly
+run rewrites the same 2,759 rows with the same capture date. It would cost
+money, write to the serving catalogue every night, and change nothing.
+
+**It is also drift being closed.** The 2026-08-30 account audit recorded the
+hand-made schedule as ENABLED. It is DISABLED in the account today, and nobody
+wrote down the change or why. A schedule whose state lives only in a console can
+flip without review — in either direction, and the dangerous direction writes to
+the catalogue. `cfg.ingestionScheduleEnabled` makes the state explicit, and
+`INGESTION_SCHEDULE=1` is a reviewed edit rather than a console click.
+
+Enable it when a source exists that can stamp a NEW capture date — a fresh
+collection from the data team, or Task 11.4 live acquisition. That is the same
+condition `config/freshness.json` names for reverting `max_price_age_days`, and
+it is not a coincidence: both are waiting on data that can actually change.
+
+### The suite
+
+`infra/test/ingestion-stack.test.ts`, 15 assertions, and it is the first time
+anything has asserted over this plane at all. The invariants worth naming: the
+products grant is exactly `{Query, PutItem, BatchWriteItem}` on the base table
+with no index; the history grant is exactly `{PutItem, BatchWriteItem}` with
+Query, Delete and Update all absent; there is no Bedrock and no idempotency
+access, because the separation IS the role; no `dynamodb:Scan` anywhere; and
+the only `Resource: "*"` is X-Ray.
+
+Verified by mutation, not just written: granting `Query` on the history table
+fails one test, and dropping the ASL rewrite fails a different one.

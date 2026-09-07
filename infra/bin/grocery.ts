@@ -29,7 +29,16 @@
  *                          A ROLLBACK_COMPLETE stack cannot be updated, so the
  *                          retry is delete-then-deploy. Deploy it before the
  *                          cutover, not after.
- *   Grocery-Ingestion-dev  STUB.
+ *   Grocery-Ingestion-dev  REAL as of 2026-09-07, not yet deployed. The
+ *                          ingestion Lambda, its separate write-capable role,
+ *                          the Step Functions refresh and an EventBridge
+ *                          SCHEDULER (not a Rule — the account uses Scheduler
+ *                          with an explicit Pacific/Auckland timezone, which
+ *                          removes the DST drift infra/docs/03 apologises for).
+ *                          It was the last plane RUNNING IN THE ACCOUNT with no
+ *                          template behind it, deployed imperatively on
+ *                          2026-09-04. The schedule is created DISABLED; see
+ *                          `cfg.ingestionScheduleEnabled`.
  *   Grocery-Frontend-dev   STUB.
  *   Grocery-Reviewer-dev   REAL (ADR 0002 WS2), not deployed. The data-quality
  *                          reviewer AgentCore Runtime + its least-privilege

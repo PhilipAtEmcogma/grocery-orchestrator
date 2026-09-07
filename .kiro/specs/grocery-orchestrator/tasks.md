@@ -1198,6 +1198,54 @@ proposed, or gated as labelled; it is not implemented.
   all three instances of this pattern the two audits found: the coverage
   instrument, the forcing test behind it, and the infrastructure suite.
 
+- [x] **Pilot Task 13b — The ingestion plane is in IaC. Done 2026-09-07.**
+  `infra/lib/ingestion-stack.ts` was a stub with four TODOs while the plane it
+  describes WAS RUNNING IN THE ACCOUNT, deployed imperatively on 2026-09-04 —
+  the last live plane with no template behind it, and the one holding the only
+  role in the system that can write the serving catalogue.
+
+  **Built from the account, not from the spec.** `infra/docs/03` had drifted on
+  three details and each was corrected against `describe-*` output rather than
+  followed: the account uses **EventBridge Scheduler** with an explicit
+  `Pacific/Auckland` timezone rather than a Rule with a UTC cron (which drifts
+  an hour twice a year — the spec's own note apologises for it), a 120-second
+  timeout rather than 60, and `PRICE_SOURCE=lineage_b`. The design document is
+  deliberately NOT rewritten to match: it records an intention, the account
+  records the thing, and where they disagree after deployment the account is
+  the evidence.
+
+  **What it refuses to do** is the part worth reviewing. No `grantWriteData` —
+  the role is built statement-by-statement from
+  `config/iam-ingestion-role.json`, because the CDK grant helpers ADD a
+  statement rather than checking one and their idea of "write" includes
+  `DeleteItem` and `UpdateItem`. The price-history grant is append-only by
+  design, a history row being the baseline a deviation is measured against.
+  No table resource (Strategy A). No `logRetention` prop — deprecated, and
+  implemented as a custom resource that synthesises an extra Lambda, role and
+  policy to make one API call; dropping it took the stack from 14 resources
+  to 11.
+
+  **The ASL is reused verbatim with one rewrite.** Its comments record two real
+  defects (`ResultPath: null` because Map items are STRINGS, and a Retry list
+  that covers transient Lambda errors only), and the L2 rebuild would drop them
+  all. The rewrite is the function name: without it the CDK state machine would
+  invoke the HAND-MADE Lambda — two planes that look independent while sharing
+  the half that writes to the catalogue.
+
+  **The schedule is created DISABLED**, and that closes a drift as well as
+  saving money: the 2026-08-30 audit recorded the hand-made schedule as
+  ENABLED, it is DISABLED in the account now, and nobody wrote down the change.
+  `INGESTION_SCHEDULE=1` makes enabling it a reviewed edit rather than a console
+  click. Enable when a source can stamp a NEW capture date — the same condition
+  `config/freshness.json` waits on.
+
+  15 assertions in `infra/test/ingestion-stack.test.ts`, the first ever over
+  this plane, mutation-verified: granting `Query` on the history table fails
+  one, dropping the ASL rewrite fails another. `docs/ARCHITECTURE.md` §3z.
+
+  **Still open in Task 13:** the decoupled review trigger (Streams -> SQS/DLQ),
+  and the deploy of this stack.
+
 - [ ] **Pilot Task 14 — Add the bounded data-quality reviewer.** After ADR 0002
   mentor approval, deploy it separately in AgentCore Runtime over capped
   sanitised ingestion snapshots with an isolated least-privilege identity,
