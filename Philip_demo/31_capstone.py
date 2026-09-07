@@ -34,7 +34,7 @@ described.
   6. ASSEMBLY     - deterministic scaling, and two different totals
   7. VALIDATION   - four independent checks, one of which re-derives money
   8. THE ANSWER   - the event stream a frontend receives
-  9. WHAT WOULD HAVE STOPPED IT - every refusal that did not fire
+  9. WHAT WOULD HAVE STOPPED IT - the refusal paths, one made to fire
  10. AND AROUND IT ALL - the operational layer this turn never sees
 
 WHO THIS IS FOR
@@ -63,7 +63,6 @@ from _demo_support import (
     require,
     resolve_mode,
     section,
-    show_events,
 )
 
 from src.models.scripted import ScriptedModelClient
@@ -86,19 +85,32 @@ heading("DEMO 31 - CAPSTONE: one question, every layer it touches")
 
 section("1. The question")
 
-MESSAGE = "dinners for a flat of 3 for 5 days, no pork, we have about $120"
+MESSAGE = "dinners for a flat of 3 for 5 days, vegetarian, we have about $120"
 note(f'  "{MESSAGE}"')
 note("")
 note("What the service is being asked to promise is stronger than it looks:")
 note("")
 note("  - every price it quotes is one that was RETRIEVED, not generated")
 note("  - the total is one the shopper can actually pay at a till")
-note("  - 'no pork' is honoured or the request is REFUSED, never approximated")
+note("  - the exclusion is HONOURED or the request is REFUSED, never approximated")
 note("  - if it cannot do those things it says so, rather than guessing")
+note("")
+note("The exclusion is passed as a CLIENT HINT as well as being in the text.")
+note("That is not a dodge, it is the contract: `ClientHints.dietary_exclusions`")
+note("is a structured field a frontend collects from a control, and the message")
+note("wins if the two disagree. Section 9 shows what happens to an exclusion")
+note("this catalogue cannot verify.")
 
 repo = InMemoryPriceRepository()
 model = ScriptedModelClient()
-req = request(MESSAGE, turn="turn-capstone", household_size=3, days=5, budget_nzd=120)
+req = request(
+    MESSAGE,
+    turn="turn-capstone",
+    household_size=3,
+    days=5,
+    budget_nzd=120,
+    dietary_exclusions=["vegetarian"],
+)
 
 
 # --------------------------------------------------------------- 2. intent
@@ -193,6 +205,34 @@ note("")
 note("Pack counts aggregate per product ACROSS meals and round up ONCE. Three")
 note("meals each needing half a bag of rice is two bags if you round per meal,")
 note("and one bag if you do it correctly.")
+note("")
+note("AND THE EXCLUSION, CHECKED RATHER THAN ASSERTED. Every product the plan")
+note("cites, run against the categories `vegetarian` excludes:")
+
+MEATY = ("pork", "beef", "chicken", "sausage", "mince", "bacon", "lamb", "tuna", "salmon")
+used = {i.citation_ref for meal in plan.meals for i in meal.ingredients}
+breaches = sorted(
+    {
+        index[ref].product_name
+        for ref in used
+        if ref in index and any(w in index[ref].product_name.lower() for w in MEATY)
+    }
+)
+for meal in plan.meals:
+    items = ", ".join(
+        index[i.citation_ref].product_name for i in meal.ingredients if i.citation_ref in index
+    )
+    note(f"    {meal.name}")
+    note(f"        {items}")
+note("")
+verdict = "OK  " if not breaches else "FAIL"
+note(f"  [{verdict}] products breaching the exclusion: {breaches or 'none'}")
+require(not breaches, f"the plan served excluded products: {breaches}")
+note("")
+note("Judged from the RESOLVED PRODUCTS, not from recipe names. A recipe called")
+note('"Veggie Bake" that resolves to a beef product is the failure this catches,')
+note("and it is why dietary viability is decided after retrieval rather than")
+note("from a label.")
 
 
 # ------------------------------------------------------------ 7. validation
@@ -239,15 +279,43 @@ note("table with a plausible key and a price nobody retrieved passed cleanly.")
 
 section("8. THE ANSWER - the event stream a frontend receives")
 
-show_events(response)
+kinds: dict[str, int] = {}
+for ev in response.events:
+    kinds[ev.type] = kinds.get(ev.type, 0) + 1
+note("  " + "  ".join(f"{k}x{v}" for k, v in kinds.items()))
+note("")
+note("Citations are the bulk of it, and that is the design: the plan carries")
+note("REFERENCES, and every number a reader sees has to be looked up in a")
+note("record that was retrieved. A few of them:")
+note("")
+for ref in list(index)[:4]:
+    c = index[ref]
+    note(f"    {ref:4} {c.product_name:32} {money(c.price_nzd):>8}  @ {c.store}")
+note(f"    ... {len(index) - 4} more, of which {len(used)} are actually cited by the plan")
+note("")
+note("THE PROSE, in full, because the interesting part is what is NOT in it:")
+note("")
+for ev in response.events:
+    if ev.type == "token":
+        note(f"    {ev.text.strip()}")
+note("")
+note('It says "the plan total", not "$21.60". `[[total]]` renders to a FIXED')
+note("WORD rather than a figure, so a model cannot put money in a sentence")
+note("even by accident -- and `assert_no_literal_money` runs again AFTER")
+note("rendering, because the string that was validated is not the string that")
+note("reaches the user.")
+note("")
+note("(The wording above is the SCRIPTED client's placeholder template, which")
+note("is why it reads awkwardly. A real model writes the sentence; the")
+note("money-free guarantee is what is being demonstrated, not the style.)")
 
 
 # --------------------------------------------- 9. the refusals that did not fire
 
-section("9. WHAT WOULD HAVE STOPPED IT - refusals that did not fire today")
+section("9. WHAT WOULD HAVE STOPPED IT - the refusal paths, one made to fire")
 
-note("Each of these is a path this turn could have taken. None is an error")
-note("case: every one is a SUCCESSFUL response that declines to answer.")
+note("Each of these is a path this turn could have taken, and none is an")
+note("error case: every one is a SUCCESSFUL response that declines to answer.")
 note("")
 note("  clarification        a required constraint was not stated")
 note("  unsupported_exclusion  a diet we cannot verify against the catalogue")
@@ -256,6 +324,46 @@ note("  STALE_DATA           everything retrievable is too old to stand behind")
 note("  budget_infeasible    the budget genuinely does not stretch")
 note("  guardrail            content policy refused the turn")
 note("  upstream_failure     the model plane could not answer")
+
+note("")
+note("ONE OF THEM, MADE TO FIRE. The same request, with an exclusion this")
+note("catalogue cannot verify:")
+note("")
+refused = run_turn(
+    request(
+        "dinners for a flat of 3 for 5 days",
+        turn="turn-refusal",
+        household_size=3,
+        days=5,
+        budget_nzd=120,
+        dietary_exclusions=["pork"],
+    ),
+    repo,
+    model,
+)
+errors = [e for e in refused.events if e.type == "error"]
+require(errors, "the unsupported exclusion did not produce a refusal")
+note(f"    events    {[e.type for e in refused.events]}")
+note(f"    code      {errors[0].code}")
+note(f"    message   {errors[0].message[:66]}...")
+note(f"    retryable {errors[0].retryable}")
+require(
+    not [e for e in refused.events if e.type == "meal_plan"],
+    "a plan was produced despite an unverifiable exclusion",
+)
+note("")
+note("  [OK  ] no plan was produced, and the refusal is contract-valid")
+note("")
+note("`pork` is not in the supported vocabulary -- the catalogue's categories")
+note("are broad (meat, dairy, eggs, seafood...), so a per-animal exclusion")
+note("cannot be verified against it. The system REFUSES rather than doing its")
+note("best, because a restriction that is silently approximated is worse than")
+note("one that is declined.")
+note("")
+note("THAT IS A REAL PRODUCT LIMITATION, not a triumph: 'no pork' is an")
+note("entirely reasonable thing for a shopper to say, and the honest answer")
+note("today is 'I cannot check that'. Closing it needs per-product allergen")
+note("and provenance tagging -- deferred, and recorded as 11.7.")
 note("")
 note("The design rule is that honest failure is a FIRST-CLASS OUTCOME. A")
 note("system that must always produce a plan will eventually produce one it")
