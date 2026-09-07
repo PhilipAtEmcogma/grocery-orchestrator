@@ -228,7 +228,7 @@
         "scored": 45,
         "blocked": 2,
         "p50_latency_ms": 6672,
-        "cost_usd_per_suite": 0.004880,
+        "cost_usd_per_suite": 0.00488,
         "_why_this_one_serves": "Equal-lowest accuracy by 2.2 points, and 13x cheaper than Nova Pro and 18x cheaper than Claude Haiku over the same 47 cases. classify_intent runs on EVERY turn, so that ratio is the routing decision. Measured on the current suite rather than argued from the old one.",
         "_latency_note": "All three sit within 26ms of each other at p50 (6652-6678ms), which is not a model property -- it is the Guardrail hop plus the harness network path dominating. Do not read these as model latency evidence; scripts/measure_latency.py measures the deployed service instead."
       }
@@ -251,7 +251,8 @@
         "scored": 12,
         "reps": 3,
         "distinct_mains": 3.8
-      }
+      },
+      "_ceiling_lifted_2026_09_07": "THE OBJECTION ABOVE WAS CORRECT AND IT HAS BEEN ANSWERED BY NORMALISING, not by ignoring it. `distinct mains` stayed unscored because 'three meals from a seven-recipe shortlist cannot beat four from a twelve-recipe one' -- true of an ABSOLUTE count, and fatal to averaging or thresholding one. The ceiling is computable: with n meals chosen from a shortlist holding m distinct mains, no selection can show more than min(n, m). `Scorecard.variety` divides by that, which asks a question that IS comparable across every case -- of the variety available to you, how much did you take? A narrow shortlist taken in full scores 1.0, because nobody could have done better. WHY IT MATTERS: five DISTINCT pasta recipes exist in config/recipes.json, so a model can return five different ids that pass fabrication, dietary, repetition AND count while serving pasta five nights running. That selection scores 100% on every rule check and 0.2 on variety. It is the first measurement in this suite that ranks a MENU rather than a rule. Reported, not floored: this product never asks a shopper whether they would rather batch-cook, so the honest order is measure a baseline first, then argue a threshold. tests/test_variety_metric.py holds both halves."
     },
     "generate_plan": {
       "_source": "evals/run_meal_plan.py, 11 cases, three clean reps each, paced",

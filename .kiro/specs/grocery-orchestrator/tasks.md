@@ -1952,7 +1952,19 @@ enforcement from `run_turn()` remains the explicit Task 2 follow-up.*
 - [x] **5.3** Report known limitations separately from failures — *Req 10.3*
 - [x] **5.4** Meal plan cases with invariants and reported metrics — *Req 10.2*
 - [x] **5.5** Budget floor check, not only the ceiling
-- [ ] **5.6** Subjective quality scoring for variety and appeal — still open,
+- [x] **5.6** Subjective quality scoring for variety and appeal — **VARIETY
+  DELIVERED 2026-09-07**, appeal deliberately not attempted. `Scorecard.variety`
+  in `evals/run_recipe_select.py` measures distinct mains as a fraction of the
+  most that were ACHIEVABLE, which is what makes it comparable where the raw
+  count never was. It answers this repository's own recorded objection rather
+  than ignoring it. The blind spot it closes is real and asserted: five distinct
+  pasta recipes exist, so a selection can pass fabrication, dietary, repetition
+  and count while being pasta five nights running — 100% on every rule, 0.2 on
+  variety. Reported rather than floored, because the product never asks whether
+  a shopper would rather batch-cook. 8 tests. APPEAL is not attempted and should
+  not be faked: it needs a human judgement or an LLM judge with its own
+  qualification, and inventing a proxy would manufacture exactly the meaningless
+  gradient the variety objection warned about. Original note follows —
   and still deliberately. `design.md` §8 and AGENTS.md both argue an LLM judge
   puts a non-deterministic scorer inside a suite whose value is being
   deterministic. What changed on 2026-08-30 is the *other* half of that note:
