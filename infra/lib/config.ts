@@ -202,6 +202,19 @@ export function productionStages(): ReadonlySet<string> {
 function assertAssetIsNotStale(assetPath: string): void {
   if (!fs.existsSync(assetPath)) return;
 
+  // NOT UNDER JEST. The guard exists to stop a stale DEPLOY, and a unit test
+  // never deploys anything -- so failing the CDK suite because somebody edited
+  // `config/models.json` since their last build is collateral, not signal. It
+  // happened immediately: editing a config comment turned 85 passing
+  // assertions into 15 failures about an unrelated file.
+  //
+  // The carve-out is deliberately narrow. `cdk synth` and `cdk deploy` do NOT
+  // set JEST_WORKER_ID, so both still check -- and CI's `infra` job runs a
+  // real `cdk synth` after building the archive, which is the path that
+  // matters. What is given up is staleness detection during `npm test`, which
+  // was never where a stale archive does harm.
+  if (process.env.JEST_WORKER_ID !== undefined) return;
+
   const builtAt = fs.statSync(assetPath).mtimeMs;
   // The Python trees `scripts/build_lambda.py` copies in. `config/` and
   // `fixtures/` ship too and are checked for the same reason: a routing or

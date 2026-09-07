@@ -268,3 +268,17 @@ def endpoint_url() -> str:
     import os
 
     return os.environ.get(ENDPOINT_ENV, "").strip() or DEFAULT_ENDPOINT
+
+
+def require(condition: bool, message: str) -> None:
+    """
+    Fail the demo loudly if a claim it just made is not true.
+
+    NOT `assert`. Demos are run with a plain interpreter, but `assert`
+    disappears under `-O`, and this repository's linter forbids it outside
+    `tests/` for exactly that reason: a check that can be optimised away is a
+    check that might not be running. `run_all.py` reads the exit code, so
+    SystemExit is what marks a demo FAILED.
+    """
+    if not condition:
+        raise SystemExit(f"DEMO CHECK FAILED: {message}")

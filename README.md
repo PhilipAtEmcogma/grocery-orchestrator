@@ -77,8 +77,12 @@ from the catalogue falls back to free composition and says so. This is the only
 differentiating capability a user can see, and it was one graph edge away for a
 fortnight.
 
-So the remaining distance to a pilot is **real ingested data, IaC adoption, and
-operational evidence** — not first deployment.
+So the remaining distance to a pilot is **operational evidence and the frontend
+cutover** — not first deployment, and no longer IaC adoption either. Real
+ingested data landed 2026-09-01 (2,759 rows, one catalogue), and the last plane
+without a template was codified and deployed 2026-09-07. What is left is the
+alarm migration deferred to after the demo (§3y.A), a frontend that is a
+teammate's scope, and a data gap only the data teammates can close.
 
 | Pilot Task | State |
 |---|---|
@@ -90,12 +94,14 @@ operational evidence** — not first deployment.
 | 6 · Idempotency fencing, canonical hashing, pagination, PITR | ✅ done · one deferral (6b) |
 | 7 · Scorecards, route qualification, prose/repair evals | ✅ done — **7b closed 2026-09-07**, SSM routing is a live control |
 | 8 · Local read-only MCP | ✅ done — 2 coarse tools, default-off, capped, parity-tested |
-| 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done**. ObservabilityStack written 2026-08-31, deploy ATTEMPTED the same day and **rolled back** — it sat in `ROLLBACK_COMPLETE` unrecorded until 2026-09-07, failed on an SNS topic `apply_alarms.py` had already created; the topic is adopted by reference now and the retry is delete-then-deploy — it alarms both planes when it is, and the account has never seen it — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms then, **12 since 2026-09-04**; dashboard, Budget, first deployed latency + cost baselines). The ingestion plane was deployed 2026-09-04 — price-history table, its IAM grant and four ingestion alarms, with the fixture-default refusal watched to fire in the account (§3u). Cutover deferred by decision, not pending |
-| 12e · Throttling, stale data, artefact lifecycle | ✅ **written and gated 2026-09-06, NOT deployed.** The two "missing metrics" were one missing metric and one missing alarm: `TurnError` had carried `code=STALE_DATA` since 2026-08-30, so only the alarm was absent, and the note that bundled them is why nobody checked. Throttling had nothing — every Bedrock `ClientError` became one opaque `ModelError`, so an outage and a quota breach looked identical. `ModelThrottled` is now typed and counted per model and task (15 tests, mutation-verified). The artefact bucket gained four scoped prefixes with noncurrent-version lifecycle rules, and `scripts/artefact_drill.py` is the restore/deletion drill. **A real `cdk synth` failure came out of it** — the alarm construct id was keyed on the metric name, so a second `TurnError` alarm collided. Deploying `Grocery-Obs-dev` (12f) is what puts any of it in the account |
-| 13 · Ingestion in IaC | ✅ **written and gated 2026-09-07, not yet deployed.** `IngestionStack` was a four-TODO stub while the plane it describes **was running in the account** — the last live plane with no template behind it. Built from `describe-*` output rather than from `infra/docs/03`, which had drifted on three details: the account uses **EventBridge Scheduler** with an explicit `Pacific/Auckland` timezone (not a Rule with a UTC cron, which drifts an hour twice a year), a 120s timeout, and `PRICE_SOURCE=lineage_b`. 15 assertions, mutation-verified — the first time anything has asserted over this plane. The schedule is created **DISABLED**: the snapshot's capture date is a constant, so a nightly run rewrites the same rows with the same date |
-| 13 · Controlled ingestion | 🟡 **anomaly rejection wired 2026-08-31** — `implausible_unit_price` refuses a row before it is written, with a metric and an alarm. Measured over the real catalogue: 0 rejections clean, **522 of 2,759** with the historical defect reintroduced (§3p). One catalogue since 2026-09-01, and the loader is guarded against re-shadowing it (§3t). Remaining: the decoupled review trigger (Streams -> SQS/DLQ). **And the served data covers two chains, not three** — no Woolworths rows exist |
+| 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done. 12 substantially, and the gap is now diagnosed rather than vague.** ObservabilityStack was written 2026-08-31, deploy ATTEMPTED the same day, and it **rolled back** — sitting in `ROLLBACK_COMPLETE` unrecorded until 2026-09-07, failed on an SNS topic `apply_alarms.py` had already created. Four documents said it had never been deployed; that was true of its RESOURCES and false about its history. The topic is **adopted by reference** now (Strategy A, protecting a confirmed email subscription). A retry then proved CloudFormation **refuses** to create over the twelve existing alarms — the best of the three possible outcomes — and nothing was harmed. **Finishing it means deleting those twelve so CDK can own them, deferred to after the demo by decision** (§3y.A, seven ordered steps). 12 alarms live, 15 in config |
+| 12e · Throttling, stale data, artefact lifecycle | ✅ **written and gated 2026-09-06; the METRIC ships, the ALARMS do not yet.** The two "missing metrics" were one missing metric and one missing alarm: `TurnError` had carried `code=STALE_DATA` since 2026-08-30, so only the alarm was absent, and the note that bundled them is why nobody checked. Throttling had nothing — every Bedrock `ClientError` became one opaque `ModelError`, so an outage and a quota breach looked identical. `ModelThrottled` is typed and counted per model and task (15 tests, mutation-verified), and **is live on the CDK plane**, which has been redeployed since; the hand-made plane still runs the older build. Both alarms wait on the observability migration (§3y.A). The artefact bucket has lifecycle rules and scoped prefixes and does not exist yet, so `scripts/artefact_drill.py` has not been run |
+| 13b · Ingestion in IaC | ✅ **written, gated and DEPLOYED 2026-09-07.** `IngestionStack` was a four-TODO stub while the plane it describes **was running in the account** — the last live plane with no template. Built from `describe-*` output rather than `infra/docs/03`, which had drifted on three details: the account uses **EventBridge Scheduler** with an explicit `Pacific/Auckland` timezone (not a Rule with a UTC cron, which drifts an hour twice a year), a 120s timeout, and `PRICE_SOURCE=lineage_b`. 16 assertions, mutation-verified — the first ever over this plane. **Exercised, not assumed:** a dry run fetched 1,377 real rows with `unchanged: 1377` (which proves the diff-before-write Query grant), and the state machine ran end to end. The schedule is created **DISABLED** — the capture date is a constant, so a nightly run rewrites the same rows with the same date |
+| 13c · Catalogue stream guard | ✅ **built and LIVE 2026-09-07.** Task 13's decoupled review trigger, justified by an incident in this repo's own log (§3t: a `load_seed_data.py` run re-added 152 fixture rows that shadowed real prices for days). `refresh()` cannot see a write it did not make; **a stream sees the write, not the writer**. Filtered DynamoDB Stream → consumer with an SQS DLQ, two retries, `bisectBatchOnError`. Caught a planted foreign row on the live table. **Retry/redrive/backlog evidence came from a real failure** — a stale archive — giving `RetryAttemptsExhausted` at invoke count 3 and a DLQ message carrying the shard and sequence number |
+| 13 · Controlled ingestion | 🟡 **anomaly rejection wired 2026-08-31** — `implausible_unit_price` refuses a row before it is written, with a metric and an alarm. Measured over the real catalogue: 0 rejections clean, **522 of 2,759** with the historical defect reintroduced (§3p). One catalogue since 2026-09-01, and the loader is guarded against re-shadowing it (§3t). The decoupled review trigger shipped 2026-09-07 (see 13c). **What remains is not ours:** the served data covers two chains, not three — no Woolworths rows exist, and the false CLAIM was fixed 2026-09-06 while the DATA gap needs the data teammates |
 | 14 · AgentCore reviewer | 🟡 **14a and 14b done** — the sanitised snapshot boundary and finding validation (needed whoever reviews), and ADR 0002 answered 2026-09-02 under autonomous delegation: reviewer Runtime only. **Prototyped live and torn down** — 60% reviewer-only recall, 0 false positives, and one fabricated quote caught by the caller-side validator, which is the trust boundary working. CDK stack written; it cannot deploy until `AWS::BedrockAgentCore::Runtime` reaches Sydney. **Retention is a separate, open decision** |
 | 15 · Recipe catalogue | ✅ **done 2026-08-31, live 2026-09-04** — 29 curated recipes, and **15c wired and now on the shopper path** (it sat undeployed for five days; §3v): a meal-plan turn is built from named recipes, with the model choosing ids from a shortlist retrieval has already proven costable, dietary-viable and affordable as a set. Falls back to free composition with a notice when nothing fits. The imported 175 stay unusable: 0/175 against *both* catalogues |
+| 5.6 · Menu quality, not just rules | ✅ **variety delivered 2026-09-07; appeal deliberately not attempted.** The suites could not rank models — both scored 100% because every check was a RULE check. `distinct mains` was unscored for a correct reason (an absolute count is not comparable across shortlists), and **normalising against what was achievable dissolves that**. The blind spot is real and asserted: five distinct pasta recipes exist, so a selection can pass fabrication, dietary, repetition AND count while being pasta five nights running — 100% on every rule, **0.2 on variety**. Reported, not floored: the product never asks whether a shopper would rather batch-cook |
 | 16 · Release gates | 🟡 **battery run 2026-09-04** — all ten gates executed ([`docs/TASK-16-RELEASE-GATES.md`](docs/TASK-16-RELEASE-GATES.md)): T2, T3, T4, T6 and T7 discharged on real samples; p95 price **1.94s** and meal plan **3.51s** over n=50 each, 100/100 turns, $0.000128/turn. All three models re-scored on the current 47-case suite. **A load finding was fixed in the same change**: a throttled first call asked the shopper to rephrase a complete request. Remaining: CORS `*` and STALE_DATA unexercised live |
 
 **Two deliberate deferrals remain** (6b closed 2026-08-30), each with the
@@ -122,7 +128,9 @@ reasoning recorded in `tasks.md`:
 
 **Deployed and operating** (2026-08-30): the alias serving current `main`, the
 **real 2,759-row catalogue**, Guardrail **v2** applied, GSI2 for
-meal-plan candidates with `Scan` revoked, **8 alarms** + dashboard + a $25
+meal-plan candidates with `Scan` revoked, **8 alarms as at that date** (12 in
+the account now, 15 in `config/alarms.json` — the extra three land with the
+observability migration, §3y.A) + dashboard + a $25
 Budget, API-stage X-Ray, and the first latency baseline measured against the
 endpoint rather than a laptop — price check p95 **2.21s** (target 5s), meal plan
 p95 **12.2s** (target 20s), both at n=8 and n=3. **Superseded 2026-09-04** by a
@@ -166,8 +174,8 @@ intent scorecards Nova Pro 100.0%, Claude Haiku 4.5 96.4%, Nova Lite 92.9% —
 DynamoDB products and idempotency tables with owner-fenced claims proven against
 the real table. Procedure and traps: [`docs/LIVE-EVAL-RUNBOOK.md`](docs/LIVE-EVAL-RUNBOOK.md).
 
-**Offline gates:** 945 tests passing, 31 skipped, plus **52 CDK assertions**
-in `infra/` (6 suites) — first run by CI on 2026-08-31, having found two IAM
+**Offline gates:** 1005 tests passing, 31 skipped, plus **85 CDK assertions**
+in `infra/` (7 suites) — first run by CI on 2026-08-31, having found two IAM
 regressions in a stack that was already deployed
 ([`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) §3o). Five eval suites — intent
 85.1% (47 cases), meal plan 100% (20), prose 100% (11), repair 100% (12),
@@ -398,7 +406,7 @@ ingestion/                 Price ingestion: sources, normalise, handler, and
                            fail-closed dietary re-classifier. Deployed to
                            ap-southeast-2; live retailer acquisition stays
                            gated on ACQUISITION-RISK.md §8
-Philip_demo/               Twenty-four runnable demos. Default mode is offline,
+Philip_demo/               31 runnable demos. Default mode is offline,
                            no AWS; DEMO_MODE selects integration (the deployed
                            endpoint) or aws (deployed resources, read-only).
                            run_all.py exits non-zero if any drifts from the code
@@ -606,7 +614,7 @@ claimed. Read it before changing any of this, and not before.
   to 47 and from 11 to 20 (`f8cd86d`), so the instrument changed and the system
   did not. The CI floors were deliberately left where they are — see
   `docs/CI-GATE-HEALTH.md` §1.
-- ✅ **Nineteen runnable demos** (`Philip_demo/`) across three modes — local
+- ✅ **31 runnable demos** (`Philip_demo/`) across three modes — local
   (offline), integration (the deployed endpoint), aws (deployed resources,
   read-only). `run_all.py` exits non-zero if any has drifted from the code it
   describes, and distinguishes a FAILED demo from a BLOCKED one.
@@ -886,7 +894,7 @@ specific question arises.
   event stream, which totals to render, and the failure modes worth handling
   distinctly.
 - [`samples/`](samples/) — payloads `validate.py` checks in CI.
-- [`Philip_demo/`](Philip_demo/) — nineteen runnable demos of the features,
+- [`Philip_demo/`](Philip_demo/) — 31 runnable demos of the features,
   offline by default, with the run instructions and the mode each supports in
   the docstring at the top of every file.
 
