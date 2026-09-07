@@ -353,3 +353,97 @@ describe('IngestionStack security invariants', () => {
     }
   });
 });
+describe('IngestionStack catalogue stream guard (Task 13)', () => {
+  const STREAM =
+    'arn:aws:dynamodb:ap-southeast-2:111111111111:table/grocery-products-dev/stream/2026-09-07T00:00:00.000';
+
+  it('creates nothing at all when the stream is not enabled', () => {
+    // Enabling the stream is a one-time change to an ADOPTED table, which this
+    // app cannot make (stateful-stack.ts). Without it, a queue and a consumer
+    // with no source would be infrastructure that reads as a capability and
+    // does nothing -- the note ARCHITECTURE 7 makes about the S3 bucket.
+    const { t: off } = build({ PRODUCTS_STREAM_ARN: undefined });
+    expect(off.findResources('AWS::SQS::Queue')).toEqual({});
+    expect(off.findResources('AWS::Lambda::EventSourceMapping')).toEqual({});
+    // ...and the ingestion function is still there, so "absent" means the
+    // FEATURE is absent, not the stack.
+    expect(Object.keys(off.findResources('AWS::Lambda::Function'))).toHaveLength(1);
+  });
+
+  it('subscribes to the products stream with a DLQ and bounded retries', () => {
+    const { t: on } = build({ PRODUCTS_STREAM_ARN: STREAM });
+
+    const mappings = Object.values(on.findResources('AWS::Lambda::EventSourceMapping'));
+    expect(mappings).toHaveLength(1);
+    const m = (mappings[0] as any).Properties;
+
+    expect(flatten(m.EventSourceArn)).toBe(STREAM);
+
+    // TWO attempts, not "until the record expires". This consumer is
+    // deterministic over its input, so a batch that failed twice will fail
+    // again -- retrying for 24 hours buries the fact in a retry loop instead
+    // of putting it where a person looks.
+    expect(m.MaximumRetryAttempts).toBe(2);
+    // One poison record must not condemn the 99 beside it: the same isolation
+    // argument the state machine's Map makes for retailers.
+    expect(m.BisectBatchOnFunctionError).toBe(true);
+    expect(m.DestinationConfig?.OnFailure?.Destination).toBeDefined();
+    expect(m.FunctionResponseTypes).toContain('ReportBatchItemFailures');
+  });
+
+  it('is FILTERED, and deletions are dropped at the source', () => {
+    // `scripts/load_seed_data.py --remove` is a legitimate cleanup. An
+    // unfiltered mapping would invoke the function for every deletion just to
+    // decide it had nothing to look at, and pay for the privilege.
+    const { t: on } = build({ PRODUCTS_STREAM_ARN: STREAM });
+    const m = (Object.values(on.findResources('AWS::Lambda::EventSourceMapping'))[0] as any)
+      .Properties;
+
+    const patterns = (m.FilterCriteria?.Filters ?? []).map((f: any) => f.Pattern).join(' ');
+    expect(patterns).toContain('INSERT');
+    expect(patterns).toContain('MODIFY');
+    expect(patterns).not.toContain('REMOVE');
+  });
+
+  it('the guard runs under its own role with NO write on what it watches', () => {
+    // A guard that can write to what it guards can turn a false positive into
+    // data loss. Detection and remediation are separate authorities -- the same
+    // argument the ingestion role's append-only history grant makes.
+    const { t: on, cfg: c } = build({ PRODUCTS_STREAM_ARN: STREAM });
+    const guardPolicies = Object.entries(on.findResources('AWS::IAM::Policy')).filter(([id]) =>
+      id.startsWith('StreamGuard'),
+    );
+    expect(guardPolicies.length).toBeGreaterThan(0);
+
+    for (const [, p] of guardPolicies) {
+      for (const st of (p as any).Properties.PolicyDocument.Statement) {
+        const actions: string[] = Array.isArray(st.Action) ? st.Action : [st.Action];
+        for (const a of actions) {
+          expect(a).not.toBe('dynamodb:PutItem');
+          expect(a).not.toBe('dynamodb:BatchWriteItem');
+          expect(a).not.toBe('dynamodb:UpdateItem');
+          expect(a).not.toBe('dynamodb:DeleteItem');
+        }
+        // Nor any grant naming the products TABLE for writing -- reading the
+        // stream is a different ARN from writing the table.
+        const resources: string[] = (
+          Array.isArray(st.Resource) ? st.Resource : [st.Resource]
+        ).map(flatten);
+        for (const r of resources) {
+          if (r.includes(c.names.productsTable) && !r.includes('/stream/')) {
+            expect(actions.every((a) => a.startsWith('dynamodb:Get') || a.startsWith('dynamodb:List'))).toBe(true);
+          }
+        }
+      }
+    }
+  });
+
+  it('the DLQ retains long enough for somebody back from leave', () => {
+    const { t: on } = build({ PRODUCTS_STREAM_ARN: STREAM });
+    const queues = Object.values(on.findResources('AWS::SQS::Queue'));
+    expect(queues).toHaveLength(1);
+    // 14 days, the maximum. A message here means a batch this code could not
+    // process at all, which is rare by construction and worth keeping.
+    expect((queues[0] as any).Properties?.MessageRetentionPeriod).toBe(1209600);
+  });
+});

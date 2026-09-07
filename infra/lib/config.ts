@@ -172,12 +172,88 @@ export function productionStages(): ReadonlySet<string> {
   return new Set(names.map((n) => n.trim().toLowerCase()));
 }
 
+/**
+ * Refuse to synthesise against a Lambda archive older than the code it packages.
+ *
+ * THIS EXISTS BECAUSE IT HAPPENED, on 2026-09-07, in the same session that read
+ * §3v ("the orchestrator was five days stale"). `ingestion/stream_guard.py` was
+ * written, tested and committed; the deploy used the `build/lambda.zip` sitting
+ * on disk from an earlier task; and the function failed on every invocation
+ * with `Runtime.ImportModuleError: No module named 'ingestion.stream_guard'`.
+ * Three invocations, three retries exhausted, one message in the dead-letter
+ * queue — for a file that was correct in git the whole time.
+ *
+ * `cdk deploy` fingerprints whatever bytes are at `lambdaAssetPath`. It cannot
+ * know they are stale, and neither could the operator: the deploy reported
+ * success. CI is not the control either — its `infra` job builds the archive
+ * before synth, so CI is exactly the environment where this cannot happen and
+ * therefore exactly the environment that cannot warn you.
+ *
+ * The check is a MTIME COMPARISON, not a hash. A hash would mean rebuilding to
+ * find out whether a rebuild was needed. Comparing the archive against the
+ * newest file in the trees it packages answers the same question for free, and
+ * errs toward complaining: touching a file without changing it fails the synth
+ * and costs one `python scripts/build_lambda.py`.
+ *
+ * SKIPPED when the archive is absent, deliberately. `cdk synth` runs in tests
+ * and in CI before the build step, and a missing archive is a different, louder
+ * failure that CDK already reports.
+ */
+function assertAssetIsNotStale(assetPath: string): void {
+  if (!fs.existsSync(assetPath)) return;
+
+  const builtAt = fs.statSync(assetPath).mtimeMs;
+  // The Python trees `scripts/build_lambda.py` copies in. `config/` and
+  // `fixtures/` ship too and are checked for the same reason: a routing or
+  // feasibility change that never reaches the archive is as invisible as a
+  // missing module, and quieter.
+  const packaged = ['src', 'ingestion', 'config', 'fixtures'];
+
+  let newest = 0;
+  let newestPath = '';
+  const walk = (dir: string): void => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === '__pycache__' || entry.name.endsWith('.pyc')) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      const mtime = fs.statSync(full).mtimeMs;
+      if (mtime > newest) {
+        newest = mtime;
+        newestPath = full;
+      }
+    }
+  };
+  for (const tree of packaged) {
+    const dir = path.join(REPO_ROOT, tree);
+    if (fs.existsSync(dir)) walk(dir);
+  }
+
+  if (newest > builtAt) {
+    const behind = Math.round((newest - builtAt) / 1000);
+    throw new Error(
+      `build/lambda.zip is STALE: ${path.relative(REPO_ROOT, newestPath)} is ${behind}s ` +
+        `newer than the archive. Deploying now would ship code that is not in the ` +
+        `repository — on 2026-09-07 exactly that produced ` +
+        `Runtime.ImportModuleError for a module that was committed and passing its ` +
+        `tests. Run: python scripts/build_lambda.py`,
+    );
+  }
+}
+
 export function loadConfig(stage: string): GroceryConfig {
   const isProduction = productionStages().has(stage.trim().toLowerCase());
   const suffix = stage; // dev | prod
 
   // Never `stage`. See GroceryConfig.dataSuffix.
   const dataSuffix = process.env.DATA_SUFFIX ?? 'dev';
+
+  // Resolved and CHECKED before the config is handed to any stack, so a stale
+  // archive fails at synth rather than at the first invocation in the account.
+  const assetPath = path.join(REPO_ROOT, 'build', 'lambda.zip');
+  assertAssetIsNotStale(assetPath);
 
   const cfg: GroceryConfig = {
     stage,
@@ -241,7 +317,7 @@ export function loadConfig(stage: string): GroceryConfig {
       feasibility: path.join(REPO_ROOT, 'config', 'feasibility.json'),
       stages: STAGES_FILE,
     },
-    lambdaAssetPath: path.join(REPO_ROOT, 'build', 'lambda.zip'),
+    lambdaAssetPath: assetPath,
     requireGuardrail: true,
     // Pilot/dev may use "*" while non-production; a real origin is injected from
     // the FrontendStack's CloudFront domain (two-pass deploy, infra/docs/06 §3d).

@@ -68,9 +68,29 @@ export class StatefulStack extends cdk.Stack {
     // is a distinct resource ARN, and omitting one yields a working GetItem
     // and a failing Query — the exact access pattern the index exists for.
     // docs/ARCHITECTURE.md §4 records that costing two attempts.
+    // `tableStreamArn` is supplied so IngestionStack can attach a consumer to
+    // the products stream (Pilot Task 13's decoupled review trigger).
+    //
+    // ADOPTION CANNOT ENABLE THE STREAM, ONLY CONSUME IT. Strategy A means
+    // CloudFormation holds no table resource, so it cannot set
+    // `StreamSpecification` — turning the stream ON is a one-time change to a
+    // table this app deliberately does not manage. It was made with
+    // `aws dynamodb update-table` and recorded in DYNAMODB-SCHEMA.md, which is
+    // exactly how PITR was enabled on these same tables on 2026-08-29. That is
+    // the accepted seam for a property of an adopted resource, and it is
+    // narrower than the alternative: `cdk import` would bring 2,759 real price
+    // rows under CloudFormation management, where any definition mismatch makes
+    // a deploy attempt a REPLACEMENT.
+    //
+    // Read from the environment rather than hardcoded, because a stream ARN
+    // carries a timestamp and is regenerated if the stream is ever disabled and
+    // re-enabled. Absent, the consumer is simply not created — see
+    // ingestion-stack.ts, which treats "no ARN" as "this feature is off"
+    // rather than synthesising a mapping to a stream that may not exist.
     this.products = dynamodb.Table.fromTableAttributes(this, 'Products', {
       tableName: names.productsTable,
       globalIndexes: ['GSI1', 'GSI2'],
+      tableStreamArn: process.env.PRODUCTS_STREAM_ARN || undefined,
     });
 
     this.idempotency = dynamodb.Table.fromTableAttributes(this, 'Idempotency', {

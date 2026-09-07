@@ -1280,8 +1280,98 @@ proposed, or gated as labelled; it is not implemented.
   this plane, mutation-verified: granting `Query` on the history table fails
   one, dropping the ASL rewrite fails another. `docs/ARCHITECTURE.md` §3z.
 
-  **Still open in Task 13:** the decoupled review trigger (Streams -> SQS/DLQ),
-  and the deploy of this stack.
+  **Still open in Task 13:** the deploy of the stream half, and the
+  retry/redrive/backlog evidence that needs a live stream.
+
+- [x] **Pilot Task 13c - The decoupled review trigger. Written 2026-09-07.**
+  Task 13 asks for filtered Streams -> SQS/DLQ **"where review decoupling is
+  justified"**, and that clause was taken seriously: the first question was
+  whether this project has a justification or would be building a service
+  because the task names one.
+
+  **It has one, and it is an incident in this repository's own log.** Section
+  3t: a plain `scripts/load_seed_data.py` run re-added 152 fixture rows to the
+  live products table, they SHADOWED the real prices, and the deployed endpoint
+  served fixture data for days. The loader is guarded now - that fixes the
+  INSTANCE. `refresh()` validates and diffs before it writes and cannot see a
+  write it did not make, and the loader is not the only thing holding
+  credentials for that table. **A stream sees the write, not the writer.**
+
+  **The invariant is unusually clean.** All 2,759 live rows carry one
+  `valid_date` (2026-08-28, verified against the account); the fixture rows
+  carried 2026-07-31. So a row whose capture date is not the expected one did
+  not come from the current ingestion source. The expected date defaults to
+  `LineageBSource.CAPTURED_AT` rather than a second copy, and a test pins the
+  constant to what the live rows actually carry.
+
+  **A finding returns normally rather than raising**, so the DLQ keeps meaning
+  "this code could not run" instead of "we found something" - the only reading
+  that makes it worth checking. **A third role**, with no write on the table it
+  watches: a guard that can write to what it guards can turn a false positive
+  into data loss.
+
+  **One imperative step, with precedent.** Enabling the stream is a property
+  change to an ADOPTED table, so CDK cannot make it; `aws dynamodb update-table`
+  and a record in `DYNAMODB-SCHEMA.md`, the same seam PITR used on 2026-08-29.
+  `cdk import` was rejected - it would put 2,759 real rows where a definition
+  mismatch makes a deploy attempt a replacement. Everything downstream is CDK,
+  and the feature is ABSENT rather than broken when the ARN is unset.
+
+  13 Python tests and 5 CDK assertions, mutation-verified: dropping the filter,
+  removing the DLQ, and letting the guard reuse the ingestion role each fail a
+  different test. `docs/ARCHITECTURE.md` section 3ab.
+
+  **LIVE 2026-09-07, and the drill found a defect before the catalogue did.**
+  Stream enabled, consumer deployed, and a row carrying the fixture capture
+  date -- the exact 3t signature -- was written to the live table and caught:
+  `catalogue_foreign_write ... valid_date 2026-07-31, expected 2026-08-28`.
+  Drill rows deleted afterwards and the catalogue re-verified at 2,759 rows,
+  one capture date.
+
+  **The retry/redrive/backlog evidence came from a REAL failure**, which is
+  better than the planted one that was planned. The first deploy shipped a
+  stale `build/lambda.zip` built before `stream_guard.py` existed, so every
+  invocation died on `Runtime.ImportModuleError` -- and produced
+  `RetryAttemptsExhausted` at `approximateInvokeCount: 3` (initial plus the two
+  configured retries), a DLQ message carrying `shardId` and
+  `startSequenceNumber` (which is what makes redrive possible rather than
+  merely knowing it failed), and a held iterator. DLQ purged after recording:
+  a dead-letter queue left non-empty with a resolved message trains people to
+  ignore the next one.
+
+  **TAKEN OFFLINE 2026-09-07, by owner decision: this is a demo app and it
+  should not carry cost for a control nothing is currently watching.** Torn
+  down within the hour, AFTER producing every piece of evidence the task asks
+  for. Teardown is the reverse of the build -- redeploy without the ARN so the
+  consumer stops reading, THEN disable the stream -- and the restore path is
+  four commands in section 3ab. Nothing was removed from the repository: the
+  feature is absent because its input is absent, which is the shape it was
+  built with.
+
+  The catalogue was re-verified by FULL SCAN rather than `ItemCount`, which
+  reported 2,761 because it is a ~6-hourly estimate that had caught an
+  intermediate state. The scan says 2,759, zero drill rows, one capture date.
+
+  Its alarm still lands with the observability migration (section 3y.A).
+
+- [x] **Pilot Task 12h - A stale Lambda archive is now a synth failure. Done
+  2026-09-07.** `cdk deploy` fingerprints whatever bytes are at
+  `build/lambda.zip`; it cannot know they are stale, the deploy reports success,
+  and the failure surfaces as a runtime import error in the account for code
+  that was correct in git the whole time. This is section 3v -- "the
+  orchestrator was five days stale" -- recurring in the same session that read
+  it.
+
+  **CI is not the control, and that is the point.** The `infra` job builds the
+  archive before synth, so CI is exactly the environment where this cannot
+  happen and therefore exactly the one that cannot warn anybody. The gap is
+  local deploys, which is where every deploy in this project has come from.
+
+  `loadConfig()` compares the archive's mtime against the newest file in the
+  trees `build_lambda.py` packages and throws at synth, naming the offending
+  file and the fix. An mtime comparison rather than a hash, because a hash means
+  rebuilding to find out whether a rebuild was needed. Verified by mutation:
+  touching a packaged file fails the synth, and a rebuild clears it.
 
 - [ ] **Pilot Task 14 — Add the bounded data-quality reviewer.** After ADR 0002
   mentor approval, deploy it separately in AgentCore Runtime over capped
