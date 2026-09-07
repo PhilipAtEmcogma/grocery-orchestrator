@@ -555,9 +555,46 @@ proposed, or gated as labelled; it is not implemented.
     handed the model meat and dairy from an unfiltered candidate list. Two
     models "failed" by exceeding the 12-ingredient cap, and that would have been
     recorded as a weakness in the models rather than in the helper.
-  - [ ] **7b — Move the catalogue toward SSM**, align the adapter with
-    `langchain-aws`, and evaluate cross-Region inference profiles only for a
-    measured purpose.
+  - [x] **7b — SSM routing is a live control. Done 2026-09-07.** The
+    parameter had been published since 2026-08-30 under a comment saying
+    nothing read it — *"the forward path, not a live control"*. A parameter
+    nobody reads is a console text box that looks like one, so this closes the
+    half that was missing: `src/models/ssm_routing.py` reads
+    `/grocery/{stage}/models/routing` once per cold start, and
+    `MODELS_ROUTING_PARAM` (the name IS the switch) wires it.
+
+    **The safety property is the whole argument for allowing the knob.** An
+    override cannot enable a model, invent one, or manufacture a scorecard —
+    `models` and `scorecards` come from the archive, which only a deploy
+    changes. `route()` still returns only specs that are enabled, configured
+    and at the requested tier, so the worst a bad edit does is make a task
+    UNROUTABLE, which is loud. Tested from three directions: a disabled model
+    (`claude-sonnet`, excluded on latency), an unknown model, and a model at a
+    tier it does not declare. If that property ever stopped holding, the
+    feature would want withdrawing rather than fixing.
+
+    **Replacement, not a merge**, so an operator who deletes a route does not
+    find it still running from the file. An EMPTY block is refused for the same
+    reason it would be catastrophic: `{"routing": {}}` means no task has a
+    route.
+
+    **Fail-safe where the rest of this codebase fails closed**, and deliberately
+    so: the fallback is the reviewed routing block bundled in the archive, not
+    an absence. Logged, never silent. No alarm, because falling back produces
+    correct answers from a reviewed config.
+
+    **`langchain-aws` was resolved the other way** — nothing had ever imported
+    it, so it was removed on 2026-09-06 rather than aligned to. If the adapter
+    is ever moved onto it, the dependency comes back WITH the import that
+    justifies it. Cross-Region inference profiles remain unevaluated and
+    ungated; no measured purpose has appeared.
+
+    18 tests, mutation-verified three ways. `docs/ARCHITECTURE.md` §3aa.
+
+    **A test that asserted the config had stopped reading it** — the
+    service-stack allowlist was five Sids typed into the test, so adding
+    `SsmReadRouting` to the config failed the check whose job was to compare
+    against that config. Now derived from the JSON.
   Evaluate Bedrock cross-Region inference profiles only for a measured purpose;
   stage Bedrock Model Evaluation as companion evidence with reproducible
   dataset/model/prompt provenance. Knowledge Bases are gated to cited recipe or

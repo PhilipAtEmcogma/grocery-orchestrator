@@ -138,6 +138,13 @@ export class ServiceStack extends cdk.Stack {
     // meaning never expire. infra/docs/04-SECURITY.md requires finite retention
     // and Req 11.5 keeps personal data out of logs — a log that never expires
     // turns any future logging mistake into a permanent one.
+    // Declared here rather than inline below, because BOTH the Lambda's
+    // environment and publishJson() further down need the identical string. Two
+    // literals would be two things to keep in step, and the failure mode is
+    // silent: the function would read a parameter nothing writes and fall back
+    // to the file forever, logging a miss nobody is looking for.
+    const routingParameterName = `/grocery/${cfg.stage}${cfg.suffix}/models/routing`;
+
     const logGroup = new logs.LogGroup(this, 'OrchestratorLogs', {
       logGroupName: `/aws/lambda/${n.orchestratorFn}${cfg.suffix}`,
       retention: logs.RetentionDays.TWO_WEEKS,
@@ -186,6 +193,20 @@ export class ServiceStack extends cdk.Stack {
         // the handler's PRODUCTION_STAGES now read the same config/stages.json,
         // so synth and runtime cannot disagree about what production means.
         APP_STAGE: cfg.stage,
+        // PILOT TASK 7b, CLOSED 2026-09-07. The routing parameter published
+        // below is now READ AT RUNTIME by src/models/ssm_routing.py, so an
+        // operator can retune which model serves which task without a deploy.
+        //
+        // THE NAME IS THE SWITCH -- there is no separate USE_SSM_ROUTING. Two
+        // variables would admit a state that means nothing ("enabled, but no
+        // parameter"), and PRICE_SOURCE=lineage_b is the precedent for a value
+        // that selects the behaviour.
+        //
+        // Unreachable SSM falls back to the routing block bundled in the
+        // archive and logs that it did. That is deliberately fail-SAFE where
+        // the rest of this file fails closed: the fallback is not an absence,
+        // it is the reviewed configuration this very deploy shipped.
+        MODELS_ROUTING_PARAM: routingParameterName,
         // POWERTOOLS_LOGGER_LOG_EVENT is deliberately ABSENT. Setting it true
         // dumps the whole API Gateway event — which contains the shopper's
         // message — into CloudWatch, turning a config change into a privacy
@@ -245,11 +266,24 @@ export class ServiceStack extends cdk.Stack {
 
     // ---------------------------------------------------------------- SSM
 
-    // Published so an operator can retune without a Lambda release. The code
-    // still reads the bundled files today — config/ ships inside the archive —
-    // so this is the forward path, not a live control. infra/docs/08 §6 records
-    // that gap; wiring the code to read SSM is a separate application task and
-    // pretending otherwise would be claiming a capability that does not exist.
+    // Published so an operator can retune without a Lambda release.
+    //
+    // THE ROUTING PARAMETER IS NOW A LIVE CONTROL (Pilot Task 7b, closed
+    // 2026-09-07). This comment used to say the code still read the bundled
+    // files, that this was "the forward path, not a live control", and that
+    // "pretending otherwise would be claiming a capability that does not
+    // exist" — which was the honest thing to write at the time and is the
+    // thing that had to change for the parameter to be worth anything. A
+    // parameter nobody reads is a console text box that looks like a control.
+    // `src/models/ssm_routing.py` reads it once per cold start.
+    //
+    // FEASIBILITY IS STILL NOT READ AT RUNTIME, and the distinction matters.
+    // Routing is a judgement an operator legitimately retunes when a model
+    // gets slow; `config/feasibility.json` holds `min_grams_per_person_day`,
+    // which decides whether a shopper is REFUSED as unfeasible and has never
+    // had domain review (docs/OPEN-REVIEW-min-grams-per-person-day.md). Making
+    // that editable from a console before anyone qualified has looked at the
+    // number would be the wrong order.
     //
     // BOTH OF THESE USED TO BE `readFileSync(...).slice(0, 4096)`. That is not a
     // smaller config file, it is INVALID JSON published under a name that
@@ -275,7 +309,7 @@ export class ServiceStack extends cdk.Stack {
       // Renamed from `…/models`: the old name promised the whole file. Changing
       // the parameterName replaces the resource, which also removes the
       // truncated value currently sitting in /grocery/dev-cdk/models.
-      parameterName: `/grocery/${cfg.stage}${cfg.suffix}/models/routing`,
+      parameterName: routingParameterName,
       value: {
         _comment:
           'Routing only, from config/models.json. Scorecards and the model ' +
@@ -285,7 +319,9 @@ export class ServiceStack extends cdk.Stack {
         default_policy: models.default_policy,
         routing: models.routing,
       },
-      description: 'config/models.json routing block. NOT read at runtime yet - infra/docs/08 §6.',
+      description:
+        'config/models.json routing block. READ AT RUNTIME since 2026-09-07 — '  +
+        'src/models/ssm_routing.py. Edit to retune routing without a deploy.',
     });
     publishJson(this, 'FeasibilityParam', {
       parameterName: `/grocery/${cfg.stage}${cfg.suffix}/feasibility`,

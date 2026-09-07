@@ -93,10 +93,33 @@ class UnroutableTask(RuntimeError):
 
 
 class ModelRegistry:
-    def __init__(self, config_path: Path | None = None) -> None:
+    def __init__(
+        self,
+        config_path: Path | None = None,
+        *,
+        routing_override: dict[str, dict] | None = None,
+    ) -> None:
+        """
+        Build the catalogue from the file, optionally retuning the routing.
+
+        `routing_override` is the SSM overlay (Pilot Task 7b) and it replaces
+        the routing block WHOLESALE rather than merging into it. A merge would
+        make the effective configuration a function of two documents, so
+        removing a task from the parameter would silently fall back to the
+        file's rule for it — and an operator who deleted a route would find it
+        still routing. Whole-document replacement means what the parameter says
+        is what runs.
+        `src/models/ssm_routing.py` is the only caller that passes it, and it
+        refuses an empty block for exactly this reason.
+
+        NOTHING ELSE IS OVERRIDABLE. `models` and `scorecards` come from the
+        file, so an override cannot enable a model, invent one, or manufacture
+        the evidence that qualifies it. See `route()`.
+        """
         raw = json.loads((config_path or CONFIG_PATH).read_text(encoding="utf-8"))
         self.region: str = raw.get("region", "ap-southeast-2")
-        self._routing: dict[str, dict] = raw.get("routing", {})
+        self._routing: dict[str, dict] = routing_override or raw.get("routing", {})
+        self._routing_source: str = "ssm" if routing_override else "file"
         self._scorecards: dict = raw.get("scorecards", {})
         self._specs: dict[str, ModelSpec] = {}
 
@@ -208,6 +231,17 @@ class ModelRegistry:
                 f"Enable one in config/models.json and set its model id."
             )
         return candidates[0]
+
+    @property
+    def routing_source(self) -> str:
+        """
+        Where the routing block came from: 'ssm' or 'file'.
+
+        Reported rather than inferred. A retune that silently did not take
+        effect is the failure this whole overlay could plausibly produce, and
+        "which document is running" should be answerable without reading logs.
+        """
+        return self._routing_source
 
     @property
     def tasks(self) -> list[str]:

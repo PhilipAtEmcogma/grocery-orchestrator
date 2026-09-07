@@ -2694,3 +2694,114 @@ Woolworths in `KNOWN_RETAILERS`.
 **Both planes now exist side by side**, `grocery-ingestion-dev` (hand-made) and
 `grocery-ingestion-dev-cdk`, neither colliding, and only the hand-made one has
 a schedule attached — which is DISABLED.
+
+
+## 3aa. The routing parameter became a real control — Pilot Task 7b, 2026-09-07
+
+`infra/lib/service-stack.ts` has published `/grocery/{stage}/models/routing`
+since 2026-08-30, under a comment that said in as many words that nothing read
+it: *"NOT read at runtime yet"*, *"the forward path, not a live control"*, and
+— honestly — *"pretending otherwise would be claiming a capability that does
+not exist"*.
+
+That was the right thing to write at the time and it is exactly the shape this
+repository keeps removing: **a parameter nobody reads is a console text box that
+looks like a control.** `src/models/ssm_routing.py` is what makes it real.
+
+### What is overridable, and what deliberately is not
+
+The stack already made this decision and the runtime honours it rather than
+widening it:
+
+| Block | Published? | Why |
+|---|---|---|
+| `routing` | **yes** | Which model serves which task. A judgement, and the thing an operator legitimately retunes when a model gets slow or a quota moves. |
+| `scorecards` | no | Measured evidence. An operator who could edit a scorecard could **qualify a route by typing**, which is the one thing the qualification gate exists to prevent. |
+| `models` | no | A capability inventory — tool use, cache minimums, prices — that changes with a deploy, not with an operator's judgement. |
+
+### The safety property is the whole argument
+
+An override **cannot enable a model, invent one, or manufacture the evidence
+that qualifies it.** `models` and `scorecards` come from `config/models.json`
+inside the archive, which only a deploy changes. `ModelRegistry.route()` still
+returns only a spec that is `enabled`, `is_configured`, and carries the
+requested tier.
+
+So the worst a bad edit can do is make a task **unroutable** — `UnroutableTask`,
+a loud failure the contract already maps — rather than quietly downgrade the
+service to something unqualified. `tests/test_ssm_routing.py` asserts precisely
+that, including the case that matters most: an override preferring
+`claude-sonnet`, which the file disables on latency grounds, does not get it.
+
+If that property ever stopped holding, the feature would need **withdrawing**
+rather than fixing, which is why it is tested from three directions (a disabled
+model, an unknown model, and a model at a tier it does not declare).
+
+### Replacement, not a merge
+
+The override replaces the routing block **wholesale**. A merge would make the
+effective configuration a function of two documents, so an operator who DELETED
+a route from the parameter would find it still routing — the file's rule showing
+through. What the parameter says is what runs.
+
+That is also why an **empty** block is refused rather than honoured:
+`{"routing": {}}` is not "no opinion", it is "no task has a route", which would
+make every task unroutable and take the service down from a console text box.
+
+### Fail-safe here, where everything else fails closed
+
+This is a deliberate asymmetry and worth defending. Elsewhere a missing control
+fails closed: no guardrail means no generation, an unknown store raises rather
+than defaulting to a coordinate. Here an unreachable SSM falls back to the
+routing block **bundled in the archive** — which is not an absence. It is a
+complete, reviewed configuration that was correct at the moment the archive was
+built, and it is already in memory. Refusing to serve because an optional tuning
+overlay is unreachable would turn an operator convenience into an outage.
+
+The fallback is **logged**, never silent, because a silent fallback is how
+somebody comes to believe they retuned production when they retuned nothing.
+The log line carries the parameter name and the exception TYPE, never the value
+— a parameter value is configuration, and a warning is not the place to publish
+it. There is a test asserting the value cannot leak into the log.
+
+**No alarm, and that is reasoned rather than lazy.** Falling back is correct
+behaviour producing correct answers from a reviewed config. §3l's rule is that
+an alarm binds to something a person must act on tonight; this is a line
+somebody reads when a retune did not take effect.
+
+### One SSM call per cold start, applied at one seam
+
+The overlay is loaded in `BedrockModelClient.__init__` and nowhere else. That
+adapter is already the AWS-facing one, so the eval harness, the scripted client
+and every offline test keep building a registry from the file with no account
+and no boto3 — the same seam that puts `src/retrieval/dynamo.py` beside
+`memory.py`. The handler caches the client across warm invocations, so it is one
+call per cold start rather than one per turn, with a 2s connect / 3s read
+timeout because the answer is optional and the shopper's latency budget is not.
+
+`ModelRegistry.routing_source` reports `'ssm'` or `'file'`, so "which document
+is actually running" is answerable without reading logs.
+
+### A test that was asserting the config stopped reading it
+
+`infra/test/service-stack.test.ts` has a check that the template grants nothing
+beyond what `config/iam-orchestrator-role.json` declares. Its allowlist was five
+Sids **typed into the test**, so adding `SsmReadRouting` to the config failed a
+test whose entire job was to compare against that config.
+
+A duplicated allowlist fails in both directions: it flags a legitimate addition
+— and the "fix" is to edit the test, which teaches people to edit tests — and it
+would keep passing if a statement were REMOVED from the config while staying in
+the template. The allowlist is now derived from the JSON, with an assertion that
+the derivation found something, so an empty parse cannot make everything pass.
+
+### Feasibility stays unwired, deliberately
+
+The stack publishes `config/feasibility.json` too, and the runtime still does
+not read it. Routing is a judgement an operator retunes when a model gets slow.
+`feasibility.json` holds `min_grams_per_person_day`, which decides whether a
+shopper is **refused** as unfeasible, and which
+`docs/OPEN-REVIEW-min-grams-per-person-day.md` records as never having had
+domain review. Making that editable from a console before anyone qualified has
+looked at the number would be the wrong order, and a test asserts it is not
+wired.

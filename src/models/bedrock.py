@@ -37,6 +37,7 @@ from src.models.base import (
 )
 from src.models.guardrail import guard_content_block
 from src.models.registry import ModelRegistry, ModelSpec, RoutingPolicy
+from src.models.ssm_routing import load_routing_override
 
 REGION = os.environ.get("AWS_REGION", "ap-southeast-2")
 
@@ -71,7 +72,17 @@ class BedrockModelClient(ModelClient):
         # pinned_spec forces every call to one model. The eval harness uses
         # this to score models individually; production leaves it None and
         # lets the registry route per task.
-        self._registry = registry or ModelRegistry()
+        # THE SSM OVERLAY IS APPLIED HERE AND NOWHERE ELSE (Pilot Task 7b).
+        # This adapter is already the AWS-facing one, so the eval harness, the
+        # scripted client and every test keep building a registry from the file
+        # with no account and no boto3 — the same reason `src/retrieval/dynamo`
+        # exists beside `src/retrieval/memory`.
+        #
+        # Once per client, which the handler caches across warm invocations, so
+        # it is one SSM call per cold start rather than one per turn. Returns
+        # None whenever the overlay is off or unreachable, and the registry then
+        # reads the bundled file.
+        self._registry = registry or ModelRegistry(routing_override=load_routing_override())
         self._pinned = pinned_spec
         # Retries and timeouts matter: this sits inside a Lambda with a 29s
         # ceiling from API Gateway. Unbounded retries would blow through it.
