@@ -3049,3 +3049,62 @@ complaint is one `python scripts/build_lambda.py`.
 Skipped when the archive is absent, because `cdk synth` legitimately runs before
 any build in tests and in CI, and a missing archive is a louder failure CDK
 already reports.
+
+### Taken offline the same day — 2026-09-07
+
+**Decision (owner): this is a demo app; do not carry cost for a control nothing
+is currently watching.** Torn down within the hour of going live, having first
+produced every piece of evidence Task 13 asks for.
+
+Order matters, and it is the reverse of the build:
+
+1. `cdk deploy Grocery-Ingestion-dev` with `PRODUCTS_STREAM_ARN` **unset** —
+   removes the event source mapping, the consumer, its log group and the DLQ.
+   The consumer must stop reading before the stream goes away, or the mapping is
+   left pointing at a stream that no longer exists.
+2. `aws dynamodb update-table --table-name grocery-products-dev
+   --stream-specification StreamEnabled=false`.
+
+Verified after: zero event source mappings, the DLQ returns
+`NonExistentQueue`, `StreamSpecification` is null, and the serving endpoint
+still answers 200.
+
+**The catalogue was re-verified by full scan, not by `ItemCount`.**
+`describe-table` reported 2,761 items — two more than the drill left behind —
+because that figure is an estimate DynamoDB refreshes roughly every six hours
+and it had caught an intermediate state. A `--select COUNT` scan returns
+**2,759**, with zero `zzz-` keys and one capture date. Worth recording as a
+general point: `ItemCount` is not evidence, and a teardown that checks it would
+have reported phantom rows in the serving catalogue.
+
+### Bringing it back
+
+Nothing was deleted from the repository, and the CDK path is unchanged — the
+feature is absent because its input is absent, which is the shape it was built
+with:
+
+```bash
+aws dynamodb update-table --table-name grocery-products-dev \
+  --stream-specification "StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES" \
+  --profile grocery
+
+export PRODUCTS_STREAM_ARN=$(aws dynamodb describe-table \
+  --table-name grocery-products-dev --query 'Table.LatestStreamArn' \
+  --output text --profile grocery)
+
+python scripts/build_lambda.py          # or synth refuses — see the staleness guard
+cd infra && npx cdk deploy Grocery-Ingestion-dev --profile grocery
+```
+
+**Re-enabling produces a NEW stream ARN** (it carries a timestamp), which is
+exactly why the ARN is read from the environment rather than committed.
+
+**Quote the shorthand.** In PowerShell an unquoted
+`StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES` is split on the comma and
+silently does nothing — the table reports `Stream: null` and the command looks
+like it worked.
+
+**What stays, and costs nothing:** the guard code, its 13 tests, the 5 CDK
+assertions, the alarm and metric filter in `config/alarms.json`, and the
+whole-app "an observer must not mutate what it observes" check — which is not
+about this feature and keeps working over every future consumer.

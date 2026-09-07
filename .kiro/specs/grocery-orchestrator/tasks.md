@@ -1339,6 +1339,19 @@ proposed, or gated as labelled; it is not implemented.
   a dead-letter queue left non-empty with a resolved message trains people to
   ignore the next one.
 
+  **TAKEN OFFLINE 2026-09-07, by owner decision: this is a demo app and it
+  should not carry cost for a control nothing is currently watching.** Torn
+  down within the hour, AFTER producing every piece of evidence the task asks
+  for. Teardown is the reverse of the build -- redeploy without the ARN so the
+  consumer stops reading, THEN disable the stream -- and the restore path is
+  four commands in section 3ab. Nothing was removed from the repository: the
+  feature is absent because its input is absent, which is the shape it was
+  built with.
+
+  The catalogue was re-verified by FULL SCAN rather than `ItemCount`, which
+  reported 2,761 because it is a ~6-hourly estimate that had caught an
+  intermediate state. The scan says 2,759, zero drill rows, one capture date.
+
   Its alarm still lands with the observability migration (section 3y.A).
 
 - [x] **Pilot Task 12h - A stale Lambda archive is now a synth failure. Done
