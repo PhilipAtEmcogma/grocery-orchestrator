@@ -79,18 +79,44 @@ note("So the standard is: break the thing, watch the control fail, restore it.")
 note("Everything below is that, run live.")
 
 
+#: Stack-trace and separator lines, matched as PREFIXES.
+#:
+#: The first draft of this demo printed
+#: `_ test_every_declared_requirement_is_imported[python-dotenv] __` and
+#: `throw new Error(` -- a pytest separator and a source line. Both matched a
+#: keyword; neither told the reader anything.
+#:
+#: The SECOND draft filtered them with substrings, including `"at "` -- which
+#: matches inside the word "that", so it suppressed the very sentence it was
+#: meant to surface. Prefixes, not substrings. That is the same mistake
+#: `config/alarms.json` warns about for metric filters, made in a demo about
+#: not making mistakes like that.
+_NOISE_PREFIXES = ("_", "=", "throw ", "raise ", 'File "', "at ", "^", "~", "E   +", "|")
+
+
+def _is_noise(line: str) -> bool:
+    return not line or line.startswith(_NOISE_PREFIXES)
+
+
 def run_check(argv: list[str], *, cwd: Path | None = None) -> tuple[bool, str]:
-    """Run a command. Returns (passed, first useful line of output)."""
+    """Run a command. Returns (passed, the most explanatory line of output)."""
     proc = subprocess.run(  # noqa: S603 - fixed argv built in this file
         argv, cwd=cwd or ROOT, capture_output=True, text=True, timeout=900
     )
-    out = (proc.stdout + proc.stderr).strip().splitlines()
-    detail = ""
-    for line in out:
-        if any(w in line for w in ("STALE", "FAILED", "Error", "error:", "assert", "declared")):
-            detail = line.strip()[:96]
-            break
-    return proc.returncode == 0, detail
+    lines = [ln.strip() for ln in (proc.stdout + proc.stderr).splitlines()]
+
+    # A rendered MESSAGE, in preference order. `E  ` is pytest's rendered
+    # assertion line -- the one with the values substituted in, as opposed to
+    # the source line that produced it.
+    for wanted in ("is STALE:", "E   AssertionError", "AssertionError:"):
+        for line in lines:
+            if wanted in line and not _is_noise(line):
+                return proc.returncode == 0, line.removeprefix("E   ")[:150]
+
+    for line in lines:
+        if line.startswith("FAILED"):
+            return proc.returncode == 0, line[:150]
+    return proc.returncode == 0, ""
 
 
 # ------------------------------------------- 2. a dependency nothing imports
@@ -169,6 +195,11 @@ else:
     stamp = guarded.stat()
     try:
         guarded.touch()
+        # Said BEFORE the slow call, and flushed, because `cdk synth` takes
+        # about 45 seconds and a demo that goes silent for 45 seconds looks
+        # like a demo that has hung.
+        note("  running `cdk synth` (~45s, this is the real guard, not a stub)...")
+        sys.stdout.flush()
         passed, detail = run_check(
             [npx, "cdk", "synth", "Grocery-Ingestion-dev", "--quiet"], cwd=ROOT / "infra"
         )
