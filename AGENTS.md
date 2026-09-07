@@ -409,10 +409,25 @@ invented on 2026-07-31, and a later stamp fabricates provenance — the *Do not*
 rule about publishing a price without its capture date, wearing a different hat.
 
 **`config/` ships inside the Lambda archive**, so retuning a threshold is a
-deploy. That is the argument for Task 7b's SSM work.
+deploy — **except for model ROUTING, which stopped being true on 2026-09-07**.
+Task 7b is closed: `src/models/ssm_routing.py` reads
+`/grocery/{stage}/models/routing` once per cold start, so which model serves
+which task is editable without a release. An override cannot enable a model or
+manufacture a scorecard — those come from the archive — so the worst a bad edit
+does is make a task unroutable, which is loud.
 
-Blockers are now **Tasks 13 and 16**, plus Task 14's Runtime behind ADR
-0002. (15c cleared 2026-09-04 when the orchestrator was finally deployed —
+Everything else in `config/` still needs a deploy, and `feasibility.json` is
+deliberately kept that way: `min_grams_per_person_day` decides whether a shopper
+is REFUSED, and it has never had domain review
+(`docs/OPEN-REVIEW-min-grams-per-person-day.md`). Console-editable before anyone
+qualified has looked at the number would be the wrong order.
+
+Blockers are now **Task 16 and the frontend**, plus Task 14's Runtime behind
+ADR 0002. **Task 13 closed 2026-09-07**: its IaC half (13b — the ingestion plane
+was the last live plane with no template) and its decoupled review trigger (13c
+— a filtered stream, an SQS DLQ and a guard that reports writes the current
+ingestion source did not make) are both built, deployed and exercised against
+the account. (15c cleared 2026-09-04 when the orchestrator was finally deployed —
 ARCHITECTURE.md §3v.) Closed 2026-08-30: Task 8 (local MCP, `src/mcp/`), Task 12 substantially
 (8 alarms, dashboard, Budget, first deployed latency and cost baselines), Task
 13's first half (the real 2,759-row catalogue is loaded), and deferral 6b
@@ -565,7 +580,7 @@ measurement here, make the instrument name its inputs.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 945 passed, 31 skipped, no AWS
+python -m pytest -q                              # 1005 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -603,7 +618,7 @@ python scripts/reviewer_runtime_preflight.py      # cost-free reviewer-Runtime p
 python scripts/build_reviewer_runtime.py          # arm64 CodeZip for the reviewer Runtime (build/reviewer-runtime.zip)
 python scripts/review_runtime.py --sim            # boot the reviewer entrypoint over local HTTP, no AWS
 python scripts/review_runtime.py --arn <arn>      # invoke a DEPLOYED reviewer Runtime (see design doc §15)
-cd infra && npm ci && npm test                    # 52 CDK security assertions across 6 suites, no AWS
+cd infra && npm ci && npm test                    # 85 CDK security assertions across 7 suites, no AWS
 cd infra && npx tsc --noEmit && npx cdk synth --quiet   # what the `infra` CI job runs
 ```
 

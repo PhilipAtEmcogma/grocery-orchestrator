@@ -3136,3 +3136,32 @@ the mapping, the guard is not watching.** That is acceptable for this control �
 it detects a class of accident, not an adversary timing a write to a deploy — but
 it should not be discovered during an incident, and a drill run immediately after
 a deploy will produce a false "it does not work".
+
+### The stale-archive guard fired twice more, and was narrowed once — 2026-09-07
+
+It has now caught two real staleness incidents, and the second one changed its
+scope.
+
+**The second catch was a CONFIG change, not a code change.** Editing a comment
+in `config/models.json` after the last build left the archive stale, and the
+guard said so by name. That validates including `config/` and `fixtures/` in
+the watched trees rather than only `src/` and `ingestion/`: a routing or
+feasibility change that never reaches the archive is exactly as invisible as a
+missing module, and quieter.
+
+**And it fired in the wrong place.** That same edit turned 85 passing CDK
+assertions into 15 failures about an unrelated file, because `loadConfig()`
+runs in the jest suite too. The guard exists to stop a stale **deploy**, and a
+unit test never deploys anything — so failing the suite is collateral, not
+signal, and a check that cries wolf during ordinary work is one people learn to
+route around.
+
+It now returns early when `JEST_WORKER_ID` is set. The carve-out is deliberately
+narrow: `cdk synth` and `cdk deploy` do not set it, so both still refuse, and
+CI's `infra` job runs a real `cdk synth` after building the archive — which is
+the path that matters. Verified both ways: with a deliberately stale archive,
+`npm test` passes 85/85 and `cdk synth` still reports
+`is STALE: config\models.json`.
+
+What is given up is staleness detection during `npm test`, which was never where
+a stale archive does harm.

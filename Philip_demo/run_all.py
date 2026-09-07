@@ -24,7 +24,7 @@ that do not support the selected mode are reported as SKIPPED and are not
 counted as passing. The default is `local`: fixtures plus the scripted model
 client, with no AWS account, credentials or network access, and no spend.
 
-    local        (default)  offline. ALL 19 demos run here, and pass.
+    local        (default)  offline. EVERY demo runs here, and passes.
     integration             the deployed HTTPS endpoint, and the MCP server
                             over a real stdio subprocess. Needs network
                             access; needs NO AWS credentials. Costs a few
@@ -85,6 +85,17 @@ DEMOS: list[tuple[str, str, tuple[str, ...]]] = [
     ("21_ingestion_guards.py", "The two refusals that guard the catalogue", (LOCAL,)),
     ("22_price_history_and_review.py", "Price history and the data-quality reviewer", (LOCAL,)),
     ("23_degradation_and_throttling.py", "Degradation when the model is unreachable", (LOCAL,)),
+    ("25_throttling_and_stale_data.py", "Throttling and stale data, made visible", (LOCAL,)),
+    ("26_ssm_routing_control.py", "Retuning model routing without a deploy", (LOCAL,)),
+    ("27_catalogue_stream_guard.py", "Watching every write to the catalogue", (LOCAL,)),
+    ("28_ingestion_in_iac.py", "The ingestion plane, codified", (LOCAL,)),
+    ("29_menu_quality_metric.py", "Scoring the menu, not just the rules", (LOCAL,)),
+    # Runs pytest and (when node is present) `cdk synth` in subprocesses, so it
+    # is slower than the rest and goes after them.
+    ("30_guardrails_that_bite.py", "Guardrails, verified by breaking them", (LOCAL,)),
+    # THE CAPSTONE goes last of the offline demos: it is the summary, and a
+    # summary read before the parts it summarises is just a list.
+    ("31_capstone.py", "CAPSTONE - one question, every layer", (LOCAL,)),
     # Last, and deliberately: it binds a port and starts a subprocess, so a
     # failure here is about the environment rather than about the orchestrator.
     (

@@ -1,12 +1,13 @@
 # Philip_demo
 
-Twenty-four runnable demonstrations of the grocery orchestrator, without a UI.
+Thirty-one runnable demonstrations of the grocery orchestrator, without a UI.
 
 Each file takes one seam of the system, opens it, and shows what is actually
 behind it — using the project's own modules, never a second implementation.
-Demo 19 puts them back together end to end, and **demo 24 runs the whole
-backend as a service over HTTP**, which is what the frontend team will point
-at when they arrive.
+Demo 19 puts them back together end to end, **demo 24 runs the whole backend
+as a service over HTTP** (what the frontend team will point at), and
+**[demo 31](31_capstone.py) is the capstone**: one shopper question followed
+all the way down, stopping at every control that gets a say in the answer.
 
 **Start with the demo table below, or jump straight to
 [`03_grounding_and_safety.py`](03_grounding_and_safety.py)** — the central
@@ -180,6 +181,13 @@ this directory reads an access key, and nothing prints one.
 the fixture-date pin. It is not itself a demo.
 
 ---
+| 25 | [`25_throttling_and_stale_data.py`](25_throttling_and_stale_data.py) | Pilot Task 12e: why a quota breach and an outage must not look alike, the three throttle names AWS uses and the one deliberately excluded, and two alarms taking opposite dimension decisions | local | no | no | Bedrock transport |
+| 26 | [`26_ssm_routing_control.py`](26_ssm_routing_control.py) | Pilot Task 7b: retuning which model serves which task without a deploy — and the safety property that makes it allowable, namely that an override **cannot enable a model** | local | no | no | SSM transport |
+| 27 | [`27_catalogue_stream_guard.py`](27_catalogue_stream_guard.py) | Pilot Task 13c: the incident that justified a stream, why `refresh()` could never have caught it, and why a *finding* must not reach the dead-letter queue | local | no | no | stream records |
+| 28 | [`28_ingestion_in_iac.py`](28_ingestion_in_iac.py) | Pilot Task 13b: codifying the last live plane with no template — built from the **account** rather than the design doc, which had drifted on three details | local | no | no | nothing |
+| 29 | [`29_menu_quality_metric.py`](29_menu_quality_metric.py) | Legacy 5.6: when every model scores 100% the suite has stopped measuring. Derives the pasta blind spot from the real catalogue and scores it | local | no | no | model |
+| 30 | [`30_guardrails_that_bite.py`](30_guardrails_that_bite.py) | **Breaks three guardrails on purpose** and watches them fail. Two of them were found to be inert this way — a guardrail nobody has tried to break is just a comment | local | no | no | nothing (runs pytest, and `cdk synth` if node is present) |
+| 31 | [`31_capstone.py`](31_capstone.py) | **CAPSTONE.** One shopper question through every layer: intent, retrieval, filters, selection, assembly, four validations, the event stream, the refusals that did not fire, and the operational layer the turn never sees | local | no | no | prices, model |
 
 ## Suggested reading order
 
@@ -189,14 +197,22 @@ the fixture-date pin. It is not itself a demo.
 **Where the data comes from** — 10 → 9 → 13 → 12 → 11.
 **What is deployed, and what an operator sees** — 6 → 7 → 17 → 15 → 8.
 **The features added since the first pass** — 20 → 22 → 21 → 23.
-**All of it at once** — 19, then **24** for the backend as a running service.
+**Operations, and the controls added in the final week** — 25 → 26 → 27 → 28.
+**How this project checks its own checks** — 29 → 30.
+**All of it at once** — 19, then **24** for the backend as a running service,
+then **31**, the capstone.
 
 **If you are on the frontend team, read 24 first.** It starts the backend, shows
 you every event shape you will receive, and ends with the `fetch()` call to copy.
 
-If you have time for one file, read **3**. If you have time for two, read
-**3** and **19**. If you are here to integrate rather than to review, read
-**24**.
+If you have time for one file, read **31** — the capstone was written to be
+the single-file answer, and its narration reads aloud. If you have time for
+two, add **3**, where the central design decision (the model never produces a
+number that reaches the user) can be watched holding. If you are here to
+integrate rather than to review, read **24**.
+
+If you want the argument this project is really about — that a claim is worth
+what its evidence is worth — read **30**, then section 10 of **31**.
 
 ---
 
@@ -333,7 +349,7 @@ Repository gates, run after this suite was written, both green:
 
 ```
 ruff check .                   All checks passed
-python -m pytest -q            945 passed, 31 skipped
+python -m pytest -q            1005 passed, 31 skipped
 ```
 
 *(765 when this suite was first written; the rise is Tasks 14a, 15b and the
