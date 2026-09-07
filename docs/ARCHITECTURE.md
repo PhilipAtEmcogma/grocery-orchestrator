@@ -2944,3 +2944,38 @@ they all carry the current capture date.
 It lands when the observability migration runs (§3y.A) — the alarms are still
 imperative through the demo by decision, and this one is written and waiting
 like the throttle and stale-data pair.
+
+### The guardrail that generalises it, and the bug that nearly made it useless
+
+The stream guard's own role is enforced by an assertion in
+`infra/test/ingestion-stack.test.ts`. That protects **the function somebody
+already thought about**; the next SQS consumer or Kinesis reader would have
+nothing. So the rule is now stated as a rule, over the whole app, in
+`infra/test/app.test.ts`:
+
+> **an observer must not be able to mutate what it observes**
+
+For every `AWS::Lambda::EventSourceMapping` in every stack, the consuming
+function's role is resolved and each mutating action it holds is checked against
+the resource the mapping reads. It is the same principle that already appears
+twice here — the ingestion role's append-only history grant, and the reviewer
+that may report findings but holds no publication authority (Req 13.8) — which
+is what makes it a principle rather than a preference.
+
+**The first version was inert, and mutation testing is the only reason that is
+known.** It flattened CloudFormation intrinsics to strings and compared them
+with `includes`. A function's role renders as `{"Fn::GetAtt": ["RoleABC",
+"Arn"]}` and a policy's as `{"Ref": "RoleABC"}`, which flattened to
+`"${RoleABCArn}"` and `"${RoleABC}"` — not a match, because the trailing brace
+differs. **No policy was ever considered attached**, the loop body never
+executed, and the test passed while checking nothing.
+
+Granting the stream guard `dynamodb:PutItem` on the table it watches did not
+fail it. The rewrite compares LOGICAL IDS rather than flattened strings, the
+same mutation now fails, and the failure names the offending action and
+resource.
+
+It carries a companion assertion — *"finds the consumers it is meant to be
+checking"* — because a loop over an empty list passes exactly as quietly as a
+loop that found nothing wrong, and CI runs without `PRODUCTS_STREAM_ARN` where
+the guard is deliberately absent.
