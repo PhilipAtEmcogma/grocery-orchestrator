@@ -97,6 +97,20 @@ class BedrockModelClient(ModelClient):
         )
         self._usage: dict = {}
 
+    @property
+    def routing_source(self) -> str:
+        """
+        'ssm' or 'file' — which document is actually routing this client.
+
+        Exposed so the HANDLER can log it through Powertools. The stdlib INFO
+        line in `ssm_routing.py` is invisible in Lambda: the runtime's root
+        logger sits at WARNING, so the fallback WARNING shows and the success
+        INFO does not. That made "logged, never silent" true of the case that
+        goes wrong and false of the case that goes right, which is the wrong
+        way round for answering "did my retune take effect?".
+        """
+        return self._registry.routing_source
+
     def _spec_for(self, task: str) -> ModelSpec:
         if self._pinned is not None:
             return self._pinned

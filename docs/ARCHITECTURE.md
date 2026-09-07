@@ -2795,6 +2795,37 @@ would keep passing if a statement were REMOVED from the config while staying in
 the template. The allowlist is now derived from the JSON, with an assertion that
 the derivation found something, so an empty parse cannot make everything pass.
 
+### Verified live, and one flaw the verification exposed
+
+Deployed to the CDK plane and proved rather than inferred:
+
+```
+{"message": "model_routing_source", "routing_source": "ssm", "cold_start": true}
+```
+
+**Getting that line required a fix.** The first attempt looked for
+`ssm_routing_applied` — the INFO the loader emits — and found nothing, while a
+turn had demonstrably cold-started. The stdlib root logger in Lambda sits at
+WARNING, so a `logging.getLogger(__name__).info(...)` is dropped; Powertools'
+own INFO lines appear because they go through the Powertools logger.
+
+So "logged, never silent" was true of the case that goes WRONG (the fallback,
+a WARNING, visible) and false of the case that goes RIGHT — which is the wrong
+way round for answering *"did my retune take effect?"*. The absence of a warning
+is only evidence if you already trust that the code ran.
+
+Fixed at the boundary that owns observability: `BedrockModelClient.routing_source`
+exposes which document won, and `src/handler.py` logs it once per cold start
+through Powertools. No parameter value, only the source — Req 11.5 applies to
+configuration too.
+
+**The other trap, recorded because it cost a confusing five minutes:** Git Bash
+rewrites a leading `/` in an argument into a Windows path, so
+`aws ssm get-parameter --name /grocery/dev-cdk/models/routing` returns
+`ParameterNotFound` for a parameter that plainly exists in
+`describe-parameters`. `MSYS_NO_PATHCONV=1` is the fix. Same family as the
+`detect-secrets` backslash-path trap in §"One Windows trap worth recording".
+
 ### Feasibility stays unwired, deliberately
 
 The stack publishes `config/feasibility.json` too, and the runtime still does
