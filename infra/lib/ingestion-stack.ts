@@ -193,8 +193,39 @@ export class IngestionStack extends cdk.Stack {
     // CDK state machine would invoke the HAND-MADE Lambda — a plane that looks
     // independent while sharing the half that writes to the catalogue, which
     // is the worst of both arrangements.
-    const asl = fs
-      .readFileSync(cfg.configFiles.stateMachine, 'utf-8')
+    // THE COMMENTS MUST BE STRIPPED BEFORE SUBMISSION, and finding that out
+    // cost a failed deploy. Step Functions validates the definition at CREATE
+    // time, not at synth: `cdk synth` rendered this happily and CloudFormation
+    // answered
+    //
+    //   SCHEMA_VALIDATION_FAILED: Field '_comment' is not supported at
+    //   /States/RefreshAllRetailers/ItemProcessor/States/RefreshOneRetailer/Catch[0]
+    //
+    // ASL allows `Comment` on a STATE and rejects unknown members elsewhere, so
+    // the `_comment` this repo uses to explain the Catch — the one recording
+    // why `ResultPath` is null — is exactly the kind of annotation the service
+    // refuses. `scripts/apply_state_machine.py` has stripped both since it was
+    // written; this stack did not, which is what made the two paths disagree
+    // about the same file.
+    //
+    // Mirrors `strip_comments()` there deliberately, including dropping
+    // `Comment` as well as `_comment`. Two mechanisms reading one config file
+    // must apply the same transform or the file means two different things.
+    const stripComments = (value: unknown): unknown => {
+      if (Array.isArray(value)) return value.map(stripComments);
+      if (value && typeof value === 'object') {
+        return Object.fromEntries(
+          Object.entries(value as Record<string, unknown>)
+            .filter(([k]) => k !== 'Comment' && k !== '_comment')
+            .map(([k, v]) => [k, stripComments(v)]),
+        );
+      }
+      return value;
+    };
+
+    const asl = JSON.stringify(
+      stripComments(JSON.parse(fs.readFileSync(cfg.configFiles.stateMachine, 'utf-8'))),
+    )
       .replace(/\$\{AWS_REGION\}/g, this.region)
       .replace(/\$\{AWS_ACCOUNT_ID\}/g, this.account)
       .replace(

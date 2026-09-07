@@ -2626,3 +2626,71 @@ the only `Resource: "*"` is X-Ray.
 
 Verified by mutation, not just written: granting `Query` on the history table
 fails one test, and dropping the ASL rewrite fails a different one.
+
+### The deploy failed once, and the reason is worth keeping
+
+`cdk synth` rendered the state machine happily. CloudFormation refused it:
+
+```
+SCHEMA_VALIDATION_FAILED: Field '_comment' is not supported at
+/States/RefreshAllRetailers/ItemProcessor/States/RefreshOneRetailer/Catch[0]
+```
+
+**Step Functions validates a definition at CREATE time, not at synth.** ASL
+permits `Comment` on a *state* and rejects unknown members elsewhere, so the
+`_comment` this repository uses to explain the Catch — the one recording why
+`ResultPath` is null — is exactly the kind of annotation the service refuses.
+
+`scripts/apply_state_machine.py` has had a `strip_comments()` since it was
+written, which is why the hand-made plane deployed fine. The CDK path passed the
+file through raw, so **two mechanisms read one config file and applied different
+transforms to it** — and the file therefore meant two different things depending
+on which deployed it. The stack now mirrors `strip_comments()` exactly, dropping
+`Comment` as well as `_comment`, and a test asserts on the RENDERED definition
+rather than on the stripping function, because the defect was in what got
+submitted.
+
+The test also asserts the definition is still the real one — the Map, the single
+Catch, and `ResultPath: null` — so an over-eager strip that emptied the document
+would fail rather than satisfy "no comments" by saying nothing at all.
+
+**The general lesson, which is not about Step Functions:** `cdk synth` proves a
+template renders. It does not prove a service will accept the payloads inside
+it. Anything embedded as an opaque string — an ASL definition, an IAM policy
+document, a state machine, a dashboard body — is validated by the service at
+deploy, and the only way to find out is to deploy.
+
+### Verified in the account, 2026-09-07
+
+Deployed as `Grocery-Ingestion-dev`, then exercised rather than assumed:
+
+**The function, dry-run against the real catalogue:**
+
+```json
+{"retailer": "paknsave", "fetched": 1377, "rejected": 0,
+ "added": 0, "changed": 0, "unchanged": 1377, "dry_run": true,
+ "captured_at": "2026-08-28", "table": "grocery-products-dev"}
+```
+
+Three things at once: `PRICE_SOURCE=lineage_b` reaches the collected catalogue
+(1,377 Pak'nSave rows, not the fixtures); the `Query` grant works, because
+`unchanged: 1377` is only knowable by diffing against the live table; and the
+anomaly rule ran clean over all of them.
+
+**The state machine, end to end**, started with `{"retailers": ["woolworths"]}`
+— chosen deliberately as the retailer the dataset has no rows for, so the full
+path could be proved with zero writes to the serving catalogue:
+
+```
+Status: SUCCEEDED
+Output: [{"retailer":"woolworths","fetched":0,"written":0,"history_written":0,...}]
+```
+
+That exercises Scheduler's target, the Map, the Lambda invoke grant and the
+result path, and writes nothing. It also re-confirms the two-chain coverage gap
+as a live number rather than a claim — which is exactly the argument for keeping
+Woolworths in `KNOWN_RETAILERS`.
+
+**Both planes now exist side by side**, `grocery-ingestion-dev` (hand-made) and
+`grocery-ingestion-dev-cdk`, neither colliding, and only the hand-made one has
+a schedule attached — which is DISABLED.

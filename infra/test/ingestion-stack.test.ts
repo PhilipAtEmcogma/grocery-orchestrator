@@ -211,6 +211,41 @@ describe('IngestionStack security invariants', () => {
     expect(asl).not.toMatch(new RegExp(`function:${cfg.names.ingestionFn}(?!${cfg.suffix})`));
   });
 
+  it('the definition carries no comment fields, which Step Functions rejects', () => {
+    // A REAL FAILED DEPLOY, 2026-09-07. `cdk synth` renders the definition
+    // happily -- Step Functions validates it at CREATE time, not at synth --
+    // and CloudFormation answered:
+    //
+    //   SCHEMA_VALIDATION_FAILED: Field '_comment' is not supported at
+    //   /States/RefreshAllRetailers/ItemProcessor/States/RefreshOneRetailer/Catch[0]
+    //
+    // ASL permits `Comment` on a STATE and rejects unknown members elsewhere,
+    // so the `_comment` this repo uses to explain the Catch is exactly what the
+    // service refuses. `scripts/apply_state_machine.py` has stripped both since
+    // it was written; this stack did not, and the two paths disagreed about the
+    // same file.
+    //
+    // Asserted on the RENDERED definition rather than on the stripping
+    // function, because the defect was in what got submitted.
+    const machine = Object.values(t.findResources('AWS::StepFunctions::StateMachine'))[0] as any;
+    const asl = flatten(machine.Properties?.DefinitionString);
+
+    expect(asl).not.toContain('_comment');
+    expect(asl).not.toContain('"Comment"');
+
+    // ...and it is still the real definition, not an empty object that would
+    // satisfy the two checks above by saying nothing at all.
+    const parsed = JSON.parse(asl.replace(/\$\{[^}]+\}/g, 'X'));
+    expect(parsed.States.RefreshAllRetailers.Type).toBe('Map');
+    expect(parsed.States.RefreshAllRetailers.ItemProcessor.States.RefreshOneRetailer.Catch)
+      .toHaveLength(1);
+    // The load-bearing one: ResultPath null, because Map items here are STRINGS
+    // and a ResultPath on a non-object aborts the Map the Catch protects.
+    expect(
+      parsed.States.RefreshAllRetailers.ItemProcessor.States.RefreshOneRetailer.Catch[0].ResultPath,
+    ).toBeNull();
+  });
+
   it('the invoke grant names one function rather than a wildcard', () => {
     const invokes = policy.filter((s) => s.actions.includes('lambda:InvokeFunction'));
     expect(invokes.length).toBeGreaterThan(0);
