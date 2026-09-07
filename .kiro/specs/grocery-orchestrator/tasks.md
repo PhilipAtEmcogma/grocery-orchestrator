@@ -1280,8 +1280,49 @@ proposed, or gated as labelled; it is not implemented.
   this plane, mutation-verified: granting `Query` on the history table fails
   one, dropping the ASL rewrite fails another. `docs/ARCHITECTURE.md` §3z.
 
-  **Still open in Task 13:** the decoupled review trigger (Streams -> SQS/DLQ),
-  and the deploy of this stack.
+  **Still open in Task 13:** the deploy of the stream half, and the
+  retry/redrive/backlog evidence that needs a live stream.
+
+- [x] **Pilot Task 13c - The decoupled review trigger. Written 2026-09-07.**
+  Task 13 asks for filtered Streams -> SQS/DLQ **"where review decoupling is
+  justified"**, and that clause was taken seriously: the first question was
+  whether this project has a justification or would be building a service
+  because the task names one.
+
+  **It has one, and it is an incident in this repository's own log.** Section
+  3t: a plain `scripts/load_seed_data.py` run re-added 152 fixture rows to the
+  live products table, they SHADOWED the real prices, and the deployed endpoint
+  served fixture data for days. The loader is guarded now - that fixes the
+  INSTANCE. `refresh()` validates and diffs before it writes and cannot see a
+  write it did not make, and the loader is not the only thing holding
+  credentials for that table. **A stream sees the write, not the writer.**
+
+  **The invariant is unusually clean.** All 2,759 live rows carry one
+  `valid_date` (2026-08-28, verified against the account); the fixture rows
+  carried 2026-07-31. So a row whose capture date is not the expected one did
+  not come from the current ingestion source. The expected date defaults to
+  `LineageBSource.CAPTURED_AT` rather than a second copy, and a test pins the
+  constant to what the live rows actually carry.
+
+  **A finding returns normally rather than raising**, so the DLQ keeps meaning
+  "this code could not run" instead of "we found something" - the only reading
+  that makes it worth checking. **A third role**, with no write on the table it
+  watches: a guard that can write to what it guards can turn a false positive
+  into data loss.
+
+  **One imperative step, with precedent.** Enabling the stream is a property
+  change to an ADOPTED table, so CDK cannot make it; `aws dynamodb update-table`
+  and a record in `DYNAMODB-SCHEMA.md`, the same seam PITR used on 2026-08-29.
+  `cdk import` was rejected - it would put 2,759 real rows where a definition
+  mismatch makes a deploy attempt a replacement. Everything downstream is CDK,
+  and the feature is ABSENT rather than broken when the ARN is unset.
+
+  13 Python tests and 5 CDK assertions, mutation-verified: dropping the filter,
+  removing the DLQ, and letting the guard reuse the ingestion role each fail a
+  different test. `docs/ARCHITECTURE.md` section 3ab.
+
+  **Not yet live:** the stream is not enabled, and its alarm lands with the
+  observability migration (section 3y.A).
 
 - [ ] **Pilot Task 14 — Add the bounded data-quality reviewer.** After ADR 0002
   mentor approval, deploy it separately in AgentCore Runtime over capped

@@ -2836,3 +2836,111 @@ shopper is **refused** as unfeasible, and which
 domain review. Making that editable from a console before anyone qualified has
 looked at the number would be the wrong order, and a test asserts it is not
 wired.
+
+
+## 3ab. The decoupled review trigger — Pilot Task 13's last half, 2026-09-07
+
+Task 13 asks for filtered DynamoDB Streams → SQS/DLQ **"where review decoupling
+is justified"**. That clause is the interesting part: the task gates itself on
+justification, and the honest first question was whether this project has one or
+would be building a service because the task names it.
+
+It has one, and it is in this document.
+
+### The incident that justifies it
+
+§3t: a plain `scripts/load_seed_data.py` run — its default action LOADS —
+silently re-added 152 fixture rows to the live products table. They **shadowed**
+the real Lineage B prices, the deployed endpoint answered with fixture data
+again, and nobody noticed until a parity re-run days later. The loader is
+guarded now, with a regression test.
+
+**That fix addresses the instance. This addresses the class.** `refresh()`
+validates, diffs and rejects before it writes, and none of that can see a write
+it did not make. `load_seed_data.py` is not the only thing holding credentials
+for this table — a console edit, a teammate's script, a future job all bypass
+every check ingestion performs. **A stream sees the write, not the writer.**
+
+### The invariant, which is unusually clean
+
+Every row carries `valid_date` = the capture date of the run that wrote it, and
+the live table holds exactly **one** such date across all 2,759 rows —
+`2026-08-28`, verified against the account. The fixture rows that caused the
+incident carried `2026-07-31`. So:
+
+> a row whose `valid_date` is not the expected capture date did not come from
+> the current ingestion source
+
+That is a statement about **provenance**, which is what this whole repository
+exists to protect. It is also why the check is on the date rather than on a
+`written_by` marker nobody would remember to set.
+
+The expected date defaults to `LineageBSource.CAPTURED_AT` — the ingestion
+source's own constant, not a second copy. Two copies would eventually disagree,
+at which point the guard reports every legitimate write as foreign, which is the
+loudest possible way to be wrong. A test pins the constant to what the live rows
+actually carry.
+
+### The shape, and why not the other shapes
+
+DynamoDB Streams cannot target SQS directly, so "Streams → SQS/DLQ" is one of:
+
+| | |
+|---|---|
+| **Stream → Lambda, SQS as the on-failure destination** | Chosen. One moving part, and it provides every element the task names: `retryAttempts` (retry), the DLQ (redrive), and iterator age (backlog). |
+| Stream → EventBridge Pipes → SQS → Lambda | Adds a service whose only job is moving a record between two things already able to talk. |
+
+**Filtered**, which is the task's word: `INSERT` and `MODIFY` only. `REMOVE`
+carries no new image and `load_seed_data.py --remove` is the documented cleanup
+path, so deletions are dropped at the source rather than invoking a function to
+decide it had nothing to look at.
+
+**Two retries, not the default.** The consumer is deterministic over its input,
+so a batch that failed twice will fail again; retrying for 24 hours buries the
+fact in a loop instead of putting it where a person looks.
+`bisectBatchOnError` means one poison record does not condemn the 99 beside it —
+the same isolation argument the state machine's `Map` makes for retailers.
+
+### A finding does not go to the DLQ, and that is the design
+
+The consumer **returns normally** when it finds a foreign row. A finding is a
+fact about the DATA, not a failure of the function. Raising would send a
+correctly-processed batch to the DLQ and retry it, re-reporting the same rows
+until they expire — and worse, it would make a message in the DLQ mean "we found
+something" rather than "this code could not run". Only the second reading makes
+the DLQ worth checking.
+
+### A third role, and no write on what it guards
+
+The guard does not reuse the ingestion role. It reads a stream and writes a log
+line; it has no business holding `PutItem` on the catalogue it watches. **A
+guard that can write to what it guards can turn a false positive into data
+loss** — the same argument the ingestion role's append-only history grant makes
+one table over. Detection and remediation are separate authorities, and a test
+asserts the guard's policy carries no write action.
+
+### The one imperative step, and why it stays imperative
+
+Enabling the stream is a property change to an **adopted** table, so CDK cannot
+make it. It was done with `aws dynamodb update-table` and recorded in
+`DYNAMODB-SCHEMA.md` — the same seam PITR used on these tables on 2026-08-29.
+The alternative, `cdk import`, would bring 2,759 real rows under CloudFormation
+management where a definition mismatch makes a deploy attempt a replacement.
+
+Everything downstream is CDK. **The feature is absent, not broken, when
+`PRODUCTS_STREAM_ARN` is unset**: no queue, no consumer, no mapping, and an
+annotation saying so. A queue and a consumer with no source would be
+infrastructure that reads as a capability and does nothing, which is the note §7
+makes about the S3 bucket.
+
+### Its alarm is written and cannot deploy yet
+
+`grocery-catalogue-foreign-write-dev`, threshold **one**. Every other alarm here
+sits above one to avoid paging on noise, and this is the deliberate exception:
+there is no volume of foreign rows in the serving catalogue that is routine. A
+legitimate refresh rewrites 2,759 rows and produces **zero** of these, because
+they all carry the current capture date.
+
+It lands when the observability migration runs (§3y.A) — the alarms are still
+imperative through the demo by decision, and this one is written and waiting
+like the throttle and stale-data pair.

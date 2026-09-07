@@ -623,3 +623,53 @@ committed source of truth.
 If regenerated live evidence disagrees with this document or the proposed CDK,
 stop the import and reconcile the difference. Existing live state is evidence
 to inspect, not permission to silently encode drift.
+
+---
+
+## Stream on `grocery-products-dev` — enabled 2026-09-07
+
+**`StreamEnabled: true`, `StreamViewType: NEW_AND_OLD_IMAGES`.**
+
+### Why it is recorded here rather than declared in CDK
+
+The products table is **adopted, not managed** (`fromTableAttributes`, Strategy
+A — `infra/lib/stateful-stack.ts`). CloudFormation holds no table resource, so
+it cannot set `StreamSpecification`: turning a stream on is a property change to
+a table this app deliberately does not own.
+
+That leaves two routes, and the narrower one was taken:
+
+| | |
+|---|---|
+| **`aws dynamodb update-table`, recorded here** | What was done. Additive, no replacement, no downtime. The same seam **PITR** used on these tables on 2026-08-29, recorded in this document for the same reason. |
+| `cdk import` into `StatefulStack` | Rejected. It brings 2,759 real price rows under CloudFormation management, where any mismatch between the definition and reality makes a deploy attempt a **replacement**. `infra/docs/03` already calls Strategy B "higher risk". |
+
+Everything DOWNSTREAM of the stream is CDK: the consumer, its own role, the
+filtered event source mapping, the retry policy and the SQS dead-letter queue
+all live in `IngestionStack`. Only the on/off switch is imperative.
+
+### Why `NEW_AND_OLD_IMAGES` and not `NEW_IMAGE`
+
+The guard reports whether a foreign row **appeared** or **overwrote a real
+one**, and only the old image can tell those apart. That distinction is the
+difference between the 2026-09-01 incident (fixture rows shadowing real prices,
+so the endpoint served fixture data) and a harmless extra row nobody reads.
+
+### What consumes it
+
+`ingestion/stream_guard.py`, as `grocery-catalogue-guard-dev-cdk`. It reports
+rows whose `valid_date` is not the current capture date — a write that did not
+come from the current ingestion source, whoever made it. It has **no write
+permission on the table it watches**, deliberately: a guard that can write to
+what it guards can turn a false positive into data loss.
+
+### Turning it off
+
+```
+aws dynamodb update-table --table-name grocery-products-dev \
+  --stream-specification StreamEnabled=false
+```
+
+Note that disabling and re-enabling produces a **new stream ARN**, which is why
+`PRODUCTS_STREAM_ARN` is read from the environment rather than hardcoded, and
+why the CDK feature is absent rather than broken when it is unset.

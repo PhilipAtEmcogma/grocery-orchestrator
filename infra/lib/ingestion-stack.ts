@@ -42,8 +42,11 @@ import * as fs from 'fs';
 import * as cdk from 'aws-cdk-lib';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as destinations from 'aws-cdk-lib/aws-lambda-destinations';
+import * as sources from 'aws-cdk-lib/aws-lambda-event-sources';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as scheduler from 'aws-cdk-lib/aws-scheduler';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as stepfunctions from 'aws-cdk-lib/aws-stepfunctions';
 import { Construct } from 'constructs';
 import { GroceryConfig } from './config';
@@ -292,6 +295,109 @@ export class IngestionStack extends cdk.Stack {
         input: JSON.stringify({ retailers: ['paknsave', 'woolworths', 'new_world'] }),
       },
     });
+
+    // ------------------------------------------- stream guard (Task 13)
+
+    // THE DECOUPLED REVIEW TRIGGER, and it is built because an incident asked
+    // for it rather than because the task lists the service. §3t: a plain
+    // `scripts/load_seed_data.py` run re-added 152 fixture rows to the live
+    // products table, they SHADOWED the real prices, and the deployed endpoint
+    // answered with fixture data for days before a parity re-run noticed.
+    //
+    // `refresh()` validates, diffs and rejects before it writes, and none of
+    // that can see a write it did not make. A stream sees the write, not the
+    // writer -- which is the property the incident needed.
+    //
+    // CREATED ONLY IF THE STREAM EXISTS. Enabling the stream is a one-time
+    // change to an ADOPTED table (see stateful-stack.ts), so this stack cannot
+    // do it and must not pretend to. Without `PRODUCTS_STREAM_ARN` the whole
+    // feature is absent rather than half-present: a queue and a consumer with
+    // no source would be infrastructure that reads as a capability and does
+    // nothing, which is the note ARCHITECTURE §7 makes about the S3 bucket.
+    const productsStreamArn = props.tables.products.tableStreamArn;
+    if (productsStreamArn) {
+      // The DLQ. `AWS::SQS::Queue` as an on-failure DESTINATION rather than a
+      // queue in the happy path: DynamoDB Streams cannot target SQS directly,
+      // so the shapes available are stream -> Lambda (+ SQS on failure), or
+      // stream -> EventBridge Pipes -> SQS -> Lambda. The first is one moving
+      // part fewer for the same guarantees, and Pipes would add a service whose
+      // only job is to move a record between two things already able to talk.
+      //
+      // Retention is the MAXIMUM. A message here means a batch this code could
+      // not process at all, which is rare by construction and worth keeping
+      // long enough that somebody returning from leave can still redrive it.
+      const dlq = new sqs.Queue(this, 'StreamGuardDlq', {
+        queueName: `grocery-catalogue-guard-dlq-${cfg.stage}${cfg.suffix}`,
+        retentionPeriod: cdk.Duration.days(14),
+        enforceSSL: true,
+      });
+
+      const guardLogs = new logs.LogGroup(this, 'StreamGuardLogs', {
+        logGroupName: `/aws/lambda/grocery-catalogue-guard-${cfg.stage}${cfg.suffix}`,
+        retention: logs.RetentionDays.TWO_WEEKS,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+      });
+
+      // A THIRD ROLE, not a reuse of the ingestion one. This function reads a
+      // stream and writes a log line; it has no business holding PutItem on the
+      // catalogue it watches. A guard with write access to what it guards can
+      // turn a false positive into data loss, which is the same argument the
+      // ingestion role's append-only history grant already makes one table
+      // over. Detection and remediation are separate authorities.
+      const guard = new lambda.Function(this, 'StreamGuard', {
+        functionName: `grocery-catalogue-guard-${cfg.stage}${cfg.suffix}`,
+        code: lambda.Code.fromAsset(cfg.lambdaAssetPath),
+        handler: 'ingestion.stream_guard.lambda_handler',
+        runtime: lambda.Runtime.PYTHON_3_13,
+        architecture: lambda.Architecture.X86_64,
+        // Small and short. It compares a string per record and prints.
+        memorySize: 256,
+        timeout: cdk.Duration.seconds(30),
+        tracing: lambda.Tracing.ACTIVE,
+        logGroup: guardLogs,
+      });
+
+      guard.addEventSource(
+        new sources.DynamoEventSource(props.tables.products, {
+          startingPosition: lambda.StartingPosition.LATEST,
+          // FILTERED, which is the word Task 13 uses. REMOVE carries no
+          // NewImage and `load_seed_data.py --remove` is a legitimate cleanup,
+          // so deletions are dropped at the source rather than in code -- an
+          // unfiltered mapping would invoke this function for every deletion to
+          // decide it had nothing to look at, and pay for the privilege.
+          filters: [
+            lambda.FilterCriteria.filter({
+              eventName: lambda.FilterRule.isEqual('INSERT'),
+            }),
+            lambda.FilterCriteria.filter({
+              eventName: lambda.FilterRule.isEqual('MODIFY'),
+            }),
+          ],
+          batchSize: 100,
+          maxBatchingWindow: cdk.Duration.seconds(30),
+          // RETRY, then REDRIVE. Two attempts, not the default of "until the
+          // record expires": this function is deterministic over its input, so
+          // a batch that failed twice will fail again, and retrying it for 24
+          // hours would bury the fact in a retry loop instead of putting it
+          // somewhere a person looks.
+          retryAttempts: 2,
+          // Splitting on error means one poison record does not condemn the 99
+          // beside it -- the same isolation argument the state machine's Map
+          // makes for retailers.
+          bisectBatchOnError: true,
+          onFailure: new destinations.SqsDestination(dlq),
+          reportBatchItemFailures: true,
+        }),
+      );
+
+      new cdk.CfnOutput(this, 'StreamGuardDlqUrl', { value: dlq.queueUrl });
+      new cdk.CfnOutput(this, 'StreamGuardFunction', { value: guard.functionName });
+    } else {
+      cdk.Annotations.of(this).addInfo(
+        'PRODUCTS_STREAM_ARN is unset, so the catalogue stream guard is NOT created. ' +
+          'Enable the stream on the products table and set the ARN — DYNAMODB-SCHEMA.md.',
+      );
+    }
 
     // ------------------------------------------------------------ outputs
 

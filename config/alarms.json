@@ -6,19 +6,19 @@
   "_naming": "Every name carries the -dev suffix so generated resources can coexist with manually created ones during the migration to IaC (design.md 11, point 2).",
   "notification": {
     "topic_name": "grocery-orchestrator-alarms-dev",
-    "_note": "Alarms point here. An alarm with no action is not an alarm, so apply_alarms.py refuses to create one without a topic, and warns when the topic it created has no subscribers — an alarm nobody is subscribed to fails the same way one paragraph further out.",
+    "_note": "Alarms point here. An alarm with no action is not an alarm, so apply_alarms.py refuses to create one without a topic, and warns when the topic it created has no subscribers \u2014 an alarm nobody is subscribed to fails the same way one paragraph further out.",
     "_subscriptions": "Deliberately not declared here. SNS email subscriptions require the recipient to confirm out of band, so a config file cannot make one true; subscribe once, by hand, and the script tells you if you have not."
   },
   "metric_filters": [
     {
       "name": "grocery-orchestrator-handler-escaped-dev",
       "log_group": "/aws/lambda/grocery-orchestrator-dev",
-      "_pattern_note": "A JSON selector, NOT the substring \"handler_escaped\". A substring pattern matches any log line that happens to contain the text — an exception message quoting it, a test fixture, a future log line about the alarm itself — and each of those is a page at 3am for nothing. This binds to the structured field Powertools writes.",
+      "_pattern_note": "A JSON selector, NOT the substring \"handler_escaped\". A substring pattern matches any log line that happens to contain the text \u2014 an exception message quoting it, a test fixture, a future log line about the alarm itself \u2014 and each of those is a page at 3am for nothing. This binds to the structured field Powertools writes.",
       "pattern": "{ $.message = \"handler_escaped\" }",
       "metric_name": "HandlerEscaped",
       "namespace": "GroceryOrchestrator",
       "metric_value": "1",
-      "_default_value_note": "0, not absent. Without it the metric has datapoints only when the pattern matches, so the alarm sits in INSUFFICIENT_DATA forever and OK never means 'checked and fine' — it means 'never looked'. With 0-fill, a quiet period is an affirmative all-clear.",
+      "_default_value_note": "0, not absent. Without it the metric has datapoints only when the pattern matches, so the alarm sits in INSUFFICIENT_DATA forever and OK never means 'checked and fine' \u2014 it means 'never looked'. With 0-fill, a quiet period is an affirmative all-clear.",
       "default_value": 0
     },
     {
@@ -56,6 +56,16 @@
       "namespace": "GroceryOrchestrator",
       "metric_value": "1",
       "default_value": 0
+    },
+    {
+      "name": "grocery-catalogue-foreign-write-dev",
+      "log_group": "/aws/lambda/grocery-catalogue-guard-dev-cdk",
+      "_why_this_log_group": "The stream guard runs as its own function with its own role. It reads the products stream and writes a log line; it holds no PutItem on the catalogue it watches, because a guard that can write to what it guards can turn a false positive into data loss.",
+      "pattern": "{ $.message = \"catalogue_foreign_write\" }",
+      "metric_name": "CatalogueForeignWrite",
+      "namespace": "GroceryOrchestrator",
+      "metric_value": "1",
+      "default_value": 0
     }
   ],
   "alarms": [
@@ -75,7 +85,7 @@
     },
     {
       "name": "grocery-orchestrator-api-5xx-dev",
-      "description": "Any 5xx from the API. The gateway's own metric, so it fires even when the failure is upstream of our code or logging is the thing that broke — which is why it overlaps the handler_escaped alarm deliberately.",
+      "description": "Any 5xx from the API. The gateway's own metric, so it fires even when the failure is upstream of our code or logging is the thing that broke \u2014 which is why it overlaps the handler_escaped alarm deliberately.",
       "namespace": "AWS/ApiGateway",
       "metric_name": "5XXError",
       "_dimensions_note": "ApiName must match the deployed API exactly. A dimension that matches nothing yields a metric with no datapoints, which looks identical to a healthy service.",
@@ -296,6 +306,21 @@
       "datapoints_to_alarm": 1,
       "_threshold_note": "Ten in fifteen minutes. Below the volume at which one shopper asking about an obscure product repeatedly could reach it, and far below what the 2026-10-12 cliff would produce -- past that date the rate is every priced turn.",
       "threshold": 10,
+      "comparison_operator": "GreaterThanOrEqualToThreshold",
+      "treat_missing_data": "notBreaching"
+    },
+    {
+      "name": "grocery-catalogue-foreign-write-dev",
+      "description": "A row entered the serving catalogue carrying a capture date that is not the current one -- so it did not come from the current ingestion source, whoever wrote it. THIS ALARM EXISTS BECAUSE IT ALREADY HAPPENED: docs/ARCHITECTURE.md 3t records a plain scripts/load_seed_data.py run re-adding 152 fixture rows to the live table, where they SHADOWED the real prices and the deployed endpoint answered with fixture data for days before a parity re-run noticed. refresh() validates and diffs before it writes and cannot see a write it did not make; a stream sees the write, not the writer.",
+      "_threshold_note": "ONE. Every other alarm here carries a threshold above one to avoid paging on noise, and this is the exception on purpose: there is no volume of foreign rows in the serving catalogue that is routine. A legitimate refresh rewrites 2,759 rows and produces zero of these, because they all carry the current capture date -- so a single datapoint means something wrote to the catalogue outside ingestion.",
+      "namespace": "GroceryOrchestrator",
+      "metric_name": "CatalogueForeignWrite",
+      "dimensions": {},
+      "statistic": "Sum",
+      "period": 300,
+      "evaluation_periods": 1,
+      "datapoints_to_alarm": 1,
+      "threshold": 1,
       "comparison_operator": "GreaterThanOrEqualToThreshold",
       "treat_missing_data": "notBreaching"
     }
