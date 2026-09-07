@@ -1321,8 +1321,44 @@ proposed, or gated as labelled; it is not implemented.
   removing the DLQ, and letting the guard reuse the ingestion role each fail a
   different test. `docs/ARCHITECTURE.md` section 3ab.
 
-  **Not yet live:** the stream is not enabled, and its alarm lands with the
-  observability migration (section 3y.A).
+  **LIVE 2026-09-07, and the drill found a defect before the catalogue did.**
+  Stream enabled, consumer deployed, and a row carrying the fixture capture
+  date -- the exact 3t signature -- was written to the live table and caught:
+  `catalogue_foreign_write ... valid_date 2026-07-31, expected 2026-08-28`.
+  Drill rows deleted afterwards and the catalogue re-verified at 2,759 rows,
+  one capture date.
+
+  **The retry/redrive/backlog evidence came from a REAL failure**, which is
+  better than the planted one that was planned. The first deploy shipped a
+  stale `build/lambda.zip` built before `stream_guard.py` existed, so every
+  invocation died on `Runtime.ImportModuleError` -- and produced
+  `RetryAttemptsExhausted` at `approximateInvokeCount: 3` (initial plus the two
+  configured retries), a DLQ message carrying `shardId` and
+  `startSequenceNumber` (which is what makes redrive possible rather than
+  merely knowing it failed), and a held iterator. DLQ purged after recording:
+  a dead-letter queue left non-empty with a resolved message trains people to
+  ignore the next one.
+
+  Its alarm still lands with the observability migration (section 3y.A).
+
+- [x] **Pilot Task 12h - A stale Lambda archive is now a synth failure. Done
+  2026-09-07.** `cdk deploy` fingerprints whatever bytes are at
+  `build/lambda.zip`; it cannot know they are stale, the deploy reports success,
+  and the failure surfaces as a runtime import error in the account for code
+  that was correct in git the whole time. This is section 3v -- "the
+  orchestrator was five days stale" -- recurring in the same session that read
+  it.
+
+  **CI is not the control, and that is the point.** The `infra` job builds the
+  archive before synth, so CI is exactly the environment where this cannot
+  happen and therefore exactly the one that cannot warn anybody. The gap is
+  local deploys, which is where every deploy in this project has come from.
+
+  `loadConfig()` compares the archive's mtime against the newest file in the
+  trees `build_lambda.py` packages and throws at synth, naming the offending
+  file and the fix. An mtime comparison rather than a hash, because a hash means
+  rebuilding to find out whether a rebuild was needed. Verified by mutation:
+  touching a packaged file fails the synth, and a rebuild clears it.
 
 - [ ] **Pilot Task 14 — Add the bounded data-quality reviewer.** After ADR 0002
   mentor approval, deploy it separately in AgentCore Runtime over capped

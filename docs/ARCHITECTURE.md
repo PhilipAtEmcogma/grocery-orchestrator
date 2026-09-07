@@ -2979,3 +2979,73 @@ It carries a companion assertion — *"finds the consumers it is meant to be
 checking"* — because a loop over an empty list passes exactly as quietly as a
 loop that found nothing wrong, and CI runs without `PRODUCTS_STREAM_ARN` where
 the guard is deliberately absent.
+
+### Live, and the drill found a defect before the catalogue did — 2026-09-07
+
+The stream was enabled (`aws dynamodb update-table`, recorded in
+`DYNAMODB-SCHEMA.md`), the consumer deployed, and a row carrying the **fixture
+capture date** — the exact §3t signature — was written to the live table:
+
+```json
+{"message":"catalogue_writes_observed","records":1,"foreign":1,"expected_capture_date":"2026-08-28"}
+{"message":"catalogue_foreign_write","store_key":"paknsave#albany",
+ "product_key":"zzz-stream-guard-drill-2026-09-07-c","valid_date":"2026-07-31",
+ "expected":"2026-08-28","event":"INSERT","replaced_valid_date":null}
+```
+
+The drill rows were deleted afterwards and the catalogue re-verified: 2,759 rows,
+one capture date, no drill keys.
+
+### Retry, redrive and backlog evidence — from a real failure, not a synthetic one
+
+The first deploy shipped a **stale `build/lambda.zip`**, built before
+`stream_guard.py` existed. Every invocation failed:
+
+```
+[ERROR] Runtime.ImportModuleError: Unable to import module 'ingestion.stream_guard'
+```
+
+Which produced exactly the evidence Task 13 asks for, and better than a planted
+poison message would have:
+
+```json
+{"requestContext":{"condition":"RetryAttemptsExhausted","approximateInvokeCount":3},
+ "responseContext":{"functionError":"Unhandled"},
+ "DDBStreamBatchInfo":{"shardId":"shardId-00000001788757877768-4c84a6e1",
+   "startSequenceNumber":"73673800002791179582555503","batchSize":1, ...}}
+```
+
+- **Retry**: `approximateInvokeCount: 3` — the initial attempt plus the two
+  `retryAttempts` configured, exactly as declared.
+- **Redrive**: the message carries `shardId` and `startSequenceNumber`, which is
+  what makes replaying the batch possible rather than merely knowing it failed.
+- **Backlog**: the mapping reported `PROBLEM: Function call failed` and the
+  iterator held while retries ran.
+
+The DLQ was purged afterwards. A dead-letter queue left non-empty with a
+resolved message trains people to ignore the next one.
+
+### The stale archive is now a synth failure
+
+`cdk deploy` fingerprints whatever bytes are at `build/lambda.zip`. It cannot
+know they are stale, the deploy reports success, and the failure surfaces as a
+runtime import error in the account — for code that was correct in git the
+entire time. This is §3v ("the orchestrator was five days stale") recurring in
+the same session that read it.
+
+**CI is not the control**, and that is the point worth keeping: the `infra` job
+builds the archive before synth, so CI is precisely the environment where this
+cannot happen and therefore precisely the environment that cannot warn anyone.
+The gap is local deploys, which is where every deploy in this project has come
+from.
+
+`loadConfig()` now compares the archive's mtime against the newest file in the
+trees `build_lambda.py` packages — `src`, `ingestion`, `config`, `fixtures` —
+and throws at synth naming the offending file and the fix. An mtime comparison
+rather than a hash, because a hash would mean rebuilding to discover whether a
+rebuild was needed; it errs toward complaining, and the cost of a false
+complaint is one `python scripts/build_lambda.py`.
+
+Skipped when the archive is absent, because `cdk synth` legitimately runs before
+any build in tests and in CI, and a missing archive is a louder failure CDK
+already reports.
