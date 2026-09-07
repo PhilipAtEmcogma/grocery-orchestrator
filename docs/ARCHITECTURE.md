@@ -3108,3 +3108,31 @@ like it worked.
 assertions, the alarm and metric filter in `config/alarms.json`, and the
 whole-app "an observer must not mutate what it observes" check — which is not
 about this feature and keeps working over every future consumer.
+
+
+### Brought back the same day, and a warm-up window worth knowing about — 2026-09-07
+
+**Decision reversed by the owner: keep it live through the demo, take it down
+after.** Restored by the documented path, and both traps recorded there fired
+exactly as written — the quoted shorthand was required, and re-enabling minted a
+**new** stream ARN (`06:05:19` where the first was `05:11:15`), which is why the
+ARN is read from the environment and never committed.
+
+Verified live again: mapping `Enabled` against the new ARN, `LastProcessingResult:
+OK`, DLQ empty, and a planted foreign row caught with the same §3t signature.
+Drill rows deleted, catalogue re-verified by full scan at 2,759 rows, zero `zzz-`
+keys, one capture date.
+
+**A MAPPING AT `LATEST` HAS A WARM-UP WINDOW, and this is the second time it
+cost a confusing few minutes.** The first row written after the mapping reported
+`Enabled` was NOT captured — `LastProcessingResult` stayed at *"No records
+processed"*. The next one, written a couple of minutes later, was caught
+immediately. `StartingPosition.LATEST` positions the iterator at the end of the
+shard when the mapping is created, and there is a gap between the API reporting
+`Enabled` and the poller actually reading.
+
+It matters beyond drills: **for a few minutes after any deploy that recreates
+the mapping, the guard is not watching.** That is acceptable for this control —
+it detects a class of accident, not an adversary timing a write to a deploy — but
+it should not be discovered during an incident, and a drill run immediately after
+a deploy will produce a false "it does not work".
