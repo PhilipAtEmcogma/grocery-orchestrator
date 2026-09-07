@@ -263,6 +263,15 @@ def _dependencies() -> tuple[PriceRepository, ModelClient]:
             from src.models.bedrock import BedrockModelClient
 
             _model = BedrockModelClient()
+            # Once per cold start, through Powertools, because that is the
+            # logger Lambda actually surfaces. Answers "is my SSM retune live?"
+            # without reading the model plane's own stdlib logs, which the
+            # runtime drops below WARNING. No parameter VALUE, only which
+            # document won -- Req 11.5 applies to configuration too.
+            logger.info(
+                "model_routing_source",
+                extra={"routing_source": _model.routing_source},
+            )
         else:
             from src.models.scripted import ScriptedModelClient
 

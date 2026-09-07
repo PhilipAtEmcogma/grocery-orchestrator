@@ -43,6 +43,7 @@
  * Run: npm test   (jest + ts-jest, see jest.config.js). CI runs it in the
  * `infra` job, which `summary.needs` gates the merge on.
  */
+import * as fs from 'fs';
 import * as cdk from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import { loadConfig } from '../lib/config';
@@ -136,13 +137,30 @@ describe('ServiceStack security invariants', () => {
     // is either one the JSON declares (by Sid) or one CDK adds for a construct
     // this stack deliberately configures. An unnamed statement touching a data
     // resource is by definition something nobody wrote down.
-    const declared = new Set([
-      'BedrockInvokeConfiguredModels',
-      'BedrockApplyGuardrail',
-      'DynamoReadProducts',
-      'DynamoIdempotency',
-      'XRayTracing',
-    ]);
+    // READ FROM THE JSON, NOT RESTATED HERE. This was a hardcoded list of five
+    // Sids until 2026-09-07, when Pilot Task 7b added `SsmReadRouting` to the
+    // config and this test failed on a statement the config DECLARES -- the
+    // test asserting the config was the one thing not reading it.
+    //
+    // A duplicated allowlist fails in both directions: it flags a legitimate
+    // addition (noisy, and the fix is to edit the test, which trains people to
+    // edit the test), and it would keep passing if a statement were REMOVED
+    // from the config while staying in the template. Deriving it means the
+    // check is "the template grants exactly what the file declares" rather
+    // than "the template grants what someone once typed here".
+    const declared = new Set<string>(
+      (
+        JSON.parse(fs.readFileSync(cfg.configFiles.iamOrchestrator, 'utf-8')).inline_policy
+          .Statement as { Sid?: string }[]
+      )
+        .map((s) => s.Sid)
+        .filter((sid): sid is string => Boolean(sid)),
+    );
+    // The derivation must not silently resolve to nothing -- an empty set
+    // would make every statement "undeclared" and the expectation below would
+    // fail loudly, but an empty set on the OTHER side of a future refactor
+    // would make everything pass. Assert it found the policy.
+    expect(declared.size).toBeGreaterThanOrEqual(5);
     const undeclared = policy.filter(
       (s) =>
         !declared.has(s.sid) &&
@@ -401,5 +419,57 @@ describe('ServiceStack security invariants', () => {
       if (previous === undefined) delete process.env.SNAPSTART;
       else process.env.SNAPSTART = previous;
     }
+  });
+  // ------------------------------------------------------- SSM routing (7b)
+
+  it('the routing parameter name reaches the function, so the overlay is live', () => {
+    // PILOT TASK 7b. The parameter was published from 2026-08-30 under a
+    // comment saying nothing read it -- a console text box that looked like a
+    // control. src/models/ssm_routing.py reads it now, and MODELS_ROUTING_PARAM
+    // is what tells it which one.
+    //
+    // THE FAILURE THIS GUARDS IS SILENT: the published name and the name in
+    // the environment are two strings that must match exactly. If they drift,
+    // the function reads a parameter nothing writes, falls back to the bundled
+    // file forever, and logs a miss nobody is looking for. The stack derives
+    // both from one constant; this asserts they still agree in the template.
+    const fn = Object.values(t.findResources('AWS::Lambda::Function'))[0] as any;
+    const configured = fn.Properties?.Environment?.Variables?.MODELS_ROUTING_PARAM;
+    expect(configured).toBeTruthy();
+
+    const params = Object.values(t.findResources('AWS::SSM::Parameter'));
+    const published = params.map((p) => (p as any).Properties?.Name);
+    expect(published).toContain(configured);
+  });
+
+  it('the role may READ the routing parameter and never write it', () => {
+    // A service that could rewrite its own routing could route itself to an
+    // unqualified model and leave no deploy to review.
+    const ssm = policy.filter((s) => s.actions.some((a) => a.startsWith('ssm:')));
+    expect(ssm.length).toBeGreaterThan(0);
+
+    const actions = new Set(ssm.flatMap((s) => s.actions));
+    expect(actions).toEqual(new Set(['ssm:GetParameter']));
+
+    // Scoped to the routing parameter, not /grocery/*. The same path holds
+    // feasibility and whatever is published there later, and this role has no
+    // business reading those through a permission granted for routing.
+    for (const s of ssm) {
+      for (const r of s.resources) {
+        expect(r).toContain('models/routing');
+        expect(r).not.toMatch(/parameter\/grocery\/\*$/);
+      }
+    }
+  });
+
+  it('feasibility is published but NOT wired to the runtime', () => {
+    // Deliberate asymmetry. Routing is a judgement an operator retunes when a
+    // model gets slow. feasibility.json holds min_grams_per_person_day, which
+    // decides whether a shopper is REFUSED as unfeasible and has never had
+    // domain review. Making that console-editable before anyone qualified has
+    // looked at the number would be the wrong order.
+    const fn = Object.values(t.findResources('AWS::Lambda::Function'))[0] as any;
+    const vars = fn.Properties?.Environment?.Variables ?? {};
+    expect(Object.keys(vars)).not.toContain('FEASIBILITY_PARAM');
   });
 });

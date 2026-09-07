@@ -88,7 +88,7 @@ operational evidence** — not first deployment.
 | 4 · Clarification, payable arithmetic | ✅ done |
 | 5 · Location scope, freshness, named regions | ✅ done |
 | 6 · Idempotency fencing, canonical hashing, pagination, PITR | ✅ done · one deferral (6b) |
-| 7 · Scorecards, route qualification, prose/repair evals | ✅ done · one deferral (7b) |
+| 7 · Scorecards, route qualification, prose/repair evals | ✅ done — **7b closed 2026-09-07**, SSM routing is a live control |
 | 8 · Local read-only MCP | ✅ done — 2 coarse tools, default-off, capped, parity-tested |
 | 9–12 · CDK, service plane, deploy, operations | ✅ **9–11 done**. ObservabilityStack written 2026-08-31, deploy ATTEMPTED the same day and **rolled back** — it sat in `ROLLBACK_COMPLETE` unrecorded until 2026-09-07, failed on an SNS topic `apply_alarms.py` had already created; the topic is adopted by reference now and the retry is delete-then-deploy — it alarms both planes when it is, and the account has never seen it — two stacks deployed, tables adopted by reference, service plane under a `-cdk` suffix at verified parity. **12 substantially done** (8 alarms then, **12 since 2026-09-04**; dashboard, Budget, first deployed latency + cost baselines). The ingestion plane was deployed 2026-09-04 — price-history table, its IAM grant and four ingestion alarms, with the fixture-default refusal watched to fire in the account (§3u). Cutover deferred by decision, not pending |
 | 12e · Throttling, stale data, artefact lifecycle | ✅ **written and gated 2026-09-06, NOT deployed.** The two "missing metrics" were one missing metric and one missing alarm: `TurnError` had carried `code=STALE_DATA` since 2026-08-30, so only the alarm was absent, and the note that bundled them is why nobody checked. Throttling had nothing — every Bedrock `ClientError` became one opaque `ModelError`, so an outage and a quota breach looked identical. `ModelThrottled` is now typed and counted per model and task (15 tests, mutation-verified). The artefact bucket gained four scoped prefixes with noncurrent-version lifecycle rules, and `scripts/artefact_drill.py` is the restore/deletion drill. **A real `cdk synth` failure came out of it** — the alarm construct id was keyed on the metric name, so a second `TurnError` alarm collided. Deploying `Grocery-Obs-dev` (12f) is what puts any of it in the account |
@@ -111,8 +111,14 @@ reasoning recorded in `tasks.md`:
   evidence; the data team's 2,939-row catalogue supplied both, and their own
   table independently carries the same `CategoryPriceIndex` shape. The forcing
   test did its job and is now an assertion that the Scan never returns.
-- **7b** — SSM routing belongs with the CDK stacks, where a parameter is
-  declared as infrastructure rather than clicked into an account.
+- **7b** — **CLOSED 2026-09-07.** SSM routing is a live control. The parameter
+  had been published since 2026-08-30 under a comment saying nothing read it;
+  `src/models/ssm_routing.py` reads it now, once per cold start. An override
+  cannot enable a model or manufacture a scorecard — those come from the
+  archive — so the worst a bad edit does is make a task unroutable, which is
+  loud. Fail-safe to the bundled file, logged rather than silent.
+  `langchain-aws` was resolved the other way: nothing imported it, so it was
+  removed rather than aligned to.
 
 **Deployed and operating** (2026-08-30): the alias serving current `main`, the
 **real 2,759-row catalogue**, Guardrail **v2** applied, GSI2 for
