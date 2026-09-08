@@ -555,9 +555,46 @@ proposed, or gated as labelled; it is not implemented.
     handed the model meat and dairy from an unfiltered candidate list. Two
     models "failed" by exceeding the 12-ingredient cap, and that would have been
     recorded as a weakness in the models rather than in the helper.
-  - [ ] **7b — Move the catalogue toward SSM**, align the adapter with
-    `langchain-aws`, and evaluate cross-Region inference profiles only for a
-    measured purpose.
+  - [x] **7b — SSM routing is a live control. Done 2026-09-07.** The
+    parameter had been published since 2026-08-30 under a comment saying
+    nothing read it — *"the forward path, not a live control"*. A parameter
+    nobody reads is a console text box that looks like one, so this closes the
+    half that was missing: `src/models/ssm_routing.py` reads
+    `/grocery/{stage}/models/routing` once per cold start, and
+    `MODELS_ROUTING_PARAM` (the name IS the switch) wires it.
+
+    **The safety property is the whole argument for allowing the knob.** An
+    override cannot enable a model, invent one, or manufacture a scorecard —
+    `models` and `scorecards` come from the archive, which only a deploy
+    changes. `route()` still returns only specs that are enabled, configured
+    and at the requested tier, so the worst a bad edit does is make a task
+    UNROUTABLE, which is loud. Tested from three directions: a disabled model
+    (`claude-sonnet`, excluded on latency), an unknown model, and a model at a
+    tier it does not declare. If that property ever stopped holding, the
+    feature would want withdrawing rather than fixing.
+
+    **Replacement, not a merge**, so an operator who deletes a route does not
+    find it still running from the file. An EMPTY block is refused for the same
+    reason it would be catastrophic: `{"routing": {}}` means no task has a
+    route.
+
+    **Fail-safe where the rest of this codebase fails closed**, and deliberately
+    so: the fallback is the reviewed routing block bundled in the archive, not
+    an absence. Logged, never silent. No alarm, because falling back produces
+    correct answers from a reviewed config.
+
+    **`langchain-aws` was resolved the other way** — nothing had ever imported
+    it, so it was removed on 2026-09-06 rather than aligned to. If the adapter
+    is ever moved onto it, the dependency comes back WITH the import that
+    justifies it. Cross-Region inference profiles remain unevaluated and
+    ungated; no measured purpose has appeared.
+
+    18 tests, mutation-verified three ways. `docs/ARCHITECTURE.md` §3aa.
+
+    **A test that asserted the config had stopped reading it** — the
+    service-stack allowlist was five Sids typed into the test, so adding
+    `SsmReadRouting` to the config failed the check whose job was to compare
+    against that config. Now derived from the JSON.
   Evaluate Bedrock cross-Region inference profiles only for a measured purpose;
   stage Bedrock Model Evaluation as companion evidence with reproducible
   dataset/model/prompt provenance. Knowledge Bases are gated to cited recipe or
@@ -683,7 +720,7 @@ proposed, or gated as labelled; it is not implemented.
   2026-09-11. Moving a URL to spare a consumer nobody has written is work that
   would be re-done against the one they actually write.
 
-  Both planes are scale-to-zero so the duplicate costs essentially nothing. The
+  Both planes are scale-to-zero for INVOCATIONS, and that is not the same as costing nothing -- see `docs/ARCHITECTURE.md` §3x. SnapStart bills for cached snapshots per PUBLISHED VERSION, continuously, whether or not anything is invoked, and on 2026-09-07 that was 79% of the month's spend. The duplicate plane is still cheap (one published version), but the sentence that used to be here -- "the duplicate costs essentially nothing" -- was measuring the wrong thing. The
   hand-made one stays production, which means production keeps `null` log
   retention and hand-added tracing — not urgent, and the reason not to let
   "stay dual" become permanent by default.
@@ -722,6 +759,127 @@ proposed, or gated as labelled; it is not implemented.
     lifecycle and restore tests, throttling and stale-data metrics (the alarms
     are deliberately absent until the metrics exist), and a larger latency run —
     n=8 and n=3 are a baseline, not a qualification.
+  - [x] **12e — The three deferred halves, written and gated. Done 2026-09-06.**
+    Everything above except the larger latency run, which is a measurement
+    rather than a build and belongs with the next release-gate battery.
+
+    **THE TWO "MISSING METRICS" WERE ONE MISSING METRIC AND ONE MISSING
+    ALARM, and grouping them is why nobody checked.** `config/alarms.json` said
+    "neither has a metric yet" and that was true of throttling only.
+    `TurnError` has carried a `code` dimension since 2026-08-30, so
+    `STALE_DATA` was being published the whole time and the stale-data half was
+    a fifteen-line alarm nobody had written. A note that bundles two facts is
+    read as one fact, and this one hid a discharged prerequisite for a week.
+
+    **Throttling genuinely had nothing.** `BedrockModelClient._converse`
+    caught every `ClientError` and raised one opaque `ModelError`, so "Bedrock
+    is down" and "we exceeded our quota" produced the identical signal — and
+    they want opposite responses, escalation versus pacing. `ModelThrottled` is
+    now a typed failure (a SUBCLASS, so every `except ModelError` at the edges
+    is unchanged), raised on the three names AWS uses plus any HTTP 429, and
+    counted by `InstrumentedModelClient` with the same `model`/`task`
+    dimensions the latency metric carries. 15 tests in
+    `tests/test_throttling.py`, verified by mutation: dropping the branch fails
+    4, dropping the 429 fallback fails 1, never counting fails 1, and counting
+    every failure fails 1.
+
+    **The two alarms take opposite dimension decisions, on purpose.**
+    Stale-data is dimensioned `code=STALE_DATA`, because undimensioned it would
+    fire on every honest `NO_DATA` refusal. Throttling is deliberately
+    UNdimensioned, because a quota is shared across models and tasks and
+    binding it to one pair would leave the rest unwatched while reading as
+    coverage. Both choices carry a test, so neither can be "fixed" into the
+    other.
+
+    **A REAL SYNTH FAILURE CAME OUT OF IT.** `observability-stack.ts` derived
+    each alarm's construct id from the METRIC name, which quietly assumed one
+    alarm per metric. The second `TurnError` alarm broke `cdk synth` outright:
+    *"There is already a Construct with name 'Alarm-TurnError'"*. Keyed on
+    `spec.name` now, which `apply_alarms.py` already guarantees unique.
+    Changing a construct id would mean replacing every alarm on a DEPLOYED
+    stack — `Grocery-Obs-dev` has never been deployed, so this was the cheap
+    moment and it would have been awkward in a month.
+
+    **The artefact bucket gained the lifecycle half.** Four scoped prefixes
+    (`datasets/`, `evaluations/`, `reviews/`, `baselines/`), each with a
+    noncurrent-version expiry and an incomplete-multipart abort. Old VERSIONS
+    expire; no rule expires a current object, and there is a test asserting
+    that — a baseline that silently deletes itself is worse than an absent one,
+    because the absence looks like the measurement was never taken.
+
+    **Restore and deletion are a DRILL, not a unit test**
+    (`scripts/artefact_drill.py`), for the reason the alarm drill exists: the
+    CDK assertions prove the template says "versioned", and only overwriting a
+    real object and getting it back proves recovery works. It restores by
+    copying the old version FORWARD rather than deleting the new one, because
+    restoring by deleting is how the second mistake gets made. **Not yet run —
+    it needs the bucket, which needs the deploy below.**
+
+    Offline gates: 966 passed, 31 skipped; 56 CDK assertions; pyright 0 errors.
+  - [ ] **12f — Deploy `Grocery-Obs-dev`. DIAGNOSED 2026-09-07, not yet run.**
+    Everything in 12e is written and gated and NONE of it is in the account.
+
+    **The stack is not un-deployed, it is `ROLLBACK_COMPLETE`.** Checking the
+    account before deploying — rather than trusting four documents that agreed
+    with each other — found a failed create from **2026-08-31** that nobody
+    recorded. Cause, from the stack events: `AWS::SNS::Topic` returned *"Topic
+    creation failed because the topic already exists"*, because
+    `scripts/apply_alarms.py` had already created
+    `grocery-orchestrator-alarms-dev`. Every other resource reported *"Resource
+    creation cancelled"* behind it. A failed deploy that nobody writes down is
+    indistinguishable from a deploy nobody attempted, and this one cost a week.
+
+    **Fixed by adopting the topic** rather than creating it — Strategy A, the
+    same move `stateful-stack.ts` makes for the seeded tables, and here it also
+    protects a CONFIRMED email subscription plus the twelve live alarms whose
+    actions point at that ARN. `cdk diff` now shows the topic gone from the
+    template. Cost, stated: the topic is not in IaC; bringing it in wants
+    `cdk import`, which is its own reviewable operation.
+
+    **The retry is delete-then-deploy**, because a `ROLLBACK_COMPLETE` stack
+    cannot be updated. Deleting it is provably empty: every resource is
+    `DELETE_COMPLETE` except the artefact bucket, which is `DELETE_SKIPPED`
+    under its RETAIN policy and was never created (`list-buckets` confirms).
+
+    **ANSWERED 2026-09-07 — CloudFormation REFUSES.** The stack was deleted
+    and redeployed, and every colliding name came back as
+    `Resource of type 'AWS::CloudWatch::Alarm' with identifier
+    'grocery-orchestrator-internal-error-dev' already exists`. That is the best
+    of the three outcomes: overwriting would have silently moved twelve alarms
+    into a stack while changing their definitions underneath an operator.
+
+    **Nothing was damaged, and it was checked rather than assumed** — the alarm
+    list was captured before and diffed after, byte-identical, all twelve
+    present. The failure came at change-set creation, so the stack never even
+    rolled back; it sat in `REVIEW_IN_PROGRESS` holding nothing and has been
+    deleted.
+
+    **DECIDED 2026-09-07 by the owner: leave the twelve imperative alarms in
+    place through the demo; finish the migration after it.** Deleting live
+    alarms to let CDK recreate them is a coverage gap of a minute or two, and
+    that is not a trade worth taking in the week the service is being shown.
+
+    **Coverage is unchanged, not reduced** — the twelve are live and working.
+    What is NOT armed is the two new alarms from 12e (`ModelThrottled` and
+    `STALE_DATA`), because they live in the stack that cannot create. Their
+    metrics ARE being emitted, so both will have history the moment they
+    exist. The artefact bucket also does not exist, so the 12e drill still
+    cannot run, and this task stays open on exactly that.
+
+    **The ordered plan of action for after the demo is written down** rather
+    than left as an intention — `docs/ARCHITECTURE.md` §3y.A, seven steps:
+    snapshot the alarms, delete the twelve, deploy, diff the list against the
+    snapshot, run the artefact drill, and stop `apply_alarms.py` creating
+    anything (it stays the validator and the CI `--dry-run` gate; two
+    mechanisms creating the same alarms is how the collision happened).
+
+    **The price of waiting, stated:** the two unarmed alarms are the ones
+    watching a throttle and the 2026-10-12 staleness cliff. The cliff is five
+    weeks out and a throttle needs load, so the exposure is small and bounded
+    — but it is not zero.
+
+    Until this runs, the artefact bucket does not exist and the drill in 12e
+    cannot be executed.
   - **Partial, 2026-08-30: end-to-end X-Ray tracing now exists.** API Gateway
     stage tracing was enabled on `woqmel35lk`/`dev`, so a trace's entry point is
     the gateway rather than the Lambda and the gateway hop is measurable for the
@@ -1018,6 +1176,29 @@ proposed, or gated as labelled; it is not implemented.
   The ordered checklist for coming back is `docs/ARCHITECTURE.md` §3q. Step 2 is
   "deploy this stack BEFORE pointing a consumer at the CDK plane, not after".
 
+- [x] **Pilot Task 12g — SnapStart turned off on the idle plane. Done
+  2026-09-07.** A cached snapshot bills per PUBLISHED VERSION continuously,
+  invoked or not, and that was 79% of September's spend on a service whose
+  invocation charges are $0.00 (§3x). Thirteen accumulated versions on the
+  serving plane; ten deleted, keeping the alias target plus one either side.
+
+  **The CDK plane's SnapStart is now a decision rather than a constant.**
+  `cfg.snapStart` defaults OFF — that plane serves nobody while the cutover is
+  deferred, so a warm-start optimisation on it is the clearest waste available.
+  The HAND-MADE plane keeps it, because it answers the requests and the pilot's
+  latency baselines (p95 1.94s price check) depend on it.
+
+  **`applyOn: 'None'` is written explicitly rather than omitting the property**,
+  because an omitted property leaves whatever the function already has — a
+  config flag that reads as effective while changing nothing.
+
+  **The restore path is one env var and it is TESTED**: `SNAPSTART=1 cdk deploy
+  Grocery-Service-dev`, with `service-stack.test.ts` asserting both directions.
+  A disabled feature nobody can re-enable is a deleted feature. What SnapStart
+  bought, what it costs, and the three things to know before taking it to
+  production are in §3y.B — including that publishing has no ceiling and every
+  version bills, which is the root cause here and is still not automated.
+
 - [ ] **Pilot Task 12d — Bound the endpoints, not just watch them.** DECIDED
   2026-08-31 by the owner, and DEFERRED TO A TRIGGER rather than to a date:
   **option C now, option A in the same change that repoints the frontend at the
@@ -1053,6 +1234,144 @@ proposed, or gated as labelled; it is not implemented.
   anywhere. The sibling of `tests/test_ci_workflow.py`, and it would have caught
   all three instances of this pattern the two audits found: the coverage
   instrument, the forcing test behind it, and the infrastructure suite.
+
+- [x] **Pilot Task 13b — The ingestion plane is in IaC. Done 2026-09-07.**
+  `infra/lib/ingestion-stack.ts` was a stub with four TODOs while the plane it
+  describes WAS RUNNING IN THE ACCOUNT, deployed imperatively on 2026-09-04 —
+  the last live plane with no template behind it, and the one holding the only
+  role in the system that can write the serving catalogue.
+
+  **Built from the account, not from the spec.** `infra/docs/03` had drifted on
+  three details and each was corrected against `describe-*` output rather than
+  followed: the account uses **EventBridge Scheduler** with an explicit
+  `Pacific/Auckland` timezone rather than a Rule with a UTC cron (which drifts
+  an hour twice a year — the spec's own note apologises for it), a 120-second
+  timeout rather than 60, and `PRICE_SOURCE=lineage_b`. The design document is
+  deliberately NOT rewritten to match: it records an intention, the account
+  records the thing, and where they disagree after deployment the account is
+  the evidence.
+
+  **What it refuses to do** is the part worth reviewing. No `grantWriteData` —
+  the role is built statement-by-statement from
+  `config/iam-ingestion-role.json`, because the CDK grant helpers ADD a
+  statement rather than checking one and their idea of "write" includes
+  `DeleteItem` and `UpdateItem`. The price-history grant is append-only by
+  design, a history row being the baseline a deviation is measured against.
+  No table resource (Strategy A). No `logRetention` prop — deprecated, and
+  implemented as a custom resource that synthesises an extra Lambda, role and
+  policy to make one API call; dropping it took the stack from 14 resources
+  to 11.
+
+  **The ASL is reused verbatim with one rewrite.** Its comments record two real
+  defects (`ResultPath: null` because Map items are STRINGS, and a Retry list
+  that covers transient Lambda errors only), and the L2 rebuild would drop them
+  all. The rewrite is the function name: without it the CDK state machine would
+  invoke the HAND-MADE Lambda — two planes that look independent while sharing
+  the half that writes to the catalogue.
+
+  **The schedule is created DISABLED**, and that closes a drift as well as
+  saving money: the 2026-08-30 audit recorded the hand-made schedule as
+  ENABLED, it is DISABLED in the account now, and nobody wrote down the change.
+  `INGESTION_SCHEDULE=1` makes enabling it a reviewed edit rather than a console
+  click. Enable when a source can stamp a NEW capture date — the same condition
+  `config/freshness.json` waits on.
+
+  15 assertions in `infra/test/ingestion-stack.test.ts`, the first ever over
+  this plane, mutation-verified: granting `Query` on the history table fails
+  one, dropping the ASL rewrite fails another. `docs/ARCHITECTURE.md` §3z.
+
+  **Still open in Task 13:** the deploy of the stream half, and the
+  retry/redrive/backlog evidence that needs a live stream.
+
+- [x] **Pilot Task 13c - The decoupled review trigger. Written 2026-09-07.**
+  Task 13 asks for filtered Streams -> SQS/DLQ **"where review decoupling is
+  justified"**, and that clause was taken seriously: the first question was
+  whether this project has a justification or would be building a service
+  because the task names one.
+
+  **It has one, and it is an incident in this repository's own log.** Section
+  3t: a plain `scripts/load_seed_data.py` run re-added 152 fixture rows to the
+  live products table, they SHADOWED the real prices, and the deployed endpoint
+  served fixture data for days. The loader is guarded now - that fixes the
+  INSTANCE. `refresh()` validates and diffs before it writes and cannot see a
+  write it did not make, and the loader is not the only thing holding
+  credentials for that table. **A stream sees the write, not the writer.**
+
+  **The invariant is unusually clean.** All 2,759 live rows carry one
+  `valid_date` (2026-08-28, verified against the account); the fixture rows
+  carried 2026-07-31. So a row whose capture date is not the expected one did
+  not come from the current ingestion source. The expected date defaults to
+  `LineageBSource.CAPTURED_AT` rather than a second copy, and a test pins the
+  constant to what the live rows actually carry.
+
+  **A finding returns normally rather than raising**, so the DLQ keeps meaning
+  "this code could not run" instead of "we found something" - the only reading
+  that makes it worth checking. **A third role**, with no write on the table it
+  watches: a guard that can write to what it guards can turn a false positive
+  into data loss.
+
+  **One imperative step, with precedent.** Enabling the stream is a property
+  change to an ADOPTED table, so CDK cannot make it; `aws dynamodb update-table`
+  and a record in `DYNAMODB-SCHEMA.md`, the same seam PITR used on 2026-08-29.
+  `cdk import` was rejected - it would put 2,759 real rows where a definition
+  mismatch makes a deploy attempt a replacement. Everything downstream is CDK,
+  and the feature is ABSENT rather than broken when the ARN is unset.
+
+  13 Python tests and 5 CDK assertions, mutation-verified: dropping the filter,
+  removing the DLQ, and letting the guard reuse the ingestion role each fail a
+  different test. `docs/ARCHITECTURE.md` section 3ab.
+
+  **LIVE 2026-09-07, and the drill found a defect before the catalogue did.**
+  Stream enabled, consumer deployed, and a row carrying the fixture capture
+  date -- the exact 3t signature -- was written to the live table and caught:
+  `catalogue_foreign_write ... valid_date 2026-07-31, expected 2026-08-28`.
+  Drill rows deleted afterwards and the catalogue re-verified at 2,759 rows,
+  one capture date.
+
+  **The retry/redrive/backlog evidence came from a REAL failure**, which is
+  better than the planted one that was planned. The first deploy shipped a
+  stale `build/lambda.zip` built before `stream_guard.py` existed, so every
+  invocation died on `Runtime.ImportModuleError` -- and produced
+  `RetryAttemptsExhausted` at `approximateInvokeCount: 3` (initial plus the two
+  configured retries), a DLQ message carrying `shardId` and
+  `startSequenceNumber` (which is what makes redrive possible rather than
+  merely knowing it failed), and a held iterator. DLQ purged after recording:
+  a dead-letter queue left non-empty with a resolved message trains people to
+  ignore the next one.
+
+  **TAKEN OFFLINE 2026-09-07, by owner decision: this is a demo app and it
+  should not carry cost for a control nothing is currently watching.** Torn
+  down within the hour, AFTER producing every piece of evidence the task asks
+  for. Teardown is the reverse of the build -- redeploy without the ARN so the
+  consumer stops reading, THEN disable the stream -- and the restore path is
+  four commands in section 3ab. Nothing was removed from the repository: the
+  feature is absent because its input is absent, which is the shape it was
+  built with.
+
+  The catalogue was re-verified by FULL SCAN rather than `ItemCount`, which
+  reported 2,761 because it is a ~6-hourly estimate that had caught an
+  intermediate state. The scan says 2,759, zero drill rows, one capture date.
+
+  Its alarm still lands with the observability migration (section 3y.A).
+
+- [x] **Pilot Task 12h - A stale Lambda archive is now a synth failure. Done
+  2026-09-07.** `cdk deploy` fingerprints whatever bytes are at
+  `build/lambda.zip`; it cannot know they are stale, the deploy reports success,
+  and the failure surfaces as a runtime import error in the account for code
+  that was correct in git the whole time. This is section 3v -- "the
+  orchestrator was five days stale" -- recurring in the same session that read
+  it.
+
+  **CI is not the control, and that is the point.** The `infra` job builds the
+  archive before synth, so CI is exactly the environment where this cannot
+  happen and therefore exactly the one that cannot warn anybody. The gap is
+  local deploys, which is where every deploy in this project has come from.
+
+  `loadConfig()` compares the archive's mtime against the newest file in the
+  trees `build_lambda.py` packages and throws at synth, naming the offending
+  file and the fix. An mtime comparison rather than a hash, because a hash means
+  rebuilding to find out whether a rebuild was needed. Verified by mutation:
+  touching a packaged file fails the synth, and a rebuild clears it.
 
 - [ ] **Pilot Task 14 — Add the bounded data-quality reviewer.** After ADR 0002
   mentor approval, deploy it separately in AgentCore Runtime over capped
@@ -1633,7 +1952,19 @@ enforcement from `run_turn()` remains the explicit Task 2 follow-up.*
 - [x] **5.3** Report known limitations separately from failures — *Req 10.3*
 - [x] **5.4** Meal plan cases with invariants and reported metrics — *Req 10.2*
 - [x] **5.5** Budget floor check, not only the ceiling
-- [ ] **5.6** Subjective quality scoring for variety and appeal — still open,
+- [x] **5.6** Subjective quality scoring for variety and appeal — **VARIETY
+  DELIVERED 2026-09-07**, appeal deliberately not attempted. `Scorecard.variety`
+  in `evals/run_recipe_select.py` measures distinct mains as a fraction of the
+  most that were ACHIEVABLE, which is what makes it comparable where the raw
+  count never was. It answers this repository's own recorded objection rather
+  than ignoring it. The blind spot it closes is real and asserted: five distinct
+  pasta recipes exist, so a selection can pass fabrication, dietary, repetition
+  and count while being pasta five nights running — 100% on every rule, 0.2 on
+  variety. Reported rather than floored, because the product never asks whether
+  a shopper would rather batch-cook. 8 tests. APPEAL is not attempted and should
+  not be faked: it needs a human judgement or an LLM judge with its own
+  qualification, and inventing a proxy would manufacture exactly the meaningless
+  gradient the variety objection warned about. Original note follows —
   and still deliberately. `design.md` §8 and AGENTS.md both argue an LLM judge
   puts a non-deterministic scorer inside a suite whose value is being
   deterministic. What changed on 2026-08-30 is the *other* half of that note:

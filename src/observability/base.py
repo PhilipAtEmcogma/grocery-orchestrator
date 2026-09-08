@@ -66,6 +66,13 @@ METRIC_IDEMPOTENCY_CLAIM_LOST = "IdempotencyClaimLost"
 METRIC_INVALID_REQUEST = "InvalidRequest"
 METRIC_TURN_ERROR = "TurnError"
 METRIC_PREFLIGHT = "PreflightRequests"
+# A model call refused for RATE. Dimensioned by model and task, because the
+# operator response depends on both: a throttle concentrated on one model is
+# answered by routing, one spread across all of them by pacing or a quota
+# increase. Counted separately from TurnError because a throttled call is not
+# necessarily a failed TURN -- the graph can degrade and still answer -- so the
+# two numbers diverge, and the throttle count is the leading one.
+METRIC_MODEL_THROTTLED = "ModelThrottled"
 
 # Tasks whose model calls make up the meal-plan generation/repair cycle. The
 # repair loop spans several graph nodes, so it is measured as the calls it

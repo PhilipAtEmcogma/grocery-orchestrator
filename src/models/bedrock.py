@@ -31,11 +31,13 @@ from src.models.base import (
     ModelClient,
     ModelError,
     ModelOutputInvalid,
+    ModelThrottled,
     ModelTier,
     T,
 )
 from src.models.guardrail import guard_content_block
 from src.models.registry import ModelRegistry, ModelSpec, RoutingPolicy
+from src.models.ssm_routing import load_routing_override
 
 REGION = os.environ.get("AWS_REGION", "ap-southeast-2")
 
@@ -70,7 +72,17 @@ class BedrockModelClient(ModelClient):
         # pinned_spec forces every call to one model. The eval harness uses
         # this to score models individually; production leaves it None and
         # lets the registry route per task.
-        self._registry = registry or ModelRegistry()
+        # THE SSM OVERLAY IS APPLIED HERE AND NOWHERE ELSE (Pilot Task 7b).
+        # This adapter is already the AWS-facing one, so the eval harness, the
+        # scripted client and every test keep building a registry from the file
+        # with no account and no boto3 — the same reason `src/retrieval/dynamo`
+        # exists beside `src/retrieval/memory`.
+        #
+        # Once per client, which the handler caches across warm invocations, so
+        # it is one SSM call per cold start rather than one per turn. Returns
+        # None whenever the overlay is off or unreachable, and the registry then
+        # reads the bundled file.
+        self._registry = registry or ModelRegistry(routing_override=load_routing_override())
         self._pinned = pinned_spec
         # Retries and timeouts matter: this sits inside a Lambda with a 29s
         # ceiling from API Gateway. Unbounded retries would blow through it.
@@ -84,6 +96,20 @@ class BedrockModelClient(ModelClient):
             ),
         )
         self._usage: dict = {}
+
+    @property
+    def routing_source(self) -> str:
+        """
+        'ssm' or 'file' — which document is actually routing this client.
+
+        Exposed so the HANDLER can log it through Powertools. The stdlib INFO
+        line in `ssm_routing.py` is invisible in Lambda: the runtime's root
+        logger sits at WARNING, so the fallback WARNING shows and the success
+        INFO does not. That made "logged, never silent" true of the case that
+        goes wrong and false of the case that goes right, which is the wrong
+        way round for answering "did my retune take effect?".
+        """
+        return self._registry.routing_source
 
     def _spec_for(self, task: str) -> ModelSpec:
         if self._pinned is not None:
@@ -290,6 +316,12 @@ class BedrockModelClient(ModelClient):
         try:
             response = self._client.converse(**kwargs)
         except ClientError as exc:
+            # A throttle is separated from every other ClientError here, at the
+            # only place that can still see the error code. One level up it is
+            # an opaque ModelError, and "we exceeded our quota" and "Bedrock is
+            # down" become the same line on a dashboard.
+            if _is_throttle(exc):
+                raise ModelThrottled(f"Bedrock throttled the call: {exc}") from exc
             raise ModelError(f"Bedrock call failed: {exc}") from exc
 
         elapsed_ms = int((time.perf_counter() - started) * 1000)
@@ -309,6 +341,44 @@ class BedrockModelClient(ModelClient):
             raise GuardrailBlocked("Request blocked by Bedrock Guardrail")
 
         return response
+
+
+#: Error codes that mean "you asked too fast", as opposed to "the service is
+#: broken" or "that request was invalid".
+#:
+#: THREE NAMES, NOT ONE, and they are not interchangeable across AWS services:
+#: `ThrottlingException` is the standard botocore name, `TooManyRequestsException`
+#: is what Bedrock Runtime returns on the on-demand path, and `ThrottledException`
+#: appears on some AWS SDK paths. Matching only the first would mean the metric
+#: reads zero during exactly the incident it exists to describe.
+#:
+#: `ServiceQuotaExceededException` is deliberately ABSENT. That is a hard
+#: account limit rather than a rate, it is not fixed by pacing, and counting
+#: it here would put a ticket-to-AWS problem in the graph that says "slow
+#: down".
+_THROTTLE_CODES = frozenset(
+    {
+        "ThrottlingException",
+        "TooManyRequestsException",
+        "ThrottledException",
+    }
+)
+
+
+def _is_throttle(exc: ClientError) -> bool:
+    """
+    Whether a botocore ClientError is a rate refusal.
+
+    Checks the HTTP status as well as the code. The code is the reliable
+    signal when it is one we know, but the set above is a list of names that
+    AWS can add to, and 429 means the same thing whatever the body calls it --
+    so an unrecognised throttle is still counted as a throttle rather than
+    silently re-labelled an outage.
+    """
+    response = getattr(exc, "response", None) or {}
+    code = str((response.get("Error") or {}).get("Code", ""))
+    status = (response.get("ResponseMetadata") or {}).get("HTTPStatusCode")
+    return code in _THROTTLE_CODES or status == 429
 
 
 def describe_configuration() -> str:

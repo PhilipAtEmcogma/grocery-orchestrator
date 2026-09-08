@@ -156,6 +156,71 @@ describe('ObservabilityStack', () => {
     expect((bucket as any).DeletionPolicy).toBe('Retain');
   });
 
+  it('every artefact prefix has a lifecycle rule that expires OLD VERSIONS', () => {
+    // Versioning is what makes the restore drill possible and what makes the
+    // bucket grow without limit: every overwrite keeps the copy it replaced,
+    // forever, unless something deletes it. A versioned bucket with no
+    // noncurrent-version rule is a bill that only goes up.
+    const [bucket] = Object.values(template.findResources('AWS::S3::Bucket'));
+    const rules = props(bucket).LifecycleConfiguration?.Rules ?? [];
+
+    expect(rules.length).toBeGreaterThanOrEqual(4);
+    for (const prefix of ['datasets/', 'evaluations/', 'reviews/', 'baselines/']) {
+      const rule = rules.find((r: any) => r.Prefix === prefix);
+      expect(rule).toBeDefined();
+      expect(rule.Status).toBe('Enabled');
+      expect(rule.NoncurrentVersionExpiration?.NoncurrentDays).toBeGreaterThan(0);
+      // An abandoned multipart upload is billed storage that appears in no
+      // listing, so it is the one thing here nobody would ever notice.
+      expect(rule.AbortIncompleteMultipartUpload?.DaysAfterInitiation).toBeGreaterThan(0);
+    }
+  });
+
+  it('no lifecycle rule expires a CURRENT artefact version', () => {
+    // The bucket exists so measurements outlive the commit that made them. A
+    // rule that quietly deleted the live copy after N days would leave an
+    // absence that reads like the measurement was never taken -- worse than
+    // not storing it, because nobody would know to look.
+    const [bucket] = Object.values(template.findResources('AWS::S3::Bucket'));
+    for (const rule of props(bucket).LifecycleConfiguration?.Rules ?? []) {
+      expect(rule.ExpirationInDays).toBeUndefined();
+      expect(rule.ExpirationDate).toBeUndefined();
+    }
+  });
+
+  it('two alarms may watch one metric with different dimensions', () => {
+    // THIS IS A REGRESSION TEST FOR A REAL SYNTH FAILURE (2026-09-06). The
+    // alarm construct id was derived from the METRIC name, which assumed one
+    // alarm per metric. Adding the stale-data alarm -- TurnError dimensioned
+    // code=STALE_DATA, beside the internal-error alarm dimensioned
+    // code=INTERNAL_ERROR -- broke `cdk synth` outright with "There is already
+    // a Construct with name 'Alarm-TurnError'".
+    //
+    // Dimensioning one metric several ways is the NORMAL shape for this
+    // config: it is how an honest refusal is told apart from a fault. So the
+    // suite should hold that shape rather than the single-alarm assumption.
+    const alarms = Object.values(template.findResources('AWS::CloudWatch::Alarm'));
+    const onTurnError = alarms.filter((a) => props(a).MetricName === 'TurnError');
+
+    expect(onTurnError.length).toBeGreaterThanOrEqual(2);
+    const codes = onTurnError
+      .map((a) => props(a).Dimensions?.find((d: any) => d.Name === 'code')?.Value)
+      .sort();
+    expect(codes).toEqual(['INTERNAL_ERROR', 'STALE_DATA']);
+  });
+
+  it('the throttle alarm watches the total, not one model', () => {
+    // A quota is shared across models and tasks. Binding this alarm to one
+    // dimension pair would leave every other pair unwatched while reading as
+    // coverage -- the opposite choice from the stale-data alarm above, and
+    // deliberately so.
+    const alarms = Object.values(template.findResources('AWS::CloudWatch::Alarm'));
+    const throttle = alarms.find((a) => props(a).MetricName === 'ModelThrottled');
+
+    expect(throttle).toBeDefined();
+    expect(props(throttle).Dimensions ?? []).toEqual([]);
+  });
+
   it('a budget exists and notifies the alarm topic', () => {
     const [budget] = Object.values(template.findResources('AWS::Budgets::Budget'));
     expect(budget).toBeDefined();
@@ -163,6 +228,33 @@ describe('ObservabilityStack', () => {
     expect(notifications.length).toBeGreaterThanOrEqual(2);
     for (const n of notifications) {
       expect(n.Subscribers[0].SubscriptionType).toBe('SNS');
+    }
+  });
+
+  it('adopts the alarm topic by reference and never declares one', () => {
+    // THE ABSENCE IS THE ADOPTION EVIDENCE, exactly as in stateful-stack.ts:
+    // a template with no topic resource is one CloudFormation cannot create,
+    // replace or delete.
+    //
+    // This is a regression test for the ONLY deploy this stack has ever been
+    // given. On 2026-08-31 it declared `new sns.Topic(...)`, the topic already
+    // existed because scripts/apply_alarms.py had created it, and the create
+    // failed with "Topic creation failed because the topic already exists".
+    // Every other resource reported "Resource creation cancelled" behind it
+    // and the stack sat in ROLLBACK_COMPLETE.
+    //
+    // Re-declaring it would not merely repeat that failure: the live topic
+    // carries a CONFIRMED email subscription and the alarms already in the
+    // account point their actions at that ARN.
+    expect(template.findResources('AWS::SNS::Topic')).toEqual({});
+
+    // ...and the alarms must still HAVE an action. An adopted topic that
+    // nothing references would make this file's other assertions pass while
+    // leaving every alarm a dashboard widget.
+    const alarms = Object.values(template.findResources('AWS::CloudWatch::Alarm'));
+    expect(alarms.length).toBeGreaterThan(0);
+    for (const alarm of alarms) {
+      expect(props(alarm).AlarmActions?.length ?? 0).toBeGreaterThan(0);
     }
   });
 

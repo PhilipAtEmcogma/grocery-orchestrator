@@ -5,8 +5,18 @@ AWS AI Innovation Mentorship Workshop (AUT). Six-week sprint. This repo is the
 the data/S3 side.
 
 A conversational assistant for budget-conscious New Zealand shoppers: compare
-grocery prices across Pak'nSave, Woolworths and New World, and generate meal
+grocery prices across the supermarkets we hold data for, and generate meal
 plans that provably fit a budget.
+
+**Today that is Pak'nSave and New World — two banners, both Foodstuffs.** The
+served catalogue holds no Woolworths rows; the collected dataset never
+contained any. The retailer is still *supported* in code and the ingestion
+branch for it runs and fetches zero, so the gap is visible on every refresh
+rather than asserted here. `docs/OPEN-REVIEW-chain-coverage.md` carries the
+numbers and the options, and `ACQUISITION-RISK.md` §4.5 is why the wording
+above is specific: Fair Trading exposure attaches to the comparison we
+publish, so "across three chains" is a claim to earn with data rather than to
+open with.
 
 A second, subordinate objective is broad hands-on AWS learning, especially
 Bedrock and AgentCore. Every service needs a product purpose, bounded scope,
@@ -37,10 +47,16 @@ service into an implementation claim.
   are one coordinated break. Do not apply it early without reading that
   document — and do not forget it either: `infra/test/app.test.ts` fails the
   moment `FrontendStack` creates a resource.
-- `docs/OPEN-REVIEW-chain-coverage.md` — **we say we compare three chains and we
-  compare two.** The served catalogue holds no Woolworths rows at all; the
-  fixtures were masking that until they were removed on 2026-09-01. Read before
-  quoting the three-chain claim, and before any demo outside the team.
+- `docs/OPEN-REVIEW-chain-coverage.md` — **the false claim is fixed; the data
+  gap is not.** We said we compared three chains and we compare two: the served
+  catalogue holds no Woolworths rows at all, and the fixtures were masking that
+  until they were removed on 2026-09-01. Option B was taken on 2026-09-06 —
+  every user-facing document now says what we actually cover, and
+  `KNOWN_RETAILERS` records that Woolworths is supported and carries no data.
+  **What stays open is option A: getting the data.** That needs the data
+  teammates and is not this repository's to close. Read before any demo outside
+  the team, and do not reintroduce a three-chain comparison claim without rows
+  behind it.
 - `docs/OPEN-REVIEW-min-grams-per-person-day.md` — the one judgement in the
   planning path that has NOT had domain review. Self-contained, needs no
   code reading, and says what would change the answer. Read it if you know
@@ -393,10 +409,25 @@ invented on 2026-07-31, and a later stamp fabricates provenance — the *Do not*
 rule about publishing a price without its capture date, wearing a different hat.
 
 **`config/` ships inside the Lambda archive**, so retuning a threshold is a
-deploy. That is the argument for Task 7b's SSM work.
+deploy — **except for model ROUTING, which stopped being true on 2026-09-07**.
+Task 7b is closed: `src/models/ssm_routing.py` reads
+`/grocery/{stage}/models/routing` once per cold start, so which model serves
+which task is editable without a release. An override cannot enable a model or
+manufacture a scorecard — those come from the archive — so the worst a bad edit
+does is make a task unroutable, which is loud.
 
-Blockers are now **Tasks 13 and 16**, plus Task 14's Runtime behind ADR
-0002. (15c cleared 2026-09-04 when the orchestrator was finally deployed —
+Everything else in `config/` still needs a deploy, and `feasibility.json` is
+deliberately kept that way: `min_grams_per_person_day` decides whether a shopper
+is REFUSED, and it has never had domain review
+(`docs/OPEN-REVIEW-min-grams-per-person-day.md`). Console-editable before anyone
+qualified has looked at the number would be the wrong order.
+
+Blockers are now **Task 16 and the frontend**, plus Task 14's Runtime behind
+ADR 0002. **Task 13 closed 2026-09-07**: its IaC half (13b — the ingestion plane
+was the last live plane with no template) and its decoupled review trigger (13c
+— a filtered stream, an SQS DLQ and a guard that reports writes the current
+ingestion source did not make) are both built, deployed and exercised against
+the account. (15c cleared 2026-09-04 when the orchestrator was finally deployed —
 ARCHITECTURE.md §3v.) Closed 2026-08-30: Task 8 (local MCP, `src/mcp/`), Task 12 substantially
 (8 alarms, dashboard, Budget, first deployed latency and cost baselines), Task
 13's first half (the real 2,759-row catalogue is loaded), and deferral 6b
@@ -549,7 +580,7 @@ measurement here, make the instrument name its inputs.
 ## Commands
 
 ```bash
-python -m pytest -q                              # 945 passed, 31 skipped, no AWS
+python -m pytest -q                              # 1005 passed, 31 skipped, no AWS
 ruff check . && ruff format --check .            # both gated in CI
 python validate.py                               # contract samples + grounding
 UPDATE_FIXTURES=1 python -m pytest \
@@ -587,7 +618,7 @@ python scripts/reviewer_runtime_preflight.py      # cost-free reviewer-Runtime p
 python scripts/build_reviewer_runtime.py          # arm64 CodeZip for the reviewer Runtime (build/reviewer-runtime.zip)
 python scripts/review_runtime.py --sim            # boot the reviewer entrypoint over local HTTP, no AWS
 python scripts/review_runtime.py --arn <arn>      # invoke a DEPLOYED reviewer Runtime (see design doc §15)
-cd infra && npm ci && npm test                    # 52 CDK security assertions across 6 suites, no AWS
+cd infra && npm ci && npm test                    # 85 CDK security assertions across 7 suites, no AWS
 cd infra && npx tsc --noEmit && npx cdk synth --quiet   # what the `infra` CI job runs
 ```
 

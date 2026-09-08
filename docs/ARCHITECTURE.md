@@ -819,7 +819,7 @@ they build against, and its open questions do not auto-adopt defaults until
 2026-09-11. Moving a URL to spare a consumer nobody has written yet is work that
 would have to be re-done against the consumer they actually write.
 
-Both planes are scale-to-zero, so the duplicate costs essentially nothing. The
+Both planes are scale-to-zero for INVOCATIONS, and that is not the same as costing nothing -- see `docs/ARCHITECTURE.md` §3x. SnapStart bills for cached snapshots per PUBLISHED VERSION, continuously, whether or not anything is invoked, and on 2026-09-07 that was 79% of the month's spend. The duplicate plane is still cheap (one published version), but the sentence that used to be here -- "the duplicate costs essentially nothing" -- was measuring the wrong thing. The
 hand-made one is the one alarmed and the one the frontend contract names, so it,
 not the CDK one, is still production.
 
@@ -2092,3 +2092,1076 @@ ingestion    $LATEST   Nr7qEdE9rVDNlmXYqmZyEaK1
 Three values, one hash. Anyone can run that comparison in one call, and it is
 the honest form of the claim: not "we build one artefact" but "these two
 functions are running the same bytes, today".
+
+
+## 3w. Throttling, stale data, and the artefact bucket's other half — 2026-09-06
+
+Pilot Task 12 had carried the same three-item "still open" list since
+2026-08-30: the artefact bucket's lifecycle and restore tests, and "throttling
+and stale-data metrics, the alarms deliberately absent until the metrics
+exist". All three are now written and gated. **None of them is deployed** — see
+§3q, and Task 12f.
+
+### The note that bundled two facts hid one of them
+
+`config/alarms.json` said neither throttling nor stale data had a metric yet.
+That was true of throttling and **false of stale data**. `TurnError` has been
+emitted with a `code` dimension since 2026-08-30 — that dimension is what makes
+the internal-error alarm possible at all — so `STALE_DATA` had been publishing
+to CloudWatch for a week. The missing piece was fifteen lines of alarm.
+
+A sentence that joins two claims is read as one claim. This one cost nothing in
+the end, but the shape is worth naming: it is the same failure as a skip with no
+condition and a forcing test pointed at a file that cannot change. A deferral
+should name each thing it defers separately, so discharging one is visible.
+
+### Throttling genuinely had nothing, and it mattered more than it looked
+
+`BedrockModelClient._converse` caught every `ClientError` and raised one opaque
+`ModelError("Bedrock call failed: ...")`. So these two incidents produced an
+identical signal:
+
+| What happened | What an operator should do |
+|---|---|
+| Bedrock is unreachable or erroring | Escalate; check service health |
+| We asked faster than our quota allows | Pace, raise the quota, or route to a second model |
+
+Nothing in CloudWatch could tell them apart. Task 16's load gate (G6 Phase B,
+2026-09-04) already showed this path is not theoretical: a deliberate 21x quota
+breach produced 14 of 24 turns coming back as clarifications, because a
+throttled *first* call degraded classification and the shopper was asked to
+rephrase a request that was already complete. That defect was found by running
+the gate by hand and reading transcripts.
+
+`ModelThrottled` is now a typed failure:
+
+- **A subclass of `ModelError`**, so every `except ModelError` at the edges
+  keeps catching it. A sibling class would have let a throttle escape the error
+  boundary and become the 500 the contract invariant exists to prevent — there
+  is a test asserting the subclass relationship for exactly that reason.
+- **Three names plus the status code.** `ThrottlingException` (botocore's
+  standard), `TooManyRequestsException` (Bedrock Runtime's on-demand path) and
+  `ThrottledException`, and any HTTP 429 whatever the body calls it. Matching
+  only the first would leave the metric reading zero during the incident it
+  exists to describe.
+- **`ServiceQuotaExceededException` is deliberately excluded.** That is a hard
+  account limit, not a rate. It is not fixed by pacing, and counting it here
+  would put a ticket-to-AWS problem on a graph that says "slow down".
+- **Counted at the instrumented seam**, not in `bedrock.py`, so the model plane
+  still imports no observability. `InstrumentedModelClient` already owns the
+  span, the latency metric and the accounting for a call; the count joins them
+  in the same `finally` rather than becoming a second place a call is measured.
+
+15 tests in `tests/test_throttling.py`, verified by mutation: dropping the
+classification branch fails 4, dropping the 429 fallback fails 1, never counting
+fails 1, and counting every failure as a throttle fails 1.
+
+### The two alarms take opposite decisions about dimensions
+
+Worth recording together, because each looks wrong from the other's side:
+
+- **Stale data is dimensioned** `code=STALE_DATA`. Undimensioned it would fire
+  on every honest `NO_DATA` and `BUDGET_INFEASIBLE` refusal — correct answers at
+  healthy volume. Same argument as the internal-error alarm.
+- **Throttling is deliberately undimensioned.** A quota is shared across models
+  and tasks, so binding the alarm to one `model`/`task` pair would leave every
+  other pair unwatched while reading as coverage. The dimensions are emitted for
+  diagnosis in the console; the alarm wants the total.
+
+Both carry a test, so neither gets "corrected" into the other later.
+
+**The stale-data alarm is also the control on a dated risk.**
+`config/freshness.json` holds `max_price_age_days` at 45 against a catalogue
+whose only capture date is 2026-08-28, and no source available to this project
+can stamp a newer one. On **2026-10-12** every priced query starts returning
+`STALE_DATA`. This alarm is what turns that from a date somebody has to
+remember into a page on the day it happens.
+
+### A real synth failure, found by the CDK suite
+
+`observability-stack.ts` built each alarm's construct id as
+`Alarm-${spec.metric_name}`, which quietly assumed one alarm per metric. The
+second `TurnError` alarm broke `cdk synth` outright:
+
+```
+There is already a Construct with name 'Alarm-TurnError' in ObservabilityStack
+```
+
+Dimensioning one metric several ways is the *normal* shape for this config — it
+is precisely how an honest refusal is told apart from a fault — so the metric
+was never the right key. It is `spec.name` now, which `apply_alarms.py` already
+rejects duplicates of and `tests/test_alarms.py` holds.
+
+Changing a construct id changes a CloudFormation logical id, which on a deployed
+stack means replacing every alarm. `Grocery-Obs-dev` has never been deployed, so
+this cost nothing today and would have been awkward in a month. The regression
+test asserts the shape rather than the absence: two alarms on `TurnError`,
+carrying `INTERNAL_ERROR` and `STALE_DATA`.
+
+### The artefact bucket: lifecycle now, restore as a drill
+
+Four scoped prefixes, because the three things that land here are not
+interchangeable — an approved `datasets/` snapshot is somebody else's input, an
+`evaluations/` result is a measurement of this code at a commit, a `reviews/`
+snapshot is sanitised input handed to something untrusted, and `baselines/`
+holds latency and cost. One namespace would mean one lifecycle rule and one
+grant for all four.
+
+Each prefix expires **noncurrent versions** (90 days, 30 for reviews) and aborts
+incomplete multipart uploads. Versioning is what makes restore possible and it
+is also what makes a bucket grow forever: every overwrite keeps the copy it
+replaced. **No rule expires a current object, and a test asserts that** — this
+bucket exists so a measurement outlives the commit that made it, and one that
+silently deletes itself leaves an absence that reads like it was never taken.
+
+Restore and deletion are `scripts/artefact_drill.py`, a drill rather than a
+test, for the same reason the alarm drill exists: the CDK assertions prove the
+template says "versioned", and only overwriting a real object and getting it
+back proves recovery works. It restores by copying the old version **forward**
+rather than deleting the new one — restoring by deleting is how the second
+mistake gets made during a recovery. It writes under `drills/`, outside the four
+managed prefixes, and cleans up after itself.
+
+**It has not been run.** It needs the bucket, and the bucket needs the deploy.
+
+### The stack was not un-deployed. It was ROLLBACK_COMPLETE — found 2026-09-07
+
+Before deploying, the account was checked rather than the documentation. Four
+places — `README.md`, `infra/bin/grocery.ts`, `tasks.md` and §3q here — agreed
+that `Grocery-Obs-dev` had never been deployed. They agreed with each other and
+not with the account:
+
+```
+$ aws cloudformation describe-stacks --stack-name Grocery-Obs-dev
+Status:  ROLLBACK_COMPLETE
+Created: 2026-08-31T14:32:16Z
+```
+
+A deploy **was** attempted, on the day the stack was written, and it failed. The
+cause is one line of the stack events:
+
+```
+Alarms04B5A0BF  AWS::SNS::Topic
+  "Topic creation failed because the topic already exists" (HandlerErrorCode: AlreadyExists)
+```
+
+`scripts/apply_alarms.py` had already created `grocery-orchestrator-alarms-dev`,
+so `new sns.Topic(...)` could not. Every other resource in the stack reported
+*"Resource creation cancelled"* behind it, and the whole thing rolled back.
+
+**The documents were true of the resources and false about the history**, which
+is the more expensive half. "Never deployed" invites you to run `cdk deploy` and
+watch it work; "rolled back on a name collision a week ago" tells you what to fix
+first. A failed deploy nobody writes down looks exactly like a deploy nobody
+attempted — and this one had a diagnosable, one-line cause sitting in CloudTrail
+for a week.
+
+**Fixed by adopting the topic instead of creating it.** Strategy A, the same move
+`stateful-stack.ts` makes for the seeded tables: the template contains no topic
+resource, so CloudFormation cannot create, replace or delete it, and the
+adoption evidence is the absence. Here it protects two specific things — the
+topic carries a **confirmed** email subscription, and the twelve alarms
+`apply_alarms.py` created point their actions at that exact ARN. Deleting and
+recreating the topic so CDK could own it would have silently dropped the only
+subscriber the stack exists to notify.
+
+The cost, stated plainly: **the topic is not in IaC.** Bringing it in wants
+`cdk import`, which is a separate reviewable operation and not something to
+attach to a deploy already reconciling twelve alarms.
+
+### What the retry looks like, and the one thing still unknown
+
+A `ROLLBACK_COMPLETE` stack **cannot be updated** — the only valid operation is
+delete. So the retry is delete-then-deploy, and the delete is provably empty:
+every resource is `DELETE_COMPLETE` except the artefact bucket, which is
+`DELETE_SKIPPED` under its RETAIN policy and was never created in the first place
+(`list-buckets` returns nothing matching).
+
+**The open question is the twelve alarms**, which exist in CloudWatch under the
+names this stack wants. Whether CloudFormation adopts, overwrites or refuses
+them is not something to guess at: the August attempt never reached the alarms,
+so there is no evidence either way, and the three outcomes want different
+follow-ups. An attempt is cheap — a CREATE failure rolls back, which is exactly
+what happened last time and it damaged nothing — so trying is the way to find
+out, and the answer decides whether the twelve are deleted first.
+
+
+## 3x. CloudFormation refuses existing alarms, and SnapStart was 79% of the bill — 2026-09-07
+
+Two findings from one session: what the observability deploy actually does, and
+what an unrelated look at the bill turned up while doing it.
+
+### The deploy, and the answer to the question §3w left open
+
+§3w recorded that nobody knew whether CloudFormation would **adopt, overwrite or
+refuse** the twelve alarms `scripts/apply_alarms.py` had created, because the
+August attempt never reached them. It refuses:
+
+```
+Resource of type 'AWS::CloudWatch::Alarm' with identifier
+'grocery-orchestrator-internal-error-dev' already exists.
+```
+
+...and the same for every other colliding name. **This is the good outcome of
+the three.** Overwriting would have silently transferred twelve alarms into a
+stack while changing their definitions underneath an operator; refusing is
+CloudFormation declining to take something it did not create.
+
+**Nothing was damaged, and that was checked rather than assumed.** The alarm
+list was captured before the deploy and diffed after: byte-identical, all twelve
+still present. The failure happened at change-set creation, so the stack never
+entered a rollback — it sat in `REVIEW_IN_PROGRESS` with no resources, and has
+been deleted.
+
+**What it costs to proceed:** the twelve alarms have to be deleted so CDK can
+create and own them. That is a coverage gap of a minute or two and it is the
+entire point of the migration — `apply_alarms.py` stays as the validator and the
+`--dry-run` gate, but it stops being the thing that creates. That deletion is a
+decision, not a detail, and it is recorded as owed rather than taken.
+
+### SnapStart snapshot storage was 79% of September's bill
+
+Unrelated to the deploy, and it would not have been found by looking at the
+service the way the cost baseline does.
+
+| Period | Total | Largest line |
+|---|---|---|
+| August | $21.77 | Bedrock models $14.27 (the live eval sessions) |
+| September 1-7 | $10.25 | **AWS Lambda $8.15** |
+
+$8.15 of Lambda in a week, on a service whose invocation charges are **$0.00**.
+The whole of it is one usage type:
+
+```
+APS2-Lambda-SnapStart-Cached-GB-S    8.1494967589
+APS2-Lambda-SnapStart-Restored-GB    0.0044735936
+APS2-Request                         0
+APS2-Lambda-GB-Second                0
+```
+
+**SnapStart bills for the cached snapshot of every PUBLISHED VERSION,
+continuously, whether or not anything invokes it.** `grocery-orchestrator-dev`
+had accumulated **13 published versions** at 1024 MB, each carrying its own
+snapshot, while the `live` alias pointed at exactly one of them (version 12).
+Twelve snapshots were being paid for so that nothing could use them.
+
+Left alone, September was tracking about **$44/month** — comfortably through the
+$25 budget, on a service with no traffic.
+
+**Fixed:** versions 1-10 deleted, keeping 11, 12 (live) and 13 — one behind and
+one ahead of the alias, so a rollback target survives. Snapshots across the
+account went from 14 to 4. On the measured rate that is roughly **$25/month
+less**; the next full billing period is what confirms it.
+
+The live endpoint was smoke-tested immediately afterwards and answered HTTP 200
+with a fully grounded price comparison, because deleting a version the alias does
+not reference cannot affect what the alias serves — but "cannot" is a claim, and
+the 200 is the evidence.
+
+### Why the existing cost baseline could not see this
+
+§3l's first baseline read "$17.63 for August, of which 60% is two models the
+service does not route to" — true, and it framed cost as a question about
+**Bedrock**. In September the eval sessions stopped and the composition
+inverted: Bedrock fell to $0.66 and Lambda rose to $8.15. A baseline that
+attributes spend to the thing that dominated *last* month is a snapshot, not an
+instrument.
+
+**The correction that matters is conceptual, not arithmetic.** Two documents
+said the dual-plane arrangement "costs essentially nothing" because both planes
+are scale-to-zero. Scale-to-zero is a statement about *invocations*. SnapStart,
+provisioned concurrency, retained versions, versioned S3 and PITR are all
+storage-shaped costs that a request-shaped mental model does not see at all —
+and this project has three of those five switched on. Both sentences are
+corrected.
+
+**A published version is not free, and nothing in this repository said so.**
+`scripts/build_lambda.py` guards the archive size and `infra/docs/07` covers
+cost and scaling, but publishing is done by the deploy scripts with no ceiling
+on how many versions accumulate. Thirteen is what a fortnight of deploys
+produces.
+
+
+## 3y. Two deferrals taken deliberately, with their restore paths — 2026-09-07
+
+Both decided by the owner after §3x. Neither is a retreat from the thing being
+deferred; both are "not during the demo week", and each is written here with
+the route back so that "for now" cannot quietly become "never".
+
+### A. The alarm migration finishes AFTER the demo
+
+**Decision: leave the twelve imperative alarms in place through the demo.**
+CloudFormation refuses to create over them (§3x), so completing
+`Grocery-Obs-dev` requires deleting them first, and a coverage gap — however
+short — is not worth taking in the week the service is being shown.
+
+**What is true meanwhile, stated so nobody is surprised:**
+
+- The twelve alarms `scripts/apply_alarms.py` created are live and working.
+  Coverage is not reduced by this decision; it is *unchanged*.
+- The two NEW alarms from Task 12e — `ModelThrottled` and the `STALE_DATA`
+  one — are **not deployed**, because they live in the stack that cannot
+  create. The metrics behind them ARE being emitted, so the data is
+  accumulating and the alarms will have history the moment they exist.
+- The artefact bucket does not exist, so `scripts/artefact_drill.py` cannot
+  run. Task 12 stays open on exactly that.
+
+**The plan of action, in order, for after the demo:**
+
+1. **Re-read this section and §3x.** The account may have moved; the alarm list
+   is the thing to check first, not this document.
+2. **Snapshot the current alarms**, the way §3x did:
+   `aws cloudwatch describe-alarms --query 'MetricAlarms[?contains(AlarmName,\`grocery\`)]' > before.json`.
+   The comparison afterwards is what turns "it worked" into evidence.
+3. **Delete the twelve.** They are recreated from the same
+   `config/alarms.json` seconds later, so this is a gap and not a loss:
+   `aws cloudwatch delete-alarms --alarm-names <the twelve>`.
+4. **`cdk deploy Grocery-Obs-dev`.** It creates fifteen — the twelve, plus
+   `ModelThrottled`, plus `STALE_DATA`, plus the second API-5xx alarm the
+   dual-plane arrangement needs.
+5. **Diff the alarm list against `before.json`.** Every original name must be
+   present with the same threshold and dimensions. A missing one is the failure
+   mode this whole sequence is designed to make visible.
+6. **Run the artefact drill** — `python scripts/artefact_drill.py --bucket
+   <ArtefactBucket output>` — and record the date here, like the alarm drill.
+7. **Stop `apply_alarms.py` creating anything.** It stays as the validator and
+   the `--dry-run` CI gate; that is the half worth keeping, and it is the half
+   that caught the metric-filter and statistic-kind cases. Two mechanisms
+   creating the same alarms is how this collision happened.
+
+**The risk of waiting** is that the two new alarms are the ones watching a
+throttle and the 2026-10-12 staleness cliff, and neither is armed. The cliff is
+five weeks out and the throttle is only reached under load, so the exposure is
+small and bounded — but it is not zero, and that is the price of the deferral.
+
+### B. SnapStart is off on the CDK plane, and here is how to bring it back
+
+**Decision: turn SnapStart off on `grocery-orchestrator-dev-cdk`, keep it on the
+hand-made plane.** The hand-made plane answers requests and the pilot's latency
+numbers depend on it; the CDK plane serves nobody while the cutover is deferred,
+so its snapshot was the clearest waste in the account.
+
+`cfg.snapStart` in `infra/lib/config.ts` now carries the decision, default off,
+and `infra/test/service-stack.test.ts` asserts BOTH directions — off by default,
+and back on under `SNAPSTART=1`. The second test is the one that matters: a
+disabled feature nobody can re-enable is a deleted feature.
+
+**What SnapStart bought us, recorded because the numbers are the reason to
+bring it back.** It has been on the serving plane since 2026-08-27, applied to
+published versions with the API integrated against the `live` alias:
+
+| Measurement | With SnapStart | Source |
+|---|---|---|
+| Price check p95 | **1.94s** (n=50) against a 5s target | §3l, Task 16 gate T3 |
+| Meal plan p95 | **3.51s** (n=50) against a 20s target | same |
+| Restore visible in a trace | `Restore` subsegment on the X-Ray timeline | §9 |
+
+A Python 3.13 Lambda importing pydantic, langgraph and Powertools has a cold
+start measured in seconds, not milliseconds. Those p95 figures are warm-path
+numbers that SnapStart is what makes typical rather than lucky.
+
+**What it costs, which nothing recorded until §3x.** A cached snapshot bills
+per PUBLISHED VERSION, continuously, invoked or not — `APS2-Lambda-SnapStart-Cached-GB-S`.
+At 1024 MB that is roughly **$2.50-$3.90 per version per month** on the measured
+September rate. Thirteen accumulated versions made it 79% of the bill.
+
+**How to turn it back on:**
+
+```bash
+# The CDK plane. One env var; the test above proves the switch works.
+SNAPSTART=1 npx cdk deploy Grocery-Service-dev --profile grocery
+
+# The hand-made plane never had it turned off. To confirm:
+aws lambda get-function-configuration --function-name grocery-orchestrator-dev \
+  --query 'SnapStart' --profile grocery
+```
+
+**Do this BEFORE the cutover, not after.** The plane that serves shoppers should
+be the fast one, and the cutover is precisely the moment the CDK plane stops
+being idle. It belongs in the §3q checklist between "choose the URL" and "retire
+the other plane".
+
+**Three things to know if this is ever taken to production:**
+
+1. **SnapStart only applies to PUBLISHED VERSIONS.** An API integration pointed
+   at the unqualified function ARN silently forfeits it while still working
+   perfectly — the failure mode is a latency regression with no error.
+   `service-stack.ts` integrates the alias for exactly this reason.
+2. **Publishing has no ceiling and every version bills.** Thirteen is what a
+   fortnight of deploys produced here. Production wants a retention rule —
+   keep the alias target plus one or two, delete the rest — and nothing in this
+   repository automates that today. It is the obvious follow-up to §3x and it
+   is not built.
+### Deployed and verified, 2026-09-07
+
+`cdk deploy Grocery-Service-dev` with `SNAPSTART` unset. Confirmed against the
+account rather than assumed:
+
+```
+grocery-orchestrator-dev-cdk   SnapStart.ApplyOn: None      (was PublishedVersions)
+```
+
+**The old snapshot cleaned itself up, which was not guaranteed.** Turning the
+flag off does not retroactively remove a snapshot already published — the
+concern that made this a two-step job. In the event it was one step: CDK's
+`currentVersion` publishes a NEW version per deploy, so CloudFormation replaced
+version 1 with version 2 and deleted the old resource, taking its snapshot with
+it. A hand-made function would have needed the version deleted explicitly; this
+one did not, because the version is a stack resource.
+
+Account-wide afterwards, only the serving plane bills for snapshots:
+
+```
+grocery-orchestrator-dev: versions 11, 12, 13   (billed)
+grocery-orchestrator-dev-cdk: none
+```
+
+**Both planes were smoke-tested after the change** and both answered HTTP 200
+with a grounded `price_comparison`. Warm latency is unchanged and identical
+across them — serving 1.91 / 1.83 / 1.82s, idle 1.73 / 1.74 / 1.78s over three
+calls each. That is the expected result and worth stating plainly: **SnapStart
+buys cold starts, not warm ones.** The number it protects is the first request
+after a quiet period, which is exactly what a demo audience produces and what
+these three-call samples cannot show.
+
+3. **Restore is not free either**, though it is small: `APS2-Lambda-SnapStart-Restored-GB`
+   was $0.004 against $8.15 of storage. At real traffic that ratio inverts, and
+   the decision becomes a genuine trade rather than the one-sided one it is on
+   an idle plane.
+
+
+## 3z. The ingestion plane is in IaC — Pilot Task 13, 2026-09-07
+
+`infra/lib/ingestion-stack.ts` was a stub with four TODOs while the plane it
+describes **was running in the account**, deployed imperatively on 2026-09-04.
+It was the last live plane with no template behind it: a Lambda, a Step
+Functions state machine, a scheduler, and the only IAM role in the system that
+can WRITE the serving catalogue — none of it reproducible, none of it under
+review.
+
+### Built from the account, not from the spec
+
+`infra/docs/03` sketched this stack in August. Three of its details are now
+wrong, because the hand-made plane moved and the document did not. Each was
+corrected against `describe-*` output rather than followed:
+
+| infra/docs/03 says | The account says | Which wins, and why |
+|---|---|---|
+| `events.Rule` + UTC cron | **EventBridge Scheduler**, `Pacific/Auckland` | The account. NZST is UTC+12, NZDT UTC+13, so a fixed UTC cron drifts an hour twice a year — the spec's own note apologises for this. Scheduler removes it. |
+| 60-second timeout | **120** | The account. A refresh walks 2,759 rows and diffs each; 60s was guessed before the real catalogue existed. |
+| no environment block | `PRICE_SOURCE=lineage_b` | The account. That is the 2026-09-04 decision that made the refresh read the real catalogue instead of the fixtures. |
+
+This is worth naming as a pattern rather than three corrections: **a design
+document written before a thing exists describes an intention, and the account
+describes the thing.** Where they disagree after deployment, the account is the
+evidence. `infra/docs/03` is not edited to match — it is a design record, and
+rewriting it would destroy the fact that the design was refined by contact with
+reality.
+
+### What it deliberately does NOT do
+
+- **No `grantWriteData`.** The role is built statement-by-statement from
+  `config/iam-ingestion-role.json`, the same file `scripts/apply_iam.py`
+  applies. The CDK grant helpers ADD a statement rather than checking one, with
+  the CDK's idea of "write" — which includes `DeleteItem` and `UpdateItem`. The
+  price-history grant is deliberately append-only, because a history row is the
+  baseline a future deviation is measured against and a role that could rewrite
+  one could rewrite the evidence. A convenience helper would hand it exactly
+  that. This is the same refusal `service-stack.ts` makes, and the service
+  suite found it had been violated the first time it ran.
+- **No table resource.** Strategy A, as everywhere: the stack grants against
+  adopted `ITable`s and cannot replace 2,759 real rows.
+- **No `logRetention` prop.** It is deprecated *and* implemented as a custom
+  resource — an extra Lambda, role and policy whose entire job is one
+  `PutRetentionPolicy` call. A second function in the account to express a
+  number, on the stack whose whole point is least privilege. A declared
+  `LogGroup` says the same thing as one resource. Dropping it took the stack
+  from 14 synthesised resources to 11.
+
+### The ASL is reused verbatim, with one rewrite
+
+`config/ingestion-state-machine.json` is read as a string rather than rebuilt
+with the L2 `stepfunctions-tasks` API. Its comments are load-bearing and two of
+them record real defects: `ResultPath: null` because Map items here are STRINGS
+and a ResultPath on a non-object raises `States.ResultPathMatchFailure` —
+aborting the very Map the Catch exists to protect — and a Retry list covering
+transient Lambda errors only, so a `ValueError` from an unknown retailer fails
+fast instead of being retried three times. The L2 route would give type-checked
+retries and silently drop every one of those.
+
+The one rewrite is the function name. The ASL names `grocery-ingestion-dev`
+literally, so without it **the CDK state machine would invoke the hand-made
+Lambda** — two planes that look independent while sharing the half that writes
+to the catalogue, which is worse than either alone. A test asserts the rewrite,
+and mutation-verified: removing it fails that test and nothing else.
+
+### The schedule is created DISABLED, and that is now a reviewed decision
+
+`config/data-sources.json` already argued the case: `LineageBSource.CAPTURED_AT`
+is the constant `2026-08-28` and the dataset is a one-off snapshot, so a nightly
+run rewrites the same 2,759 rows with the same capture date. It would cost
+money, write to the serving catalogue every night, and change nothing.
+
+**It is also drift being closed.** The 2026-08-30 account audit recorded the
+hand-made schedule as ENABLED. It is DISABLED in the account today, and nobody
+wrote down the change or why. A schedule whose state lives only in a console can
+flip without review — in either direction, and the dangerous direction writes to
+the catalogue. `cfg.ingestionScheduleEnabled` makes the state explicit, and
+`INGESTION_SCHEDULE=1` is a reviewed edit rather than a console click.
+
+Enable it when a source exists that can stamp a NEW capture date — a fresh
+collection from the data team, or Task 11.4 live acquisition. That is the same
+condition `config/freshness.json` names for reverting `max_price_age_days`, and
+it is not a coincidence: both are waiting on data that can actually change.
+
+### The suite
+
+`infra/test/ingestion-stack.test.ts`, 15 assertions, and it is the first time
+anything has asserted over this plane at all. The invariants worth naming: the
+products grant is exactly `{Query, PutItem, BatchWriteItem}` on the base table
+with no index; the history grant is exactly `{PutItem, BatchWriteItem}` with
+Query, Delete and Update all absent; there is no Bedrock and no idempotency
+access, because the separation IS the role; no `dynamodb:Scan` anywhere; and
+the only `Resource: "*"` is X-Ray.
+
+Verified by mutation, not just written: granting `Query` on the history table
+fails one test, and dropping the ASL rewrite fails a different one.
+
+### The deploy failed once, and the reason is worth keeping
+
+`cdk synth` rendered the state machine happily. CloudFormation refused it:
+
+```
+SCHEMA_VALIDATION_FAILED: Field '_comment' is not supported at
+/States/RefreshAllRetailers/ItemProcessor/States/RefreshOneRetailer/Catch[0]
+```
+
+**Step Functions validates a definition at CREATE time, not at synth.** ASL
+permits `Comment` on a *state* and rejects unknown members elsewhere, so the
+`_comment` this repository uses to explain the Catch — the one recording why
+`ResultPath` is null — is exactly the kind of annotation the service refuses.
+
+`scripts/apply_state_machine.py` has had a `strip_comments()` since it was
+written, which is why the hand-made plane deployed fine. The CDK path passed the
+file through raw, so **two mechanisms read one config file and applied different
+transforms to it** — and the file therefore meant two different things depending
+on which deployed it. The stack now mirrors `strip_comments()` exactly, dropping
+`Comment` as well as `_comment`, and a test asserts on the RENDERED definition
+rather than on the stripping function, because the defect was in what got
+submitted.
+
+The test also asserts the definition is still the real one — the Map, the single
+Catch, and `ResultPath: null` — so an over-eager strip that emptied the document
+would fail rather than satisfy "no comments" by saying nothing at all.
+
+**The general lesson, which is not about Step Functions:** `cdk synth` proves a
+template renders. It does not prove a service will accept the payloads inside
+it. Anything embedded as an opaque string — an ASL definition, an IAM policy
+document, a state machine, a dashboard body — is validated by the service at
+deploy, and the only way to find out is to deploy.
+
+### Verified in the account, 2026-09-07
+
+Deployed as `Grocery-Ingestion-dev`, then exercised rather than assumed:
+
+**The function, dry-run against the real catalogue:**
+
+```json
+{"retailer": "paknsave", "fetched": 1377, "rejected": 0,
+ "added": 0, "changed": 0, "unchanged": 1377, "dry_run": true,
+ "captured_at": "2026-08-28", "table": "grocery-products-dev"}
+```
+
+Three things at once: `PRICE_SOURCE=lineage_b` reaches the collected catalogue
+(1,377 Pak'nSave rows, not the fixtures); the `Query` grant works, because
+`unchanged: 1377` is only knowable by diffing against the live table; and the
+anomaly rule ran clean over all of them.
+
+**The state machine, end to end**, started with `{"retailers": ["woolworths"]}`
+— chosen deliberately as the retailer the dataset has no rows for, so the full
+path could be proved with zero writes to the serving catalogue:
+
+```
+Status: SUCCEEDED
+Output: [{"retailer":"woolworths","fetched":0,"written":0,"history_written":0,...}]
+```
+
+That exercises Scheduler's target, the Map, the Lambda invoke grant and the
+result path, and writes nothing. It also re-confirms the two-chain coverage gap
+as a live number rather than a claim — which is exactly the argument for keeping
+Woolworths in `KNOWN_RETAILERS`.
+
+**Both planes now exist side by side**, `grocery-ingestion-dev` (hand-made) and
+`grocery-ingestion-dev-cdk`, neither colliding, and only the hand-made one has
+a schedule attached — which is DISABLED.
+
+
+## 3aa. The routing parameter became a real control — Pilot Task 7b, 2026-09-07
+
+`infra/lib/service-stack.ts` has published `/grocery/{stage}/models/routing`
+since 2026-08-30, under a comment that said in as many words that nothing read
+it: *"NOT read at runtime yet"*, *"the forward path, not a live control"*, and
+— honestly — *"pretending otherwise would be claiming a capability that does
+not exist"*.
+
+That was the right thing to write at the time and it is exactly the shape this
+repository keeps removing: **a parameter nobody reads is a console text box that
+looks like a control.** `src/models/ssm_routing.py` is what makes it real.
+
+### What is overridable, and what deliberately is not
+
+The stack already made this decision and the runtime honours it rather than
+widening it:
+
+| Block | Published? | Why |
+|---|---|---|
+| `routing` | **yes** | Which model serves which task. A judgement, and the thing an operator legitimately retunes when a model gets slow or a quota moves. |
+| `scorecards` | no | Measured evidence. An operator who could edit a scorecard could **qualify a route by typing**, which is the one thing the qualification gate exists to prevent. |
+| `models` | no | A capability inventory — tool use, cache minimums, prices — that changes with a deploy, not with an operator's judgement. |
+
+### The safety property is the whole argument
+
+An override **cannot enable a model, invent one, or manufacture the evidence
+that qualifies it.** `models` and `scorecards` come from `config/models.json`
+inside the archive, which only a deploy changes. `ModelRegistry.route()` still
+returns only a spec that is `enabled`, `is_configured`, and carries the
+requested tier.
+
+So the worst a bad edit can do is make a task **unroutable** — `UnroutableTask`,
+a loud failure the contract already maps — rather than quietly downgrade the
+service to something unqualified. `tests/test_ssm_routing.py` asserts precisely
+that, including the case that matters most: an override preferring
+`claude-sonnet`, which the file disables on latency grounds, does not get it.
+
+If that property ever stopped holding, the feature would need **withdrawing**
+rather than fixing, which is why it is tested from three directions (a disabled
+model, an unknown model, and a model at a tier it does not declare).
+
+### Replacement, not a merge
+
+The override replaces the routing block **wholesale**. A merge would make the
+effective configuration a function of two documents, so an operator who DELETED
+a route from the parameter would find it still routing — the file's rule showing
+through. What the parameter says is what runs.
+
+That is also why an **empty** block is refused rather than honoured:
+`{"routing": {}}` is not "no opinion", it is "no task has a route", which would
+make every task unroutable and take the service down from a console text box.
+
+### Fail-safe here, where everything else fails closed
+
+This is a deliberate asymmetry and worth defending. Elsewhere a missing control
+fails closed: no guardrail means no generation, an unknown store raises rather
+than defaulting to a coordinate. Here an unreachable SSM falls back to the
+routing block **bundled in the archive** — which is not an absence. It is a
+complete, reviewed configuration that was correct at the moment the archive was
+built, and it is already in memory. Refusing to serve because an optional tuning
+overlay is unreachable would turn an operator convenience into an outage.
+
+The fallback is **logged**, never silent, because a silent fallback is how
+somebody comes to believe they retuned production when they retuned nothing.
+The log line carries the parameter name and the exception TYPE, never the value
+— a parameter value is configuration, and a warning is not the place to publish
+it. There is a test asserting the value cannot leak into the log.
+
+**No alarm, and that is reasoned rather than lazy.** Falling back is correct
+behaviour producing correct answers from a reviewed config. §3l's rule is that
+an alarm binds to something a person must act on tonight; this is a line
+somebody reads when a retune did not take effect.
+
+### One SSM call per cold start, applied at one seam
+
+The overlay is loaded in `BedrockModelClient.__init__` and nowhere else. That
+adapter is already the AWS-facing one, so the eval harness, the scripted client
+and every offline test keep building a registry from the file with no account
+and no boto3 — the same seam that puts `src/retrieval/dynamo.py` beside
+`memory.py`. The handler caches the client across warm invocations, so it is one
+call per cold start rather than one per turn, with a 2s connect / 3s read
+timeout because the answer is optional and the shopper's latency budget is not.
+
+`ModelRegistry.routing_source` reports `'ssm'` or `'file'`, so "which document
+is actually running" is answerable without reading logs.
+
+### A test that was asserting the config stopped reading it
+
+`infra/test/service-stack.test.ts` has a check that the template grants nothing
+beyond what `config/iam-orchestrator-role.json` declares. Its allowlist was five
+Sids **typed into the test**, so adding `SsmReadRouting` to the config failed a
+test whose entire job was to compare against that config.
+
+A duplicated allowlist fails in both directions: it flags a legitimate addition
+— and the "fix" is to edit the test, which teaches people to edit tests — and it
+would keep passing if a statement were REMOVED from the config while staying in
+the template. The allowlist is now derived from the JSON, with an assertion that
+the derivation found something, so an empty parse cannot make everything pass.
+
+### Verified live, and one flaw the verification exposed
+
+Deployed to the CDK plane and proved rather than inferred:
+
+```
+{"message": "model_routing_source", "routing_source": "ssm", "cold_start": true}
+```
+
+**Getting that line required a fix.** The first attempt looked for
+`ssm_routing_applied` — the INFO the loader emits — and found nothing, while a
+turn had demonstrably cold-started. The stdlib root logger in Lambda sits at
+WARNING, so a `logging.getLogger(__name__).info(...)` is dropped; Powertools'
+own INFO lines appear because they go through the Powertools logger.
+
+So "logged, never silent" was true of the case that goes WRONG (the fallback,
+a WARNING, visible) and false of the case that goes RIGHT — which is the wrong
+way round for answering *"did my retune take effect?"*. The absence of a warning
+is only evidence if you already trust that the code ran.
+
+Fixed at the boundary that owns observability: `BedrockModelClient.routing_source`
+exposes which document won, and `src/handler.py` logs it once per cold start
+through Powertools. No parameter value, only the source — Req 11.5 applies to
+configuration too.
+
+**The other trap, recorded because it cost a confusing five minutes:** Git Bash
+rewrites a leading `/` in an argument into a Windows path, so
+`aws ssm get-parameter --name /grocery/dev-cdk/models/routing` returns
+`ParameterNotFound` for a parameter that plainly exists in
+`describe-parameters`. `MSYS_NO_PATHCONV=1` is the fix. Same family as the
+`detect-secrets` backslash-path trap in §"One Windows trap worth recording".
+
+### Feasibility stays unwired, deliberately
+
+The stack publishes `config/feasibility.json` too, and the runtime still does
+not read it. Routing is a judgement an operator retunes when a model gets slow.
+`feasibility.json` holds `min_grams_per_person_day`, which decides whether a
+shopper is **refused** as unfeasible, and which
+`docs/OPEN-REVIEW-min-grams-per-person-day.md` records as never having had
+domain review. Making that editable from a console before anyone qualified has
+looked at the number would be the wrong order, and a test asserts it is not
+wired.
+
+
+## 3ab. The decoupled review trigger — Pilot Task 13's last half, 2026-09-07
+
+Task 13 asks for filtered DynamoDB Streams → SQS/DLQ **"where review decoupling
+is justified"**. That clause is the interesting part: the task gates itself on
+justification, and the honest first question was whether this project has one or
+would be building a service because the task names it.
+
+It has one, and it is in this document.
+
+### The incident that justifies it
+
+§3t: a plain `scripts/load_seed_data.py` run — its default action LOADS —
+silently re-added 152 fixture rows to the live products table. They **shadowed**
+the real Lineage B prices, the deployed endpoint answered with fixture data
+again, and nobody noticed until a parity re-run days later. The loader is
+guarded now, with a regression test.
+
+**That fix addresses the instance. This addresses the class.** `refresh()`
+validates, diffs and rejects before it writes, and none of that can see a write
+it did not make. `load_seed_data.py` is not the only thing holding credentials
+for this table — a console edit, a teammate's script, a future job all bypass
+every check ingestion performs. **A stream sees the write, not the writer.**
+
+### The invariant, which is unusually clean
+
+Every row carries `valid_date` = the capture date of the run that wrote it, and
+the live table holds exactly **one** such date across all 2,759 rows —
+`2026-08-28`, verified against the account. The fixture rows that caused the
+incident carried `2026-07-31`. So:
+
+> a row whose `valid_date` is not the expected capture date did not come from
+> the current ingestion source
+
+That is a statement about **provenance**, which is what this whole repository
+exists to protect. It is also why the check is on the date rather than on a
+`written_by` marker nobody would remember to set.
+
+The expected date defaults to `LineageBSource.CAPTURED_AT` — the ingestion
+source's own constant, not a second copy. Two copies would eventually disagree,
+at which point the guard reports every legitimate write as foreign, which is the
+loudest possible way to be wrong. A test pins the constant to what the live rows
+actually carry.
+
+### The shape, and why not the other shapes
+
+DynamoDB Streams cannot target SQS directly, so "Streams → SQS/DLQ" is one of:
+
+| | |
+|---|---|
+| **Stream → Lambda, SQS as the on-failure destination** | Chosen. One moving part, and it provides every element the task names: `retryAttempts` (retry), the DLQ (redrive), and iterator age (backlog). |
+| Stream → EventBridge Pipes → SQS → Lambda | Adds a service whose only job is moving a record between two things already able to talk. |
+
+**Filtered**, which is the task's word: `INSERT` and `MODIFY` only. `REMOVE`
+carries no new image and `load_seed_data.py --remove` is the documented cleanup
+path, so deletions are dropped at the source rather than invoking a function to
+decide it had nothing to look at.
+
+**Two retries, not the default.** The consumer is deterministic over its input,
+so a batch that failed twice will fail again; retrying for 24 hours buries the
+fact in a loop instead of putting it where a person looks.
+`bisectBatchOnError` means one poison record does not condemn the 99 beside it —
+the same isolation argument the state machine's `Map` makes for retailers.
+
+### A finding does not go to the DLQ, and that is the design
+
+The consumer **returns normally** when it finds a foreign row. A finding is a
+fact about the DATA, not a failure of the function. Raising would send a
+correctly-processed batch to the DLQ and retry it, re-reporting the same rows
+until they expire — and worse, it would make a message in the DLQ mean "we found
+something" rather than "this code could not run". Only the second reading makes
+the DLQ worth checking.
+
+### A third role, and no write on what it guards
+
+The guard does not reuse the ingestion role. It reads a stream and writes a log
+line; it has no business holding `PutItem` on the catalogue it watches. **A
+guard that can write to what it guards can turn a false positive into data
+loss** — the same argument the ingestion role's append-only history grant makes
+one table over. Detection and remediation are separate authorities, and a test
+asserts the guard's policy carries no write action.
+
+### The one imperative step, and why it stays imperative
+
+Enabling the stream is a property change to an **adopted** table, so CDK cannot
+make it. It was done with `aws dynamodb update-table` and recorded in
+`DYNAMODB-SCHEMA.md` — the same seam PITR used on these tables on 2026-08-29.
+The alternative, `cdk import`, would bring 2,759 real rows under CloudFormation
+management where a definition mismatch makes a deploy attempt a replacement.
+
+Everything downstream is CDK. **The feature is absent, not broken, when
+`PRODUCTS_STREAM_ARN` is unset**: no queue, no consumer, no mapping, and an
+annotation saying so. A queue and a consumer with no source would be
+infrastructure that reads as a capability and does nothing, which is the note §7
+makes about the S3 bucket.
+
+### Its alarm is written and cannot deploy yet
+
+`grocery-catalogue-foreign-write-dev`, threshold **one**. Every other alarm here
+sits above one to avoid paging on noise, and this is the deliberate exception:
+there is no volume of foreign rows in the serving catalogue that is routine. A
+legitimate refresh rewrites 2,759 rows and produces **zero** of these, because
+they all carry the current capture date.
+
+It lands when the observability migration runs (§3y.A) — the alarms are still
+imperative through the demo by decision, and this one is written and waiting
+like the throttle and stale-data pair.
+
+### The guardrail that generalises it, and the bug that nearly made it useless
+
+The stream guard's own role is enforced by an assertion in
+`infra/test/ingestion-stack.test.ts`. That protects **the function somebody
+already thought about**; the next SQS consumer or Kinesis reader would have
+nothing. So the rule is now stated as a rule, over the whole app, in
+`infra/test/app.test.ts`:
+
+> **an observer must not be able to mutate what it observes**
+
+For every `AWS::Lambda::EventSourceMapping` in every stack, the consuming
+function's role is resolved and each mutating action it holds is checked against
+the resource the mapping reads. It is the same principle that already appears
+twice here — the ingestion role's append-only history grant, and the reviewer
+that may report findings but holds no publication authority (Req 13.8) — which
+is what makes it a principle rather than a preference.
+
+**The first version was inert, and mutation testing is the only reason that is
+known.** It flattened CloudFormation intrinsics to strings and compared them
+with `includes`. A function's role renders as `{"Fn::GetAtt": ["RoleABC",
+"Arn"]}` and a policy's as `{"Ref": "RoleABC"}`, which flattened to
+`"${RoleABCArn}"` and `"${RoleABC}"` — not a match, because the trailing brace
+differs. **No policy was ever considered attached**, the loop body never
+executed, and the test passed while checking nothing.
+
+Granting the stream guard `dynamodb:PutItem` on the table it watches did not
+fail it. The rewrite compares LOGICAL IDS rather than flattened strings, the
+same mutation now fails, and the failure names the offending action and
+resource.
+
+It carries a companion assertion — *"finds the consumers it is meant to be
+checking"* — because a loop over an empty list passes exactly as quietly as a
+loop that found nothing wrong, and CI runs without `PRODUCTS_STREAM_ARN` where
+the guard is deliberately absent.
+
+### Live, and the drill found a defect before the catalogue did — 2026-09-07
+
+The stream was enabled (`aws dynamodb update-table`, recorded in
+`DYNAMODB-SCHEMA.md`), the consumer deployed, and a row carrying the **fixture
+capture date** — the exact §3t signature — was written to the live table:
+
+```json
+{"message":"catalogue_writes_observed","records":1,"foreign":1,"expected_capture_date":"2026-08-28"}
+{"message":"catalogue_foreign_write","store_key":"paknsave#albany",
+ "product_key":"zzz-stream-guard-drill-2026-09-07-c","valid_date":"2026-07-31",
+ "expected":"2026-08-28","event":"INSERT","replaced_valid_date":null}
+```
+
+The drill rows were deleted afterwards and the catalogue re-verified: 2,759 rows,
+one capture date, no drill keys.
+
+### Retry, redrive and backlog evidence — from a real failure, not a synthetic one
+
+The first deploy shipped a **stale `build/lambda.zip`**, built before
+`stream_guard.py` existed. Every invocation failed:
+
+```
+[ERROR] Runtime.ImportModuleError: Unable to import module 'ingestion.stream_guard'
+```
+
+Which produced exactly the evidence Task 13 asks for, and better than a planted
+poison message would have:
+
+```json
+{"requestContext":{"condition":"RetryAttemptsExhausted","approximateInvokeCount":3},
+ "responseContext":{"functionError":"Unhandled"},
+ "DDBStreamBatchInfo":{"shardId":"shardId-00000001788757877768-4c84a6e1",
+   "startSequenceNumber":"73673800002791179582555503","batchSize":1, ...}}
+```
+
+- **Retry**: `approximateInvokeCount: 3` — the initial attempt plus the two
+  `retryAttempts` configured, exactly as declared.
+- **Redrive**: the message carries `shardId` and `startSequenceNumber`, which is
+  what makes replaying the batch possible rather than merely knowing it failed.
+- **Backlog**: the mapping reported `PROBLEM: Function call failed` and the
+  iterator held while retries ran.
+
+The DLQ was purged afterwards. A dead-letter queue left non-empty with a
+resolved message trains people to ignore the next one.
+
+### The stale archive is now a synth failure
+
+`cdk deploy` fingerprints whatever bytes are at `build/lambda.zip`. It cannot
+know they are stale, the deploy reports success, and the failure surfaces as a
+runtime import error in the account — for code that was correct in git the
+entire time. This is §3v ("the orchestrator was five days stale") recurring in
+the same session that read it.
+
+**CI is not the control**, and that is the point worth keeping: the `infra` job
+builds the archive before synth, so CI is precisely the environment where this
+cannot happen and therefore precisely the environment that cannot warn anyone.
+The gap is local deploys, which is where every deploy in this project has come
+from.
+
+`loadConfig()` now compares the archive's mtime against the newest file in the
+trees `build_lambda.py` packages — `src`, `ingestion`, `config`, `fixtures` —
+and throws at synth naming the offending file and the fix. An mtime comparison
+rather than a hash, because a hash would mean rebuilding to discover whether a
+rebuild was needed; it errs toward complaining, and the cost of a false
+complaint is one `python scripts/build_lambda.py`.
+
+Skipped when the archive is absent, because `cdk synth` legitimately runs before
+any build in tests and in CI, and a missing archive is a louder failure CDK
+already reports.
+
+### Taken offline the same day — 2026-09-07
+
+**Decision (owner): this is a demo app; do not carry cost for a control nothing
+is currently watching.** Torn down within the hour of going live, having first
+produced every piece of evidence Task 13 asks for.
+
+Order matters, and it is the reverse of the build:
+
+1. `cdk deploy Grocery-Ingestion-dev` with `PRODUCTS_STREAM_ARN` **unset** —
+   removes the event source mapping, the consumer, its log group and the DLQ.
+   The consumer must stop reading before the stream goes away, or the mapping is
+   left pointing at a stream that no longer exists.
+2. `aws dynamodb update-table --table-name grocery-products-dev
+   --stream-specification StreamEnabled=false`.
+
+Verified after: zero event source mappings, the DLQ returns
+`NonExistentQueue`, `StreamSpecification` is null, and the serving endpoint
+still answers 200.
+
+**The catalogue was re-verified by full scan, not by `ItemCount`.**
+`describe-table` reported 2,761 items — two more than the drill left behind —
+because that figure is an estimate DynamoDB refreshes roughly every six hours
+and it had caught an intermediate state. A `--select COUNT` scan returns
+**2,759**, with zero `zzz-` keys and one capture date. Worth recording as a
+general point: `ItemCount` is not evidence, and a teardown that checks it would
+have reported phantom rows in the serving catalogue.
+
+### Bringing it back
+
+Nothing was deleted from the repository, and the CDK path is unchanged — the
+feature is absent because its input is absent, which is the shape it was built
+with:
+
+```bash
+aws dynamodb update-table --table-name grocery-products-dev \
+  --stream-specification "StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES" \
+  --profile grocery
+
+export PRODUCTS_STREAM_ARN=$(aws dynamodb describe-table \
+  --table-name grocery-products-dev --query 'Table.LatestStreamArn' \
+  --output text --profile grocery)
+
+python scripts/build_lambda.py          # or synth refuses — see the staleness guard
+cd infra && npx cdk deploy Grocery-Ingestion-dev --profile grocery
+```
+
+**Re-enabling produces a NEW stream ARN** (it carries a timestamp), which is
+exactly why the ARN is read from the environment rather than committed.
+
+**Quote the shorthand.** In PowerShell an unquoted
+`StreamEnabled=true,StreamViewType=NEW_AND_OLD_IMAGES` is split on the comma and
+silently does nothing — the table reports `Stream: null` and the command looks
+like it worked.
+
+**What stays, and costs nothing:** the guard code, its 13 tests, the 5 CDK
+assertions, the alarm and metric filter in `config/alarms.json`, and the
+whole-app "an observer must not mutate what it observes" check — which is not
+about this feature and keeps working over every future consumer.
+
+
+### Brought back the same day, and a warm-up window worth knowing about — 2026-09-07
+
+**Decision reversed by the owner: keep it live through the demo, take it down
+after.** Restored by the documented path, and both traps recorded there fired
+exactly as written — the quoted shorthand was required, and re-enabling minted a
+**new** stream ARN (`06:05:19` where the first was `05:11:15`), which is why the
+ARN is read from the environment and never committed.
+
+Verified live again: mapping `Enabled` against the new ARN, `LastProcessingResult:
+OK`, DLQ empty, and a planted foreign row caught with the same §3t signature.
+Drill rows deleted, catalogue re-verified by full scan at 2,759 rows, zero `zzz-`
+keys, one capture date.
+
+**A MAPPING AT `LATEST` HAS A WARM-UP WINDOW, and this is the second time it
+cost a confusing few minutes.** The first row written after the mapping reported
+`Enabled` was NOT captured — `LastProcessingResult` stayed at *"No records
+processed"*. The next one, written a couple of minutes later, was caught
+immediately. `StartingPosition.LATEST` positions the iterator at the end of the
+shard when the mapping is created, and there is a gap between the API reporting
+`Enabled` and the poller actually reading.
+
+It matters beyond drills: **for a few minutes after any deploy that recreates
+the mapping, the guard is not watching.** That is acceptable for this control —
+it detects a class of accident, not an adversary timing a write to a deploy — but
+it should not be discovered during an incident, and a drill run immediately after
+a deploy will produce a false "it does not work".
+
+### The stale-archive guard fired twice more, and was narrowed once — 2026-09-07
+
+It has now caught two real staleness incidents, and the second one changed its
+scope.
+
+**The second catch was a CONFIG change, not a code change.** Editing a comment
+in `config/models.json` after the last build left the archive stale, and the
+guard said so by name. That validates including `config/` and `fixtures/` in
+the watched trees rather than only `src/` and `ingestion/`: a routing or
+feasibility change that never reaches the archive is exactly as invisible as a
+missing module, and quieter.
+
+**And it fired in the wrong place.** That same edit turned 85 passing CDK
+assertions into 15 failures about an unrelated file, because `loadConfig()`
+runs in the jest suite too. The guard exists to stop a stale **deploy**, and a
+unit test never deploys anything — so failing the suite is collateral, not
+signal, and a check that cries wolf during ordinary work is one people learn to
+route around.
+
+It now returns early when `JEST_WORKER_ID` is set. The carve-out is deliberately
+narrow: `cdk synth` and `cdk deploy` do not set it, so both still refuse, and
+CI's `infra` job runs a real `cdk synth` after building the archive — which is
+the path that matters. Verified both ways: with a deliberately stale archive,
+`npm test` passes 85/85 and `cdk synth` still reports
+`is STALE: config\models.json`.
+
+What is given up is staleness detection during `npm test`, which was never where
+a stale archive does harm.

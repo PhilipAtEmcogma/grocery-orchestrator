@@ -76,6 +76,9 @@ class CaseResult:
     selected: int = 0
     offered: int = 0
     distinct_mains: int = 0
+    #: The most distinct mains this selection COULD have had -- the ceiling
+    #: against which `distinct_mains` becomes comparable. See `Scorecard.variety`.
+    achievable_mains: int = 0
     fell_back: bool = False
     latency_ms: int = 0
     guardrail_blocked: bool = False
@@ -108,6 +111,50 @@ class Scorecard:
     @property
     def pass_rate(self) -> float:
         return self.passed / len(self.scored) if self.scored else 0.0
+
+    @property
+    def variety(self) -> float | None:
+        """
+        Variety taken as a fraction of variety AVAILABLE. Legacy task 5.6.
+
+        THIS EXISTS TO ANSWER AN OBJECTION THIS FILE ITSELF RAISED, and the
+        objection was correct. `distinct mains` was reported and deliberately
+        not scored because "no threshold is right for every request", and
+        `config/models.json` put it sharply: *three meals from a seven-recipe
+        shortlist cannot beat four from a twelve-recipe one*. An absolute count
+        is not comparable across cases, so averaging or thresholding one
+        manufactures a gradient that means nothing.
+
+        **Normalising dissolves that.** The ceiling is computable: with `n`
+        meals chosen from a shortlist containing `m` distinct main ingredients,
+        no selection can show more than `min(n, m)` of them. Dividing by that
+        asks a question that IS comparable across every case:
+
+            of the variety available to you, how much did you take?
+
+        A model that picks three different mains where only three were possible
+        scores 1.0 — correctly, because nobody could have done better. One that
+        picks three where five were possible scores 0.6.
+
+        ORTHOGONAL TO COUNT, ON PURPOSE. The denominator uses the number of
+        meals actually SELECTED, not the number requested, so under-selecting is
+        not punished twice — `COUNT` already scores that, and one check
+        measuring one thing is what makes a failure legible.
+
+        WHAT IT STILL ASSUMES. That variety is desirable. This product does not
+        ask a shopper whether they would rather batch-cook one thing five times,
+        so the number ranks models against each other and is NOT a floor. It is
+        reported as a comparable measurement, which is precisely what the raw
+        count could never be, and the honest way to turn it into a gate is to
+        measure a baseline first and then argue for a threshold.
+
+        None when nothing was selected anywhere -- an average over no
+        observations is not zero, it is absent.
+        """
+        usable = [r for r in self.scored if r.achievable_mains > 0]
+        if not usable:
+            return None
+        return sum(r.distinct_mains / r.achievable_mains for r in usable) / len(usable)
 
 
 def _state_for(case: dict, repo: InMemoryPriceRepository) -> dict:
@@ -238,11 +285,23 @@ def run(model: ModelClient, label: str) -> Scorecard:
 
         violations = _check(case, state, out, repo)
         by_id = {r.recipe_id: r for r in curated_recipes()}
+        chosen = out.get("selected_recipes") or []
         mains = {
             by_id[rid].ingredients[0].key
-            for rid in (out.get("selected_recipes") or [])
+            for rid in chosen
             if rid in by_id and by_id[rid].ingredients
         }
+        # The ceiling: distinct mains present in what the model was OFFERED,
+        # capped by how many meals it chose. Computed from the same shortlist
+        # the model saw -- `_state_for` builds it with the real retrieval node,
+        # so this is the variety production actually made available, not an
+        # idealised one.
+        shortlist_mains = {
+            by_id[rid].ingredients[0].key
+            for rid in (state.get("recipe_shortlist") or [])
+            if rid in by_id and by_id[rid].ingredients
+        }
+        achievable = min(len(chosen), len(shortlist_mains))
         card.results.append(
             CaseResult(
                 case_id=case["id"],
@@ -251,6 +310,7 @@ def run(model: ModelClient, label: str) -> Scorecard:
                 selected=len(out.get("selected_recipes") or []),
                 offered=len(state.get("recipe_shortlist") or []),
                 distinct_mains=len(mains),
+                achievable_mains=achievable,
                 fell_back=bool(out.get("recipe_fallback")),
                 latency_ms=elapsed,
             )
@@ -267,6 +327,9 @@ def report(card: Scorecard) -> None:
         print(f"    meals chosen     {sum(r.selected for r in scored) / len(scored):.1f}")
         print(f"    recipes offered  {sum(r.offered for r in scored) / len(scored):.1f}")
         print(f"    distinct mains   {sum(r.distinct_mains for r in scored) / len(scored):.1f}")
+        variety = card.variety
+        if variety is not None:
+            print(f"    variety taken    {variety:.1%}  (of the variety available)")
         print(f"    fell back        {sum(1 for r in scored if r.fell_back)}/{len(scored)}")
     if card.upstream_failures:
         print(f"  upstream         {len(card.upstream_failures)} never answered")

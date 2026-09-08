@@ -50,6 +50,16 @@ _SOURCE_BY_NAME = {
 # The retailers in scope. Pak'nSave and New World are both Foodstuffs, whose
 # search endpoints are robots.txt-disallowed -- the sanctioned traversal is the
 # published product sitemaps (8 condition 3).
+#
+# WOOLWORTHS IS SUPPORTED AND CARRIES NO DATA. It stays in this tuple
+# deliberately: the collected dataset holds five New World and five Pak'nSave
+# store files and no Woolworths file at all, so its branch of the state machine
+# fetches zero rows on every run. Removing the name would make that gap
+# invisible; leaving it makes a `fetched 0` appear beside two branches writing
+# ~1,380 each, every refresh. Supported means "we would ingest it if it
+# arrived", not "we serve it" -- and nothing user-facing may claim a
+# three-chain comparison on the strength of this tuple.
+# See docs/OPEN-REVIEW-chain-coverage.md.
 KNOWN_RETAILERS = ("paknsave", "woolworths", "new_world")
 
 

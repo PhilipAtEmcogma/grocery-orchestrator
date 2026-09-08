@@ -158,5 +158,33 @@ class ModelOutputInvalid(ModelError):
     """
 
 
+class ModelThrottled(ModelError):
+    """
+    The call was refused for RATE, not for content and not for being wrong.
+
+    Distinct from a bare ModelError for the same reason `ModelOutputInvalid`
+    is: the three failures want three different operator responses, and
+    collapsing them makes the dashboard say "the model plane is unhealthy"
+    when what actually happened is "we asked faster than our quota allows".
+    An outage is escalated to AWS; a throttle is fixed by pacing, a quota
+    increase, or routing to a second model.
+
+    A SUBCLASS, SO NOTHING DOWNSTREAM CHANGES. Every `except ModelError` at
+    the edges keeps catching it, the shopper still gets the same retryable
+    upstream-failure answer, and the repair loop still (correctly) does not
+    try to repair it -- retrying the same prompt into a full quota is how a
+    throttle becomes an outage. What the type adds is that
+    `InstrumentedModelClient` can count it without matching on the text of an
+    exception message, which is the fragile version of this.
+
+    WHY IT IS WORTH THE TYPE AT ALL. Pilot Task 16's load gate (G6 Phase B,
+    2026-09-04) drove a deliberate 21x quota breach and found a real defect:
+    a throttled FIRST model call came back to the shopper as "could you
+    rephrase that?" for a request that was already complete. That defect was
+    found by running the load gate by hand. Nothing in CloudWatch would have
+    shown it, because a throttle looked exactly like every other call failure.
+    """
+
+
 class GuardrailBlocked(ModelError):
     """Raised when a configured model safety guardrail blocks a request."""

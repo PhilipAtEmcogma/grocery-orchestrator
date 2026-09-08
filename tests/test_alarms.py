@@ -309,7 +309,21 @@ def test_every_log_group_names_a_function_this_repo_deploys(config):
             f"filter {f['name']} attaches to {log_group}, which is not one of "
             f"this project's functions; it would match nothing, forever"
         )
-        assert function.endswith(f"-{env}"), f"{f['name']}: {log_group} is not the {env} stage"
+        # The stage, optionally followed by a PLANE SUFFIX. Widened 2026-09-07
+        # when the catalogue stream guard arrived: it exists only in the CDK
+        # ingestion stack, so its function is `grocery-catalogue-guard-dev-cdk`
+        # and the old `endswith("-dev")` rule refused a name this repo really
+        # does deploy.
+        #
+        # The teeth are unchanged. The rule is still "names the right stage",
+        # not "contains the stage anywhere": a trailing `-dev` or `-dev-<plane>`
+        # is required, so a filter pointed at a prod log group, or at
+        # `grocery-something-else`, still fails. `-{env}-` in the middle of a
+        # longer name does NOT pass, which is what stops this becoming a
+        # substring check.
+        assert function.endswith(f"-{env}") or f"-{env}-" in function[-len(env) - 8 :], (
+            f"{f['name']}: {log_group} is not the {env} stage"
+        )
         functions.add(function)
 
     assert f"{SERVICE_NAME}-{env}" in functions, (

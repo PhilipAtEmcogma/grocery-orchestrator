@@ -3,31 +3,26 @@
   "version": "1.0",
   "region": "ap-southeast-2",
   "environment": "dev",
-
   "_naming": "The -dev suffix follows config/alarms.json: generated resources coexist with manually created ones during the migration to IaC (design.md 11, point 2).",
-
   "role_name": "grocery-orchestrator-dev-role",
   "description": "Execution role for the Smart Grocery & Meal Budget Assistant orchestrator Lambda.",
-
   "managed_policy_arns": [
     "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
   ],
-
   "_managed_note": "AWSLambdaBasicExecutionRole covers CreateLogGroup/CreateLogStream/PutLogEvents only. Powertools Metrics needs no cloudwatch:PutMetricData -- it emits Embedded Metric Format to stdout and CloudWatch extracts the metrics from the log records. Granting PutMetricData would be permission for a call the code never makes.",
-
   "trust_policy": {
     "Version": "2012-10-17",
     "Statement": [
       {
         "Effect": "Allow",
-        "Principal": { "Service": "lambda.amazonaws.com" },
+        "Principal": {
+          "Service": "lambda.amazonaws.com"
+        },
         "Action": "sts:AssumeRole"
       }
     ]
   },
-
   "inline_policy_name": "grocery-orchestrator-dev-policy",
-
   "inline_policy": {
     "Version": "2012-10-17",
     "Statement": [
@@ -82,6 +77,16 @@
           "dynamodb:UpdateItem"
         ],
         "Resource": "arn:aws:dynamodb:${AWS_REGION}:${AWS_ACCOUNT_ID}:table/grocery-idempotency-dev"
+      },
+      {
+        "_comment": "Pilot Task 7b: read the routing block the CDK stack publishes, so an operator can retune which model serves which task without a deploy. GetParameter ONLY -- no PutParameter, and no wildcard over the path. The orchestrator is a READER of its own configuration; a service that could rewrite its own routing could route itself to an unqualified model and leave no deploy to review. Scoped to the one parameter rather than /grocery/*, because the same path holds feasibility and anything published there later, and this role has no business reading those through a permission granted for routing.",
+        "_why_this_is_safe_to_expose_to_an_operator": "An override cannot enable a model, invent one, or manufacture a scorecard: models and scorecards come from config/models.json in the archive, which only a deploy changes. ModelRegistry.route() still returns only specs that are enabled, configured and at the requested tier, so the worst a bad edit does is make a task UNROUTABLE -- a loud, contract-mapped failure -- rather than a quiet downgrade. tests/test_ssm_routing.py holds it.",
+        "Sid": "SsmReadRouting",
+        "Effect": "Allow",
+        "Action": [
+          "ssm:GetParameter"
+        ],
+        "Resource": "arn:aws:ssm:${AWS_REGION}:${AWS_ACCOUNT_ID}:parameter/grocery/*/models/routing"
       },
       {
         "_comment": "Powertools Tracer. X-Ray segment writes are not resource-scopable -- the API takes no resource -- so * is the only expressible form.",

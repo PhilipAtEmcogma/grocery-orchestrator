@@ -46,6 +46,55 @@ export interface GroceryConfig {
    */
   readonly dataSuffix: string;
 
+  /**
+   * Whether the orchestrator publishes SnapStart-optimised versions.
+   *
+   * OFF BY DEFAULT SINCE 2026-09-07, AND THIS IS A COST DECISION WITH A
+   * MEASURED CAUSE, not a doubt about SnapStart. See
+   * `docs/ARCHITECTURE.md` §3x and §3y.
+   *
+   * SnapStart bills for the cached snapshot of every PUBLISHED VERSION,
+   * continuously, whether or not anything invokes it. That is invisible to a
+   * request-shaped mental model: on this service, whose invocation charges are
+   * literally $0.00, snapshot storage was **79% of September's bill** and put a
+   * no-traffic project on course to break its own $25 budget.
+   *
+   * This plane is the `-cdk` one. The cutover is deferred (§3m), so it serves
+   * nobody, and paying for a warm-start optimisation on an endpoint with no
+   * users is the clearest possible waste. The HAND-MADE plane keeps SnapStart,
+   * because it is the one answering requests and the latency baselines the
+   * pilot is measured against (p95 1.94s on a price check) depend on it.
+   *
+   * TURNING IT BACK ON IS ONE ENV VAR: `SNAPSTART=1 npx cdk deploy
+   * Grocery-Service-dev`. Do that before the cutover, not after — the plane
+   * that serves shoppers should be the fast one, and §3y is the checklist.
+   */
+  readonly snapStart: boolean;
+
+  /**
+   * Whether the daily ingestion schedule is created ENABLED.
+   *
+   * OFF BY DEFAULT, and the reason is in `config/data-sources.json`:
+   * `LineageBSource.CAPTURED_AT` is the constant `2026-08-28` and the dataset
+   * is documented as a one-off snapshot, so a nightly refresh rewrites the same
+   * 2,759 rows with the same capture date. It would cost money, write to the
+   * serving catalogue every night, and change nothing.
+   *
+   * THE STATE IS EXPLICIT HERE BECAUSE IT DRIFTED ONCE ALREADY. The 2026-08-30
+   * account audit recorded the hand-made schedule as ENABLED; it is DISABLED
+   * in the account today and nobody wrote down the change or why. A schedule
+   * whose state lives only in the console is one that can flip without a
+   * review — in either direction, and the dangerous direction writes to the
+   * catalogue.
+   *
+   * Enable with `INGESTION_SCHEDULE=1` when a source exists that can stamp a
+   * NEW capture date — a fresh collection from the data team, or Task 11.4
+   * live acquisition. That is the same condition `config/freshness.json` names
+   * for reverting `max_price_age_days`, and it is not a coincidence: both are
+   * waiting on data that can actually change.
+   */
+  readonly ingestionScheduleEnabled: boolean;
+
   // Physical names. Two groups, and the distinction is the point:
   //   - CREATED by this app: named from the stage plus `suffix`.
   //   - ADOPTED from the account: named from `dataSuffix`, never the stage.
@@ -123,12 +172,101 @@ export function productionStages(): ReadonlySet<string> {
   return new Set(names.map((n) => n.trim().toLowerCase()));
 }
 
+/**
+ * Refuse to synthesise against a Lambda archive older than the code it packages.
+ *
+ * THIS EXISTS BECAUSE IT HAPPENED, on 2026-09-07, in the same session that read
+ * §3v ("the orchestrator was five days stale"). `ingestion/stream_guard.py` was
+ * written, tested and committed; the deploy used the `build/lambda.zip` sitting
+ * on disk from an earlier task; and the function failed on every invocation
+ * with `Runtime.ImportModuleError: No module named 'ingestion.stream_guard'`.
+ * Three invocations, three retries exhausted, one message in the dead-letter
+ * queue — for a file that was correct in git the whole time.
+ *
+ * `cdk deploy` fingerprints whatever bytes are at `lambdaAssetPath`. It cannot
+ * know they are stale, and neither could the operator: the deploy reported
+ * success. CI is not the control either — its `infra` job builds the archive
+ * before synth, so CI is exactly the environment where this cannot happen and
+ * therefore exactly the environment that cannot warn you.
+ *
+ * The check is a MTIME COMPARISON, not a hash. A hash would mean rebuilding to
+ * find out whether a rebuild was needed. Comparing the archive against the
+ * newest file in the trees it packages answers the same question for free, and
+ * errs toward complaining: touching a file without changing it fails the synth
+ * and costs one `python scripts/build_lambda.py`.
+ *
+ * SKIPPED when the archive is absent, deliberately. `cdk synth` runs in tests
+ * and in CI before the build step, and a missing archive is a different, louder
+ * failure that CDK already reports.
+ */
+function assertAssetIsNotStale(assetPath: string): void {
+  if (!fs.existsSync(assetPath)) return;
+
+  // NOT UNDER JEST. The guard exists to stop a stale DEPLOY, and a unit test
+  // never deploys anything -- so failing the CDK suite because somebody edited
+  // `config/models.json` since their last build is collateral, not signal. It
+  // happened immediately: editing a config comment turned 85 passing
+  // assertions into 15 failures about an unrelated file.
+  //
+  // The carve-out is deliberately narrow. `cdk synth` and `cdk deploy` do NOT
+  // set JEST_WORKER_ID, so both still check -- and CI's `infra` job runs a
+  // real `cdk synth` after building the archive, which is the path that
+  // matters. What is given up is staleness detection during `npm test`, which
+  // was never where a stale archive does harm.
+  if (process.env.JEST_WORKER_ID !== undefined) return;
+
+  const builtAt = fs.statSync(assetPath).mtimeMs;
+  // The Python trees `scripts/build_lambda.py` copies in. `config/` and
+  // `fixtures/` ship too and are checked for the same reason: a routing or
+  // feasibility change that never reaches the archive is as invisible as a
+  // missing module, and quieter.
+  const packaged = ['src', 'ingestion', 'config', 'fixtures'];
+
+  let newest = 0;
+  let newestPath = '';
+  const walk = (dir: string): void => {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      if (entry.name === '__pycache__' || entry.name.endsWith('.pyc')) continue;
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        continue;
+      }
+      const mtime = fs.statSync(full).mtimeMs;
+      if (mtime > newest) {
+        newest = mtime;
+        newestPath = full;
+      }
+    }
+  };
+  for (const tree of packaged) {
+    const dir = path.join(REPO_ROOT, tree);
+    if (fs.existsSync(dir)) walk(dir);
+  }
+
+  if (newest > builtAt) {
+    const behind = Math.round((newest - builtAt) / 1000);
+    throw new Error(
+      `build/lambda.zip is STALE: ${path.relative(REPO_ROOT, newestPath)} is ${behind}s ` +
+        `newer than the archive. Deploying now would ship code that is not in the ` +
+        `repository — on 2026-09-07 exactly that produced ` +
+        `Runtime.ImportModuleError for a module that was committed and passing its ` +
+        `tests. Run: python scripts/build_lambda.py`,
+    );
+  }
+}
+
 export function loadConfig(stage: string): GroceryConfig {
   const isProduction = productionStages().has(stage.trim().toLowerCase());
   const suffix = stage; // dev | prod
 
   // Never `stage`. See GroceryConfig.dataSuffix.
   const dataSuffix = process.env.DATA_SUFFIX ?? 'dev';
+
+  // Resolved and CHECKED before the config is handed to any stack, so a stale
+  // archive fails at synth rather than at the first invocation in the account.
+  const assetPath = path.join(REPO_ROOT, 'build', 'lambda.zip');
+  assertAssetIsNotStale(assetPath);
 
   const cfg: GroceryConfig = {
     stage,
@@ -138,6 +276,15 @@ export function loadConfig(stage: string): GroceryConfig {
     // plane. Deliberately explicit rather than clever: someone cutting over
     // sets NAME_SUFFIX='' and reads the diff.
     suffix: process.env.NAME_SUFFIX ?? '-cdk',
+    // Opt-IN, matching USE_DYNAMODB / USE_BEDROCK / MCP_ENABLED: matched
+    // exactly against '1', so a typo reads as off rather than as on. Off is
+    // the cheap direction and on is the one that bills continuously, so a
+    // misread should fall to off.
+    snapStart: process.env.SNAPSTART === '1',
+    // Same opt-in shape, and for the stronger version of the same reason: the
+    // dangerous direction here writes to the serving catalogue on a timer, so
+    // a typo must read as off.
+    ingestionScheduleEnabled: process.env.INGESTION_SCHEDULE === '1',
     guardrailId: process.env.BEDROCK_GUARDRAIL_ID ?? 'b1xezpqe04kx',
     guardrailVersion: process.env.BEDROCK_GUARDRAIL_VERSION ?? '2',
     names: {
@@ -183,7 +330,7 @@ export function loadConfig(stage: string): GroceryConfig {
       feasibility: path.join(REPO_ROOT, 'config', 'feasibility.json'),
       stages: STAGES_FILE,
     },
-    lambdaAssetPath: path.join(REPO_ROOT, 'build', 'lambda.zip'),
+    lambdaAssetPath: assetPath,
     requireGuardrail: true,
     // Pilot/dev may use "*" while non-production; a real origin is injected from
     // the FrontendStack's CloudFront domain (two-pass deploy, infra/docs/06 §3d).

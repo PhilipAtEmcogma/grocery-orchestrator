@@ -280,3 +280,48 @@ declared `using: node20`, so the annotation is gone rather than suppressed —
 verified by reading each tag's `action.yml` rather than by assuming the version
 bump implied it. Every action in `ci.yml` is now on `@v7`, and a new annotation
 would show against a quiet baseline.
+
+---
+
+## 7. The recipe-selection suite could not rank models — PARTLY CLOSED 2026-09-07
+
+`config/models.json` stated the problem better than this file could:
+
+> **BOTH MODELS SCORE 100% AND THE SUITE THEREFORE CANNOT RANK THEM.** Every
+> check here is a RULE VIOLATION check — did you invent an id, did you repeat
+> one while alternatives remained, did you breach a stated exclusion, did you
+> choose enough meals. Neither model breaks rules. **Nothing here asks whether
+> the MENU is good.**
+
+`distinct mains` was reported and deliberately left unscored, because *"three
+meals from a seven-recipe shortlist cannot beat four from a twelve-recipe one"*.
+That objection is correct about an **absolute** count, and it is fatal to
+averaging or thresholding one.
+
+**It dissolves under normalisation.** The ceiling is computable: with `n` meals
+chosen from a shortlist holding `m` distinct mains, no selection can show more
+than `min(n, m)`. `Scorecard.variety` divides by that, which asks a question
+that IS comparable across every case — *of the variety available to you, how
+much did you take?* A narrow shortlist taken in full scores 1.0, because nobody
+could have done better.
+
+**The blind spot it closes is real, and asserted rather than argued.**
+`config/recipes.json` contains **five distinct pasta recipes**. A model
+returning all five commits no fabrication, no dietary breach, no repetition and
+no under-count — 100% on every existing check, and pasta five nights running.
+That selection scores **0.2** on variety. It is the first measurement in this
+suite that ranks a *menu* rather than a *rule*.
+
+**Reported, not floored.** This product never asks a shopper whether they would
+rather batch-cook one thing, so the assumption "variety is desirable" is stated
+rather than enforced. The honest order is to measure a baseline across the
+enabled models first and then argue for a threshold, which is the same
+discipline §1 applies to the eval floors: *raise a floor from a re-measurement,
+or not at all.*
+
+**What is still open.** *Appeal* — the other half of legacy task 5.6 — is not
+attempted and should not be faked. It needs a human judgement or an LLM judge
+with its own qualification, and inventing a proxy would manufacture exactly the
+meaningless gradient the variety objection warned about. The scripted baseline
+now reports **94.3%**; the per-model figures need a live run, which costs money
+and has not been taken.

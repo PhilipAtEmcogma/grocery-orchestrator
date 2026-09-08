@@ -29,9 +29,10 @@ from contextlib import contextmanager
 from decimal import Decimal
 from typing import TYPE_CHECKING
 
-from src.models.base import ModelClient, ModelTier, T
+from src.models.base import ModelClient, ModelThrottled, ModelTier, T
 from src.observability.base import (
     METRIC_MODEL_LATENCY,
+    METRIC_MODEL_THROTTLED,
     Telemetry,
     TurnStats,
 )
@@ -217,6 +218,7 @@ class InstrumentedModelClient(ModelClient):
         # the trace.
         attempt = self._calls_by_task.get(task, 0)
         self._calls_by_task[task] = attempt + 1
+        throttled = False
 
         # `last_usage` reports the client's MOST RECENT call, which is this
         # one only if this one got far enough to record anything. Snapshotting
@@ -232,8 +234,12 @@ class InstrumentedModelClient(ModelClient):
             started = time.perf_counter()
             try:
                 yield
-            except BaseException:
+            except BaseException as exc:
                 failed = True
+                # Recorded here and counted in the `finally`, so the metric is
+                # emitted on exactly the same path as the latency and the span
+                # -- one place where a model call is accounted for, not two.
+                throttled = isinstance(exc, ModelThrottled)
                 raise
             finally:
                 elapsed_ms = _elapsed_ms(started)
@@ -259,6 +265,15 @@ class InstrumentedModelClient(ModelClient):
                 # task — the number Task 10.5 needs to attribute the plan
                 # path's share of the 29-second ceiling.
                 self._telemetry.duration(METRIC_MODEL_LATENCY, elapsed_ms, model=model, task=task)
+
+                # Same dimensions as the latency metric, so a throttle rate can
+                # be read against the latency of the same model and task rather
+                # than against a repo-wide total. Emitted only when it happened:
+                # a zero on every successful call would make the Sum statistic
+                # correct and the SampleCount meaningless, and `notBreaching`
+                # on the alarm already covers the quiet case.
+                if throttled:
+                    self._telemetry.count(METRIC_MODEL_THROTTLED, 1, model=model, task=task)
 
 
 def _elapsed_ms(started: float) -> float:
