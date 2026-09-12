@@ -1,3 +1,5 @@
+import { NZ_LOCATIONS } from "../data/nzLocations";
+
 export default function BudgetControls({
   location,
   budget,
@@ -17,7 +19,14 @@ export default function BudgetControls({
           value={location}
           onChange={(event) => onLocationChange(event.target.value)}
           placeholder="Optional suburb or store"
+          list="nz-locations"
+          autoComplete="off"
         />
+        <datalist id="nz-locations">
+          {NZ_LOCATIONS.map((suburb) => (
+            <option key={suburb} value={suburb} />
+          ))}
+        </datalist>
       </label>
 
       <label>

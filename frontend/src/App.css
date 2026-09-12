@@ -46,7 +46,8 @@ button {
 .chat-window {
   display: flex;
   width: min(100%, 860px);
-  min-height: calc(100vh - 56px);
+  height: calc(100vh - 56px);
+  max-height: calc(100vh - 56px);
   flex-direction: column;
   overflow: hidden;
   border: 1px solid #2c3a4d;
@@ -568,7 +569,8 @@ button {
   }
 
   .chat-window {
-    min-height: 100vh;
+    height: 100vh;
+    max-height: 100vh;
     border: 0;
     border-radius: 0;
   }
