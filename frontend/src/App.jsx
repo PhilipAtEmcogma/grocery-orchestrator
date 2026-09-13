@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import "./App.css";
 
 import BudgetControls from "./components/BudgetControls";
@@ -21,6 +21,51 @@ function newId(prefix) {
   }
 
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+// Persisted per browser tab (sessionStorage) so a page refresh doesn't lose
+// the conversation. Swap sessionStorage for localStorage on both functions
+// below if you want the chat to survive closing the tab too.
+const SESSION_STORAGE_KEY = "grocery-session-id";
+const HISTORY_STORAGE_KEY = "grocery-chat-history";
+
+function loadStoredSessionId() {
+  try {
+    const existing = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    if (existing) {
+      return existing;
+    }
+    const created = newId("sess");
+    sessionStorage.setItem(SESSION_STORAGE_KEY, created);
+    return created;
+  } catch {
+    // Storage unavailable (private browsing, etc.) — the chat still works,
+    // it just won't survive a refresh.
+    return newId("sess");
+  }
+}
+
+function storeSessionId(id) {
+  try {
+    sessionStorage.setItem(SESSION_STORAGE_KEY, id);
+  } catch {
+    // Ignore — see loadStoredSessionId.
+  }
+}
+
+function loadStoredMessages() {
+  try {
+    const raw = sessionStorage.getItem(HISTORY_STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch {
+    // Malformed or unavailable storage — fall back to a fresh welcome.
+  }
+  return [WELCOME_MESSAGE];
 }
 
 function extractAssistantContent(events) {
@@ -84,7 +129,8 @@ function extractAssistantContent(events) {
 }
 
 export default function App() {
-  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
+  const [sessionId, setSessionId] = useState(loadStoredSessionId);
+  const [messages, setMessages] = useState(loadStoredMessages);
   const [draft, setDraft] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -93,6 +139,16 @@ export default function App() {
   const [people, setPeople] = useState("3");
   const [days, setDays] = useState("3");
 
+  // Keep the visible history in sync with storage on every change, so a
+  // refresh mid-conversation restores exactly what was on screen.
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(messages));
+    } catch {
+      // Storage full or unavailable — chat still works, it just won't persist.
+    }
+  }, [messages]);
+
   function clearConversation() {
     setMessages([
       {
@@ -100,6 +156,13 @@ export default function App() {
         id: newId("welcome"),
       },
     ]);
+
+    // A cleared chat is a new conversation, so it gets a new session_id too
+    // — otherwise the backend would see one session_id spanning two
+    // unrelated conversations.
+    const freshSessionId = newId("sess");
+    storeSessionId(freshSessionId);
+    setSessionId(freshSessionId);
   }
 
   async function handleSubmit() {
@@ -109,7 +172,6 @@ export default function App() {
       return;
     }
 
-    const sessionId = "sess-frontend-demo";
     const turnId = newId("turn");
 
     const userMessage = {
