@@ -30,7 +30,9 @@ trying to break them.
   2. A dependency nothing imports  (found: three of them)
   3. A Lambda archive older than its code  (found: it shipped)
   4. An observer that can mutate what it observes  (found: the check was inert)
-  5. Why "the test passed" is not evidence the test works
+  5. An assertion that cannot fail in one direction  (found: it passed a
+     defect that reached a shopper)
+  6. Why "the test passed" is not evidence the test works
 
 WHO THIS IS FOR
 ---------------
@@ -51,6 +53,10 @@ import sys
 from pathlib import Path
 
 from _demo_support import LOCAL, heading, mode_banner, note, require, resolve_mode, section
+
+from evals.run_intent import score_case
+from src.retrieval.memory import InMemoryPriceRepository
+from src.schemas.contract import Intent
 
 mode = resolve_mode(supports=(LOCAL,))
 mode_banner(mode, requires="nothing", mocked="nothing")
@@ -74,6 +80,7 @@ note("  - a forcing test pointed at a file that could not change")
 note("  - an anomaly rule that ran for a day with no caller")
 note("  - a prune-list entry naming a package that was already gone")
 note("  - an SSM parameter published and read by nothing")
+note("  - an assertion that could only fail in one of two directions")
 note("")
 note("So the standard is: break the thing, watch the control fail, restore it.")
 note("Everything below is that, run live.")
@@ -259,21 +266,120 @@ note("empty list passes exactly as quietly as a loop that found nothing wrong,")
 note("and CI runs without PRODUCTS_STREAM_ARN where the guard is absent.")
 
 
-# ------------------------------------------- 5. what green does not mean
+# --------------------------- 5. an assertion blind in one direction
 
-section("5. Why 'the test passed' is not evidence the test works")
+section("5. Guardrail: an assertion that cannot fail in one direction")
 
-note("Two of the three guardrails above were written, reviewed, committed --")
+note("THIS ONE PASSED A DEFECT ALL THE WAY TO A SHOPPER. On 2026-09-14")
+note('someone typed "i would like to have seafood meal planned for me" and')
+note("was shown a banana porridge plan under the sentence:")
+note("")
+note("    All seafood has been excluded as requested.")
+note("")
+note("Extraction had read the request as its own negation. The intent eval")
+note("had 47 scored cases, EIGHT of them about exclusions, and every one")
+note("passed -- because of how the scoring was written:")
+note("")
+note("    if not wanted_set.issubset(actual_set):")
+note("        failures.append(...)")
+note("")
+note("A SUBSET TEST. It can fail a model that excludes too LITTLE and can")
+note("never fail one that excludes too MUCH. That is the correct direction")
+note("for a safety control -- a model that over-excludes has answered safely,")
+note("if bluntly -- and it means the golden set was structurally incapable of")
+note("noticing the inverse defect.")
+note("")
+note("THE OBVIOUS FIX WOULD NOT HAVE WORKED EITHER. Adding a case that says")
+note('"this request excludes nothing" reads like the right answer:')
+note("")
+note('    {"message": "a seafood meal plan", "expect": {"exclusions": []}}')
+note("")
+note("The empty set is a subset of every set, so that case passes against a")
+note("model returning ANY exclusions at all, including the one that shipped.")
+note("A new case against an unchanged assertion is a new way to be green.")
+note("")
+note("Broken here on purpose, with the constraints the live model produced:")
+note("")
+
+BROKEN = {"dietary_exclusions": ["seafood"], "preferred_ingredients": []}
+FIXED = {"dietary_exclusions": [], "preferred_ingredients": ["seafood"]}
+
+
+def _score(expect: dict, constraints: dict) -> list[str]:
+    """
+    Score one case through the REAL scorer, not a reproduction of it.
+
+    `evals/run_intent.py` owns the assertion being examined, so a copy of it
+    here could pass this demo while the scorer itself regressed -- which is the
+    failure mode section 4 is about, committed inside the demo that explains it.
+    """
+    return score_case(
+        {"expect": expect},
+        {"intent": Intent.MEAL_PLAN, "constraints": constraints},
+        InMemoryPriceRepository(),
+    )
+
+
+def _verdict(failures: list[str]) -> str:
+    return "FAILED, correctly" if failures else "DID NOT FIRE"
+
+
+subset_only = _score({"exclusions": []}, BROKEN)
+note(f'  "exclusions": []       vs the defect   -> {_verdict(subset_only)}')
+note("             the case a reviewer would have written, and it is green")
+require(not subset_only, "the subset check unexpectedly failed an over-extraction")
+note("")
+
+equality = _score({"no_exclusions": True}, BROKEN)
+note(f'  "no_exclusions": true  vs the defect   -> {_verdict(equality)}')
+# Cut at the parenthetical rather than at a character count: `[:70]` landed
+# mid-token ("(terms: ['s"), which is the same "show the sentence, not a
+# fragment of it" defect this demo's own diagnostics had.
+note(f"             {equality[0].split(' (terms:')[0]}")
+require(equality, "the equality assertion did not fire on an over-extraction")
+note("")
+
+restored = _score({"no_exclusions": True, "preferences": ["seafood"]}, FIXED)
+note(f'  "no_exclusions": true  vs the fix      -> {"passes" if not restored else restored}')
+note("             and it does not fire on correct behaviour, which is the")
+note("             half that stops an assertion being merely strict")
+require(not restored, "the equality assertion fires on correct behaviour")
+note("")
+note("So the fix was not a case, it was an ASSERTION: `no_exclusions` is an")
+note("equality on the resolved categories, and it lives beside the subset test")
+note("rather than replacing it. Both directions are now expressible, and")
+note("evals/cases/intent.json pol-001..005 score them.")
+note("")
+note("WHAT MAKES THIS SHAPE HARD. The other three guardrails in this demo")
+note("were absent, inert, or wrong. This one WORKED -- it ran, compared real")
+note("values, and had caught real defects. It was green for the right reasons")
+note("and blind anyway, and no amount of watching it pass would have said so.")
+note("Asking 'which direction can this fail in' is the only thing that does.")
+
+
+# ------------------------------------------- 6. what green does not mean
+
+section("6. Why 'the test passed' is not evidence the test works")
+
+note("Three of the four guardrails above were written, reviewed, committed --")
 note("and did not work:")
 note("")
 note("  requirements check   worked first time")
 note("  stale-archive check  written only AFTER the defect shipped to AWS")
 note("  observer check       PASSED while checking nothing")
+note("  exclusion scoring    PASSED a defect that reached a shopper")
 note("")
 note("The difference between the second and third is instructive. The")
 note("stale-archive guard did not exist, which is a visible gap. The observer")
 note("guard EXISTED, was green, and was worthless -- which is invisible, and")
 note("worse, because it also removed the motivation to look.")
+note("")
+note("SECTION 5 IS A FOURTH KIND, AND THE MOST COMFORTABLE ONE TO MISS. That")
+note("assertion was not inert -- it ran, it compared real values, and it")
+note("caught real defects. It was simply blind in one direction, which no")
+note("amount of watching it pass would ever reveal. A test that cannot fail")
+note("is findable by mutation; a test that cannot fail ONE WAY needs somebody")
+note("to ask which way.")
 note("")
 note("This is why the repository's convention is to record mutation results")
 note("in commit messages: 'dropping the fence fails 3, reusing the token on")
