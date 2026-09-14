@@ -35,9 +35,11 @@ from decimal import Decimal
 
 import pytest
 
+from src.graph.nodes._shared import _preference_unmet
 from src.graph.nodes.intent import _reconcile
 from src.models.scripted import ScriptedModelClient
 from src.prompts.intent import SYSTEM_PROMPT, IntentResult
+from src.recipes.base import preference_terms_met
 from src.retrieval.memory import InMemoryPriceRepository
 from src.runner import run_turn
 from src.schemas.contract import ChatRequest, ClientHints, Intent
@@ -267,28 +269,66 @@ def test_a_plan_with_no_stated_preference_gains_no_notice(repo):
     assert not any("this plan has none" in n for n in notices)
 
 
-# ----------------------------------------------------- the unmet-preference notice
+def test_a_preference_offered_but_trimmed_out_is_still_reported(repo):
+    """
+    THE SECOND SILENT DROP, one layer below the first.
 
+    `_cost_within_budget` removes the meal with the HIGHEST MARGINAL COST, and
+    the preferred meal is very often the dearest -- so at $25 the fixtures offer
+    Chicken and Rice Bake ($16.67, affordable on its own), the model selects it,
+    and the trim then takes it out again. The first version of this notice read
+    the OFFER SET, judged the preference met, and printed a porridge plan with no
+    explanation.
 
-def _offer(name: str, payable: str):
-    """A RecipeOffer stub carrying only what the notice reads off it."""
-    from src.graph.recipe_plan import RecipeOffer
-    from src.recipes.base import Recipe, RecipeIngredient
-
-    recipe = Recipe(
-        recipe_id="nz#test",
-        name=name,
-        category="Seafood",
-        area="New Zealand",
-        ingredients=(
-            RecipeIngredient(key="tuna", name="Tuna", measure="90g", grams_per_serving=90),
+    Found by dry-running demo 31, not by a test, which is why the demo exists.
+    """
+    response = run_turn(
+        _request(
+            "a chicken dinner for a flat of 3 for 3 days",
+            household_size=3,
+            budget_nzd=Decimal("25"),
+            days=3,
         ),
-        attribution="test",
-        serves=2,
+        repo,
+        ScriptedModelClient(),
     )
-    return RecipeOffer(
-        recipe=recipe, refs={"tuna": "c1"}, payable_nzd=Decimal(payable), preference_rank=0
+
+    plans = [e for e in response.events if e.type == "meal_plan"]
+    assert plans, "the turn produced no plan"
+    served = " ".join(m.name.lower() for m in plans[0].data.meals)
+    assert "chicken" not in served, "the fixture no longer reproduces the trim; pick a new budget"
+
+    notices = [e.message for e in response.events if e.type == "notice"]
+    assert any("chicken" in n and "this plan has none" in n for n in notices), (
+        f"chicken was trimmed out of the plan with no explanation: {notices}"
     )
+
+
+def test_a_preference_the_plan_honours_gains_no_notice(repo):
+    """
+    The other half. At $30 the same request keeps the chicken, so explaining its
+    absence would be a false statement about a plan that contains it.
+    """
+    response = run_turn(
+        _request(
+            "a chicken dinner for a flat of 3 for 3 days",
+            household_size=3,
+            budget_nzd=Decimal("30"),
+            days=3,
+        ),
+        repo,
+        ScriptedModelClient(),
+    )
+
+    plans = [e for e in response.events if e.type == "meal_plan"]
+    served = " ".join(m.name.lower() for m in plans[0].data.meals)
+    assert "chicken" in served, "the fixture no longer affords chicken here"
+
+    notices = [e.message for e in response.events if e.type == "notice"]
+    assert not any("this plan has none" in n for n in notices), notices
+
+
+# ----------------------------------------------------- the notice, as a sentence
 
 
 def test_the_notice_blames_the_budget_when_a_recipe_existed():
@@ -297,11 +337,9 @@ def test_the_notice_blames_the_budget_when_a_recipe_existed():
     the fix is in the shopper's hands and the message quotes the figure they
     would need.
     """
-    from src.graph.nodes.retrieval import _preference_unmet
-
     message = _preference_unmet(
         ["seafood"],
-        [_offer("Prawn and Rice Stir Fry", "35.04"), _offer("Tuna Pasta Salad", "68.06")],
+        ("Prawn and Rice Stir Fry", "35.04"),
         household_size=3,
         days=3,
         budget_nzd=Decimal("30"),
@@ -309,7 +347,6 @@ def test_the_notice_blames_the_budget_when_a_recipe_existed():
 
     assert "seafood" in message
     assert "$30.00" in message
-    # The CHEAPEST matching option, not the first or the dearest.
     assert "$35.04" in message
     assert "Prawn and Rice Stir Fry" in message
     assert "3 people over 3 days" in message
@@ -318,13 +355,13 @@ def test_the_notice_blames_the_budget_when_a_recipe_existed():
 def test_the_notice_blames_the_catalogue_when_no_recipe_existed():
     """
     NOT interchangeable with the message above, and this is the whole reason
-    the pre-budget shortlist is kept. Telling a shopper to raise their budget
-    for a recipe we do not have sends them to spend more for a result that
-    cannot happen.
+    retrieval records the cheapest match per term. Telling a shopper to raise
+    their budget for a recipe we do not have sends them to spend more for a
+    result that cannot happen.
     """
-    from src.graph.nodes.retrieval import _preference_unmet
-
-    message = _preference_unmet(["ostrich"], [], household_size=2, days=1, budget_nzd=Decimal("50"))
+    message = _preference_unmet(
+        ["ostrich"], None, household_size=2, days=1, budget_nzd=Decimal("50")
+    )
 
     assert "ostrich" in message
     assert "Raising the budget won't change that." in message
@@ -333,11 +370,9 @@ def test_the_notice_blames_the_catalogue_when_no_recipe_existed():
 
 def test_the_notice_reads_naturally_for_one_person_and_one_day():
     """Pluralisation, because "1 people over 1 days" reads as a machine talking."""
-    from src.graph.nodes.retrieval import _preference_unmet
-
     message = _preference_unmet(
         ["seafood"],
-        [_offer("Tuna Pasta Salad", "20.00")],
+        ("Tuna Pasta Salad", "20.00"),
         household_size=1,
         days=1,
         budget_nzd=Decimal("10"),
@@ -352,23 +387,97 @@ def test_the_notice_omits_the_budget_clause_when_none_was_stated():
     case, so an unmet preference here is about the catalogue, and inventing
     "at $0.00" would be a claim the shopper never made.
     """
-    from src.graph.nodes.retrieval import _preference_unmet
-
     message = _preference_unmet(
         ["seafood"],
-        [_offer("Tuna Pasta Salad", "20.00")],
+        ("Tuna Pasta Salad", "20.00"),
         household_size=2,
         days=2,
         budget_nzd=None,
     )
 
-    assert "$" not in message.split("$20.00")[0]
     assert "No seafood meal fits for 2 people over 2 days" in message
 
 
-def test_multiple_unmet_preferences_are_named_together():
-    from src.graph.nodes.retrieval import _preference_unmet
+def test_two_unmet_preferences_get_a_notice_each_with_its_own_reason():
+    """
+    ONE NOTICE PER TERM, because the reasons differ. "seafood, ostrich" can be
+    seafood priced out AND ostrich absent from the catalogue, and a single
+    sentence would have to pick one explanation and be wrong about the other.
+    """
+    priced_out = _preference_unmet(
+        ["seafood"],
+        ("Prawn and Rice Stir Fry", "35.04"),
+        household_size=3,
+        days=3,
+        budget_nzd=Decimal("30"),
+    )
+    absent = _preference_unmet(
+        ["ostrich"], None, household_size=3, days=3, budget_nzd=Decimal("30")
+    )
 
-    message = _preference_unmet(["seafood", "lamb"], [], household_size=2, days=2, budget_nzd=None)
+    assert "$35.04" in priced_out
+    assert "Raising the budget won't change that." in absent
+    assert "Raising the budget" not in priced_out
 
-    assert "seafood and lamb" in message
+
+# --------------------------------------------- the plan-level preference match
+
+
+def test_the_plan_match_reads_the_basket_not_the_recipe_ids():
+    """
+    `preference_terms_met` answers "does the basket contain it", which is the
+    only question worth asking once the trim has run. Category first, so a
+    prawn product answers "seafood" without the word appearing anywhere.
+    """
+    assert preference_terms_met(["seafood"], [("Cooked Peeled Prawns", "seafood")]) == {"seafood"}
+    assert preference_terms_met(["chicken"], [("Whole Chicken", "meat")]) == {"chicken"}
+    assert preference_terms_met(["seafood"], [("Rolled Oats", "pantry")]) == set()
+
+
+def test_the_plan_match_covers_a_plan_built_without_recipes():
+    """
+    The free-composition path has no recipe ids at all. A recipe-level check
+    there would report every preference unmet even when the composed basket
+    does contain the food -- a false claim in the opposite direction.
+    """
+    composed = [("Rolled Oats", "pantry"), ("Yellowfin Tuna Loin", "seafood")]
+    assert preference_terms_met(["seafood"], composed) == {"seafood"}
+
+
+def test_the_notice_says_competition_not_price_when_the_match_was_affordable():
+    """
+    "No chicken meal fits at $25.00 -- the cheapest I can build is $16.67" is a
+    sentence that argues with itself, and it was the first draft.
+
+    $16.67 is what ONE such meal costs. The household needs three, the trim
+    drops the dearest marginal meal until the basket fits, and the preferred
+    meal is usually the dearest. So the reason is competition for the budget,
+    not the price of the meal -- and the shopper's lever differs: a small raise
+    genuinely helps here, where clearing the full figure is needed below.
+    """
+    message = _preference_unmet(
+        ["chicken"],
+        ("Chicken and Rice Bake", "16.67"),
+        household_size=3,
+        days=3,
+        budget_nzd=Decimal("25"),
+    )
+
+    assert "would fit on its own" in message
+    assert "$16.67" in message
+    assert "$25.00" in message
+    assert "No chicken meal fits" not in message
+
+
+def test_the_notice_says_too_dear_when_the_match_exceeds_the_budget_alone():
+    """The other branch: one such meal costs more than the whole budget."""
+    message = _preference_unmet(
+        ["seafood"],
+        ("Prawn and Rice Stir Fry", "35.04"),
+        household_size=3,
+        days=3,
+        budget_nzd=Decimal("30"),
+    )
+
+    assert "No seafood meal fits at $30.00" in message
+    assert "would fit on its own" not in message

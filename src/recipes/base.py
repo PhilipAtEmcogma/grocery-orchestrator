@@ -331,3 +331,52 @@ def recipe_matches_preference(recipe: Recipe, term: str, categories: frozenset[s
     for ingredient in recipe.ingredients:
         haystack |= _words(f"{ingredient.key} {ingredient.name}")
     return bool(wanted & haystack)
+
+
+def preference_terms_met(terms: list[str], products: list[tuple[str, str]]) -> set[str]:
+    """
+    Which of `terms` the products in a FINISHED plan actually answer.
+
+    `products` is (name, category) per cited product.
+
+    WHY THIS EXISTS ALONGSIDE `recipe_matches_preference`, WHICH IS A FAIR
+    QUESTION given that file's own warning about two matchers disagreeing. They
+    answer different questions at different granularities, and the plan needs
+    both:
+
+      * `recipe_matches_preference` asks "would this RECIPE satisfy the
+        shopper", and is what orders the shortlist before anything is chosen.
+      * this asks "does the BASKET they are actually being handed contain it",
+        which is the only question worth asking once the model has selected and
+        the budget trim has run.
+
+    The shortlist answer is not a safe proxy for the plan answer, and assuming
+    it was is how the first version of the unmet-preference notice got this
+    wrong: `_cost_within_budget` drops the meal with the HIGHEST MARGINAL COST,
+    which is very often the preferred one, so a chicken recipe could be offered,
+    reported as met, and then trimmed out of the plan the shopper read. Silence
+    about a dropped request, one layer below where it was first fixed.
+
+    It also covers the FREE-COMPOSITION path, which has no recipes at all. A
+    recipe-id check there would report every preference unmet even when the
+    composed basket does contain the food, which would be a false claim in the
+    opposite direction.
+
+    What must NOT diverge is the vocabulary, and it does not: both read
+    `PREFERENCE_CATEGORIES` and both fold plurals through `_words`.
+    """
+    from ingestion.lineage_b import _words
+
+    met: set[str] = set()
+    for term in terms:
+        wanted = _words(term)
+        if not wanted:
+            continue
+        for name, category in products:
+            named_category = any(
+                category in PREFERENCE_CATEGORIES.get(word, frozenset()) for word in wanted
+            )
+            if named_category or (wanted & _words(name)):
+                met.add(term)
+                break
+    return met

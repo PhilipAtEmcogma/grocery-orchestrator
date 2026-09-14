@@ -25,13 +25,11 @@ a false statement in the shopper's hands.
 from __future__ import annotations
 
 from datetime import date
-from decimal import Decimal
 
 from src.graph.dietary import map_exclusions
 from src.graph.feasibility import minimum_spend
 from src.graph.nodes._shared import _join, _next_seq
 from src.graph.recipe_plan import (
-    RecipeOffer,
     TooManyIngredients,
     affordable_set,
     curated_recipes,
@@ -73,50 +71,6 @@ MEAL_CATEGORIES = [
     "chilled",
     "seafood",
 ]
-
-
-def _preference_unmet(
-    preferences: list[str],
-    matched_before_budget: list[RecipeOffer],
-    *,
-    household_size: int,
-    days: int,
-    budget_nzd: Decimal | None,
-) -> str:
-    """
-    Why the plan does not contain the food the shopper asked for.
-
-    TWO DIFFERENT FACTS, AND CONFLATING THEM WOULD BE THE LIE. If a matching
-    recipe existed and the budget removed it, the limit is the shopper's money
-    and the fix is in their hands, so the message says so and quotes what the
-    cheapest one would actually cost. If no matching recipe existed at all, the
-    limit is our catalogue and no budget would change it; telling them to raise
-    their budget would send them to spend more for a result that cannot happen.
-
-    THE FIGURE IS GROUNDED, not estimated. `payable_nzd` comes off the offer,
-    which `_payable_for` costed through the real `assemble_plan` from retrieved
-    citations -- the same arithmetic the plan itself uses. This is code-authored
-    text, so `assert_no_literal_money` does not apply to it (that guard exists
-    to stop a MODEL inventing a price), but the number still has to be one we
-    retrieved, and this one is.
-    """
-    wanted = _join(preferences)
-
-    if not matched_before_budget:
-        return (
-            f"I don't have a {wanted} recipe I can price from the products near "
-            f"you, so this plan has none. Raising the budget won't change that."
-        )
-
-    cheapest = min(matched_before_budget, key=lambda o: o.payable_nzd)
-    scope = f"{household_size} " + ("person" if household_size == 1 else "people")
-    span = f"{days} " + ("day" if days == 1 else "days")
-    budget_clause = f" at ${budget_nzd:.2f}" if budget_nzd is not None else ""
-    return (
-        f"No {wanted} meal fits{budget_clause} for {scope} over {span} — the "
-        f"cheapest I can build is {cheapest.recipe.name} at "
-        f"${cheapest.payable_nzd:.2f}, so this plan has none."
-    )
 
 
 def _near_filter(state: GroceryState) -> NearFilter | None:
@@ -294,6 +248,20 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
     recipe_shortlist: list[str] = []
     recipe_refs: dict[str, dict[str, str]] = {}
     recipe_meals_wanted = 0
+    # preference term -> (recipe name, payable) of the cheapest recipe
+    # answering it, BEFORE the budget trim. A term absent from this map is one
+    # the catalogue cannot answer at any price, which is what lets `finalise`
+    # say whether an unmet preference was the shopper's budget or our
+    # catalogue.
+    #
+    # PER TERM, not one figure for the turn. "seafood, chicken" on a tight
+    # budget can be seafood priced out AND chicken missing from the catalogue,
+    # and a single figure would force one explanation onto both -- right about
+    # one preference and wrong about the other.
+    #
+    # Money as a string: state crosses a serialisation boundary and a float
+    # here would lose a cent.
+    cheapest_preferred: dict[str, tuple[str, str]] = {}
     # `id(record) -> ref`, so the recipe path can reuse a citation the candidate
     # sweep already produced instead of citing the same price twice. Identity,
     # not equality: `PriceRecord` is frozen and two stores can hold
@@ -476,13 +444,32 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
             # on the budget below, and nothing more.
             prefer_terms=preferences,
         )
-        # Kept before the budget trim so the notice below can tell "no seafood
-        # fits $30" apart from "I have no seafood recipe at all". Those are
-        # different facts about different things -- one is about the shopper's
-        # budget and one is about our catalogue -- and the existing
-        # unresolved/stale_only split further down draws the same line for the
-        # same reason.
-        matched_before_budget = [o for o in offers if o.matches_preference]
+        # Read BEFORE the budget trim, and recorded rather than acted on.
+        #
+        # This is the one fact about an unmet preference that only retrieval
+        # knows: whether a matching recipe existed at all, and what the cheapest
+        # one would have cost. `finalise` needs it to tell "no seafood fits $30"
+        # apart from "I have no seafood recipe at all" -- different facts about
+        # different things, one about the shopper's budget and one about our
+        # catalogue, and the unresolved/stale_only split further down draws the
+        # same line for the same reason.
+        #
+        # THE NOTICE ITSELF USED TO BE EMITTED HERE AND THAT WAS WRONG. This
+        # node sees what the model may CHOOSE FROM, not what the shopper ends up
+        # with, and `_cost_within_budget` drops the meal with the highest
+        # marginal cost -- very often the preferred one. So a chicken recipe
+        # could be offered, reported as honoured, and then trimmed out of the
+        # plan that was printed. The check moved to `finalise`, the only node
+        # that sees the final plan on every path.
+        # `preference_rank` is the index of the term the offer answered, so it
+        # maps straight back to the term the shopper typed.
+        for offer in sorted(offers, key=lambda o: o.payable_nzd):
+            rank = offer.preference_rank
+            if rank is None or rank >= len(preferences):
+                continue
+            cheapest_preferred.setdefault(
+                preferences[rank], (offer.recipe.name, str(offer.payable_nzd))
+            )
 
         # Trim the offer to a set that fits the budget TOGETHER, so any
         # selection the model makes is affordable by construction. Same reason
@@ -499,30 +486,6 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         recipe_shortlist = [o.recipe.recipe_id for o in offers]
         recipe_refs = {o.recipe.recipe_id: o.refs for o in offers}
         recipe_meals_wanted = wanted
-
-        # A STATED PREFERENCE THAT DID NOT SURVIVE IS REPORTED, NOT DROPPED.
-        #
-        # This is the same obligation as the `no_data` and `skipped` events
-        # below, applied to the one request shape that had no way to express it.
-        # The live defect that prompted this: "i would like to have seafood meal
-        # planned for me" at $30 for 3 people over 3 days returned a banana
-        # porridge plan. Extraction had inverted the request into an exclusion
-        # -- fixed in src/prompts/intent.py -- but even with that corrected the
-        # plan is identical, because no seafood meal fits $30. Silence made a
-        # budget limit look like the assistant ignoring the request.
-        if preferences and not any(o.matches_preference for o in offers):
-            events.append(
-                NoticeEvent(
-                    seq=seq + len(events),
-                    message=_preference_unmet(
-                        preferences,
-                        matched_before_budget,
-                        household_size=household_size,
-                        days=days_covered,
-                        budget_nzd=budget,
-                    ),
-                )
-            )
 
     # Honest gaps for items we could not answer, alongside the ones we could.
     # Only when SOME items resolved; if none did, routing sends the turn to
@@ -571,6 +534,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         "recipe_shortlist": recipe_shortlist,
         "recipe_refs": recipe_refs,
         "recipe_meals_wanted": recipe_meals_wanted,
+        "cheapest_preferred": cheapest_preferred,
         "events": events,
     }
 

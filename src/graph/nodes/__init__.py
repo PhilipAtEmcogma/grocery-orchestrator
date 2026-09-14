@@ -34,7 +34,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from src.graph.dietary import supported_terms
-from src.graph.nodes._shared import _join, _next_seq
+from src.graph.nodes._shared import _join, _next_seq, _preference_unmet
 from src.graph.nodes.intent import classify_intent as classify_intent
 from src.graph.nodes.plan import generate_plan as generate_plan
 from src.graph.nodes.prose import generate_prose as generate_prose
@@ -48,6 +48,7 @@ from src.graph.nodes.retrieval import emit_stale_data as emit_stale_data
 from src.graph.nodes.retrieval import emit_unknown_region as emit_unknown_region
 from src.graph.nodes.retrieval import retrieve_prices as retrieve_prices
 from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState
+from src.recipes.base import preference_terms_met
 from src.schemas.contract import (
     ClarificationEvent,
     DoneEvent,
@@ -56,6 +57,7 @@ from src.schemas.contract import (
     Intent,
     MealPlanEvent,
     MissingConstraint,
+    NoticeEvent,
     PriceComparison,
     PriceComparisonEvent,
     PriceOption,
@@ -315,6 +317,51 @@ def emit_budget_infeasible(state: GroceryState) -> dict:
     }
 
 
+def _unmet_preference_notices(state: GroceryState, plan, seq: int) -> list[NoticeEvent]:
+    """
+    A notice per stated preference the finished plan does not answer, or none.
+
+    Judged from the products the plan CITES, via `preference_terms_met`, rather
+    than from the recipe ids that were offered. The offer set is what the model
+    could choose from; a shopper reads the basket. See that function for why the
+    two questions need two matchers and what must not diverge between them.
+
+    ONE NOTICE PER UNMET TERM rather than one listing all of them, because the
+    reasons differ: "seafood, chicken" on a tight budget may be seafood priced
+    out and chicken absent from the catalogue, and a single sentence would have
+    to pick one explanation and be wrong about the other.
+    """
+    preferences = state.get("constraints", {}).get("preferred_ingredients") or []
+    if not preferences:
+        return []
+
+    records = state.get("record_index") or {}
+    cited = {ingredient.citation_ref for meal in plan.meals for ingredient in meal.ingredients}
+    products = [
+        (records[ref].canonical_name, records[ref].category) for ref in cited if ref in records
+    ]
+
+    met = preference_terms_met(list(preferences), products)
+    unmet = [term for term in preferences if term not in met]
+    if not unmet:
+        return []
+
+    constraints = state.get("constraints", {})
+    return [
+        NoticeEvent(
+            seq=seq + offset,
+            message=_preference_unmet(
+                [term],
+                (state.get("cheapest_preferred") or {}).get(term),
+                household_size=constraints.get("household_size", 1),
+                days=constraints.get("days", 1),
+                budget_nzd=constraints.get("budget_nzd"),
+            ),
+        )
+        for offset, term in enumerate(unmet)
+    ]
+
+
 def finalise(state: GroceryState) -> dict:
     """Terminal node. Always emits `done`, including after an error."""
     events: list[object] = []
@@ -326,6 +373,33 @@ def finalise(state: GroceryState) -> dict:
 
     plan = state.get("plan")
     if plan is not None:
+        # A STATED PREFERENCE THAT DID NOT SURVIVE IS REPORTED, NOT DROPPED.
+        #
+        # The same obligation as the `no_data` and `skipped` notices in
+        # `retrieve_prices`, applied to the one request shape that had no way to
+        # express it. The live defect: "i would like to have seafood meal planned
+        # for me" at $30 for 3 people over 3 days returned a banana porridge
+        # plan. Extraction had inverted the request into an exclusion -- fixed in
+        # src/prompts/intent.py -- but even corrected, the plan is identical,
+        # because no seafood meal fits $30. Silence made a budget limit look like
+        # the assistant ignoring the request.
+        #
+        # HERE, AND NOT IN `retrieve_prices`, WHICH IS WHERE IT WAS FIRST PUT.
+        # That node sees what the model may choose FROM; this one sees what the
+        # shopper is handed. `_cost_within_budget` drops the meal with the
+        # highest marginal cost, which is very often the preferred one, so the
+        # first version could offer a chicken recipe, judge the preference met,
+        # and then print a plan with no chicken and no explanation -- the same
+        # silent drop, one layer below where it was fixed. Found by dry-running
+        # demo 31 rather than by a test, which is the argument for dry runs.
+        #
+        # `finalise` is the only node that sees the final plan on EVERY path:
+        # after the trim, after a repair loop, and on the free-composition
+        # fallback that has no recipes at all.
+        for notice in _unmet_preference_notices(state, plan, seq):
+            events.append(notice)
+            seq += 1
+
         events.append(MealPlanEvent(seq=seq, data=plan))
         seq += 1
 
