@@ -481,3 +481,108 @@ def test_the_notice_says_too_dear_when_the_match_exceeds_the_budget_alone():
 
     assert "No seafood meal fits at $30.00" in message
     assert "would fit on its own" not in message
+
+
+# --------------------------------------- unrecognised preference: refuse the turn
+#
+# A preference the catalogue cannot answer AT ANY PRICE ("dinosaurs") is a
+# comprehension failure, not a budget one. The turn refuses with
+# UNRECOGNISED_PREFERENCE instead of quietly serving an unrelated plan with a
+# footnote -- the footnote is right for a food we stock but cannot afford, and
+# wrong for a word that is not food. LENIENT: one recognised preference is
+# enough to proceed. Driven through hints, because the scripted extractor only
+# knows a fixed preference vocabulary and "dinosaurs" is deliberately outside
+# it -- the graph path (retrieval -> route -> refuse) is what is under test.
+
+
+def test_a_wholly_unrecognised_preference_refuses_the_turn(repo):
+    """
+    "a dinosaur meal plan" builds no plan. We did not understand the request,
+    so we say so and ask them to rephrase rather than serving porridge with a
+    note that dinosaurs could not be worked in.
+    """
+    response = run_turn(
+        _request(
+            "a dinosaur meal plan",
+            household_size=2,
+            budget_nzd=Decimal("200"),
+            days=3,
+            preferred_ingredients=["dinosaurs"],
+        ),
+        repo,
+        ScriptedModelClient(),
+    )
+
+    plans = [e for e in response.events if e.type == "meal_plan"]
+    assert not plans, "an unrecognised preference must not produce a plan"
+
+    errors = [e for e in response.events if e.type == "error"]
+    assert errors, "the turn should refuse with an error"
+    assert errors[0].code == "UNRECOGNISED_PREFERENCE"
+    assert errors[0].retryable is True, "rephrasing is the move, so it is retryable"
+    assert "dinosaurs" in errors[0].message
+
+
+def test_a_real_but_unaffordable_preference_still_plans_with_a_notice(repo):
+    """
+    THE DISTINCTION THAT MADE THIS WORTH DESIGNING. Seafood is a food we stock;
+    if it is priced out that is a budget outcome, not a comprehension one. So
+    the turn still produces a plan and NOTICES the unmet seafood -- it must not
+    be swept into the unrecognised-preference refusal.
+    """
+    response = run_turn(
+        _request(
+            "a seafood meal plan",
+            household_size=3,
+            budget_nzd=Decimal("30"),
+            days=3,
+            preferred_ingredients=["seafood"],
+        ),
+        repo,
+        ScriptedModelClient(),
+    )
+
+    assert not [e for e in response.events if e.type == "error"], (
+        "a real food priced out is a notice, never a refusal"
+    )
+    assert [e for e in response.events if e.type == "meal_plan"], "a plan must still be produced"
+    notices = [e.message for e in response.events if e.type == "notice"]
+    assert any("seafood" in n for n in notices)
+
+
+def test_a_mixed_preference_is_lenient_and_plans_around_the_real_one(repo):
+    """
+    "chicken and dinosaurs": chicken is recognised, so the turn proceeds and
+    plans around chicken. One junk word beside a valid one does not refuse the
+    whole request -- and `finalise`'s existing notice reports the dinosaurs.
+    """
+    response = run_turn(
+        _request(
+            "chicken and dinosaurs for dinner",
+            household_size=3,
+            budget_nzd=Decimal("200"),
+            days=3,
+            preferred_ingredients=["chicken", "dinosaurs"],
+        ),
+        repo,
+        ScriptedModelClient(),
+    )
+
+    assert not [e for e in response.events if e.type == "error"], (
+        "one recognised preference is enough to proceed (lenient)"
+    )
+    assert [e for e in response.events if e.type == "meal_plan"], "chicken plans a meal"
+
+
+def test_a_plan_with_no_preference_is_untouched_by_the_refusal(repo):
+    """The refusal fires only on a STATED preference; an ordinary plan is unaffected."""
+    response = run_turn(
+        _request("meal plan for the week", household_size=3, budget_nzd=Decimal("60"), days=3),
+        repo,
+        ScriptedModelClient(),
+    )
+
+    assert not [
+        e for e in response.events if e.type == "error" and e.code == "UNRECOGNISED_PREFERENCE"
+    ]
+    assert [e for e in response.events if e.type == "meal_plan"], "a normal plan still builds"

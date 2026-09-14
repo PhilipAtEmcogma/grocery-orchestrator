@@ -542,6 +542,26 @@ trade is deliberate and must not be reversed to raise an evaluation score.
 Exclusions are verified against retrieved products. Asking the model whether it
 followed the rules tests the wrong thing.
 
+**Multi-turn "ask, then refuse on repeat" for an unrecognised preference.**
+Deferred, not rejected. When a shopper asks the plan to be built around a food
+we do not recognise ("a dinosaur meal plan"), the ideal conversational flow is
+to ASK them to rephrase, remember that we asked, and refuse only if the next
+turn is still nonsense. That needs turn-to-turn memory the orchestrator does not
+have: the graph sees one request at a time, by design, and `session_id` scopes
+idempotency rather than carrying conversational state forward. Standing that up
+means the AgentCore Memory / session-state workstream, which is gated behind a
+Privacy Act 2020 design (Cognito ownership, consent, TTL, user deletion,
+revocation) — a much larger piece of work than the behaviour it would buy.
+
+So the shipped behaviour is SINGLE-TURN (`emit_unrecognised_preference`): we
+refuse within the one turn with a retryable, clarification-style message that
+asks the shopper to name dishes or ingredients instead. The frontend gives them
+the next turn to rephrase regardless, so the practical difference from the ideal
+flow is small, and the honest refusal is available today rather than after a
+privacy workstream. Revisit the ask-then-refuse flow if session state lands for
+another reason. Recorded so the single-turn choice reads as a deliberate
+trade-off against time and privacy scope, not an oversight.
+
 **Bypassing the API gateway for streaming.** Rejected. It would obtain
 streaming cheaply at the cost of rate limiting, usage plans, and
 authentication — three security requirements traded for transport convenience.

@@ -220,6 +220,54 @@ def emit_dietary_unsupported(state: GroceryState) -> dict:
     }
 
 
+def emit_unrecognised_preference(state: GroceryState) -> dict:
+    """
+    The shopper asked the plan to be built around foods we do not recognise.
+
+    Reached only for a meal_plan turn where the user stated one or more
+    `preferred_ingredients` and NONE of them matches any costable,
+    dietary-viable recipe in the catalogue -- "a dinosaur meal plan". We did
+    not understand the request, so we refuse it and ask them to rephrase,
+    rather than quietly serving a plan about something else with a footnote.
+    That footnote is the right answer for a food we DO stock but cannot afford
+    (`finalise`'s unmet-preference notice); it is the wrong answer for a word
+    that is not food at all, because it implies we understood.
+
+    NOT A SAFETY REFUSAL, and deliberately unlike `emit_dietary_unsupported`
+    two functions up. An unmet EXCLUSION is dangerous -- serving a vegetarian
+    chicken -- so that path fails closed. An unrecognised PREFERENCE is only a
+    comprehension failure, so this is retryable and its whole remedy is "say it
+    differently". The two share a shape and not a reason.
+
+    SINGLE-TURN. This refuses within the one turn rather than asking, waiting,
+    and refusing only a repeated nonsense answer. True clarify-then-refuse-on-
+    repeat needs turn-to-turn memory the orchestrator does not have -- the graph
+    sees one request at a time -- and standing that up means the AgentCore
+    Memory / session-state workstream, which is gated behind a Privacy Act 2020
+    design (consent, TTL, deletion). Deferred deliberately; see design.md §8.
+    The frontend gives the shopper the next turn to rephrase regardless.
+    """
+    unrecognised = state.get("unrecognised_preferences") or []
+    return {
+        "terminated": True,
+        "events": [
+            ErrorEvent(
+                seq=_next_seq(state),
+                code=ErrorCode.UNRECOGNISED_PREFERENCE,
+                # A comprehension failure, not a fact about the catalogue or the
+                # budget: rephrasing is exactly the move that works, so it is
+                # worth trying again.
+                retryable=True,
+                message=(
+                    f"I couldn't understand {_join(unrecognised)} as food I can "
+                    f"plan meals around, so I haven't made a plan. Could you "
+                    f"rephrase, or tell me the dishes or ingredients you'd like?"
+                ),
+            )
+        ],
+    }
+
+
 def emit_upstream_failure(state: GroceryState) -> dict:
     """
     The model could not be reached. Distinct from every other terminal node
@@ -540,6 +588,15 @@ def route_after_retrieval(state: GroceryState) -> str:
         if state.get("stale_only"):
             return "stale"
         return "no_data"
+    # Checked before budget and before "plan": if the shopper asked the plan to
+    # be built around foods we do not recognise at all, we did not understand
+    # the request, and that is a more fundamental answer than "your budget does
+    # not stretch". Rephrasing is the move, not raising the budget. Only fires
+    # when EVERY stated preference is unrecognised (lenient); a mix with one real
+    # food proceeds and `finalise` notices the rest. After no_data/stale, which
+    # are catalogue-wide facts that outrank a preference we could not place.
+    if state.get("unrecognised_preferences"):
+        return "unrecognised_preference"
     # Checked before "plan": there is no point spending a model call on a
     # request the catalogue's own cheapest prices say is impossible.
     if state.get("budget_impossible"):
