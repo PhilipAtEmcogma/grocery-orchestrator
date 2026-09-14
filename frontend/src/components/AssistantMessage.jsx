@@ -1,5 +1,10 @@
 import MealPlanCard from "./MealPlanCard";
 import PriceComparisonCard from "./PriceComparisonCard";
+import {
+  getErrorGuidance,
+  findMissingRequestedIngredient,
+  missingIngredientGuidance,
+} from "../utils/mealPlanGuidance";
 
 export default function AssistantMessage({
   text,
@@ -10,8 +15,17 @@ export default function AssistantMessage({
   notice,
   noData,
   error,
+  requestText,
 }) {
   const visibleText = error?.message ?? noData?.message ?? text;
+  const errorGuidance = getErrorGuidance(error);
+
+  // Only run the missing-ingredient check on a successful, complete plan —
+  // an error already has its own guidance above.
+  const missingKeyword =
+    !error && mealPlan
+      ? findMissingRequestedIngredient(requestText, mealPlan)
+      : null;
 
   return (
     <article className="message-row message-row--assistant">
@@ -32,6 +46,16 @@ export default function AssistantMessage({
         {notice && (
           <p className="notice-message">
             {notice.message ?? notice.text ?? String(notice)}
+          </p>
+        )}
+
+        {errorGuidance && (
+          <p className="guidance-banner">💡 {errorGuidance}</p>
+        )}
+
+        {missingKeyword && (
+          <p className="guidance-banner">
+            💡 {missingIngredientGuidance(missingKeyword)}
           </p>
         )}
 

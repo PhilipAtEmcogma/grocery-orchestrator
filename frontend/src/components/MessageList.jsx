@@ -14,10 +14,14 @@ export default function MessageList({ messages }) {
 
   return (
     <main className="message-list" aria-label="Conversation" aria-live="polite">
-      {messages.map((message) => {
+      {messages.map((message, index) => {
         if (message.role === "user") {
           return <UserMessage key={message.id} text={message.text} />;
         }
+
+        const precedingMessage = messages[index - 1];
+        const requestText =
+          precedingMessage?.role === "user" ? precedingMessage.text : "";
 
         return (
           <AssistantMessage
@@ -30,6 +34,7 @@ export default function MessageList({ messages }) {
             notice={message.notice}
             noData={message.noData}
             error={message.error}
+            requestText={requestText}
           />
         );
       })}

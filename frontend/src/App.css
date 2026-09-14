@@ -148,6 +148,14 @@ button {
   box-shadow: 0 0 0 3px rgba(139, 213, 255, 0.15);
 }
 
+.controls-tip {
+  grid-column: 1 / -1;
+  margin: 2px 0 0;
+  color: #7f8fa3;
+  font-size: 0.74rem;
+  font-style: italic;
+}
+
 .message-list {
   flex: 1;
   overflow-y: auto;
@@ -245,6 +253,16 @@ button {
   color: #f5dcaa;
   background: rgba(240, 195, 109, 0.08);
   font-size: 0.9rem;
+}
+
+.guidance-banner {
+  margin: 8px 0 0;
+  border-left: 3px solid #78c8f4;
+  padding: 8px 10px;
+  color: #cfe9fb;
+  background: rgba(120, 200, 244, 0.08);
+  font-size: 0.85rem;
+  font-style: italic;
 }
 
 .result-card {
