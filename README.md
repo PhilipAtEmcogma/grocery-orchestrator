@@ -845,6 +845,69 @@ no daemon is needed. Namespacing is configurable via `POWERTOOLS_SERVICE_NAME`
 and `POWERTOOLS_METRICS_NAMESPACE`; `LOG_LEVEL` sets log verbosity.
 `POWERTOOLS_LOGGER_LOG_EVENT` is deliberately ignored — see design.md §12.4.
 
+### After a live-model session: standing back down
+
+Running an eval or the live-test script leaves `USE_BEDROCK=1` (and the
+guardrail / profile vars) set in the shell. **Those persist across commands in
+the same terminal, and a leaked `USE_BEDROCK=1` silently routes the OFFLINE
+test suite at real Bedrock** — which is how `test_observability` once failed
+with `'nova-pro' == 'scripted-quality'`: the scripted client was never used
+because the shell still said to call Bedrock. Clear them when you are done:
+
+```powershell
+# PowerShell
+Remove-Item Env:USE_BEDROCK, Env:USE_DYNAMODB, Env:BEDROCK_GUARDRAIL_ID, `
+            Env:BEDROCK_GUARDRAIL_VERSION, Env:AWS_PROFILE, Env:AWS_REGION `
+            -ErrorAction SilentlyContinue
+```
+
+```bash
+# bash / zsh
+unset USE_BEDROCK USE_DYNAMODB BEDROCK_GUARDRAIL_ID BEDROCK_GUARDRAIL_VERSION
+```
+
+SSO credentials expire on their own within a few hours, so there is nothing to
+"log out" of; clearing the env is the whole cleanup.
+
+### Turning deployed cost-bearing services back on
+
+For future reference, because this trips people up: **almost nothing in the
+deployed `dev` stack costs money while idle.** The Lambdas, the REST API, the
+Guardrail and Bedrock are all pay-per-request, and all six DynamoDB tables are
+`PAY_PER_REQUEST` (on-demand) — so a quiet account bills only a few cents of
+storage. There is no provisioned concurrency and no always-on compute (no EC2,
+RDS or ECS).
+
+The **one** thing that spends money on its own is the daily ingestion
+schedule, because it fires a Step Functions run every day with no user traffic.
+It is currently **DISABLED** — it is an EventBridge Scheduler schedule, not a
+classic rule, so `aws events list-rules` shows nothing; use `scheduler`:
+
+```bash
+export AWS_PROFILE=grocery
+export AWS_REGION=ap-southeast-2
+
+# See the state of both schedules (the CDK-managed one and its predecessor):
+aws scheduler list-schedules --region ap-southeast-2 \
+  --query 'Schedules[?starts_with(Name, `grocery-price-refresh`)].{Name:Name,State:State}' \
+  --output table
+
+# Re-enable when ingestion is wanted again. update-schedule REPLACES the
+# definition, so fetch the current one and flip only State, rather than
+# hand-writing the target/flexible-window fields:
+name=grocery-price-refresh-dev-cdk        # the CDK-managed schedule is the live one
+aws scheduler get-schedule --name "$name" --region ap-southeast-2 > /tmp/sched.json
+# then re-apply with State=ENABLED (the CDK is the real source of truth —
+# prefer `cdk deploy` of the ingestion stack over an out-of-band flip if you
+# have the stack to hand, so the account does not drift from the code).
+```
+
+Prefer re-deploying the ingestion CDK stack (`Grocery-Ingestion-dev`) to flip
+this in code rather than mutating the account by hand — an out-of-band
+`update-schedule` is drift the next `cdk deploy` will silently revert. To take
+it back down, the same `scheduler` command with `State=DISABLED`. Nothing else
+needs switching off to stop recurring charge.
+
 ## Responding to outside review
 
 Two external audits have been received, and the response to each is a document
