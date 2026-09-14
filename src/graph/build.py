@@ -13,7 +13,7 @@ Graph assembly.
   retrieve_prices            <-- the ONLY source of prices
       |--- no citations -----> emit_no_data ---------------------> finalise
       |--- all prices stale -> emit_stale_data -------------------> finalise
-      |--- unrecognised preference -> emit_unrecognised_preference -> finalise
+      |--- preference unavailable -> emit_preference_unavailable --> finalise
       |--- budget impossible -> emit_budget_infeasible -----------> finalise
       |--- price_check ------> generate_comparison -> generate_prose -> finalise
       v (meal_plan)
@@ -77,7 +77,7 @@ def build_graph(repo: PriceRepository, model: ModelClient):
     g.add_node("emit_stale_data", nodes.emit_stale_data)
     g.add_node("emit_unknown_region", nodes.emit_unknown_region)
     g.add_node("emit_dietary_unsupported", nodes.emit_dietary_unsupported)
-    g.add_node("emit_unrecognised_preference", nodes.emit_unrecognised_preference)
+    g.add_node("emit_preference_unavailable", nodes.emit_preference_unavailable)
     g.add_node("emit_clarification", nodes.emit_clarification)
     g.add_node("generate_comparison", nodes.generate_comparison)
     g.add_node("select_recipes", partial(nodes.select_recipes, model=model))
@@ -117,7 +117,7 @@ def build_graph(repo: PriceRepository, model: ModelClient):
             "no_data": "emit_no_data",
             "stale": "emit_stale_data",
             "unknown_region": "emit_unknown_region",
-            "unrecognised_preference": "emit_unrecognised_preference",
+            "preference_unavailable": "emit_preference_unavailable",
             "comparison": "generate_comparison",
             # Req 2.9's entry point. A meal plan tries the curated catalogue
             # first and falls through to free composition with a notice, rather
@@ -146,7 +146,7 @@ def build_graph(repo: PriceRepository, model: ModelClient):
     g.add_edge("emit_no_data", "finalise")
     g.add_edge("emit_stale_data", "finalise")
     g.add_edge("emit_unknown_region", "finalise")
-    g.add_edge("emit_unrecognised_preference", "finalise")
+    g.add_edge("emit_preference_unavailable", "finalise")
     g.add_edge("generate_comparison", "generate_prose")
     g.add_edge("generate_plan", "validate_plan")
 

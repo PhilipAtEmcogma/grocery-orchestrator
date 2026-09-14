@@ -269,9 +269,13 @@ def is_viable_for(
 #
 # There is also no fail-closed obligation here, which is the deeper reason they
 # stay apart. `map_exclusions` reports what it could not map and the graph
-# refuses the turn; an unrecognised preference term simply falls through to word
-# matching and, failing that, goes unmatched and is reported as such. A
-# preference cannot make a plan unsafe, so it must not be able to refuse one.
+# refuses the turn on a SAFETY ground; an unmatched preference term simply falls
+# through this table to word matching. A preference can still cause a refusal --
+# a preferred food we cannot match to any product refuses with
+# PREFERENCE_UNAVAILABLE (retrieval, checked in the graph, not here) -- but that
+# is an AVAILABILITY refusal, never a safety one. This matcher's own answer for
+# an unmatched term is "no", reported as an unmet preference; it cannot make a
+# plan unsafe and does not itself refuse.
 PREFERENCE_CATEGORIES: dict[str, frozenset[str]] = {
     "seafood": frozenset({"seafood"}),
     "fish": frozenset({"seafood"}),

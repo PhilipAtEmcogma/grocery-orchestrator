@@ -220,48 +220,60 @@ def emit_dietary_unsupported(state: GroceryState) -> dict:
     }
 
 
-def emit_unrecognised_preference(state: GroceryState) -> dict:
+def emit_preference_unavailable(state: GroceryState) -> dict:
     """
-    The shopper asked the plan to be built around foods we do not recognise.
+    The shopper asked the plan to be built around foods we cannot match to any
+    product in the current supermarket data.
 
     Reached only for a meal_plan turn where the user stated one or more
-    `preferred_ingredients` and NONE of them matches any costable,
-    dietary-viable recipe in the catalogue -- "a dinosaur meal plan". We did
-    not understand the request, so we refuse it and ask them to rephrase,
+    `preferred_ingredients` and NONE of them matches a product or a known food
+    category -- "a quinoa meal plan" against a catalogue with no quinoa, or "a
+    dinosaur meal plan". We refuse and ask them to try a different ingredient,
     rather than quietly serving a plan about something else with a footnote.
-    That footnote is the right answer for a food we DO stock but cannot afford
-    (`finalise`'s unmet-preference notice); it is the wrong answer for a word
-    that is not food at all, because it implies we understood.
+    That footnote is the right answer for a food we DO carry but cannot afford
+    (`finalise`'s unmet-preference notice); it is the wrong answer here, because
+    it implies we built a plan that honours the request.
+
+    THE MESSAGE POINTS AT THE DATA, NOT AT COMPREHENSION, and this is deliberate.
+    The resolver refuses fuzzy matching by design (design.md §8), so it cannot
+    tell a real food we do not stock ("quinoa") from a word that is not food
+    ("dinosaurs") -- both simply fail to resolve. Claiming "I didn't understand
+    that" would be wrong for quinoa and rude for a typo; claiming "I don't stock
+    that" would be wrong for dinosaurs. The one statement true for every case
+    that reaches here is that we could not match it to the products we have, so
+    that is what it says. Distinguishing the two would need a food ontology this
+    project deliberately does not have.
 
     NOT A SAFETY REFUSAL, and deliberately unlike `emit_dietary_unsupported`
     two functions up. An unmet EXCLUSION is dangerous -- serving a vegetarian
-    chicken -- so that path fails closed. An unrecognised PREFERENCE is only a
-    comprehension failure, so this is retryable and its whole remedy is "say it
-    differently". The two share a shape and not a reason.
+    chicken -- so that path fails closed. An unavailable PREFERENCE is only an
+    availability gap, so this is retryable and its remedy is "ask for something
+    we carry". The two share a shape and not a reason.
 
     SINGLE-TURN. This refuses within the one turn rather than asking, waiting,
-    and refusing only a repeated nonsense answer. True clarify-then-refuse-on-
-    repeat needs turn-to-turn memory the orchestrator does not have -- the graph
-    sees one request at a time -- and standing that up means the AgentCore
-    Memory / session-state workstream, which is gated behind a Privacy Act 2020
-    design (consent, TTL, deletion). Deferred deliberately; see design.md §8.
-    The frontend gives the shopper the next turn to rephrase regardless.
+    and refusing only a repeated answer we still cannot match. True
+    clarify-then-refuse-on-repeat needs turn-to-turn memory the orchestrator
+    does not have -- the graph sees one request at a time -- and standing that
+    up means the AgentCore Memory / session-state workstream, gated behind a
+    Privacy Act 2020 design (consent, TTL, deletion). Deferred deliberately; see
+    design.md §8. The frontend gives the shopper the next turn to rephrase.
     """
-    unrecognised = state.get("unrecognised_preferences") or []
+    unavailable = state.get("unavailable_preferences") or []
     return {
         "terminated": True,
         "events": [
             ErrorEvent(
                 seq=_next_seq(state),
-                code=ErrorCode.UNRECOGNISED_PREFERENCE,
-                # A comprehension failure, not a fact about the catalogue or the
-                # budget: rephrasing is exactly the move that works, so it is
-                # worth trying again.
+                code=ErrorCode.PREFERENCE_UNAVAILABLE,
+                # An availability gap in the data, not a fact about the budget:
+                # asking for something the catalogue carries is the move that
+                # works, so it is worth trying again.
                 retryable=True,
                 message=(
-                    f"I couldn't understand {_join(unrecognised)} as food I can "
-                    f"plan meals around, so I haven't made a plan. Could you "
-                    f"rephrase, or tell me the dishes or ingredients you'd like?"
+                    f"I couldn't build a meal plan around {_join(unavailable)} — "
+                    f"I can't match that to the products in the supermarket data "
+                    f"I have right now. Could you try a different ingredient, or "
+                    f"ask me to plan without it?"
                 ),
             )
         ],
@@ -589,14 +601,14 @@ def route_after_retrieval(state: GroceryState) -> str:
             return "stale"
         return "no_data"
     # Checked before budget and before "plan": if the shopper asked the plan to
-    # be built around foods we do not recognise at all, we did not understand
-    # the request, and that is a more fundamental answer than "your budget does
-    # not stretch". Rephrasing is the move, not raising the budget. Only fires
-    # when EVERY stated preference is unrecognised (lenient); a mix with one real
-    # food proceeds and `finalise` notices the rest. After no_data/stale, which
-    # are catalogue-wide facts that outrank a preference we could not place.
-    if state.get("unrecognised_preferences"):
-        return "unrecognised_preference"
+    # be built around foods we cannot match to any product in the current data,
+    # that is a more fundamental answer than "your budget does not stretch" --
+    # asking for something we carry is the move, not raising the budget. Only
+    # fires when EVERY stated preference is unavailable (lenient); a mix with one
+    # real food proceeds and `finalise` notices the rest. After no_data/stale,
+    # which are catalogue-wide facts that outrank a single preference.
+    if state.get("unavailable_preferences"):
+        return "preference_unavailable"
     # Checked before "plan": there is no point spending a model call on a
     # request the catalogue's own cheapest prices say is impossible.
     if state.get("budget_impossible"):

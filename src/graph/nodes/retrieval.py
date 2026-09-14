@@ -249,10 +249,11 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
     recipe_shortlist: list[str] = []
     recipe_refs: dict[str, dict[str, str]] = {}
     recipe_meals_wanted = 0
-    # Preferences the catalogue cannot answer at any price (a nonsense/unstocked
-    # ask). Empty unless the meal_plan branch below finds the shopper stated
-    # preferences and none is recognised. See where it is set for the rule.
-    unrecognised_preferences: list[str] = []
+    # Preferences we cannot match to any product in the current data (an
+    # unstocked real food or a nonsense ask). Empty unless the meal_plan branch
+    # below finds the shopper stated preferences and none is available. See
+    # where it is set for the rule.
+    unavailable_preferences: list[str] = []
     # preference term -> (recipe name, payable) of the cheapest recipe
     # answering it, BEFORE the budget trim. A term absent from this map is one
     # the catalogue cannot answer at any price, which is what lets `finalise`
@@ -476,7 +477,8 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
                 preferences[rank], (offer.recipe.name, str(offer.payable_nzd))
             )
 
-        # PREFERENCES WE CANNOT RECOGNISE AS FOOD AT ALL -- "dinosaurs".
+        # PREFERENCES WE CANNOT MATCH TO ANY PRODUCT IN THE CURRENT DATA --
+        # an unstocked real food ("quinoa") or a nonsense ask ("dinosaurs").
         #
         # The signal is NOT `cheapest_preferred`. That map holds terms a
         # costable, dietary-viable RECIPE answers, and it is empty for a
@@ -491,32 +493,33 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         #   * it resolves to a product (`resolve_product_key`), or
         #   * it names a known food CATEGORY (`PREFERENCE_CATEGORIES`: seafood,
         #     fish, meat, dairy, produce, ...).
-        # A term that does neither is not food we know -- "dinosaurs", "ostrich",
-        # "xyzzy". We cannot tell a real animal we do not stock from a fictional
-        # one without an external food ontology, and this codebase refuses fuzzy
-        # matching for the same reason `resolve_product_key` does: a confident
-        # wrong guess is worse than an honest "I did not understand that". So
-        # both refuse, with a message that asks the shopper to name dishes or
-        # ingredients instead.
+        # A term that does neither cannot be matched to our data -- "quinoa"
+        # (real, unstocked), "dinosaurs" (nonsense), "ostrich" (real, unstocked).
+        # The strict resolver refuses fuzzy matching (design.md §8), so it cannot
+        # tell these apart, and it should not pretend to: `emit_preference_unavailable`
+        # gives them ONE honest message that points at the data ("I couldn't
+        # match that to available products") rather than guessing whether the
+        # shopper meant a food we lack or typed something that is not food.
         #
         # LENIENT: only flag when the shopper stated preferences and NONE is
-        # recognised. "chicken and dinosaurs" plans around chicken and lets
-        # `finalise` notice the rest -- one junk word beside a valid one is not
-        # worth refusing the whole turn over.
-        def _recognised_food(term: str) -> bool:
-            # A category word ("seafood", "fish", "produce") is recognised even
-            # when no recipe uses it; a bare word split is enough because every
-            # PREFERENCE_CATEGORIES key is a single lowercase token. Otherwise
-            # the term must resolve to a real product. `resolve_product_key`
-            # refuses fuzzy matching, so this does not silently accept a near
-            # miss -- which is the property that lets an honest refusal stand.
+        # available. "chicken and dinosaurs" plans around chicken and lets
+        # `finalise` notice the rest -- one unmatchable word beside a valid one
+        # is not worth refusing the whole turn over.
+        def _available_food(term: str) -> bool:
+            # A category word ("seafood", "fish", "produce") counts as available
+            # even when no recipe uses it; a bare word split is enough because
+            # every PREFERENCE_CATEGORIES key is a single lowercase token.
+            # Otherwise the term must resolve to a real product.
+            # `resolve_product_key` refuses fuzzy matching, so this does not
+            # silently accept a near miss -- the property that lets an honest
+            # refusal stand.
             words = {w for w in term.lower().replace("-", " ").split() if w}
             if words & set(PREFERENCE_CATEGORIES):
                 return True
             return repo.resolve_product_key(term) is not None
 
-        if preferences and not any(_recognised_food(p) for p in preferences):
-            unrecognised_preferences = list(preferences)
+        if preferences and not any(_available_food(p) for p in preferences):
+            unavailable_preferences = list(preferences)
 
         # Trim the offer to a set that fits the budget TOGETHER, so any
         # selection the model makes is affordable by construction. Same reason
@@ -582,7 +585,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         "recipe_refs": recipe_refs,
         "recipe_meals_wanted": recipe_meals_wanted,
         "cheapest_preferred": cheapest_preferred,
-        "unrecognised_preferences": unrecognised_preferences,
+        "unavailable_preferences": unavailable_preferences,
         "events": events,
     }
 

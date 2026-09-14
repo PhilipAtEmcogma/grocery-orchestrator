@@ -62,13 +62,16 @@ class ErrorCode(StrEnum):
     # restriction is the dangerous direction of error, so the safe response
     # is refusal, not a best-effort plan.
     UNSUPPORTED_EXCLUSION = "UNSUPPORTED_EXCLUSION"
-    # The user asked the plan to be built around foods we do not recognise or
-    # stock at all — "a dinosaur meal plan". Distinct from a food we DO stock
-    # but cannot afford (that degrades to a plan plus an unmet-preference
-    # notice): here nothing the shopper named exists in the catalogue, so we
-    # did not understand the request and refuse rather than quietly serve an
-    # unrelated plan. Additive; clients tolerate unknown codes.
-    UNRECOGNISED_PREFERENCE = "UNRECOGNISED_PREFERENCE"
+    # The user asked the plan to be built around foods we cannot match to any
+    # product in the current supermarket data — "a quinoa meal plan" where the
+    # catalogue has no quinoa, or "a dinosaur meal plan". Distinct from a food
+    # we DO carry but cannot afford (that degrades to a plan plus an
+    # unmet-preference notice). The code is about AVAILABILITY IN THE DATA, not
+    # comprehension: to the strict, no-fuzzy-matching resolver a real food we
+    # do not stock and a nonsense word are the same, so both take this path with
+    # one honest message that points at the catalogue rather than at the
+    # shopper's phrasing. Additive; clients tolerate unknown codes.
+    PREFERENCE_UNAVAILABLE = "PREFERENCE_UNAVAILABLE"
     GUARDRAIL_BLOCKED = "GUARDRAIL_BLOCKED"
     OUT_OF_SCOPE = "OUT_OF_SCOPE"
     UPSTREAM_TIMEOUT = "UPSTREAM_TIMEOUT"
