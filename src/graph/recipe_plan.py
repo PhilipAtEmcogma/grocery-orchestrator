@@ -63,7 +63,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 
 from src.prompts.meal_plan import PlanDraft
-from src.recipes import CuratedRecipeRepository, Recipe
+from src.recipes import CuratedRecipeRepository, Recipe, recipe_matches_preference
 from src.recipes.planning import RecipeNotCostable, recipe_to_meal, recipes_to_draft
 from src.retrieval.base import PriceRecord, PriceRepository
 from src.retrieval.filters import FreshnessFilter, NearFilter
@@ -128,6 +128,22 @@ class RecipeOffer:
     refs: dict[str, str]
     #: What one serving-set for this household would cost, payable.
     payable_nzd: Decimal
+    #: Index of the first preference term this recipe answers, or None for
+    #: none. Carried on the offer rather than recomputed downstream so that the
+    #: ordering in `shortlist` and the "could not fit your request" notice in
+    #: `retrieve_prices` read the same judgement — two matchers would eventually
+    #: disagree, and the visible symptom would be a notice contradicting the
+    #: plan beside it.
+    #:
+    #: An INDEX rather than a bool because the shopper's order carries
+    #: precedence: "seafood, or chicken" means try fish first. `_reconcile`
+    #: deliberately does not sort that list, and this is where it pays off.
+    preference_rank: int | None = None
+
+    @property
+    def matches_preference(self) -> bool:
+        """Whether this recipe answers any food the shopper asked for."""
+        return self.preference_rank is not None
 
     @property
     def product_names(self) -> str:
@@ -206,6 +222,7 @@ def shortlist(
     household_size: int,
     days: int,
     exclude_categories: list[str] | frozenset[str],
+    prefer_terms: list[str] | None = None,
 ) -> list[RecipeOffer]:
     """
     Recipes this household could actually be served, costed and affordable.
@@ -215,8 +232,15 @@ def shortlist(
     than equality because `PriceRecord` is frozen and two stores can hold
     byte-identical rows for the same product; the ref belongs to the record
     retrieval actually cited, not to one that compares equal to it.
+
+    `prefer_terms` REORDERS AND NEVER FILTERS, which is the difference between
+    it and `exclude_categories` sitting two lines above it. An exclusion removes
+    a recipe because serving it would breach a restriction; a preference only
+    changes who gets first claim on the budget. A shopper who asks for fish and
+    cannot afford it still wants dinner.
     """
     excluded = set(exclude_categories)
+    terms = [t for t in (prefer_terms or []) if t.strip()]
     offers: list[RecipeOffer] = []
     for recipe in recipes:
         if not recipe.is_costable:
@@ -248,11 +272,61 @@ def shortlist(
         )
         if payable is None:
             continue
-        offers.append(RecipeOffer(recipe=recipe, refs=refs, payable_nzd=payable))
 
-    # Cheapest first. Not a filter -- an ordering, so the prompt's list and the
-    # budget trim both start from the option that costs the household least.
-    return sorted(offers, key=lambda o: o.payable_nzd)
+        # Judged against the categories the ingredients RESOLVED to, not the
+        # recipe's own label -- `recipe_categories`' reasoning applies here for
+        # the same reason it applies to the dietary filter, and the records are
+        # already in hand.
+        resolved_categories = frozenset(r.category for r in records.values())
+        offers.append(
+            RecipeOffer(
+                recipe=recipe,
+                refs=refs,
+                payable_nzd=payable,
+                preference_rank=_preference_rank(recipe, terms, resolved_categories),
+            )
+        )
+
+    # Preference first, then cheapest. Not a filter -- an ordering, so the
+    # prompt's list and the budget trim both start from the option the shopper
+    # is most likely to have asked for, and fall back to the one that costs the
+    # household least.
+    #
+    # THE ORDERING IS THE WHOLE FIX, because `affordable_set` is greedy and
+    # cheapest-first: it fills the basket and stops, so anything sorted late is
+    # unreachable at ANY budget. Measured 2026-09-14 against the 528-product
+    # dataset catalogue, "seafood meal plan for 3 people, 3 days" offered no
+    # seafood at $30, $60, $80 or $120 -- not because fish is expensive, but
+    # because four porridges got there first. With this ordering the prawn stir
+    # fry is offered from $40. A filter would have been the wrong tool: it would
+    # have produced an empty plan at $30 instead of a plan plus an honest
+    # notice.
+    #
+    # `unmatched` is one past the last real position, so every unmatched recipe
+    # sorts after every matched one regardless of price. Written as an explicit
+    # None test rather than `rank or unmatched`, because rank 0 -- the FIRST
+    # preference the shopper named, the one that matters most -- is falsy, and
+    # that spelling would send it to the back of the list.
+    unmatched = len(terms)
+
+    def sort_key(offer: RecipeOffer) -> tuple[int, Decimal]:
+        rank = offer.preference_rank
+        return (unmatched if rank is None else rank, offer.payable_nzd)
+
+    return sorted(offers, key=sort_key)
+
+
+def _preference_rank(recipe: Recipe, terms: list[str], categories: frozenset[str]) -> int | None:
+    """
+    The index of the first preference term this recipe answers, or None.
+
+    Ranked in the shopper's order, so the first food they named gets first
+    claim on the budget in the sort below.
+    """
+    for position, term in enumerate(terms):
+        if recipe_matches_preference(recipe, term, categories):
+            return position
+    return None
 
 
 def _payable_for(

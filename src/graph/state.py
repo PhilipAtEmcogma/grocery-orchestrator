@@ -116,6 +116,17 @@ class Constraints(TypedDict, total=False):
     budget_nzd: Decimal
     days: int
     dietary_exclusions: list[str]
+    #: Foods the user asked the plan to be built AROUND. The opposite polarity
+    #: to `dietary_exclusions`, and kept in a separate field for that reason:
+    #: when exclusion was the only food-shaped constraint, extraction put
+    #: "a seafood meal plan" in it and the shopper was told seafood had been
+    #: excluded at their own request. See src/prompts/intent.py.
+    #:
+    #: A preference is NOT a safety control and must never be treated as one.
+    #: An unmet exclusion is a refusal (`unsupported_exclusions`); an unmet
+    #: preference is a notice, because a plan without the fish someone hoped
+    #: for is disappointing and a plan with fish they cannot eat is dangerous.
+    preferred_ingredients: list[str]
     preferred_stores: list[Store]
     query_items: list[str]
 

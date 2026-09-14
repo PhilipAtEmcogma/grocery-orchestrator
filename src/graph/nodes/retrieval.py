@@ -25,11 +25,13 @@ a false statement in the shopper's hands.
 from __future__ import annotations
 
 from datetime import date
+from decimal import Decimal
 
 from src.graph.dietary import map_exclusions
 from src.graph.feasibility import minimum_spend
 from src.graph.nodes._shared import _join, _next_seq
 from src.graph.recipe_plan import (
+    RecipeOffer,
     TooManyIngredients,
     affordable_set,
     curated_recipes,
@@ -71,6 +73,50 @@ MEAL_CATEGORIES = [
     "chilled",
     "seafood",
 ]
+
+
+def _preference_unmet(
+    preferences: list[str],
+    matched_before_budget: list[RecipeOffer],
+    *,
+    household_size: int,
+    days: int,
+    budget_nzd: Decimal | None,
+) -> str:
+    """
+    Why the plan does not contain the food the shopper asked for.
+
+    TWO DIFFERENT FACTS, AND CONFLATING THEM WOULD BE THE LIE. If a matching
+    recipe existed and the budget removed it, the limit is the shopper's money
+    and the fix is in their hands, so the message says so and quotes what the
+    cheapest one would actually cost. If no matching recipe existed at all, the
+    limit is our catalogue and no budget would change it; telling them to raise
+    their budget would send them to spend more for a result that cannot happen.
+
+    THE FIGURE IS GROUNDED, not estimated. `payable_nzd` comes off the offer,
+    which `_payable_for` costed through the real `assemble_plan` from retrieved
+    citations -- the same arithmetic the plan itself uses. This is code-authored
+    text, so `assert_no_literal_money` does not apply to it (that guard exists
+    to stop a MODEL inventing a price), but the number still has to be one we
+    retrieved, and this one is.
+    """
+    wanted = _join(preferences)
+
+    if not matched_before_budget:
+        return (
+            f"I don't have a {wanted} recipe I can price from the products near "
+            f"you, so this plan has none. Raising the budget won't change that."
+        )
+
+    cheapest = min(matched_before_budget, key=lambda o: o.payable_nzd)
+    scope = f"{household_size} " + ("person" if household_size == 1 else "people")
+    span = f"{days} " + ("day" if days == 1 else "days")
+    budget_clause = f" at ${budget_nzd:.2f}" if budget_nzd is not None else ""
+    return (
+        f"No {wanted} meal fits{budget_clause} for {scope} over {span} — the "
+        f"cheapest I can build is {cheapest.recipe.name} at "
+        f"${cheapest.payable_nzd:.2f}, so this plan has none."
+    )
 
 
 def _near_filter(state: GroceryState) -> NearFilter | None:
@@ -416,6 +462,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         wanted = meals_needed(curated_recipes(), household_size=household_size, days=days_covered)
         citation_map = {c.ref: c for c in citations}
         record_map = dict(zip([c.ref for c in citations], records, strict=True))
+        preferences = constraints.get("preferred_ingredients", [])
         offers = shortlist(
             curated_recipes(),
             resolved_ingredients,
@@ -424,7 +471,19 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
             household_size=household_size,
             days=days_covered,
             exclude_categories=exclude_categories,
+            # Reorders, never filters. A shopper who asks for fish and cannot
+            # afford it still wants dinner -- so the preference buys first claim
+            # on the budget below, and nothing more.
+            prefer_terms=preferences,
         )
+        # Kept before the budget trim so the notice below can tell "no seafood
+        # fits $30" apart from "I have no seafood recipe at all". Those are
+        # different facts about different things -- one is about the shopper's
+        # budget and one is about our catalogue -- and the existing
+        # unresolved/stale_only split further down draws the same line for the
+        # same reason.
+        matched_before_budget = [o for o in offers if o.matches_preference]
+
         # Trim the offer to a set that fits the budget TOGETHER, so any
         # selection the model makes is affordable by construction. Same reason
         # `candidates_for_budget` caps its candidate set: a price-blind model
@@ -440,6 +499,30 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         recipe_shortlist = [o.recipe.recipe_id for o in offers]
         recipe_refs = {o.recipe.recipe_id: o.refs for o in offers}
         recipe_meals_wanted = wanted
+
+        # A STATED PREFERENCE THAT DID NOT SURVIVE IS REPORTED, NOT DROPPED.
+        #
+        # This is the same obligation as the `no_data` and `skipped` events
+        # below, applied to the one request shape that had no way to express it.
+        # The live defect that prompted this: "i would like to have seafood meal
+        # planned for me" at $30 for 3 people over 3 days returned a banana
+        # porridge plan. Extraction had inverted the request into an exclusion
+        # -- fixed in src/prompts/intent.py -- but even with that corrected the
+        # plan is identical, because no seafood meal fits $30. Silence made a
+        # budget limit look like the assistant ignoring the request.
+        if preferences and not any(o.matches_preference for o in offers):
+            events.append(
+                NoticeEvent(
+                    seq=seq + len(events),
+                    message=_preference_unmet(
+                        preferences,
+                        matched_before_budget,
+                        household_size=household_size,
+                        days=days_covered,
+                        budget_nzd=budget,
+                    ),
+                )
+            )
 
     # Honest gaps for items we could not answer, alongside the ones we could.
     # Only when SOME items resolved; if none did, routing sends the turn to

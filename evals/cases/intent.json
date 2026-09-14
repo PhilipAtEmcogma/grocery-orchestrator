@@ -305,6 +305,64 @@
         "budget_nzd": null
       },
       "note": "Duration and household are stated; budget is not, and must not be invented."
+    },
+    {
+      "id": "pol-001",
+      "message": "i would like to have seafood meal planned for me",
+      "expect": {
+        "intent": "meal_plan",
+        "no_exclusions": true,
+        "preferences": ["seafood"]
+      },
+      "note": "Reached production 2026-09-14 as dietary_exclusions [\"seafood\"]: the shopper was told seafood had been excluded at their own request. A food asked FOR is never an exclusion. Kept verbatim -- a case rewritten into clean English stops testing the message that failed."
+    },
+    {
+      "id": "pol-002",
+      "message": "A high-protein seafood dinner for 2 people under $30 tonight",
+      "expect": {
+        "intent": "meal_plan",
+        "household_size": 2,
+        "days": 1,
+        "budget_nzd": "30",
+        "no_exclusions": true,
+        "preferences": ["seafood"]
+      },
+      "note": "Dataset scenario 4. tests/test_clarification.py already asserts this plans in one turn, but never that the seafood survived."
+    },
+    {
+      "id": "pol-003",
+      "message": "can you do something with chicken and rice for 4 on $50",
+      "expect": {
+        "intent": "meal_plan",
+        "household_size": 4,
+        "budget_nzd": "50",
+        "no_exclusions": true,
+        "preferences": ["chicken", "rice"]
+      },
+      "note": "Two preferences, neither a category word: both must land in preferred_ingredients rather than one becoming a query_item."
+    },
+    {
+      "id": "pol-004",
+      "message": "a seafood dinner for 2 tonight, but no dairy please",
+      "expect": {
+        "intent": "meal_plan",
+        "household_size": 2,
+        "days": 1,
+        "exclusions": ["dairy-free"],
+        "preferences": ["seafood"]
+      },
+      "note": "BOTH POLARITIES IN ONE MESSAGE, which is the case a rule phrased as 'decide which field' rather than 'match the word' has to get right. Excluding the seafood here would be the original bug; dropping the dairy exclusion would be the dangerous direction."
+    },
+    {
+      "id": "pol-005",
+      "message": "no fish in my meal plan for 3 this week",
+      "expect": {
+        "intent": "meal_plan",
+        "household_size": 3,
+        "days": 7,
+        "exclusions": ["seafood"]
+      },
+      "note": "The negative case must keep working: the polarity fix must not turn exclusions into preferences on the way past."
     }
   ]
 }

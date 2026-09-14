@@ -438,7 +438,7 @@
                 "model_ids": [
                     "scripted-fast"
                 ],
-                "input_tokens": 700,
+                "input_tokens": 855,
                 "output_tokens": 80,
                 "latency_ms": 2,
                 "guardrail_intervened": false
