@@ -247,3 +247,136 @@ def is_viable_for(
         if category is None or category in excluded:
             return False
     return True
+
+
+# --------------------------------------------------------------------------
+# Preference matching
+# --------------------------------------------------------------------------
+
+# Preference term -> the product categories it NAMES.
+#
+# Only words that name a category belong here. A term for a specific food --
+# "chicken", "tuna", "prawns" -- needs no entry, because it is matched against
+# the recipe's own words instead, and adding it would be a second place to
+# maintain the same fact.
+#
+# THIS IS NOT `SUPPORTED_EXCLUSIONS` AND MUST NOT BE MERGED WITH IT, however
+# similar the two tables look. There, "vegetarian" -> {meat, seafood} means
+# REMOVE those categories. A preference inverts the operation but not the
+# mapping, so reusing that table would read "vegetarian" as a request to build
+# the plan around meat and fish. Two tables that differ in one entry's meaning
+# are worse than two tables.
+#
+# There is also no fail-closed obligation here, which is the deeper reason they
+# stay apart. `map_exclusions` reports what it could not map and the graph
+# refuses the turn; an unrecognised preference term simply falls through to word
+# matching and, failing that, goes unmatched and is reported as such. A
+# preference cannot make a plan unsafe, so it must not be able to refuse one.
+PREFERENCE_CATEGORIES: dict[str, frozenset[str]] = {
+    "seafood": frozenset({"seafood"}),
+    "fish": frozenset({"seafood"}),
+    "shellfish": frozenset({"seafood"}),
+    "meat": frozenset({"meat"}),
+    "dairy": frozenset({"dairy"}),
+    "produce": frozenset({"produce"}),
+    "vegetables": frozenset({"produce"}),
+    "vegetable": frozenset({"produce"}),
+    "veg": frozenset({"produce"}),
+    "veggies": frozenset({"produce"}),
+    "fruit": frozenset({"produce"}),
+    "frozen": frozenset({"frozen"}),
+    "bakery": frozenset({"bakery"}),
+    "bread": frozenset({"bakery"}),
+    "pantry": frozenset({"pantry"}),
+}
+
+
+def recipe_matches_preference(recipe: Recipe, term: str, categories: frozenset[str]) -> bool:
+    """
+    Would this recipe satisfy a shopper who asked for `term`?
+
+    `categories` is what the recipe's ingredients ACTUALLY resolve to, from
+    `recipe_categories` — the same product-derived answer the dietary filter
+    uses, for the same reason. "Prawn and Rice Stir Fry" carries no ingredient
+    called "seafood" and no such word in its name, so a request for seafood
+    reaches it only through the category its prawns resolve to.
+
+    Then, and only then, the words. "chicken" names a product rather than a
+    category and is matched against the recipe's name and ingredient terms,
+    which is how "Chicken and Rice Bake" answers it. `_words` is reused so
+    plurals fold the same way they do in classification: "prawns" matching
+    `cooked peeled prawns` is the case that motivated that helper.
+
+    MATCHING IS DELIBERATELY LOOSE, AND THE ASYMMETRY RUNS THE OPPOSITE WAY TO
+    `is_viable_for`. Any word of the term may match. An over-match ranks a
+    recipe the shopper did not quite ask for slightly too high; an under-match
+    tells them their request could not be met when it could. Neither is a
+    safety outcome — a preference cannot put food in a basket that the dietary
+    filter has already excluded, because that filter runs first and removes the
+    recipe outright. So the cheap-failure direction here is to match more, which
+    is the reverse of every other classifier in this package, and the reason is
+    that this one guards disappointment rather than harm.
+    """
+    from ingestion.lineage_b import _words
+
+    wanted = _words(term)
+    if not wanted:
+        return False
+
+    for word in wanted:
+        if PREFERENCE_CATEGORIES.get(word, frozenset()) & categories:
+            return True
+
+    haystack = _words(recipe.name)
+    for ingredient in recipe.ingredients:
+        haystack |= _words(f"{ingredient.key} {ingredient.name}")
+    return bool(wanted & haystack)
+
+
+def preference_terms_met(terms: list[str], products: list[tuple[str, str]]) -> set[str]:
+    """
+    Which of `terms` the products in a FINISHED plan actually answer.
+
+    `products` is (name, category) per cited product.
+
+    WHY THIS EXISTS ALONGSIDE `recipe_matches_preference`, WHICH IS A FAIR
+    QUESTION given that file's own warning about two matchers disagreeing. They
+    answer different questions at different granularities, and the plan needs
+    both:
+
+      * `recipe_matches_preference` asks "would this RECIPE satisfy the
+        shopper", and is what orders the shortlist before anything is chosen.
+      * this asks "does the BASKET they are actually being handed contain it",
+        which is the only question worth asking once the model has selected and
+        the budget trim has run.
+
+    The shortlist answer is not a safe proxy for the plan answer, and assuming
+    it was is how the first version of the unmet-preference notice got this
+    wrong: `_cost_within_budget` drops the meal with the HIGHEST MARGINAL COST,
+    which is very often the preferred one, so a chicken recipe could be offered,
+    reported as met, and then trimmed out of the plan the shopper read. Silence
+    about a dropped request, one layer below where it was first fixed.
+
+    It also covers the FREE-COMPOSITION path, which has no recipes at all. A
+    recipe-id check there would report every preference unmet even when the
+    composed basket does contain the food, which would be a false claim in the
+    opposite direction.
+
+    What must NOT diverge is the vocabulary, and it does not: both read
+    `PREFERENCE_CATEGORIES` and both fold plurals through `_words`.
+    """
+    from ingestion.lineage_b import _words
+
+    met: set[str] = set()
+    for term in terms:
+        wanted = _words(term)
+        if not wanted:
+            continue
+        for name, category in products:
+            named_category = any(
+                category in PREFERENCE_CATEGORIES.get(word, frozenset()) for word in wanted
+            )
+            if named_category or (wanted & _words(name)):
+                met.add(term)
+                break
+    return met

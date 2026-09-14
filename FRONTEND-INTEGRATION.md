@@ -433,7 +433,7 @@ other was ever heard — which reads as the app ignoring them.
 | `token` | Streaming prose | Append `ev.text` to the message bubble. Already includes its own leading space where needed — don't add one. |
 | `price_comparison` | `price_check` turns | Render a comparison table. **Possibly several per turn — append, don't replace.** Resolve each `citation_ref` against your citation map for the prices. |
 | `meal_plan` | `meal_plan` turns | Render meals plus the per-store shopping list. All prices via `citation_ref`. `repair_attempts` is observability — don't show it. |
-| `notice` | Occasionally, mid-turn | Small inline note: data age, an overridden hint, items we didn't check, or a meal plan built from products rather than named recipes. Non-fatal, non-blocking. |
+| `notice` | Occasionally, mid-turn | Small inline note: data age, an overridden hint, items we didn't check, a requested food the plan could not fit, or a meal plan built from products rather than named recipes. Non-fatal, non-blocking. |
 
 **One notice worth rendering rather than collapsing (added 2026-08-31).** A
 meal-plan turn is normally built from a curated recipe catalogue, so
@@ -455,6 +455,38 @@ needs to branch on it, and there is no new field.
 It is a notice rather than a silent difference because those two are different
 products, and a shopper who asked for meal ideas should know which one they
 got. Render it near the plan.
+
+**A second notice worth rendering rather than collapsing (added 2026-09-14).**
+When the shopper asks for a specific food and the plan does not contain it, the
+turn says why:
+
+```
+No seafood meal fits at $30.00 for 3 people over 3 days — the cheapest I can
+build is Prawn and Rice Stir Fry at $35.04, so this plan has none.
+```
+
+or, when the limit is our catalogue rather than their budget:
+
+```
+I don't have a lamb recipe I can price from the products near you, so this plan
+has none. Raising the budget won't change that.
+```
+
+Those two are deliberately different sentences. The first is actionable and
+names the figure that would make it possible; the second says no budget will
+help, so a client that collapsed them into "couldn't do seafood" would send
+somebody to spend more money for a result that cannot happen.
+
+THIS EXISTS BECAUSE THE SILENCE WAS WORSE. A shopper asked for a seafood meal
+plan on $30 for three people over three days and got banana porridge with no
+explanation, which reads as the assistant ignoring the request rather than as
+the budget it actually was. Render it near the plan, next to the fallback notice
+above.
+
+If you have a control that collects this (a "what do you feel like?" chip row),
+send it as `hints.preferred_ingredients` — but note it is a PREFERENCE, not a
+restriction. It can never remove a food from a plan; only
+`hints.dietary_exclusions` does that.
 | `clarification` | A plan needs one more fact | **Not an error.** Raise the control named in `missing` (a `hints` field) and resend; see §3.2. |
 | `no_data` | We have no data for an item | Render as a **normal assistant reply, not an error**. May appear alongside results (§3.3), and more than once. |
 | `error` | On failure | Show `ev.message` — it's already written to be user-safe. Offer retry if `ev.retryable`. |

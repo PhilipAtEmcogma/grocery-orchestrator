@@ -127,7 +127,14 @@ def test_meals_are_counted_from_food_needed_not_from_days():
 
 
 def _shortlist_for(
-    repo, *, household_size=3, days=5, budget=Decimal("120"), exclude=(), affordable=True
+    repo,
+    *,
+    household_size=3,
+    days=5,
+    budget=Decimal("120"),
+    exclude=(),
+    affordable=True,
+    prefer=None,
 ):
     """
     The shortlist as retrieval builds it, without running the whole graph.
@@ -172,6 +179,7 @@ def _shortlist_for(
         household_size=household_size,
         days=days,
         exclude_categories=list(exclude),
+        prefer_terms=list(prefer) if prefer else None,
     )
     if affordable:
         offers = affordable_set(
@@ -432,3 +440,99 @@ def test_what_the_model_returned_is_reported_apart_from_what_was_served(repo):
     out = select_recipes(state, Miser())
     assert out["recipe_selection_model"] == [offered[0]], "the raw selection was not reported"
     assert len(out["selected_recipes"]) > 1, "the node did not top the short selection up"
+
+
+# ------------------------------------------------- preference-first ordering
+
+
+def test_a_preferred_recipe_is_offered_first_even_when_dearer(repo):
+    """
+    The ordering half of the seafood defect (2026-09-14).
+
+    `affordable_set` is greedy and cheapest-first: it fills the basket and
+    stops. So a recipe sorted late is not merely deprioritised, it is
+    UNREACHABLE — measured against the 528-product dataset catalogue, "seafood
+    meal plan for 3 people, 3 days" offered no seafood at $30, $60, $80 or
+    $120. Four porridges got there first at every budget.
+    """
+    default, _, _ = _shortlist_for(repo, affordable=False)
+    preferred, _, _ = _shortlist_for(repo, affordable=False, prefer=["chicken"])
+
+    assert preferred[0].matches_preference
+    assert "chicken" in preferred[0].recipe.name.lower()
+    # The ordering really changed: the preferred recipe is dearer than the one
+    # cheapest-first puts first, so this cannot be passing by coincidence.
+    assert preferred[0].payable_nzd > default[0].payable_nzd
+
+
+def test_preference_reorders_and_never_filters(repo):
+    """
+    The difference between `prefer_terms` and `exclude_categories`. A shopper
+    who asks for fish and cannot afford it still wants dinner, so the same
+    recipes must be present either way — in a different order.
+    """
+    default, _, _ = _shortlist_for(repo, affordable=False)
+    preferred, _, _ = _shortlist_for(repo, affordable=False, prefer=["chicken"])
+
+    assert {o.recipe.recipe_id for o in default} == {o.recipe.recipe_id for o in preferred}
+
+
+def test_an_unmatched_preference_leaves_the_order_untouched(repo):
+    """A term nothing answers must not perturb the cheapest-first fallback."""
+    default, _, _ = _shortlist_for(repo, affordable=False)
+    preferred, _, _ = _shortlist_for(repo, affordable=False, prefer=["ostrich"])
+
+    assert [o.recipe.recipe_id for o in default] == [o.recipe.recipe_id for o in preferred]
+    assert not any(o.matches_preference for o in preferred)
+
+
+def test_the_first_named_preference_wins(repo):
+    """
+    Ranked by POSITION, and rank 0 is the position that matters most.
+
+    Written because the obvious spelling of the sort key —
+    `ranks.get(id) or unmatched` — sends rank 0 to the back of the list, which
+    would silently invert the shopper's stated priority. The bug is invisible
+    with one preference and only shows up with two.
+    """
+    chicken_first, _, _ = _shortlist_for(repo, affordable=False, prefer=["chicken", "potatoes"])
+    potato_first, _, _ = _shortlist_for(repo, affordable=False, prefer=["potatoes", "chicken"])
+
+    assert "chicken" in chicken_first[0].recipe.name.lower()
+    assert "potato" in potato_first[0].recipe.name.lower()
+
+
+def test_a_preference_can_win_a_budget_that_cheapest_first_spends_elsewhere(repo):
+    """
+    The ordering is what makes the preference reachable, not the budget.
+
+    Budget is set to exactly what the preferred recipe costs, so it fits on its
+    own and cannot fit behind the cheap fillers. Under cheapest-first the
+    shopper could raise their budget indefinitely and never see it.
+    """
+    offers, _, _ = _shortlist_for(repo, affordable=False, prefer=["chicken"])
+    chicken = next(o for o in offers if o.matches_preference)
+
+    without = [o.recipe.recipe_id for o in _shortlist_for(repo, budget=chicken.payable_nzd)[0]]
+    with_pref = [
+        o.recipe.recipe_id
+        for o in _shortlist_for(repo, budget=chicken.payable_nzd, prefer=["chicken"])[0]
+    ]
+
+    assert chicken.recipe.recipe_id not in without
+    assert chicken.recipe.recipe_id in with_pref
+
+
+def test_an_exclusion_still_beats_a_preference_on_the_same_food(repo):
+    """
+    Fail-closed by construction rather than by a rule. The dietary filter runs
+    first and removes the category outright, so a contradictory "chicken, but
+    no meat" leaves the preference nothing to rank — it cannot resurrect a
+    recipe the exclusion dropped.
+    """
+    offers, _, _ = _shortlist_for(repo, affordable=False, exclude=["meat"], prefer=["chicken"])
+
+    assert offers, "the exclusion emptied the shortlist; the test lost its input"
+    assert not any(o.matches_preference for o in offers)
+    for offer in offers:
+        assert "chicken" not in offer.recipe.name.lower()

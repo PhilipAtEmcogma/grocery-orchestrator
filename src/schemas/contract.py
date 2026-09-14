@@ -143,6 +143,12 @@ class ClientHints(BaseModel):
     budget_nzd: Decimal | None = Field(default=None, gt=0, le=10000)
     days: int | None = Field(default=None, ge=1, le=14)
     dietary_exclusions: list[str] = Field(default_factory=list, max_length=20)
+    #: Foods to build the plan around, e.g. from a "what do you feel like?"
+    #: control. Additive to the contract: absent from an existing client's
+    #: payload means the same as an empty list, so v1.0 clients are unaffected.
+    #: A preference the plan cannot afford comes back as a `notice`, never an
+    #: error — unlike `dietary_exclusions`, which can refuse the turn.
+    preferred_ingredients: list[str] = Field(default_factory=list, max_length=12)
     preferred_stores: list[Store] = Field(default_factory=list)
 
 

@@ -116,6 +116,17 @@ class Constraints(TypedDict, total=False):
     budget_nzd: Decimal
     days: int
     dietary_exclusions: list[str]
+    #: Foods the user asked the plan to be built AROUND. The opposite polarity
+    #: to `dietary_exclusions`, and kept in a separate field for that reason:
+    #: when exclusion was the only food-shaped constraint, extraction put
+    #: "a seafood meal plan" in it and the shopper was told seafood had been
+    #: excluded at their own request. See src/prompts/intent.py.
+    #:
+    #: A preference is NOT a safety control and must never be treated as one.
+    #: An unmet exclusion is a refusal (`unsupported_exclusions`); an unmet
+    #: preference is a notice, because a plan without the fish someone hoped
+    #: for is disappointing and a plan with fish they cannot eat is dangerous.
+    preferred_ingredients: list[str]
     preferred_stores: list[Store]
     query_items: list[str]
 
@@ -209,6 +220,15 @@ class GroceryState(TurnInput, total=False):
     #: uses. NOT `days`: a day is not a meal, and asking for one recipe per day
     #: under-fed every household in the eval suite.
     recipe_meals_wanted: int
+    #: preference term -> (recipe name, payable as a string) for the cheapest
+    #: recipe answering it, recorded by retrieval BEFORE the budget trim.
+    #:
+    #: Carried across nodes because the unmet-preference notice needs facts from
+    #: two of them: retrieval knows whether the catalogue can answer a term at
+    #: all, and only `finalise` knows whether the plan the shopper is handed
+    #: actually contains it. A term missing from this map is one no budget would
+    #: buy; a term present but absent from the plan was priced out.
+    cheapest_preferred: dict[str, tuple[str, str]]
     #: Why the turn fell back to free composition, or "" if it did not. Kept as
     #: a reason rather than a bool because the shopper is told which plan they
     #: got, and "no recipe fits your budget" and "you excluded too much" are

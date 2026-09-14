@@ -248,6 +248,20 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
     recipe_shortlist: list[str] = []
     recipe_refs: dict[str, dict[str, str]] = {}
     recipe_meals_wanted = 0
+    # preference term -> (recipe name, payable) of the cheapest recipe
+    # answering it, BEFORE the budget trim. A term absent from this map is one
+    # the catalogue cannot answer at any price, which is what lets `finalise`
+    # say whether an unmet preference was the shopper's budget or our
+    # catalogue.
+    #
+    # PER TERM, not one figure for the turn. "seafood, chicken" on a tight
+    # budget can be seafood priced out AND chicken missing from the catalogue,
+    # and a single figure would force one explanation onto both -- right about
+    # one preference and wrong about the other.
+    #
+    # Money as a string: state crosses a serialisation boundary and a float
+    # here would lose a cent.
+    cheapest_preferred: dict[str, tuple[str, str]] = {}
     # `id(record) -> ref`, so the recipe path can reuse a citation the candidate
     # sweep already produced instead of citing the same price twice. Identity,
     # not equality: `PriceRecord` is frozen and two stores can hold
@@ -416,6 +430,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         wanted = meals_needed(curated_recipes(), household_size=household_size, days=days_covered)
         citation_map = {c.ref: c for c in citations}
         record_map = dict(zip([c.ref for c in citations], records, strict=True))
+        preferences = constraints.get("preferred_ingredients", [])
         offers = shortlist(
             curated_recipes(),
             resolved_ingredients,
@@ -424,7 +439,38 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
             household_size=household_size,
             days=days_covered,
             exclude_categories=exclude_categories,
+            # Reorders, never filters. A shopper who asks for fish and cannot
+            # afford it still wants dinner -- so the preference buys first claim
+            # on the budget below, and nothing more.
+            prefer_terms=preferences,
         )
+        # Read BEFORE the budget trim, and recorded rather than acted on.
+        #
+        # This is the one fact about an unmet preference that only retrieval
+        # knows: whether a matching recipe existed at all, and what the cheapest
+        # one would have cost. `finalise` needs it to tell "no seafood fits $30"
+        # apart from "I have no seafood recipe at all" -- different facts about
+        # different things, one about the shopper's budget and one about our
+        # catalogue, and the unresolved/stale_only split further down draws the
+        # same line for the same reason.
+        #
+        # THE NOTICE ITSELF USED TO BE EMITTED HERE AND THAT WAS WRONG. This
+        # node sees what the model may CHOOSE FROM, not what the shopper ends up
+        # with, and `_cost_within_budget` drops the meal with the highest
+        # marginal cost -- very often the preferred one. So a chicken recipe
+        # could be offered, reported as honoured, and then trimmed out of the
+        # plan that was printed. The check moved to `finalise`, the only node
+        # that sees the final plan on every path.
+        # `preference_rank` is the index of the term the offer answered, so it
+        # maps straight back to the term the shopper typed.
+        for offer in sorted(offers, key=lambda o: o.payable_nzd):
+            rank = offer.preference_rank
+            if rank is None or rank >= len(preferences):
+                continue
+            cheapest_preferred.setdefault(
+                preferences[rank], (offer.recipe.name, str(offer.payable_nzd))
+            )
+
         # Trim the offer to a set that fits the budget TOGETHER, so any
         # selection the model makes is affordable by construction. Same reason
         # `candidates_for_budget` caps its candidate set: a price-blind model
@@ -488,6 +534,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         "recipe_shortlist": recipe_shortlist,
         "recipe_refs": recipe_refs,
         "recipe_meals_wanted": recipe_meals_wanted,
+        "cheapest_preferred": cheapest_preferred,
         "events": events,
     }
 

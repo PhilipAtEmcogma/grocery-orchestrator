@@ -7,6 +7,7 @@ from src.recipes.base import (
     is_viable_for,
     recipe_categories,
     recipe_excluded_categories,
+    recipe_matches_preference,
 )
 from src.recipes.memory import (
     ASSUMED_ON_HAND,
@@ -31,5 +32,6 @@ __all__ = [
     "is_viable_for",
     "recipe_categories",
     "recipe_excluded_categories",
+    "recipe_matches_preference",
     "usable_recipes",
 ]

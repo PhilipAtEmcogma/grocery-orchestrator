@@ -59,6 +59,7 @@ serves this frontend contract.
   "hints": {
     "household_size": 3, "budget_nzd": 30, "days": 3,
     "dietary_exclusions": ["seafood"],
+    "preferred_ingredients": ["chicken"],
     "preferred_stores": ["paknsave"]
   }
 }
@@ -71,6 +72,18 @@ serves this frontend contract.
 | `message` | ✅ | Raw user text, max 2000 chars. |
 | `location` | ⬜ | Omit if the user hasn't granted permission. Price results will be national rather than local. |
 | `hints` | ⬜ | Optional, from UI controls (sliders, chips, etc). |
+
+**`dietary_exclusions` and `preferred_ingredients` are opposite polarities and
+are not interchangeable (added 2026-09-14).** An exclusion is a restriction we
+must honour or refuse the turn; a preference is a food to build the plan around,
+and a preference we cannot fit comes back as a `notice`, never an error. They
+also merge differently: exclusions from the message are **added** to hinted
+ones, because dropping a dietary restriction is the dangerous direction, while a
+preference stated in the message **replaces** a hinted one, because "actually,
+seafood" is the shopper changing their mind rather than adding to it.
+
+`preferred_ingredients` is additive to v1.0: omitting it means the same as
+sending `[]`, so existing clients need no change.
 
 The target idempotency guarantee returns the same completed answer without a
 second generation. Canonicalization treats insignificant whitespace, object-key

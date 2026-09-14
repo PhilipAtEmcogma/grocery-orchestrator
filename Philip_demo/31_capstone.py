@@ -27,7 +27,7 @@ gets a say in the answer -- so the shape of the system is visible rather than
 described.
 
   1. The question, and what the service is being asked to promise
-  2. INTENT       - and the refusal to invent a constraint
+  2. INTENT       - the refusal to invent a constraint, and to invert one
   3. RETRIEVAL    - the only place a Citation can be created
   4. FILTERS      - location and freshness, applied BEFORE the limit
   5. SELECTION    - the model's whole contribution, and its bounds
@@ -52,6 +52,8 @@ Exit code 0.
 
 from __future__ import annotations
 
+import textwrap
+
 from _demo_support import (
     LOCAL,
     citations,
@@ -65,6 +67,7 @@ from _demo_support import (
     section,
 )
 
+from src.graph.nodes.intent import classify_intent
 from src.models.scripted import ScriptedModelClient
 from src.retrieval.memory import InMemoryPriceRepository
 from src.runner import run_turn
@@ -93,6 +96,7 @@ note("")
 note("  - every price it quotes is one that was RETRIEVED, not generated")
 note("  - the total is one the shopper can actually pay at a till")
 note("  - the exclusion is HONOURED or the request is REFUSED, never approximated")
+note("  - a food asked FOR is never mistaken for one ruled OUT")
 note("  - if it cannot do those things it says so, rather than guessing")
 note("")
 note("The exclusion is passed as a CLIENT HINT as well as being in the text.")
@@ -100,6 +104,11 @@ note("That is not a dodge, it is the contract: `ClientHints.dietary_exclusions`"
 note("is a structured field a frontend collects from a control, and the message")
 note("wins if the two disagree. Section 9 shows what happens to an exclusion")
 note("this catalogue cannot verify.")
+note("")
+note("THE FOURTH PROMISE IS THE NEWEST AND WAS ADDED BY A DEFECT. On 2026-09-14")
+note('a shopper typed "i would like to have seafood meal planned for me" and')
+note('was shown a banana porridge plan under the sentence "All seafood has been')
+note('excluded as requested". Section 2 is where that is now decided.')
 
 repo = InMemoryPriceRepository()
 model = ScriptedModelClient()
@@ -115,11 +124,12 @@ req = request(
 
 # --------------------------------------------------------------- 2. intent
 
-section("2. INTENT - and the refusal to invent a constraint")
+section("2. INTENT - the refusal to invent a constraint, and to invert one")
 
-note("classify_intent extracts household size, days, budget and exclusions.")
+note("classify_intent extracts household size, days, budget, exclusions and")
+note("the foods the shopper asks the plan to be built AROUND.")
 note("")
-note("What it must NOT do is fill in a blank. Until 2026-08-29 a missing")
+note("WHAT IT MUST NOT DO, ONE: FILL IN A BLANK. Until 2026-08-29 a missing")
 note("household size silently became 1 -- 'a plan for one person over one day'")
 note("is a real answer to a question nobody asked, and downstream it is")
 note("indistinguishable from one the shopper requested.")
@@ -129,6 +139,66 @@ note("names the ClientHints field a frontend should collect. Deliberately not")
 note("an error: nothing failed, and `retryable` cannot express 'retry with")
 note("more information' -- a client reading retryable:true resends the same")
 note("request and loops.")
+note("")
+note("WHAT IT MUST NOT DO, TWO: INVERT ONE. This is the newer rule, and it was")
+note("written after a shopper asked for seafood and was told it had been")
+note("excluded at their own request. The prompt had said 'use the canonical")
+note("form when the user's phrasing MATCHES one' -- and \"seafood\" matches")
+note('"seafood". Every example given was a negation, but an example is not a')
+note("rule, and the canonical vocabulary is bare nouns.")
+note("")
+note("Two things caused it, and the second matters more:")
+note("")
+note("  the WORDING    a string match where a polarity test was needed")
+note("  the SCHEMA     `dietary_exclusions` was the only food-shaped field, so")
+note("                 a model holding a food noun had one slot to put it in,")
+note("                 and that slot meant the opposite of the request")
+note("")
+note("NOTHING DOWNSTREAM COULD HAVE CAUGHT IT. This node is the only place")
+note('that can still see whether the shopper said "seafood" or "no seafood".')
+note("By the time `map_exclusions` receives the term it is a decision, not a")
+note("phrase -- and a guard there would have to re-read the message to")
+note("second-guess it, which is two readers of one sentence and the exact")
+note("arrangement that produced the bug.")
+note("")
+note("CHECKED, NOT ASSERTED. The failing message, run through the real node:")
+
+polarity = classify_intent(
+    {"message": "i would like to have seafood meal planned for me", "hints": {}, "events": []},
+    model,
+)
+pol = polarity["constraints"]
+note("")
+note('    "i would like to have seafood meal planned for me"')
+note(f"        dietary_exclusions     {pol.get('dietary_exclusions')}")
+note(f"        preferred_ingredients  {pol.get('preferred_ingredients')}")
+require(not pol.get("dietary_exclusions"), "an affirmative request produced an exclusion")
+require(pol.get("preferred_ingredients") == ["seafood"], "the preference was not extracted")
+
+both = classify_intent(
+    {"message": "a seafood dinner for 2 tonight, but no dairy please", "hints": {}, "events": []},
+    model,
+)
+b = both["constraints"]
+note("")
+note('    "a seafood dinner for 2 tonight, but no dairy please"')
+note(f"        dietary_exclusions     {b.get('dietary_exclusions')}")
+note(f"        preferred_ingredients  {b.get('preferred_ingredients')}")
+require(b.get("preferred_ingredients") == ["seafood"], "the preference was lost")
+require("dairy-free" in (b.get("dietary_exclusions") or []), "the exclusion was lost")
+note("")
+note("  [OK  ] both polarities in one sentence, each in its own field")
+note("")
+note("The two fields merge differently, and the asymmetry is the safety")
+note("argument: an exclusion in the message is ADDED to a hinted one, because")
+note("dropping a restriction is the dangerous direction, while a preference")
+note('REPLACES a hinted one, because "actually, seafood" is a shopper')
+note("changing their mind rather than adding to it.")
+note("")
+note("An exclusion still beats a preference on the same food, and nothing")
+note("enforces that: the dietary filter runs first and removes the category")
+note('outright, so "seafood, no fish" leaves the preference nothing to rank.')
+note("Fail-closed by construction rather than by a rule somebody could edit.")
 
 
 # ------------------------------------------------------------ 3. retrieval
@@ -173,6 +243,22 @@ note("  viable        dietary-safe judged from the RESOLVED products, not")
 note("                from the recipe's NAME")
 note("  affordable    as a SET, not individually -- recipes sharing rice and")
 note("                onions cost far less together than apart")
+note("")
+note("...and then ORDERED: anything answering a food the shopper asked for")
+note("first, cheapest first within that, cheapest first for the rest.")
+note("")
+note("THE ORDERING IS NOT A GARNISH. `affordable_set` is greedy and")
+note("cheapest-first -- it fills the basket and stops -- so a recipe sorted")
+note("late is UNREACHABLE rather than merely deprioritised. Measured against")
+note('the 528-product dataset catalogue, "seafood meal plan for 3 people, 3')
+note('days" offered no seafood at $30, $60, $80 or $120. Not because fish is')
+note("expensive: because four porridges got there first at every budget.")
+note("")
+note("It REORDERS AND NEVER FILTERS, which is the difference between a")
+note("preference and an exclusion sitting one line above it. A shopper who")
+note("asks for fish and cannot afford it still wants dinner, so the preference")
+note("buys first claim on the budget and nothing more. A filter would have")
+note("produced an empty plan where the honest answer is a plan plus a notice.")
 note("")
 note("Only then is the model asked anything, and what it is asked is narrow:")
 note("pick ids. `RecipeSelection` has ONE field and it holds ids, so there is")
@@ -369,6 +455,62 @@ note("The design rule is that honest failure is a FIRST-CLASS OUTCOME. A")
 note("system that must always produce a plan will eventually produce one it")
 note("cannot defend -- and this whole repository exists to prevent exactly")
 note("that failure.")
+note("")
+note("A THIRD SHAPE, WHICH IS NEITHER OF THE FIRST TWO. Every path above is")
+note("all-or-nothing: the plan is what was asked for, or the turn declines.")
+note("A preference the budget cannot fit is neither. The plan is real, every")
+note("figure in it is grounded, and one thing the shopper asked for is")
+note("missing -- so the honest answer is the plan PLUS the gap, named.")
+note("")
+requested = run_turn(
+    request(
+        "a chicken dinner for a flat of 3 for 3 days",
+        turn="turn-preference",
+        household_size=3,
+        days=3,
+        budget_nzd=25,
+    ),
+    repo,
+    model,
+)
+gap_plans = [e for e in requested.events if e.type == "meal_plan"]
+require(gap_plans, "the preference turn produced no plan")
+served = [m.name for m in gap_plans[0].data.meals]
+gaps = [
+    e.message for e in requested.events if e.type == "notice" and "this plan has none" in e.message
+]
+note("    asked for  a chicken dinner, 3 people, 3 days, $25")
+note(f"    served     {', '.join(served)}")
+note("")
+# WRAPPED, because `note` does not. Every other line in this demo is hand-wrapped
+# to the width it is read at; a 174-character production sentence printed raw is
+# the one line an audience cannot follow.
+for line in gaps:
+    for wrapped in textwrap.wrap(line, width=68):
+        note(f"    {wrapped}")
+require(gaps, "the unmet preference was dropped silently")
+require(
+    not any("chicken" in name.lower() for name in served),
+    "the fixture now affords chicken here, so this example no longer shows the gap",
+)
+note("")
+note("  [OK  ] a plan, and the missing request named rather than dropped")
+note("")
+note("THE FIGURE IS WHY THE SENTENCE IS SHAPED THAT WAY. $16.67 is under the")
+note('$25 budget, so "no chicken meal fits at $25" would be a sentence that')
+note("argues with itself. One such meal is affordable; three meals plus that")
+note("one are not, and `_cost_within_budget` drops the dearest marginal meal")
+note("until the basket fits. So the reason is competition for the budget, not")
+note("price -- and the shopper's lever differs: a small raise genuinely helps")
+note("here, where a meal dearer than the whole budget would not budge.")
+note("")
+note("THE NOTICE USED TO BE EMITTED BY THE WRONG NODE, and a dry run of this")
+note("demo is what caught it. `retrieve_prices` sees what the model may choose")
+note("FROM; the trim then removes the preferred meal, because it is usually")
+note("the dearest. The chicken was offered, judged honoured, and printed")
+note("nowhere. It is decided in `finalise` now -- the only node that sees the")
+note("plan the shopper actually reads, on every path including the")
+note("free-composition fallback that has no recipes at all.")
 
 
 # ---------------------------------------------- 10. the operational layer

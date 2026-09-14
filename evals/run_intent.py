@@ -122,8 +122,16 @@ class Scorecard:
         )
 
 
-def _check(case: dict, out: dict, repo: InMemoryPriceRepository) -> list[str]:
-    """Deterministic scoring. Returns a list of failure descriptions."""
+def score_case(case: dict, out: dict, repo: InMemoryPriceRepository) -> list[str]:
+    """
+    Deterministic scoring. Returns a list of failure descriptions.
+
+    PUBLIC, because `Philip_demo/30_guardrails_that_bite.py` scores two known
+    constraint sets through it to show that the exclusion check is a subset
+    test and cannot fail an over-extraction. A demo about verifying controls
+    by breaking them has to exercise the real scorer; a private name would
+    have meant a copy of it, and a copy is the thing that stops agreeing.
+    """
     expect = case["expect"]
     failures: list[str] = []
     constraints = out.get("constraints", {})
@@ -177,6 +185,42 @@ def _check(case: dict, out: dict, repo: InMemoryPriceRepository) -> list[str]:
                 f"exclusions {sorted(actual_terms)} missing {sorted(wanted_set - actual_set)}"
             )
 
+    # THE CHECK ABOVE IS A SUBSET TEST AND CANNOT FAIL AN OVER-EXTRACTION.
+    # That is right for `exclusions` — a model that also excludes seafood when
+    # asked for vegetarian has answered safely, if bluntly — but it means the
+    # golden set was blind to the inverse defect, and the inverse defect is the
+    # one that reached a shopper: "i would like to have seafood meal planned for
+    # me" came back with dietary_exclusions ["seafood"]. Adding a case with
+    # `"exclusions": []` would have passed against that, because the empty set
+    # is a subset of everything.
+    #
+    # So the affirmative case needs its own assertion, and it is an EQUALITY:
+    # nothing may be excluded. Stated as resolved categories rather than terms
+    # for the same reason the subset test is — what matters is what got filtered
+    # out of the plan, not which synonym the model chose.
+    if expect.get("no_exclusions"):
+        from src.graph.dietary import map_exclusions
+
+        actual_terms = constraints.get("dietary_exclusions", [])
+        actual_cats, _ = map_exclusions(actual_terms)
+        if actual_cats:
+            failures.append(
+                f"excluded {sorted(actual_cats)} from a request that ruled nothing "
+                f"out (terms: {sorted(actual_terms)})"
+            )
+
+    if "preferences" in expect:
+        # Asserted on the TERMS, unlike exclusions, because a preference has no
+        # category mapping to normalise through: `recipe_matches_preference`
+        # matches "chicken" against recipe words and "seafood" against resolved
+        # product categories, and both spellings are legitimate answers. What is
+        # being scored is whether the model put the food in the affirmative
+        # field at all.
+        actual_prefs = {p.strip().lower() for p in constraints.get("preferred_ingredients", [])}
+        missing = [w for w in expect["preferences"] if w.lower() not in actual_prefs]
+        if missing:
+            failures.append(f"preferences {sorted(actual_prefs)} missing {missing}")
+
     if "multi_item" in expect:
         # Every item must resolve, not just the first. This is the check the
         # known_gap cases were waiting on.
@@ -209,7 +253,7 @@ def run(model: ModelClient, label: str) -> Scorecard:
         try:
             out = classify_intent(state, model)
             degraded = bool(out.get("intent_degraded"))
-            failures = _check(case, out, repo)
+            failures = score_case(case, out, repo)
         except GuardrailBlocked:
             # Caught BEFORE the generic handler because it is a subclass of
             # ModelError and, unlike every other exception here, it is the

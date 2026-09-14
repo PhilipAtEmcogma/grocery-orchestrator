@@ -114,6 +114,29 @@ def _reconcile(extracted: IntentResult, hints: dict) -> tuple[Constraints, list[
     exclusions: list[str] = sorted({*(extracted.dietary_exclusions or []), *hinted_exclusions})
     constraints["dietary_exclusions"] = exclusions
 
+    # Preferences are NOT additive and NOT sorted, and both differences from the
+    # line above are deliberate.
+    #
+    # Not additive, because a preference is the user's current ask rather than a
+    # standing restriction: someone who set "chicken" in the UI last turn and
+    # now types "actually, seafood" is replacing it, exactly as `take()` lets a
+    # message override a budget slider. Unioning them would build a plan around
+    # both and honour neither.
+    #
+    # Not sorted, because the order is the order the user said them, and the
+    # shortlist ranks by it — first-named preference wins the budget when two
+    # compete. `dietary_exclusions` is sorted because a set of restrictions has
+    # no precedence; a list of wants does.
+    #
+    # An exclusion beats a preference on the same food. Nothing here enforces
+    # that: the dietary filter runs first and removes the category outright, so
+    # a contradictory "seafood, no fish" yields no seafood recipes to rank and
+    # the preference simply finds nothing. Fail-closed by construction rather
+    # than by a rule that could be edited out.
+    hinted_preferences = [str(x) for x in (hints.get("preferred_ingredients") or [])]
+    preferences = [p for p in (extracted.preferred_ingredients or hinted_preferences) if p.strip()]
+    constraints["preferred_ingredients"] = preferences
+
     hinted_stores = [Store(str(s)) for s in (hints.get("preferred_stores") or [])]
     stores: list[Store] = extracted.preferred_stores or hinted_stores
     constraints["preferred_stores"] = stores
