@@ -39,6 +39,7 @@ from src.graph.recipe_plan import (
 )
 from src.graph.regions import known_regions, locations_for, resolve_region
 from src.graph.state import GroceryState
+from src.recipes.base import PREFERENCE_CATEGORIES
 from src.retrieval.base import PriceRepository
 from src.retrieval.filters import (
     FreshnessFilter,
@@ -248,6 +249,11 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
     recipe_shortlist: list[str] = []
     recipe_refs: dict[str, dict[str, str]] = {}
     recipe_meals_wanted = 0
+    # Preferences we cannot match to any product in the current data (an
+    # unstocked real food or a nonsense ask). Empty unless the meal_plan branch
+    # below finds the shopper stated preferences and none is available. See
+    # where it is set for the rule.
+    unavailable_preferences: list[str] = []
     # preference term -> (recipe name, payable) of the cheapest recipe
     # answering it, BEFORE the budget trim. A term absent from this map is one
     # the catalogue cannot answer at any price, which is what lets `finalise`
@@ -471,6 +477,50 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
                 preferences[rank], (offer.recipe.name, str(offer.payable_nzd))
             )
 
+        # PREFERENCES WE CANNOT MATCH TO ANY PRODUCT IN THE CURRENT DATA --
+        # an unstocked real food ("quinoa") or a nonsense ask ("dinosaurs").
+        #
+        # The signal is NOT `cheapest_preferred`. That map holds terms a
+        # costable, dietary-viable RECIPE answers, and it is empty for a
+        # perfectly real food the catalogue simply has no recipe for -- seafood
+        # against the fixture catalogue is exactly that, and it must still
+        # produce a plan plus an honest "no seafood meal exists" notice, not a
+        # refusal. Using that map here promoted every unstocked-recipe food to a
+        # hard refusal and broke the affirmative-seafood behaviour.
+        #
+        # The honest question is instead: does this term correspond to ANYTHING
+        # we could stock? Two ways it can:
+        #   * it resolves to a product (`resolve_product_key`), or
+        #   * it names a known food CATEGORY (`PREFERENCE_CATEGORIES`: seafood,
+        #     fish, meat, dairy, produce, ...).
+        # A term that does neither cannot be matched to our data -- "quinoa"
+        # (real, unstocked), "dinosaurs" (nonsense), "ostrich" (real, unstocked).
+        # The strict resolver refuses fuzzy matching (design.md §8), so it cannot
+        # tell these apart, and it should not pretend to: `emit_preference_unavailable`
+        # gives them ONE honest message that points at the data ("I couldn't
+        # match that to available products") rather than guessing whether the
+        # shopper meant a food we lack or typed something that is not food.
+        #
+        # LENIENT: only flag when the shopper stated preferences and NONE is
+        # available. "chicken and dinosaurs" plans around chicken and lets
+        # `finalise` notice the rest -- one unmatchable word beside a valid one
+        # is not worth refusing the whole turn over.
+        def _available_food(term: str) -> bool:
+            # A category word ("seafood", "fish", "produce") counts as available
+            # even when no recipe uses it; a bare word split is enough because
+            # every PREFERENCE_CATEGORIES key is a single lowercase token.
+            # Otherwise the term must resolve to a real product.
+            # `resolve_product_key` refuses fuzzy matching, so this does not
+            # silently accept a near miss -- the property that lets an honest
+            # refusal stand.
+            words = {w for w in term.lower().replace("-", " ").split() if w}
+            if words & set(PREFERENCE_CATEGORIES):
+                return True
+            return repo.resolve_product_key(term) is not None
+
+        if preferences and not any(_available_food(p) for p in preferences):
+            unavailable_preferences = list(preferences)
+
         # Trim the offer to a set that fits the budget TOGETHER, so any
         # selection the model makes is affordable by construction. Same reason
         # `candidates_for_budget` caps its candidate set: a price-blind model
@@ -535,6 +585,7 @@ def retrieve_prices(state: GroceryState, repo: PriceRepository) -> dict:
         "recipe_refs": recipe_refs,
         "recipe_meals_wanted": recipe_meals_wanted,
         "cheapest_preferred": cheapest_preferred,
+        "unavailable_preferences": unavailable_preferences,
         "events": events,
     }
 

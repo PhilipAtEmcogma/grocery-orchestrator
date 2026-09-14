@@ -481,3 +481,141 @@ def test_the_notice_says_too_dear_when_the_match_exceeds_the_budget_alone():
 
     assert "No seafood meal fits at $30.00" in message
     assert "would fit on its own" not in message
+
+
+# --------------------------------------- preference unavailable: refuse the turn
+#
+# A preference we cannot match to any product in the current data refuses with
+# PREFERENCE_UNAVAILABLE instead of quietly serving an unrelated plan with a
+# footnote -- the footnote is right for a food we carry but cannot afford, and
+# wrong for one we cannot match at all. To the strict resolver a real food we do
+# not stock ("quinoa") and a nonsense word ("dinosaurs") are identical, so both
+# take this path with ONE honest message that points at the data. LENIENT: one
+# available preference is enough to proceed. Driven through hints, because the
+# scripted extractor only knows a fixed preference vocabulary -- the graph path
+# (retrieval -> route -> refuse) is what is under test.
+
+
+def test_a_nonsense_preference_refuses_the_turn(repo):
+    """
+    "a dinosaur meal plan" builds no plan. We cannot match it to any product, so
+    we say so and ask for a different ingredient rather than serving porridge
+    with a note that dinosaurs could not be worked in.
+    """
+    response = run_turn(
+        _request(
+            "a dinosaur meal plan",
+            household_size=2,
+            budget_nzd=Decimal("200"),
+            days=3,
+            preferred_ingredients=["dinosaurs"],
+        ),
+        repo,
+        ScriptedModelClient(),
+    )
+
+    plans = [e for e in response.events if e.type == "meal_plan"]
+    assert not plans, "an unavailable preference must not produce a plan"
+
+    errors = [e for e in response.events if e.type == "error"]
+    assert errors, "the turn should refuse with an error"
+    assert errors[0].code == "PREFERENCE_UNAVAILABLE"
+    assert errors[0].retryable is True, "asking for something we carry is the move"
+    assert "dinosaurs" in errors[0].message
+    # The message points at the DATA, not at comprehension. We must not claim to
+    # have failed to understand -- that would be wrong for a real unstocked food.
+    assert "understand" not in errors[0].message.lower()
+    assert "match" in errors[0].message.lower()
+
+
+def test_a_real_but_unstocked_preference_refuses_the_same_way(repo):
+    """
+    THE POINT OF THE RENAME. "quinoa" is a real food; the fixture catalogue has
+    none, and the strict resolver cannot tell it from "dinosaurs". Both refuse
+    with the SAME PREFERENCE_UNAVAILABLE message pointing at the data -- we do
+    not pretend to know it is real-but-unstocked versus not-food, because
+    distinguishing them would need a food ontology we deliberately do not have.
+    """
+    response = run_turn(
+        _request(
+            "a quinoa meal plan",
+            household_size=2,
+            budget_nzd=Decimal("200"),
+            days=3,
+            preferred_ingredients=["quinoa"],
+        ),
+        repo,
+        ScriptedModelClient(),
+    )
+
+    plans = [e for e in response.events if e.type == "meal_plan"]
+    assert not plans, "no plan for an unmatched food"
+    errors = [e for e in response.events if e.type == "error"]
+    assert errors and errors[0].code == "PREFERENCE_UNAVAILABLE"
+    assert "quinoa" in errors[0].message
+    assert "understand" not in errors[0].message.lower()
+
+
+def test_a_real_but_unaffordable_preference_still_plans_with_a_notice(repo):
+    """
+    THE DISTINCTION THAT MADE THIS WORTH DESIGNING. Seafood is a food we carry
+    (a known category); if it is priced out that is a budget outcome, not an
+    availability one. So the turn still produces a plan and NOTICES the unmet
+    seafood -- it must not be swept into the preference-unavailable refusal.
+    """
+    response = run_turn(
+        _request(
+            "a seafood meal plan",
+            household_size=3,
+            budget_nzd=Decimal("30"),
+            days=3,
+            preferred_ingredients=["seafood"],
+        ),
+        repo,
+        ScriptedModelClient(),
+    )
+
+    assert not [e for e in response.events if e.type == "error"], (
+        "a real food priced out is a notice, never a refusal"
+    )
+    assert [e for e in response.events if e.type == "meal_plan"], "a plan must still be produced"
+    notices = [e.message for e in response.events if e.type == "notice"]
+    assert any("seafood" in n for n in notices)
+
+
+def test_a_mixed_preference_is_lenient_and_plans_around_the_available_one(repo):
+    """
+    "chicken and dinosaurs": chicken is available, so the turn proceeds and
+    plans around chicken. One unmatchable word beside a valid one does not
+    refuse the whole request -- `finalise`'s existing notice reports the rest.
+    """
+    response = run_turn(
+        _request(
+            "chicken and dinosaurs for dinner",
+            household_size=3,
+            budget_nzd=Decimal("200"),
+            days=3,
+            preferred_ingredients=["chicken", "dinosaurs"],
+        ),
+        repo,
+        ScriptedModelClient(),
+    )
+
+    assert not [e for e in response.events if e.type == "error"], (
+        "one recognised preference is enough to proceed (lenient)"
+    )
+    assert [e for e in response.events if e.type == "meal_plan"], "chicken plans a meal"
+
+
+def test_a_plan_with_no_preference_is_untouched_by_the_refusal(repo):
+    """The refusal fires only on a STATED preference; an ordinary plan is unaffected."""
+    response = run_turn(
+        _request("meal plan for the week", household_size=3, budget_nzd=Decimal("60"), days=3),
+        repo,
+        ScriptedModelClient(),
+    )
+
+    assert not [
+        e for e in response.events if e.type == "error" and e.code == "PREFERENCE_UNAVAILABLE"
+    ]
+    assert [e for e in response.events if e.type == "meal_plan"], "a normal plan still builds"

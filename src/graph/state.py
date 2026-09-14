@@ -234,6 +234,22 @@ class GroceryState(TurnInput, total=False):
     #: got, and "no recipe fits your budget" and "you excluded too much" are
     #: different facts about their request.
     recipe_fallback: str
+    #: Preferred ingredients we cannot match to any product in the current
+    #: supermarket data — an unstocked real food like "quinoa" or a nonsense
+    #: ask like "dinosaurs", which the strict resolver cannot tell apart. Set by
+    #: retrieval ONLY when the shopper stated preferences AND none of them
+    #: resolves to a product or names a known food category. It is the
+    #: "unavailable in the data" signal, and the router refuses the turn before
+    #: building a plan (`emit_preference_unavailable`).
+    #:
+    #: DISTINCT from a preference that is a real food we DO carry but is priced
+    #: out of the budget: that term is recognised (it resolves or is a category),
+    #: so it is not listed here and the turn proceeds to a plan plus an
+    #: unmet-preference notice. LENIENT: if even one preference is available,
+    #: this stays empty and the plan is built. A preference is never a safety
+    #: control, so this refusal is about availability, not danger — unlike
+    #: `unsupported_exclusions`, which fails closed on a dietary risk.
+    unavailable_preferences: list[str]
 
     # ---- generation
     comparisons: list[PriceComparison]
