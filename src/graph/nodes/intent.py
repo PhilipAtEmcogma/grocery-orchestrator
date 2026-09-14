@@ -133,8 +133,18 @@ def _reconcile(extracted: IntentResult, hints: dict) -> tuple[Constraints, list[
     # a contradictory "seafood, no fish" yields no seafood recipes to rank and
     # the preference simply finds nothing. Fail-closed by construction rather
     # than by a rule that could be edited out.
-    hinted_preferences = [str(x) for x in (hints.get("preferred_ingredients") or [])]
-    preferences = [p for p in (extracted.preferred_ingredients or hinted_preferences) if p.strip()]
+    #
+    # Each source is stripped of blanks BEFORE the `or`, not after. A live
+    # model returns `['']` for a bare "a meal plan please" -- a non-empty list
+    # of one empty string -- which is truthy, so a post-filter `or` would let
+    # that junk win the `or` and then filter it to nothing, silently discarding
+    # a hinted preference. Cleaning each side first means an all-blank
+    # extraction correctly falls through to the hint, while a real extracted
+    # preference still overrides it.
+    extracted_preferences = [p for p in (extracted.preferred_ingredients or []) if p.strip()]
+    hinted_raw = (str(x) for x in (hints.get("preferred_ingredients") or []))
+    hinted_preferences = [x for x in hinted_raw if x.strip()]
+    preferences = extracted_preferences or hinted_preferences
     constraints["preferred_ingredients"] = preferences
 
     hinted_stores = [Store(str(s)) for s in (hints.get("preferred_stores") or [])]
