@@ -192,6 +192,26 @@ def test_blank_preferences_are_dropped():
     assert constraints.get("preferred_ingredients") == ["seafood"]
 
 
+def test_a_blank_extraction_does_not_mask_a_hinted_preference():
+    """
+    A live model returns `['']` -- a non-empty list of one empty string -- for
+    a bare "a meal plan please". That is truthy, so a reconciler that filtered
+    blanks only AFTER choosing extracted-or-hinted would let the junk win the
+    `or` and then filter it to nothing, silently discarding the hint. This was
+    a real defect found live: a hinted "dinosaurs" was dropped and the turn
+    built a plan about something else instead of refusing.
+
+    An all-blank extraction must fall through to the hint, exactly as an empty
+    list does. A REAL extracted preference still replaces the hint -- that is
+    `test_a_message_preference_replaces_a_hinted_one`, and it must still hold.
+    """
+    constraints, _ = _reconcile(
+        _extracted(preferred_ingredients=[""]),
+        {"preferred_ingredients": ["dinosaurs"]},
+    )
+    assert constraints.get("preferred_ingredients") == ["dinosaurs"]
+
+
 # ---------------------------------------------------------------- end to end
 
 

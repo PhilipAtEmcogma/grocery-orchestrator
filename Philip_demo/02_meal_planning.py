@@ -236,4 +236,39 @@ print("  work for a plan we could not safely verify.")
 
 matched = err is not None and err.code == ErrorCode.UNSUPPORTED_EXCLUSION
 print(f"\n  Refusal carried the expected contract code: {matched}")
+
+# ---------------------------------------------- preferences vs exclusions
+section("7. A preference is not an exclusion - and neither is guessed")
+print("A PREFERENCE is a food you ask FOR. It is additive and best-effort:")
+print("a food we carry but cannot afford degrades to a plan + a notice, never")
+print("a refusal. But a preference we cannot match to ANY product is refused,")
+print("because building a plan about something else would misrepresent the ask.\n")
+
+print("User: 'a dinosaur meal plan for 2, $200'  (nothing in the catalogue matches)")
+resp = run_turn(
+    request(
+        "a meal plan please",
+        turn="turn-demo08",
+        household_size=2,
+        budget_nzd=200,
+        days=3,
+        preferred_ingredients=["dinosaurs"],
+    ),
+    repo,
+    model,
+)
+err = next((e for e in resp.events if e.type == "error"), None)
+plan_present = any(e.type == "meal_plan" for e in resp.events)
+if err:
+    print(f"  {err.code.value}  retryable={err.retryable}")
+    print(f"  {err.message}")
+print(f"  Plan emitted anyway: {plan_present}")
+print("\n  The message points at the DATA, not at comprehension: the strict")
+print("  resolver cannot tell a real food we don't stock ('quinoa') from a")
+print("  non-food ('dinosaurs'), so it says the one true thing - it couldn't")
+print("  match it to the products we have. retryable=True: unlike the dietary")
+print("  refusal above, this is an availability gap, not a safety one.")
+
+pref_matched = err is not None and err.code == ErrorCode.PREFERENCE_UNAVAILABLE
+print(f"\n  Refusal carried the expected contract code: {pref_matched}")
 print("\nDone.")
