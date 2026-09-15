@@ -26,6 +26,32 @@ _MEAL_WORDS = ("meal", "plan", "dinner", "feed", "recipe", "cook", "week of")
 _PRICE_WORDS = ("cheap", "price", "cost", "how much", "compare", "dearest")
 _GREETING = ("hello", "hi ", "hey", "thanks", "who are you", "what can you do")
 
+# Foods this stub recognises as something a shopper might ask a plan to be built
+# around. Deliberately short: a real model reads the message, and a stub that
+# tried to cover the catalogue would become a second synonym table maintained by
+# nobody. These are the terms the offline suite and the demos actually use.
+#
+# Category words and product words sit together on purpose, because
+# `recipe_matches_preference` resolves the difference downstream -- "seafood"
+# through the ingredients' product categories, "chicken" through the recipe's
+# own words. Neither spelling needs special handling here.
+_PREFERENCE_TERMS = (
+    "seafood",
+    "fish",
+    "prawns",
+    "tuna",
+    "salmon",
+    "chicken",
+    "beef",
+    "mince",
+    "sausages",
+    "pasta",
+    "rice",
+    "potatoes",
+    "vegetables",
+    "eggs",
+)
+
 _ITEM_STOPWORDS = {
     "what",
     "whats",
@@ -202,6 +228,7 @@ class ScriptedModelClient(ModelClient):
         household = self._extract_household(msg)
         days = self._extract_days(msg)
         exclusions = self._extract_exclusions(msg)
+        preferences = self._extract_preferences(msg)
 
         if any(w in msg for w in _MEAL_WORDS) or budget is not None:
             intent, confidence = Intent.MEAL_PLAN, 0.94
@@ -219,6 +246,7 @@ class ScriptedModelClient(ModelClient):
                     budget_nzd=budget,
                     days=days,
                     dietary_exclusions=exclusions,
+                    preferred_ingredients=preferences,
                 )
         elif any(w in msg for w in _GREETING):
             intent, confidence = Intent.GENERAL_CHAT, 0.88
@@ -244,6 +272,7 @@ class ScriptedModelClient(ModelClient):
             budget_nzd=budget,
             days=days,
             dietary_exclusions=exclusions,
+            preferred_ingredients=preferences,
         )
         if self.overrides:
             result = result.model_copy(update=self.overrides)
@@ -311,6 +340,40 @@ class ScriptedModelClient(ModelClient):
         if "gluten free" in msg or "gluten-free" in msg:
             out.append("gluten-free")
         return out
+
+    @staticmethod
+    def _extract_preferences(msg: str) -> list[str]:
+        """
+        Foods the message asks FOR, in the order it names them.
+
+        THE SIBLING ABOVE WAS ALREADY NEGATION-AWARE AND THIS ONE HAS TO BE THE
+        SAME RULE READ BACKWARDS. `_extract_exclusions` fires only on "no
+        seafood"/"without seafood", which is why the scripted client never
+        reproduced the live extraction bug -- and also why, until now, it could
+        not exercise the affirmative path at all. The two must agree on what
+        counts as a negation or a message would land in both fields, and
+        `_reconcile` would then build a plan around a food the dietary filter
+        had just removed.
+
+        Ordered by POSITION IN THE MESSAGE, not by table order. The shortlist
+        ranks by the order the shopper named things, so a stub that returned a
+        fixed order would quietly stop testing that -- and `_preference_rank`
+        would look correct against a list it had itself sorted.
+        """
+        found: list[tuple[int, str]] = []
+        for term in _PREFERENCE_TERMS:
+            match = re.search(rf"\b{term}\b", msg)
+            if match is None:
+                continue
+            # "no seafood", "without any fish", "no meat or seafood". Up to two
+            # intervening words, and punctuation stops the run -- "no dairy, but
+            # seafood" is a preference for seafood, not a negation of it.
+            if re.search(rf"\b(?:no|not|without|minus)\b\s+(?:\w+\s+){{0,2}}{term}\b", msg):
+                continue
+            if re.search(rf"\b{term}[- ]free\b", msg):
+                continue
+            found.append((match.start(), term))
+        return [term for _, term in sorted(found)]
 
     @staticmethod
     def _extract_item(msg: str) -> str | None:

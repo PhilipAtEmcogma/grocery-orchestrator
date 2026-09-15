@@ -34,7 +34,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 
 from src.graph.dietary import supported_terms
-from src.graph.nodes._shared import _join, _next_seq
+from src.graph.nodes._shared import _join, _next_seq, _preference_unmet
 from src.graph.nodes.intent import classify_intent as classify_intent
 from src.graph.nodes.plan import generate_plan as generate_plan
 from src.graph.nodes.prose import generate_prose as generate_prose
@@ -48,6 +48,7 @@ from src.graph.nodes.retrieval import emit_stale_data as emit_stale_data
 from src.graph.nodes.retrieval import emit_unknown_region as emit_unknown_region
 from src.graph.nodes.retrieval import retrieve_prices as retrieve_prices
 from src.graph.state import MAX_REPAIR_ATTEMPTS, GroceryState
+from src.recipes.base import preference_terms_met
 from src.schemas.contract import (
     ClarificationEvent,
     DoneEvent,
@@ -56,6 +57,7 @@ from src.schemas.contract import (
     Intent,
     MealPlanEvent,
     MissingConstraint,
+    NoticeEvent,
     PriceComparison,
     PriceComparisonEvent,
     PriceOption,
@@ -218,6 +220,66 @@ def emit_dietary_unsupported(state: GroceryState) -> dict:
     }
 
 
+def emit_preference_unavailable(state: GroceryState) -> dict:
+    """
+    The shopper asked the plan to be built around foods we cannot match to any
+    product in the current supermarket data.
+
+    Reached only for a meal_plan turn where the user stated one or more
+    `preferred_ingredients` and NONE of them matches a product or a known food
+    category -- "a quinoa meal plan" against a catalogue with no quinoa, or "a
+    dinosaur meal plan". We refuse and ask them to try a different ingredient,
+    rather than quietly serving a plan about something else with a footnote.
+    That footnote is the right answer for a food we DO carry but cannot afford
+    (`finalise`'s unmet-preference notice); it is the wrong answer here, because
+    it implies we built a plan that honours the request.
+
+    THE MESSAGE POINTS AT THE DATA, NOT AT COMPREHENSION, and this is deliberate.
+    The resolver refuses fuzzy matching by design (design.md §8), so it cannot
+    tell a real food we do not stock ("quinoa") from a word that is not food
+    ("dinosaurs") -- both simply fail to resolve. Claiming "I didn't understand
+    that" would be wrong for quinoa and rude for a typo; claiming "I don't stock
+    that" would be wrong for dinosaurs. The one statement true for every case
+    that reaches here is that we could not match it to the products we have, so
+    that is what it says. Distinguishing the two would need a food ontology this
+    project deliberately does not have.
+
+    NOT A SAFETY REFUSAL, and deliberately unlike `emit_dietary_unsupported`
+    two functions up. An unmet EXCLUSION is dangerous -- serving a vegetarian
+    chicken -- so that path fails closed. An unavailable PREFERENCE is only an
+    availability gap, so this is retryable and its remedy is "ask for something
+    we carry". The two share a shape and not a reason.
+
+    SINGLE-TURN. This refuses within the one turn rather than asking, waiting,
+    and refusing only a repeated answer we still cannot match. True
+    clarify-then-refuse-on-repeat needs turn-to-turn memory the orchestrator
+    does not have -- the graph sees one request at a time -- and standing that
+    up means the AgentCore Memory / session-state workstream, gated behind a
+    Privacy Act 2020 design (consent, TTL, deletion). Deferred deliberately; see
+    design.md §8. The frontend gives the shopper the next turn to rephrase.
+    """
+    unavailable = state.get("unavailable_preferences") or []
+    return {
+        "terminated": True,
+        "events": [
+            ErrorEvent(
+                seq=_next_seq(state),
+                code=ErrorCode.PREFERENCE_UNAVAILABLE,
+                # An availability gap in the data, not a fact about the budget:
+                # asking for something the catalogue carries is the move that
+                # works, so it is worth trying again.
+                retryable=True,
+                message=(
+                    f"I couldn't build a meal plan around {_join(unavailable)} — "
+                    f"I can't match that to the products in the supermarket data "
+                    f"I have right now. Could you try a different ingredient, or "
+                    f"ask me to plan without it?"
+                ),
+            )
+        ],
+    }
+
+
 def emit_upstream_failure(state: GroceryState) -> dict:
     """
     The model could not be reached. Distinct from every other terminal node
@@ -315,6 +377,51 @@ def emit_budget_infeasible(state: GroceryState) -> dict:
     }
 
 
+def _unmet_preference_notices(state: GroceryState, plan, seq: int) -> list[NoticeEvent]:
+    """
+    A notice per stated preference the finished plan does not answer, or none.
+
+    Judged from the products the plan CITES, via `preference_terms_met`, rather
+    than from the recipe ids that were offered. The offer set is what the model
+    could choose from; a shopper reads the basket. See that function for why the
+    two questions need two matchers and what must not diverge between them.
+
+    ONE NOTICE PER UNMET TERM rather than one listing all of them, because the
+    reasons differ: "seafood, chicken" on a tight budget may be seafood priced
+    out and chicken absent from the catalogue, and a single sentence would have
+    to pick one explanation and be wrong about the other.
+    """
+    preferences = state.get("constraints", {}).get("preferred_ingredients") or []
+    if not preferences:
+        return []
+
+    records = state.get("record_index") or {}
+    cited = {ingredient.citation_ref for meal in plan.meals for ingredient in meal.ingredients}
+    products = [
+        (records[ref].canonical_name, records[ref].category) for ref in cited if ref in records
+    ]
+
+    met = preference_terms_met(list(preferences), products)
+    unmet = [term for term in preferences if term not in met]
+    if not unmet:
+        return []
+
+    constraints = state.get("constraints", {})
+    return [
+        NoticeEvent(
+            seq=seq + offset,
+            message=_preference_unmet(
+                [term],
+                (state.get("cheapest_preferred") or {}).get(term),
+                household_size=constraints.get("household_size", 1),
+                days=constraints.get("days", 1),
+                budget_nzd=constraints.get("budget_nzd"),
+            ),
+        )
+        for offset, term in enumerate(unmet)
+    ]
+
+
 def finalise(state: GroceryState) -> dict:
     """Terminal node. Always emits `done`, including after an error."""
     events: list[object] = []
@@ -326,6 +433,33 @@ def finalise(state: GroceryState) -> dict:
 
     plan = state.get("plan")
     if plan is not None:
+        # A STATED PREFERENCE THAT DID NOT SURVIVE IS REPORTED, NOT DROPPED.
+        #
+        # The same obligation as the `no_data` and `skipped` notices in
+        # `retrieve_prices`, applied to the one request shape that had no way to
+        # express it. The live defect: "i would like to have seafood meal planned
+        # for me" at $30 for 3 people over 3 days returned a banana porridge
+        # plan. Extraction had inverted the request into an exclusion -- fixed in
+        # src/prompts/intent.py -- but even corrected, the plan is identical,
+        # because no seafood meal fits $30. Silence made a budget limit look like
+        # the assistant ignoring the request.
+        #
+        # HERE, AND NOT IN `retrieve_prices`, WHICH IS WHERE IT WAS FIRST PUT.
+        # That node sees what the model may choose FROM; this one sees what the
+        # shopper is handed. `_cost_within_budget` drops the meal with the
+        # highest marginal cost, which is very often the preferred one, so the
+        # first version could offer a chicken recipe, judge the preference met,
+        # and then print a plan with no chicken and no explanation -- the same
+        # silent drop, one layer below where it was fixed. Found by dry-running
+        # demo 31 rather than by a test, which is the argument for dry runs.
+        #
+        # `finalise` is the only node that sees the final plan on EVERY path:
+        # after the trim, after a repair loop, and on the free-composition
+        # fallback that has no recipes at all.
+        for notice in _unmet_preference_notices(state, plan, seq):
+            events.append(notice)
+            seq += 1
+
         events.append(MealPlanEvent(seq=seq, data=plan))
         seq += 1
 
@@ -466,6 +600,15 @@ def route_after_retrieval(state: GroceryState) -> str:
         if state.get("stale_only"):
             return "stale"
         return "no_data"
+    # Checked before budget and before "plan": if the shopper asked the plan to
+    # be built around foods we cannot match to any product in the current data,
+    # that is a more fundamental answer than "your budget does not stretch" --
+    # asking for something we carry is the move, not raising the budget. Only
+    # fires when EVERY stated preference is unavailable (lenient); a mix with one
+    # real food proceeds and `finalise` notices the rest. After no_data/stale,
+    # which are catalogue-wide facts that outrank a single preference.
+    if state.get("unavailable_preferences"):
+        return "preference_unavailable"
     # Checked before "plan": there is no point spending a model call on a
     # request the catalogue's own cheapest prices say is impossible.
     if state.get("budget_impossible"):

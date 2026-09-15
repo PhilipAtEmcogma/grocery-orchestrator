@@ -62,6 +62,16 @@ class ErrorCode(StrEnum):
     # restriction is the dangerous direction of error, so the safe response
     # is refusal, not a best-effort plan.
     UNSUPPORTED_EXCLUSION = "UNSUPPORTED_EXCLUSION"
+    # The user asked the plan to be built around foods we cannot match to any
+    # product in the current supermarket data — "a quinoa meal plan" where the
+    # catalogue has no quinoa, or "a dinosaur meal plan". Distinct from a food
+    # we DO carry but cannot afford (that degrades to a plan plus an
+    # unmet-preference notice). The code is about AVAILABILITY IN THE DATA, not
+    # comprehension: to the strict, no-fuzzy-matching resolver a real food we
+    # do not stock and a nonsense word are the same, so both take this path with
+    # one honest message that points at the catalogue rather than at the
+    # shopper's phrasing. Additive; clients tolerate unknown codes.
+    PREFERENCE_UNAVAILABLE = "PREFERENCE_UNAVAILABLE"
     GUARDRAIL_BLOCKED = "GUARDRAIL_BLOCKED"
     OUT_OF_SCOPE = "OUT_OF_SCOPE"
     UPSTREAM_TIMEOUT = "UPSTREAM_TIMEOUT"
@@ -143,6 +153,12 @@ class ClientHints(BaseModel):
     budget_nzd: Decimal | None = Field(default=None, gt=0, le=10000)
     days: int | None = Field(default=None, ge=1, le=14)
     dietary_exclusions: list[str] = Field(default_factory=list, max_length=20)
+    #: Foods to build the plan around, e.g. from a "what do you feel like?"
+    #: control. Additive to the contract: absent from an existing client's
+    #: payload means the same as an empty list, so v1.0 clients are unaffected.
+    #: A preference the plan cannot afford comes back as a `notice`, never an
+    #: error — unlike `dietary_exclusions`, which can refuse the turn.
+    preferred_ingredients: list[str] = Field(default_factory=list, max_length=12)
     preferred_stores: list[Store] = Field(default_factory=list)
 
 

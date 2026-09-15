@@ -29,7 +29,9 @@ something TRUE about what actually happened:
   3. BUDGET_INFEASIBLE     a costed plan that genuinely will not fit
   4. PLAN_GENERATION_FAILED  repair ran out on invalid drafts
   5. UPSTREAM_TIMEOUT / INTERNAL_ERROR  the model plane failed
-  6. Retryability, and why it differs between these
+  6. PREFERENCE_UNAVAILABLE  the plan was asked to centre on a food we cannot
+                             match to any product in the data
+  7. Retryability, and why it differs between these
 
 WHY THIS FILE EXISTS
 --------------------
@@ -195,8 +197,41 @@ print("  operator detail and stays in the log. A shopper cannot act on it.")
 print("  The repair loop is skipped entirely - re-prompting a client we")
 print("  already know is failing only spends the latency budget.")
 
+# --------------------------------------------------- preference unavailable
+section("6. PREFERENCE_UNAVAILABLE - a plan built around a food we cannot match")
+print("User: 'a dinosaur meal plan for 2, $200' \n")
+resp = run_turn(
+    request(
+        "a meal plan please",
+        turn="turn-fail06",
+        household_size=2,
+        budget_nzd=200,
+        days=3,
+        preferred_ingredients=["dinosaurs"],
+    ),
+    repo,
+    ScriptedModelClient(),
+)
+code, retryable, message = terminal(resp)
+print(f"  {code}  retryable={retryable}")
+print(f"  {message}\n")
+plan_present = any(e.type == "meal_plan" for e in resp.events)
+print(f"  A plan was emitted anyway: {plan_present}")
+print("\n  The user asked for a plan CENTRED on something we cannot match to any")
+print("  product. We refuse rather than quietly building a plan about other")
+print("  food with a footnote - that footnote would imply we honoured the ask.")
+print("  The message points at the DATA ('couldn't match that to available")
+print("  products'), not at comprehension: the strict resolver cannot tell a")
+print("  real food we don't stock (quinoa) from a non-food (dinosaurs), and it")
+print("  should not pretend to. retryable=True, because asking for something we")
+print("  DO carry is the move that works - unlike a dietary term we cannot")
+print("  verify, this is an availability gap, not a safety one.")
+print("\n  LENIENT: this fires only when EVERY stated preference is unmatchable.")
+print("  Ask for 'dinosaurs and chicken' and it plans around the chicken,")
+print("  noticing the dinosaurs - one recognisable preference is enough.")
+
 # ------------------------------------------------------------- retryability
-section("6. Retryability is a real signal, not decoration")
+section("7. Retryability is a real signal, not decoration")
 print(f"  {'code':<26} {'retryable':<10} what a retry would achieve")
 print(f"  {'-' * 26} {'-' * 10} {'-' * 34}")
 rows = [
@@ -204,11 +239,12 @@ rows = [
     (ErrorCode.BUDGET_INFEASIBLE, False, "nothing - the budget is the budget"),
     (ErrorCode.PLAN_GENERATION_FAILED, True, "may work - generation varies"),
     (ErrorCode.UPSTREAM_TIMEOUT, True, "may work - transient"),
+    (ErrorCode.PREFERENCE_UNAVAILABLE, True, "may work - ask for a food we carry"),
 ]
 for code_enum, retry, effect in rows:
     print(f"  {code_enum.value:<26} {retry!s:<10} {effect}")
 
-print("\n  A client that renders all four as 'something went wrong, try again'")
-print("  wastes the user's time on two of them and hides an actionable")
-print("  alternative on the other two.")
+print("\n  A client that renders every one of these as 'something went wrong,")
+print("  try again' wastes the user's time on the two that a retry cannot help,")
+print("  and hides an actionable alternative on the three that it can.")
 print("\nDone.")

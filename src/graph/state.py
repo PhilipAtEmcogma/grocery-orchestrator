@@ -116,6 +116,17 @@ class Constraints(TypedDict, total=False):
     budget_nzd: Decimal
     days: int
     dietary_exclusions: list[str]
+    #: Foods the user asked the plan to be built AROUND. The opposite polarity
+    #: to `dietary_exclusions`, and kept in a separate field for that reason:
+    #: when exclusion was the only food-shaped constraint, extraction put
+    #: "a seafood meal plan" in it and the shopper was told seafood had been
+    #: excluded at their own request. See src/prompts/intent.py.
+    #:
+    #: A preference is NOT a safety control and must never be treated as one.
+    #: An unmet exclusion is a refusal (`unsupported_exclusions`); an unmet
+    #: preference is a notice, because a plan without the fish someone hoped
+    #: for is disappointing and a plan with fish they cannot eat is dangerous.
+    preferred_ingredients: list[str]
     preferred_stores: list[Store]
     query_items: list[str]
 
@@ -209,11 +220,36 @@ class GroceryState(TurnInput, total=False):
     #: uses. NOT `days`: a day is not a meal, and asking for one recipe per day
     #: under-fed every household in the eval suite.
     recipe_meals_wanted: int
+    #: preference term -> (recipe name, payable as a string) for the cheapest
+    #: recipe answering it, recorded by retrieval BEFORE the budget trim.
+    #:
+    #: Carried across nodes because the unmet-preference notice needs facts from
+    #: two of them: retrieval knows whether the catalogue can answer a term at
+    #: all, and only `finalise` knows whether the plan the shopper is handed
+    #: actually contains it. A term missing from this map is one no budget would
+    #: buy; a term present but absent from the plan was priced out.
+    cheapest_preferred: dict[str, tuple[str, str]]
     #: Why the turn fell back to free composition, or "" if it did not. Kept as
     #: a reason rather than a bool because the shopper is told which plan they
     #: got, and "no recipe fits your budget" and "you excluded too much" are
     #: different facts about their request.
     recipe_fallback: str
+    #: Preferred ingredients we cannot match to any product in the current
+    #: supermarket data — an unstocked real food like "quinoa" or a nonsense
+    #: ask like "dinosaurs", which the strict resolver cannot tell apart. Set by
+    #: retrieval ONLY when the shopper stated preferences AND none of them
+    #: resolves to a product or names a known food category. It is the
+    #: "unavailable in the data" signal, and the router refuses the turn before
+    #: building a plan (`emit_preference_unavailable`).
+    #:
+    #: DISTINCT from a preference that is a real food we DO carry but is priced
+    #: out of the budget: that term is recognised (it resolves or is a category),
+    #: so it is not listed here and the turn proceeds to a plan plus an
+    #: unmet-preference notice. LENIENT: if even one preference is available,
+    #: this stays empty and the plan is built. A preference is never a safety
+    #: control, so this refusal is about availability, not danger — unlike
+    #: `unsupported_exclusions`, which fails closed on a dietary risk.
+    unavailable_preferences: list[str]
 
     # ---- generation
     comparisons: list[PriceComparison]
