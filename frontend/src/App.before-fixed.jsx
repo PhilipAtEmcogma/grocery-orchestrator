@@ -1,10 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import "./App.css";
 
 import BudgetControls from "./components/BudgetControls";
 import ChatHeader from "./components/ChatHeader";
 import Composer from "./components/Composer";
 import MessageList from "./components/MessageList";
+
+// IMPORTANT:
+// Keep the API import/function name used by your existing project.
+// If your current file uses a different function name, replace this line
+// and update the call inside handleSubmit accordingly.
 import { sendChat as sendChatMessage } from "./api/chatClient";
 
 const WELCOME_MESSAGE = {
@@ -16,103 +21,54 @@ const WELCOME_MESSAGE = {
 };
 
 function newId(prefix) {
-  if (globalThis.crypto?.randomUUID) {
-    return `${prefix}-${globalThis.crypto.randomUUID()}`;
-  }
-
-  return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-}
-
-// Persisted per browser tab (sessionStorage) so a page refresh doesn't lose
-// the conversation. Swap sessionStorage for localStorage on both functions
-// below if you want the chat to survive closing the tab too.
-const SESSION_STORAGE_KEY = "grocery-session-id";
-const HISTORY_STORAGE_KEY = "grocery-chat-history";
-
-function loadStoredSessionId() {
-  try {
-    const existing = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    if (existing) {
-      return existing;
-    }
-    const created = newId("sess");
-    sessionStorage.setItem(SESSION_STORAGE_KEY, created);
-    return created;
-  } catch {
-    // Storage unavailable (private browsing, etc.) — the chat still works,
-    // it just won't survive a refresh.
-    return newId("sess");
-  }
-}
-
-function storeSessionId(id) {
-  try {
-    sessionStorage.setItem(SESSION_STORAGE_KEY, id);
-  } catch {
-    // Ignore — see loadStoredSessionId.
-  }
-}
-
-function loadStoredMessages() {
-  try {
-    const raw = sessionStorage.getItem(HISTORY_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
-      }
-    }
-  } catch {
-    // Malformed or unavailable storage — fall back to a fresh welcome.
-  }
-  return [WELCOME_MESSAGE];
+  return `${prefix}-${crypto.randomUUID()}`;
 }
 
 function extractAssistantContent(events) {
   const citations = {};
   const textParts = [];
-  const comparisons = [];
+  let comparison = null;
   let mealPlan = null;
   let notice = null;
   let noData = null;
   let error = null;
 
   for (const event of events ?? []) {
-    if (event.type === "citation") {
-      const citation = event.citation ?? event.data;
-
-      if (citation?.ref) {
-        citations[citation.ref] = citation;
-      }
+    if (event.type === "citation" && event.citation?.ref) {
+      citations[event.citation.ref] = event.citation;
     }
 
     if (event.type === "token" && event.text) {
       textParts.push(event.text);
     }
 
-    if (event.type === "price_comparison") {
-  const data = event.data ?? event.comparison ?? event;
-
-  comparisons.push({
-    ...data,
-    options: data?.options ?? data?.items ?? [],
-  });
+if (event.type === "price_comparison") {
+  comparison = {
+    ...event.data,
+    options: event.data?.options ?? [],
+  };
 }
+    if (event.type === "price_comparison") {
+      comparison = event;
+    }
 
     if (event.type === "meal_plan") {
-      mealPlan = event.data ?? event.meal_plan ?? event;
+if (event.type === "meal_plan") {
+  mealPlan = event.data ?? event.meal_plan ?? event;
+}
+      mealPlan = event;
     }
 
     if (event.type === "notice") {
-      notice = event.data ?? event;
+      notice = event;
     }
 
     if (event.type === "no_data") {
-      noData = event.data ?? event;
+      noData = event;
     }
 
     if (event.type === "error") {
-      error = event.data ?? event;
+      error = event;
     }
   }
 
@@ -120,7 +76,7 @@ function extractAssistantContent(events) {
     status: "complete",
     text: textParts.join(""),
     citations,
-    comparisons,
+    comparison,
     mealPlan,
     notice,
     noData,
@@ -129,8 +85,7 @@ function extractAssistantContent(events) {
 }
 
 export default function App() {
-  const [sessionId, setSessionId] = useState(loadStoredSessionId);
-  const [messages, setMessages] = useState(loadStoredMessages);
+  const [messages, setMessages] = useState([WELCOME_MESSAGE]);
   const [draft, setDraft] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -139,16 +94,6 @@ export default function App() {
   const [people, setPeople] = useState("3");
   const [days, setDays] = useState("3");
 
-  // Keep the visible history in sync with storage on every change, so a
-  // refresh mid-conversation restores exactly what was on screen.
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(messages));
-    } catch {
-      // Storage full or unavailable — chat still works, it just won't persist.
-    }
-  }, [messages]);
-
   function clearConversation() {
     setMessages([
       {
@@ -156,13 +101,6 @@ export default function App() {
         id: newId("welcome"),
       },
     ]);
-
-    // A cleared chat is a new conversation, so it gets a new session_id too
-    // — otherwise the backend would see one session_id spanning two
-    // unrelated conversations.
-    const freshSessionId = newId("sess");
-    storeSessionId(freshSessionId);
-    setSessionId(freshSessionId);
   }
 
   async function handleSubmit() {
@@ -172,6 +110,7 @@ export default function App() {
       return;
     }
 
+    const sessionId = "sess-frontend-demo";
     const turnId = newId("turn");
 
     const userMessage = {
@@ -214,28 +153,20 @@ export default function App() {
         ...(location
           ? {
               location: {
-                region: location,
+                label: location,
               },
             }
           : {}),
       });
 
-      const body = response?.body;
-
-      if (!body?.events) {
-        throw new Error(
-          `The service returned an unexpected response (HTTP ${response?.status ?? "unknown"}).`,
-        );
-      }
-
-      const content = extractAssistantContent(body.events);
+      const content = extractAssistantContent(response.body?.events ?? []);
 
       setMessages((current) =>
         current.map((item) =>
           item.id === assistantMessageId
             ? { ...item, ...content }
-            : item,
-        ),
+            : item
+        )
       );
     } catch (requestError) {
       setMessages((current) =>
@@ -250,8 +181,8 @@ export default function App() {
                     "Sorry, the grocery service could not be reached. Please try again.",
                 },
               }
-            : item,
-        ),
+            : item
+        )
       );
     } finally {
       setIsLoading(false);
