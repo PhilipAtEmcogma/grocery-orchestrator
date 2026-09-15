@@ -214,7 +214,7 @@ export default function App() {
         ...(location
           ? {
               location: {
-                label: location,
+                region: location,
               },
             }
           : {}),
