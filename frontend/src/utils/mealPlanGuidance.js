@@ -101,3 +101,21 @@ export function findMissingRequestedIngredient(requestText, mealPlan) {
 export function missingIngredientGuidance(keyword) {
   return `This plan doesn't include ${keyword} \u2014 it may not fit within the current Budget, People or Days. Try raising the budget, or lowering People/Days, if you'd like ${keyword} included.`;
 }
+
+// Guidance for a "no_data" event — a price_check that found no match. This
+// is distinct from a real out-of-stock/uncatalogued item: retrieval has
+// been observed to fail on a generic term (e.g. "beef") even when a
+// matching product exists under a specific name (e.g. "Affco Beef Mince"),
+// so the honest advice is "try to be more specific", not "we don't stock
+// this."
+export function getNoDataGuidance(noData) {
+  if (!noData) {
+    return null;
+  }
+
+  const item = noData.requested_item;
+
+  return item
+    ? `Retrieval can miss generic terms even when a specific product exists (e.g. "${item}" vs a named cut or brand). Try a more specific product name, or a different Location.`
+    : "Try a more specific product name, or a different Location.";
+}
